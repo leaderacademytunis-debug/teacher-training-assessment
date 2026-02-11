@@ -89,3 +89,9 @@
 - [x] Ajouter un badge de compteur de notifications non lues
 - [x] Tester le système de notifications
 - [x] Créer le checkpoint final
+
+## Correction: Problème d'affichage des vidéos
+- [x] Diagnostiquer le problème de lecture vidéo
+- [x] Corriger le problème d'affichage
+- [x] Tester la lecture des vidéos
+- [x] Créer le checkpoint final

@@ -43,24 +43,41 @@ export default function CourseVideos() {
   useEffect(() => {
     if (!selectedVideo || !user) return;
 
-    const interval = setInterval(() => {
-      const videoElement = document.querySelector("video") as HTMLVideoElement;
-      if (videoElement && !videoElement.paused) {
-        const currentTime = Math.floor(videoElement.currentTime);
-        setWatchedTime(currentTime);
-
-        const duration = Math.floor(videoElement.duration);
-        const completed = currentTime >= duration * 0.9; // 90% watched = completed
-
+    // For YouTube videos, we'll use a simplified tracking
+    const isYouTube = selectedVideo.videoUrl.includes('youtube.com') || selectedVideo.videoUrl.includes('youtu.be');
+    
+    if (isYouTube) {
+      // For YouTube, mark as watched after 30 seconds of being on the page
+      const timeout = setTimeout(() => {
         updateProgress.mutate({
           videoId: selectedVideo.id,
-          watchedDuration: currentTime,
-          completed,
+          watchedDuration: selectedVideo.duration || 600,
+          completed: true,
         });
-      }
-    }, 5000);
+      }, 30000); // 30 seconds
+      
+      return () => clearTimeout(timeout);
+    } else {
+      // For direct video files, track actual progress
+      const interval = setInterval(() => {
+        const videoElement = document.querySelector("video") as HTMLVideoElement;
+        if (videoElement && !videoElement.paused) {
+          const currentTime = Math.floor(videoElement.currentTime);
+          setWatchedTime(currentTime);
 
-    return () => clearInterval(interval);
+          const duration = Math.floor(videoElement.duration);
+          const completed = currentTime >= duration * 0.9; // 90% watched = completed
+
+          updateProgress.mutate({
+            videoId: selectedVideo.id,
+            watchedDuration: currentTime,
+            completed,
+          });
+        }
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
   }, [selectedVideo, user]);
 
   if (authLoading) {
@@ -156,14 +173,25 @@ export default function CourseVideos() {
               <CardContent className="p-0">
                 {selectedVideo ? (
                   <div>
-                    <video
-                      key={selectedVideo.id}
-                      controls
-                      className="w-full aspect-video bg-black"
-                      src={selectedVideo.videoUrl}
-                    >
-                      المتصفح لا يدعم تشغيل الفيديو
-                    </video>
+                    {selectedVideo.videoUrl.includes('youtube.com') || selectedVideo.videoUrl.includes('youtu.be') ? (
+                      <iframe
+                        key={selectedVideo.id}
+                        className="w-full aspect-video"
+                        src={selectedVideo.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                        title={selectedVideo.titleAr}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        key={selectedVideo.id}
+                        controls
+                        className="w-full aspect-video bg-black"
+                        src={selectedVideo.videoUrl}
+                      >
+                        المتصفح لا يدعم تشغيل الفيديو
+                      </video>
+                    )}
                     <div className="p-6">
                       <h2 className="text-2xl font-bold mb-2">{selectedVideo.titleAr}</h2>
                       {selectedVideo.descriptionAr && (
