@@ -54,5 +54,14 @@
 - [x] Vérifier la responsivité sur mobile
 - [x] Tester le système d'authentification
 - [x] Tester les examens et l'évaluation
-- [ ] Créer le checkpoint final
-- [ ] Livrer la plateforme
+- [x] Créer le checkpoint final
+- [x] Livrer la plateforme
+
+## Nouvelle fonctionnalité: Système de certificats PDF
+- [x] Créer le schéma de base de données pour les certificats
+- [x] Créer les fonctions backend pour générer les certificats PDF
+- [x] Ajouter les routes tRPC pour les certificats
+- [x] Créer l'interface utilisateur pour télécharger les certificats
+- [x] Ajouter le design professionnel en arabe pour les certificats
+- [x] Tester la génération et le téléchargement des certificats
+- [x] Créer le checkpoint final

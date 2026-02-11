@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Loader2, ArrowRight, CheckCircle2, XCircle, Award } from "lucide-react";
 import { Link, useParams } from "wouter";
+import { toast } from "sonner";
 
 export default function ExamResults() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,21 @@ export default function ExamResults() {
   const { user, loading: authLoading } = useAuth();
   
   const { data, isLoading } = trpc.examAttempts.getById.useQuery({ attemptId });
+  const { data: certificate } = trpc.certificates.getByAttemptId.useQuery(
+    { attemptId },
+    { enabled: !!data?.attempt.passed }
+  );
+  const generateCertificate = trpc.certificates.generate.useMutation({
+    onSuccess: (cert) => {
+      toast.success("تم إنشاء الشهادة بنجاح!");
+      if (cert.pdfUrl) {
+        window.open(cert.pdfUrl, "_blank");
+      }
+    },
+    onError: (error) => {
+      toast.error("حدث خطأ: " + error.message);
+    },
+  });
   const { data: exam } = trpc.exams.getById.useQuery(
     { id: data?.attempt.examId || 0 },
     { enabled: !!data?.attempt.examId }
@@ -190,6 +206,37 @@ export default function ExamResults() {
                   لقد أكملت الاختبار بنجاح وحصلت على شهادة إتمام الدورة
                 </CardDescription>
               </CardHeader>
+              <CardContent className="text-center">
+                {certificate ? (
+                  <Button 
+                    size="lg"
+                    onClick={() => certificate.pdfUrl && window.open(certificate.pdfUrl, "_blank")}
+                    className="bg-amber-600 hover:bg-amber-700"
+                  >
+                    <Award className="w-5 h-5 ml-2" />
+                    تحميل الشهادة
+                  </Button>
+                ) : (
+                  <Button 
+                    size="lg"
+                    onClick={() => generateCertificate.mutate({ attemptId })}
+                    disabled={generateCertificate.isPending}
+                    className="bg-amber-600 hover:bg-amber-700"
+                  >
+                    {generateCertificate.isPending ? (
+                      <>
+                        <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                        جاري إنشاء الشهادة...
+                      </>
+                    ) : (
+                      <>
+                        <Award className="w-5 h-5 ml-2" />
+                        إنشاء الشهادة
+                      </>
+                    )}
+                  </Button>
+                )}
+              </CardContent>
             </Card>
           )}
         </div>

@@ -15,6 +15,13 @@
       "when": 1770790169122,
       "tag": "0001_past_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770791980180,
+      "tag": "0002_known_namora",
+      "breakpoints": true
     }
   ]
 }

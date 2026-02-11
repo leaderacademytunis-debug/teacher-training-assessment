@@ -5,6 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
+import { generateCertificatePDF } from "./certificates";
+import { nanoid } from "nanoid";
 
 // Admin/Trainer procedure - only for admin, trainer, or supervisor roles
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -314,6 +316,81 @@ export const appRouter = router({
       .input(z.object({ examId: z.number() }))
       .query(async ({ input }) => {
         return await db.getAllExamAttemptsByExam(input.examId);
+      }),
+  }),
+
+  certificates: router({    
+    generate: protectedProcedure
+      .input(z.object({ attemptId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        // Check if certificate already exists
+        const existing = await db.getCertificateByAttemptId(input.attemptId);
+        if (existing) {
+          return existing;
+        }
+
+        // Get attempt details
+        const attempt = await db.getExamAttemptById(input.attemptId);
+        if (!attempt || attempt.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
+        // Check if passed
+        if (!attempt.passed) {
+          throw new TRPCError({ 
+            code: "BAD_REQUEST",
+            message: "Cannot generate certificate for failed exam"
+          });
+        }
+
+        // Get exam and course details
+        const exam = await db.getExamById(attempt.examId);
+        if (!exam) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const course = await db.getCourseById(exam.courseId);
+        if (!course) throw new TRPCError({ code: "NOT_FOUND" });
+
+        // Generate certificate number
+        const certificateNumber = `CERT-${Date.now()}-${nanoid(8).toUpperCase()}`;
+
+        // Generate PDF
+        const { url, key } = await generateCertificatePDF({
+          participantName: ctx.user.name || "المشارك",
+          courseName: course.titleAr,
+          completionDate: attempt.submittedAt || new Date(),
+          score: attempt.score || 0,
+          certificateNumber,
+        });
+
+        // Save certificate record
+        const certificate = await db.createCertificate({
+          userId: ctx.user.id,
+          courseId: course.id,
+          examAttemptId: attempt.id,
+          certificateNumber,
+          pdfUrl: url,
+        });
+
+        return certificate;
+      }),
+
+    getByAttemptId: protectedProcedure
+      .input(z.object({ attemptId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const certificate = await db.getCertificateByAttemptId(input.attemptId);
+        if (!certificate) return null;
+
+        // Users can only see their own certificates
+        if (certificate.userId !== ctx.user.id && ![ "admin", "trainer", "supervisor"].includes(ctx.user.role)) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+
+        return certificate;
+      }),
+
+    listMyCertificates: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await db.getCertificatesByUserId(ctx.user.id);
       }),
   }),
 });

@@ -7,7 +7,8 @@ import {
   exams, Exam, InsertExam,
   questions, Question, InsertQuestion,
   examAttempts, ExamAttempt, InsertExamAttempt,
-  answers, Answer, InsertAnswer
+  answers, Answer, InsertAnswer,
+  certificates, Certificate, InsertCertificate
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -336,4 +337,40 @@ export async function getExamStatistics(examId: number) {
     highestScore: Math.max(...scores),
     lowestScore: Math.min(...scores)
   };
+}
+
+// ===== Certificate Functions =====
+
+export async function createCertificate(certificate: InsertCertificate): Promise<Certificate> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(certificates).values(certificate);
+  const insertedId = Number(result[0].insertId);
+  
+  const created = await db.select().from(certificates).where(eq(certificates.id, insertedId)).limit(1);
+  return created[0]!;
+}
+
+export async function getCertificateByAttemptId(attemptId: number): Promise<Certificate | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(certificates).where(eq(certificates.examAttemptId, attemptId)).limit(1);
+  return result[0];
+}
+
+export async function getCertificatesByUserId(userId: number): Promise<Certificate[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(certificates).where(eq(certificates.userId, userId)).orderBy(desc(certificates.issuedAt));
+}
+
+export async function getCertificateById(id: number): Promise<Certificate | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(certificates).where(eq(certificates.id, id)).limit(1);
+  return result[0];
 }

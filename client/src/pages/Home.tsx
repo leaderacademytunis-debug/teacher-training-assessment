@@ -54,6 +54,9 @@ export default function Home() {
                   <Link href="/my-courses">
                     <Button>دوراتي</Button>
                   </Link>
+                  <Link href="/my-certificates">
+                    <Button variant="outline">شهاداتي</Button>
+                  </Link>
                 </>
               ) : (
                 <a href={getLoginUrl()}>
