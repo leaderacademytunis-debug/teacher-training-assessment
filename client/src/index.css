@@ -119,6 +119,18 @@
   }
   body {
     @apply bg-background text-foreground;
+    direction: rtl;
+    text-align: right;
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cairo', 'Tajawal', sans-serif;
+    font-weight: 700;
+  }
+  
+  input, textarea, select, button {
+    font-family: 'Tajawal', 'Cairo', sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
