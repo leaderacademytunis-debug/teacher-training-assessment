@@ -36,6 +36,8 @@ export const courses = mysqlTable("courses", {
     "digital_teacher_ai"
   ]).notNull(),
   duration: int("duration"), // in hours
+  axes: text("axes"), // JSON array of course axes/topics
+  batchNumber: varchar("batchNumber", { length: 100 }), // Batch/promotion number
   isActive: boolean("isActive").default(true).notNull(),
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

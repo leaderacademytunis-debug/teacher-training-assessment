@@ -43,6 +43,13 @@
       "when": 1770793634763,
       "tag": "0005_tan_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1770796728022,
+      "tag": "0006_outgoing_praxagora",
+      "breakpoints": true
     }
   ]
 }

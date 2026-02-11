@@ -103,3 +103,13 @@
 - [x] Mettre à jour le module de génération de certificats
 - [x] Tester la génération des certificats personnalisés
 - [x] Créer le checkpoint final
+
+## Mise à jour: Design professionnel des certificats
+- [x] Télécharger et intégrer le logo Leader Academy
+- [x] Ajouter le drapeau tunisien et les informations officielles
+- [x] Créer un cadre décoratif traditionnel/islamique
+- [x] Ajouter la section des axes de formation pour chaque cours
+- [x] Ajouter les signatures du directeur et du coordinateur
+- [x] Ajouter le numéro de promotion et les informations du programme
+- [x] Tester la génération des nouveaux certificats
+- [x] Créer le checkpoint final
