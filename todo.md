@@ -118,3 +118,14 @@
 - [x] Télécharger les images S3 avant de les ajouter au PDF
 - [x] Tester la génération de certificats
 - [x] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Page de vérification publique de certificats
+- [x] Créer une route publique tRPC pour vérifier les certificats
+- [x] Créer la page /verify pour la vérification
+- [x] Ajouter un formulaire de recherche par numéro de certificat
+- [x] Afficher les informations du certificat (nom, cours, date, score)
+- [x] Ajouter un design professionnel pour les résultats
+- [x] Gérer les cas d'erreur (certificat non trouvé)
+- [x] Ajouter un lien vers la page de vérification dans le header
+- [x] Tester la fonctionnalité de vérification
+- [x] Créer le checkpoint final

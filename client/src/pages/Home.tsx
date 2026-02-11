@@ -59,6 +59,9 @@ export default function Home() {
                   <Link href="/my-certificates">
                     <Button variant="outline">شهاداتي</Button>
                   </Link>
+                  <Link href="/verify">
+                    <Button variant="ghost">التحقق من شهادة</Button>
+                  </Link>
                 </>
               ) : (
                 <a href={getLoginUrl()}>

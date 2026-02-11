@@ -406,6 +406,19 @@ export const appRouter = router({
       .query(async ({ ctx }) => {
         return await db.getCertificatesByUserId(ctx.user.id);
       }),
+
+    verify: publicProcedure
+      .input(z.object({ certificateNumber: z.string() }))
+      .query(async ({ input }) => {
+        const certificate = await db.getCertificateByCertificateNumber(input.certificateNumber);
+        if (!certificate) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Certificate not found"
+          });
+        }
+        return certificate;
+      }),
   }),
 
   videos: router({

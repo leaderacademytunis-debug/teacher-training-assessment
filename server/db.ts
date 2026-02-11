@@ -424,6 +424,26 @@ export async function getCertificateById(id: number): Promise<Certificate | unde
   return result[0];
 }
 
+export async function getCertificateByCertificateNumber(certificateNumber: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select({
+    certificate: certificates,
+    user: users,
+    course: courses,
+    attempt: examAttempts,
+  })
+  .from(certificates)
+  .leftJoin(users, eq(certificates.userId, users.id))
+  .leftJoin(courses, eq(certificates.courseId, courses.id))
+  .leftJoin(examAttempts, eq(certificates.examAttemptId, examAttempts.id))
+  .where(eq(certificates.certificateNumber, certificateNumber))
+  .limit(1);
+
+  return result[0] || null;
+}
+
 // ===== Video Functions =====
 
 export async function createVideo(video: InsertVideo): Promise<Video> {

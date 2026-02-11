@@ -12,6 +12,7 @@ import ExamResults from "./pages/ExamResults";
 import Dashboard from "./pages/Dashboard";
 import MyCertificates from "./pages/MyCertificates";
 import CourseVideos from "./pages/CourseVideos";
+import VerifyCertificate from "./pages/VerifyCertificate";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/my-certificates" component={MyCertificates} />
       <Route path="/courses/:id/videos" component={CourseVideos} />
+      <Route path="/verify" component={VerifyCertificate} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
