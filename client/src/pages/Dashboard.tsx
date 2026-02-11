@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Loader2, BookOpen, Users, FileText, BarChart3, ArrowRight } from "lucide-react";
+import { Loader2, BookOpen, Users, FileText, BarChart3, ArrowRight, Video, CheckSquare } from "lucide-react";
 import { Link } from "wouter";
 import ManageCourses from "@/components/ManageCourses";
 import ManageExams from "@/components/ManageExams";
 import ManageQuestions from "@/components/ManageQuestions";
 import Statistics from "@/components/Statistics";
+import ManageVideos from "@/components/ManageVideos";
+import EnrollmentApprovals from "@/components/EnrollmentApprovals";
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -82,6 +84,14 @@ export default function Dashboard() {
               <BarChart3 className="w-4 h-4" />
               الإحصائيات
             </TabsTrigger>
+            <TabsTrigger value="videos" className="gap-2">
+              <Video className="w-4 h-4" />
+              الفيديوهات
+            </TabsTrigger>
+            <TabsTrigger value="approvals" className="gap-2">
+              <CheckSquare className="w-4 h-4" />
+              طلبات التسجيل
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="courses">
@@ -98,6 +108,14 @@ export default function Dashboard() {
 
           <TabsContent value="statistics">
             <Statistics />
+          </TabsContent>
+
+          <TabsContent value="videos">
+            <ManageVideos />
+          </TabsContent>
+
+          <TabsContent value="approvals">
+            <EnrollmentApprovals />
           </TabsContent>
         </Tabs>
       </section>

@@ -393,6 +393,104 @@ export const appRouter = router({
         return await db.getCertificatesByUserId(ctx.user.id);
       }),
   }),
+
+  videos: router({
+    listByCourse: publicProcedure
+      .input(z.object({ courseId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getVideosByCourseId(input.courseId);
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        courseId: z.number(),
+        titleAr: z.string(),
+        descriptionAr: z.string().optional(),
+        videoUrl: z.string().url(),
+        duration: z.number().optional(),
+        orderIndex: z.number(),
+        isRequired: z.boolean().default(true),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.createVideo({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        titleAr: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        videoUrl: z.string().url().optional(),
+        duration: z.number().optional(),
+        orderIndex: z.number().optional(),
+        isRequired: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...updates } = input;
+        await db.updateVideo(id, updates);
+        return { success: true };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteVideo(input.id);
+        return { success: true };
+      }),
+  }),
+
+  videoProgress: router({
+    updateProgress: protectedProcedure
+      .input(z.object({
+        videoId: z.number(),
+        watchedDuration: z.number(),
+        completed: z.boolean(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.upsertVideoProgress({
+          userId: ctx.user.id,
+          videoId: input.videoId,
+          watchedDuration: input.watchedDuration,
+          completed: input.completed,
+        });
+      }),
+
+    getCourseProgress: protectedProcedure
+      .input(z.object({ courseId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        return await db.getUserCourseVideoProgress(ctx.user.id, input.courseId);
+      }),
+
+    hasCompletedRequired: protectedProcedure
+      .input(z.object({ courseId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        return await db.hasCompletedAllRequiredVideos(ctx.user.id, input.courseId);
+      }),
+  }),
+
+  enrollmentApproval: router({
+    listPending: adminProcedure
+      .query(async () => {
+        return await db.getPendingEnrollments();
+      }),
+
+    approve: adminProcedure
+      .input(z.object({ enrollmentId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.approveEnrollment(input.enrollmentId, ctx.user.id);
+        return { success: true };
+      }),
+
+    reject: adminProcedure
+      .input(z.object({ enrollmentId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.rejectEnrollment(input.enrollmentId, ctx.user.id);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -8,7 +8,9 @@ import {
   questions, Question, InsertQuestion,
   examAttempts, ExamAttempt, InsertExamAttempt,
   answers, Answer, InsertAnswer,
-  certificates, Certificate, InsertCertificate
+  certificates, Certificate, InsertCertificate,
+  videos, Video, InsertVideo,
+  videoProgress, VideoProgress, InsertVideoProgress
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -143,7 +145,7 @@ export async function enrollUserInCourse(userId: number, courseId: number) {
   const result = await db.insert(enrollments).values({
     userId,
     courseId,
-    status: "active"
+    status: "pending"
   });
   return result;
 }
@@ -174,6 +176,52 @@ export async function getCourseEnrollments(courseId: number) {
   .leftJoin(users, eq(enrollments.userId, users.id))
   .where(eq(enrollments.courseId, courseId))
   .orderBy(desc(enrollments.enrolledAt));
+}
+
+export async function getPendingEnrollments() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select({
+    enrollment: enrollments,
+    user: users,
+    course: courses
+  })
+  .from(enrollments)
+  .leftJoin(users, eq(enrollments.userId, users.id))
+  .leftJoin(courses, eq(enrollments.courseId, courses.id))
+  .where(eq(enrollments.status, "pending"))
+  .orderBy(desc(enrollments.enrolledAt));
+}
+
+export async function approveEnrollment(enrollmentId: number, approvedBy: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(enrollments).set({
+    status: "approved",
+    approvedBy,
+    approvedAt: new Date()
+  }).where(eq(enrollments.id, enrollmentId));
+}
+
+export async function rejectEnrollment(enrollmentId: number, approvedBy: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(enrollments).set({
+    status: "rejected",
+    approvedBy,
+    approvedAt: new Date()
+  }).where(eq(enrollments.id, enrollmentId));
+}
+
+export async function getEnrollmentById(id: number): Promise<Enrollment | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(enrollments).where(eq(enrollments.id, id)).limit(1);
+  return result[0];
 }
 
 // ========== EXAMS ==========
@@ -373,4 +421,124 @@ export async function getCertificateById(id: number): Promise<Certificate | unde
 
   const result = await db.select().from(certificates).where(eq(certificates.id, id)).limit(1);
   return result[0];
+}
+
+// ===== Video Functions =====
+
+export async function createVideo(video: InsertVideo): Promise<Video> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(videos).values(video);
+  const insertedId = Number(result[0].insertId);
+  
+  const created = await db.select().from(videos).where(eq(videos.id, insertedId)).limit(1);
+  return created[0]!;
+}
+
+export async function getVideosByCourseId(courseId: number): Promise<Video[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(videos).where(eq(videos.courseId, courseId)).orderBy(videos.orderIndex);
+}
+
+export async function getVideoById(id: number): Promise<Video | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(videos).where(eq(videos.id, id)).limit(1);
+  return result[0];
+}
+
+export async function updateVideo(id: number, updates: Partial<InsertVideo>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(videos).set(updates).where(eq(videos.id, id));
+}
+
+export async function deleteVideo(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(videos).where(eq(videos.id, id));
+}
+
+// ===== Video Progress Functions =====
+
+export async function upsertVideoProgress(progress: InsertVideoProgress): Promise<VideoProgress> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Check if progress exists
+  const existing = await db
+    .select()
+    .from(videoProgress)
+    .where(and(eq(videoProgress.userId, progress.userId), eq(videoProgress.videoId, progress.videoId)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    // Update existing
+    await db
+      .update(videoProgress)
+      .set({
+        watchedDuration: progress.watchedDuration,
+        completed: progress.completed,
+        lastWatchedAt: new Date(),
+      })
+      .where(eq(videoProgress.id, existing[0].id));
+    
+    const updated = await db.select().from(videoProgress).where(eq(videoProgress.id, existing[0].id)).limit(1);
+    return updated[0]!;
+  } else {
+    // Insert new
+    const result = await db.insert(videoProgress).values(progress);
+    const insertedId = Number(result[0].insertId);
+    const created = await db.select().from(videoProgress).where(eq(videoProgress.id, insertedId)).limit(1);
+    return created[0]!;
+  }
+}
+
+export async function getVideoProgress(userId: number, videoId: number): Promise<VideoProgress | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(videoProgress)
+    .where(and(eq(videoProgress.userId, userId), eq(videoProgress.videoId, videoId)))
+    .limit(1);
+  
+  return result[0];
+}
+
+export async function getUserCourseVideoProgress(userId: number, courseId: number): Promise<VideoProgress[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const courseVideos = await getVideosByCourseId(courseId);
+  const videoIds = courseVideos.map(v => v.id);
+
+  if (videoIds.length === 0) return [];
+
+  return db
+    .select()
+    .from(videoProgress)
+    .where(and(eq(videoProgress.userId, userId), sql`${videoProgress.videoId} IN (${sql.join(videoIds.map(id => sql`${id}`), sql`, `)})`));
+}
+
+export async function hasCompletedAllRequiredVideos(userId: number, courseId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const courseVideos = await getVideosByCourseId(courseId);
+  const requiredVideos = courseVideos.filter(v => v.isRequired);
+
+  if (requiredVideos.length === 0) return true;
+
+  const progress = await getUserCourseVideoProgress(userId, courseId);
+  const completedVideoIds = new Set(progress.filter(p => p.completed).map(p => p.videoId));
+
+  return requiredVideos.every(v => completedVideoIds.has(v.id));
 }

@@ -52,7 +52,9 @@ export const enrollments = mysqlTable("enrollments", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   courseId: int("courseId").notNull(),
-  status: mysqlEnum("status", ["pending", "active", "completed", "cancelled"]).default("pending").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "active", "completed", "cancelled"]).default("pending").notNull(),
+  approvedBy: int("approvedBy"),
+  approvedAt: timestamp("approvedAt"),
   enrolledAt: timestamp("enrolledAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
 });
@@ -152,3 +154,38 @@ export const certificates = mysqlTable("certificates", {
 
 export type Certificate = typeof certificates.$inferSelect;
 export type InsertCertificate = typeof certificates.$inferInsert;
+
+/**
+ * Videos table - stores course videos
+ */
+export const videos = mysqlTable("videos", {
+  id: int("id").autoincrement().primaryKey(),
+  courseId: int("courseId").notNull(),
+  titleAr: varchar("titleAr", { length: 255 }).notNull(),
+  descriptionAr: text("descriptionAr"),
+  videoUrl: text("videoUrl").notNull(),
+  duration: int("duration"), // in seconds
+  orderIndex: int("orderIndex").notNull(),
+  isRequired: boolean("isRequired").default(true).notNull(),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Video = typeof videos.$inferSelect;
+export type InsertVideo = typeof videos.$inferInsert;
+
+/**
+ * Video progress table - tracks user video watching progress
+ */
+export const videoProgress = mysqlTable("videoProgress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  videoId: int("videoId").notNull(),
+  watchedDuration: int("watchedDuration").default(0).notNull(), // in seconds
+  completed: boolean("completed").default(false).notNull(),
+  lastWatchedAt: timestamp("lastWatchedAt").defaultNow().notNull(),
+});
+
+export type VideoProgress = typeof videoProgress.$inferSelect;
+export type InsertVideoProgress = typeof videoProgress.$inferInsert;

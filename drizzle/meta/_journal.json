@@ -22,6 +22,20 @@
       "when": 1770791980180,
       "tag": "0002_known_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1770792660209,
+      "tag": "0003_premium_ultragirl",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1770792727340,
+      "tag": "0004_bouncy_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ import ExamPage from "./pages/ExamPage";
 import ExamResults from "./pages/ExamResults";
 import Dashboard from "./pages/Dashboard";
 import MyCertificates from "./pages/MyCertificates";
+import CourseVideos from "./pages/CourseVideos";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/exam-results/:id" component={ExamResults} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/my-certificates" component={MyCertificates} />
+      <Route path="/courses/:id/videos" component={CourseVideos} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

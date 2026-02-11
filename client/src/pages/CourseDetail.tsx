@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Loader2, ArrowRight, FileText, Clock } from "lucide-react";
+import { BookOpen, Loader2, ArrowRight, FileText, Clock, Video, Lock } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
 
@@ -14,6 +14,11 @@ export default function CourseDetail() {
   
   const { data: course, isLoading: courseLoading } = trpc.courses.getById.useQuery({ id: courseId });
   const { data: exams, isLoading: examsLoading } = trpc.exams.listByCourse.useQuery({ courseId });
+  const { data: videos } = trpc.videos.listByCourse.useQuery({ courseId });
+  const { data: hasCompletedVideos } = trpc.videoProgress.hasCompletedRequired.useQuery(
+    { courseId },
+    { enabled: !!user }
+  );
   const { data: enrollments } = trpc.enrollments.myEnrollments.useQuery(undefined, {
     enabled: !!user,
   });
@@ -28,7 +33,11 @@ export default function CourseDetail() {
     },
   });
 
-  const isEnrolled = enrollments?.some(e => e.enrollment.courseId === courseId);
+  const enrollment = enrollments?.find(e => e.enrollment.courseId === courseId);
+  const isEnrolled = !!enrollment;
+  const isApproved = enrollment?.enrollment.status === "approved";
+  const isPending = enrollment?.enrollment.status === "pending";
+  const isRejected = enrollment?.enrollment.status === "rejected";
 
   if (authLoading || courseLoading || examsLoading) {
     return (
@@ -87,8 +96,14 @@ export default function CourseDetail() {
                 <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center">
                   <BookOpen className="w-8 h-8 text-primary" />
                 </div>
-                {isEnrolled && (
-                  <Badge className="bg-green-100 text-green-800">مسجل في الدورة</Badge>
+                {isPending && (
+                  <Badge className="bg-yellow-100 text-yellow-800">قيد المراجعة</Badge>
+                )}
+                {isApproved && (
+                  <Badge className="bg-green-100 text-green-800">معتمد</Badge>
+                )}
+                {isRejected && (
+                  <Badge className="bg-red-100 text-red-800">مرفوض</Badge>
                 )}
               </div>
               <CardTitle className="text-3xl mb-3">{course.titleAr}</CardTitle>
@@ -119,15 +134,49 @@ export default function CourseDetail() {
                       جاري التسجيل...
                     </>
                   ) : (
-                    "التسجيل في الدورة"
+                    "طلب التسجيل في الدورة"
                   )}
                 </Button>
+              )}
+              {isPending && (
+                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-yellow-800 text-center">
+                    تم إرسال طلب التسجيل. بانتظار موافقة المشرف.
+                  </p>
+                </div>
+              )}
+              {isRejected && (
+                <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 text-center">
+                    تم رفض طلب التسجيل. يرجى التواصل مع المشرف.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
 
+          {/* Videos Section */}
+          {isApproved && videos && videos.length > 0 && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-2xl">فيديوهات الدورة</CardTitle>
+                <CardDescription>
+                  شاهد جميع الفيديوهات قبل تقديم الاختبار
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href={`/courses/${courseId}/videos`}>
+                  <Button size="lg" className="w-full">
+                    <Video className="w-5 h-5 ml-2" />
+                    مشاهدة الفيديوهات ({videos.length} فيديو)
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Exams Section */}
-          {isEnrolled && (
+          {isApproved && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl">الاختبارات النهائية</CardTitle>
@@ -162,9 +211,16 @@ export default function CourseDetail() {
                               )}
                               <div>درجة النجاح: {exam.passingScore}%</div>
                             </div>
-                            <Link href={`/exams/${exam.id}`}>
-                              <Button>بدء الاختبار</Button>
-                            </Link>
+                            {hasCompletedVideos || !videos || videos.length === 0 ? (
+                              <Link href={`/exams/${exam.id}`}>
+                                <Button>بدء الاختبار</Button>
+                              </Link>
+                            ) : (
+                              <Button disabled className="gap-2">
+                                <Lock className="w-4 h-4" />
+                                مقفل
+                              </Button>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -173,6 +229,13 @@ export default function CourseDetail() {
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     لا توجد اختبارات متاحة حالياً
+                  </div>
+                )}
+                {videos && videos.length > 0 && !hasCompletedVideos && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-blue-800 text-center">
+                      يجب مشاهدة جميع الفيديوهات الإلزامية قبل تقديم الاختبار
+                    </p>
                   </div>
                 )}
               </CardContent>

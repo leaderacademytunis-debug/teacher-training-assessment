@@ -65,3 +65,16 @@
 - [x] Ajouter le design professionnel en arabe pour les certificats
 - [x] Tester la génération et le téléchargement des certificats
 - [x] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Système de vidéos et approbation des inscriptions
+- [x] Créer le schéma de base de données pour les vidéos
+- [x] Créer le schéma pour le suivi de visionnage des vidéos
+- [x] Modifier le statut des inscriptions pour inclure l'approbation
+- [x] Ajouter les routes tRPC pour gérer les vidéos
+- [x] Créer l'interface pour les formateurs pour ajouter/gérer les vidéos
+- [x] Créer le lecteur vidéo avec suivi de progression
+- [x] Bloquer l'accès aux examens jusqu'à complétion des vidéos
+- [x] Créer l'interface d'approbation des inscriptions pour les superviseurs
+- [ ] Ajouter les notifications pour les demandes d'inscription
+- [x] Tester toutes les fonctionnalités
+- [x] Créer le checkpoint final
