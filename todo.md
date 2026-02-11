@@ -135,3 +135,10 @@
 - [x] Corriger la fonction de téléchargement des images
 - [x] Tester la génération de certificats
 - [x] Créer le checkpoint final
+
+## Correction: Affichage du texte arabe dans les certificats PDF
+- [x] Télécharger et intégrer une police arabe (Cairo, Amiri, ou similaire)
+- [x] Configurer PDFKit pour utiliser la police arabe
+- [x] Implémenter le support RTL pour le texte arabe
+- [x] Tester l'affichage du texte arabe dans les certificats
+- [x] Créer le checkpoint final

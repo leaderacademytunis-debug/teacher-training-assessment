@@ -3,6 +3,9 @@ import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import https from "node:https";
 import sharp from "sharp";
+import { WordShaper } from "alif-toolkit";
+
+const ARABIC_FONT_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/tVoWPiuIjSLTpZzt.ttf";
 
 /**
  * Download image from URL and return as PNG Buffer
@@ -165,12 +168,18 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   const config = courseConfigs[data.courseType as keyof typeof courseConfigs] || courseConfigs.arabic_teachers;
   const axes = data.courseAxes || config.defaultAxes;
   
-  // Download images first
+  // Helper function to process Arabic text for RTL display
+  const processArabicText = (text: string): string => {
+    return WordShaper(text);
+  };
+
+  // Download images and font first
   const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/aYRTvdXAkBzKfCAY.png";
   const flagUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/lUjeCQtcebHcrJBL.png";
   
   let logoBuffer: Buffer | null = null;
   let flagBuffer: Buffer | null = null;
+  let arabicFontBuffer: Buffer | null = null;
   
   try {
     logoBuffer = await downloadImage(logoUrl);
@@ -182,6 +191,19 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
     flagBuffer = await downloadImage(flagUrl);
   } catch (error) {
     console.error("Failed to load flag:", error);
+  }
+  
+  try {
+    arabicFontBuffer = await new Promise<Buffer>((resolve, reject) => {
+      https.get(ARABIC_FONT_URL, (response) => {
+        const chunks: Buffer[] = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => resolve(Buffer.concat(chunks)));
+        response.on('error', reject);
+      }).on('error', reject);
+    });
+  } catch (error) {
+    console.error("Failed to load Arabic font:", error);
   }
   
   return new Promise((resolve, reject) => {
@@ -208,6 +230,11 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
     const pageWidth = 842;
     const pageHeight = 595;
 
+    // Register Arabic font if available
+    if (arabicFontBuffer) {
+      doc.registerFont('Cairo', arabicFontBuffer);
+    }
+
     // Draw decorative border
     drawDecorativeBorder(doc, pageWidth, pageHeight);
 
@@ -221,45 +248,48 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
       doc.image(flagBuffer, pageWidth - 120, 50, { width: 60 });
     }
     
-    doc.fontSize(9).fillColor("#333333").font("Helvetica");
-    doc.text("الجمهورية التونسية", pageWidth - 150, 120, { width: 130, align: "center" });
-    doc.text("وزارة التشغيل والتكوين المهني", pageWidth - 150, 135, { width: 130, align: "center" });
-    doc.text("ليدر أكاديمي", pageWidth - 150, 150, { width: 130, align: "center" });
+    // Use Arabic font for all Arabic text
+    const arabicFont = arabicFontBuffer ? 'Cairo' : 'Helvetica';
+    
+    doc.fontSize(9).fillColor("#333333").font(arabicFont);
+    doc.text(processArabicText("الجمهورية التونسية"), pageWidth - 150, 120, { width: 130, align: "center", features: ['rtla'] });
+    doc.text(processArabicText("وزارة التشغيل والتكوين المهني"), pageWidth - 150, 135, { width: 130, align: "center", features: ['rtla'] });
+    doc.text(processArabicText("ليدر أكاديمي"), pageWidth - 150, 150, { width: 130, align: "center", features: ['rtla'] });
     doc.fontSize(7).fillColor("#666666");
-    doc.text("تسجيل عدد 61-309-16", pageWidth - 150, 165, { width: 130, align: "center" });
+    doc.text(processArabicText("تسجيل عدد 61-309-16"), pageWidth - 150, 165, { width: 130, align: "center", features: ['rtla'] });
 
     // Main title "شهادة"
-    doc.fontSize(48).fillColor("#000000").font("Helvetica-Bold");
-    doc.text("شهادة", 0, 110, { align: "center", width: pageWidth });
+    doc.fontSize(48).fillColor("#000000").font(arabicFont);
+    doc.text(processArabicText("شهادة"), 0, 110, { align: "center", width: pageWidth, features: ['rtla'] });
 
     // Subtitle
-    doc.fontSize(14).fillColor("#555555").font("Helvetica");
-    doc.text("أسندت هذه الشهادة إلى السيد(ة)", 0, 170, { align: "center", width: pageWidth });
+    doc.fontSize(14).fillColor("#555555").font(arabicFont);
+    doc.text(processArabicText("أسندت هذه الشهادة إلى السيد(ة)"), 0, 170, { align: "center", width: pageWidth, features: ['rtla'] });
 
     // Participant name
-    doc.fontSize(24).fillColor("#000000").font("Helvetica-Bold");
-    doc.text(data.participantName, 0, 200, { align: "center", width: pageWidth });
+    doc.fontSize(24).fillColor("#000000").font(arabicFont);
+    doc.text(processArabicText(data.participantName), 0, 200, { align: "center", width: pageWidth, features: ['rtla'] });
 
     // Description
-    doc.fontSize(13).fillColor("#444444").font("Helvetica");
-    doc.text("للمشاركة الفاعلة في دورة تكوينيّة بعنوان", 0, 240, { align: "center", width: pageWidth });
+    doc.fontSize(13).fillColor("#444444").font(arabicFont);
+    doc.text(processArabicText("للمشاركة الفاعلة في دورة تكوينيّة بعنوان"), 0, 240, { align: "center", width: pageWidth, features: ['rtla'] });
 
     // Course title
-    doc.fontSize(18).fillColor("#000000").font("Helvetica-Bold");
-    doc.text(`" ${config.title} "`, 0, 270, { align: "center", width: pageWidth });
+    doc.fontSize(18).fillColor("#000000").font(arabicFont);
+    doc.text(processArabicText(`" ${config.title} "`), 0, 270, { align: "center", width: pageWidth, features: ['rtla'] });
     
     // Underline
     doc.strokeColor("#000000").lineWidth(1.5);
     doc.moveTo(pageWidth / 2 - 250, 295).lineTo(pageWidth / 2 + 250, 295).stroke();
 
     // Course axes
-    doc.fontSize(11).fillColor("#333333").font("Helvetica");
-    doc.text("والتي تناولت المحاور التالية :", pageWidth - 200, 315, { width: 180, align: "right" });
+    doc.fontSize(11).fillColor("#333333").font(arabicFont);
+    doc.text(processArabicText("والتي تناولت المحاور التالية :"), pageWidth - 200, 315, { width: 180, align: "right", features: ['rtla'] });
     
     let axisY = 335;
     axes.forEach((axis) => {
-      doc.fontSize(10).fillColor("#444444");
-      doc.text(`• ${axis}`, pageWidth - 400, axisY, { width: 380, align: "right" });
+      doc.fontSize(10).fillColor("#444444").font(arabicFont);
+      doc.text(processArabicText(`• ${axis}`), pageWidth - 400, axisY, { width: 380, align: "right", features: ['rtla'] });
       axisY += 18;
     });
 
@@ -267,21 +297,21 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
     const sigY = 450;
     
     // Left signature (Coordinator)
-    doc.fontSize(11).fillColor("#333333").font("Helvetica-Bold");
-    doc.text("أ. سامي الجازي", 80, sigY, { width: 150, align: "center" });
-    doc.fontSize(10).fillColor("#666666").font("Helvetica");
-    doc.text("منسق عام مميز للتربية", 80, sigY + 20, { width: 150, align: "center" });
+    doc.fontSize(11).fillColor("#333333").font(arabicFont);
+    doc.text(processArabicText("أ. سامي الجازي"), 80, sigY, { width: 150, align: "center", features: ['rtla'] });
+    doc.fontSize(10).fillColor("#666666").font(arabicFont);
+    doc.text(processArabicText("منسق عام مميز للتربية"), 80, sigY + 20, { width: 150, align: "center", features: ['rtla'] });
 
     // Right signature (Director)
-    doc.fontSize(11).fillColor("#333333").font("Helvetica-Bold");
-    doc.text("أ. علي سعدالله", pageWidth - 230, sigY, { width: 150, align: "center" });
-    doc.fontSize(10).fillColor("#666666").font("Helvetica");
-    doc.text("مدير الأكاديمية", pageWidth - 230, sigY + 20, { width: 150, align: "center" });
+    doc.fontSize(11).fillColor("#333333").font(arabicFont);
+    doc.text(processArabicText("أ. علي سعدالله"), pageWidth - 230, sigY, { width: 150, align: "center", features: ['rtla'] });
+    doc.fontSize(10).fillColor("#666666").font(arabicFont);
+    doc.text(processArabicText("مدير الأكاديمية"), pageWidth - 230, sigY + 20, { width: 150, align: "center", features: ['rtla'] });
 
     // Footer with batch number
     const batchText = data.batchNumber || `الدفعة رقم 107 من البرنامج التكويني لتأهيل المدرسين  ديسمبر ${new Date().getFullYear()}`;
-    doc.fontSize(9).fillColor("#666666").font("Helvetica");
-    doc.text(batchText, 0, 530, { align: "center", width: pageWidth });
+    doc.fontSize(9).fillColor("#666666").font(arabicFont);
+    doc.text(processArabicText(batchText), 0, 530, { align: "center", width: pageWidth, features: ['rtla'] });
 
     doc.end();
   });
