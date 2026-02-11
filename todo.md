@@ -78,3 +78,14 @@
 - [ ] Ajouter les notifications pour les demandes d'inscription
 - [x] Tester toutes les fonctionnalités
 - [x] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Système de notifications
+- [x] Créer le schéma de base de données pour les notifications
+- [x] Ajouter les routes tRPC pour gérer les notifications
+- [x] Envoyer notification au superviseur lors d'une nouvelle inscription
+- [x] Envoyer notification au participant lors de l'approbation
+- [x] Envoyer notification au participant lors du rejet
+- [x] Créer l'interface utilisateur pour afficher les notifications
+- [x] Ajouter un badge de compteur de notifications non lues
+- [x] Tester le système de notifications
+- [x] Créer le checkpoint final

@@ -189,3 +189,20 @@ export const videoProgress = mysqlTable("videoProgress", {
 
 export type VideoProgress = typeof videoProgress.$inferSelect;
 export type InsertVideoProgress = typeof videoProgress.$inferInsert;
+
+/**
+ * Notifications table - stores user notifications
+ */
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  titleAr: varchar("titleAr", { length: 255 }).notNull(),
+  messageAr: text("messageAr").notNull(),
+  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result"]).notNull(),
+  relatedId: int("relatedId"), // courseId, examId, etc.
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;

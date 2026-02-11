@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { BookOpen, GraduationCap, Users, Award, Loader2 } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import { Link } from "wouter";
 
 const courseIcons: Record<string, typeof BookOpen> = {
@@ -43,9 +44,10 @@ export default function Home() {
               <h1 className="text-3xl font-bold text-gray-900">منصة تأهيل المدرسين</h1>
               <p className="text-gray-600 mt-1">تطوير مهارات المعلمين وتقييم مكتسباتهم</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
               {user ? (
                 <>
+                  <NotificationBell />
                   {["admin", "trainer", "supervisor"].includes(user.role) && (
                     <Link href="/dashboard">
                       <Button variant="outline">لوحة التحكم</Button>

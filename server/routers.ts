@@ -89,7 +89,20 @@ export const appRouter = router({
     enroll: protectedProcedure
       .input(z.object({ courseId: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        return await db.enrollUserInCourse(ctx.user.id, input.courseId);
+        const result = await db.enrollUserInCourse(ctx.user.id, input.courseId);
+        
+        // Get course details for notification
+        const course = await db.getCourseById(input.courseId);
+        
+        // Notify all admins about new enrollment request
+        await db.notifyAllAdmins({
+          titleAr: "طلب تسجيل جديد",
+          messageAr: `طلب ${ctx.user.name || "مستخدم"} التسجيل في دورة "${course?.titleAr || "غير محدد"}"`,
+          type: "enrollment_request",
+          relatedId: input.courseId,
+        });
+        
+        return result;
       }),
     
     myEnrollments: protectedProcedure.query(async ({ ctx }) => {
@@ -480,14 +493,80 @@ export const appRouter = router({
     approve: adminProcedure
       .input(z.object({ enrollmentId: z.number() }))
       .mutation(async ({ input, ctx }) => {
+        // Get enrollment details
+        const enrollment = await db.getEnrollmentById(input.enrollmentId);
+        if (!enrollment) throw new TRPCError({ code: "NOT_FOUND", message: "Enrollment not found" });
+        
+        const course = await db.getCourseById(enrollment.courseId);
+        
+        // Approve enrollment
         await db.approveEnrollment(input.enrollmentId, ctx.user.id);
+        
+        // Notify participant
+        await db.createNotification({
+          userId: enrollment.userId,
+          titleAr: "تمت الموافقة على تسجيلك",
+          messageAr: `تمت الموافقة على طلب تسجيلك في دورة "${course?.titleAr || "غير محدد"}". يمكنك الآن البدء بمشاهدة الفيديوهات.`,
+          type: "enrollment_approved",
+          relatedId: enrollment.courseId,
+        });
+        
         return { success: true };
       }),
 
     reject: adminProcedure
       .input(z.object({ enrollmentId: z.number() }))
       .mutation(async ({ input, ctx }) => {
+        // Get enrollment details
+        const enrollment = await db.getEnrollmentById(input.enrollmentId);
+        if (!enrollment) throw new TRPCError({ code: "NOT_FOUND", message: "Enrollment not found" });
+        
+        const course = await db.getCourseById(enrollment.courseId);
+        
+        // Reject enrollment
         await db.rejectEnrollment(input.enrollmentId, ctx.user.id);
+        
+        // Notify participant
+        await db.createNotification({
+          userId: enrollment.userId,
+          titleAr: "تم رفض طلب التسجيل",
+          messageAr: `تم رفض طلب تسجيلك في دورة "${course?.titleAr || "غير محدد"}". يرجى التواصل مع المشرف للمزيد من المعلومات.`,
+          type: "enrollment_rejected",
+          relatedId: enrollment.courseId,
+        });
+        
+        return { success: true };
+      }),
+  }),
+
+  notifications: router({
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await db.getUserNotifications(ctx.user.id);
+      }),
+
+    unreadCount: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await db.getUnreadNotificationCount(ctx.user.id);
+      }),
+
+    markAsRead: protectedProcedure
+      .input(z.object({ notificationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.markNotificationAsRead(input.notificationId);
+        return { success: true };
+      }),
+
+    markAllAsRead: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        await db.markAllNotificationsAsRead(ctx.user.id);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ notificationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteNotification(input.notificationId);
         return { success: true };
       }),
   }),

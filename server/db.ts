@@ -10,7 +10,8 @@ import {
   answers, Answer, InsertAnswer,
   certificates, Certificate, InsertCertificate,
   videos, Video, InsertVideo,
-  videoProgress, VideoProgress, InsertVideoProgress
+  videoProgress, VideoProgress, InsertVideoProgress,
+  notifications, Notification, InsertNotification
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -541,4 +542,72 @@ export async function hasCompletedAllRequiredVideos(userId: number, courseId: nu
   const completedVideoIds = new Set(progress.filter(p => p.completed).map(p => p.videoId));
 
   return requiredVideos.every(v => completedVideoIds.has(v.id));
+}
+
+// ===== Notification Functions =====
+
+export async function createNotification(notification: InsertNotification): Promise<Notification> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(notifications).values(notification);
+  const insertedId = Number(result[0].insertId);
+  
+  const created = await db.select().from(notifications).where(eq(notifications.id, insertedId)).limit(1);
+  return created[0]!;
+}
+
+export async function getUserNotifications(userId: number): Promise<Notification[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+}
+
+export async function getUnreadNotificationCount(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+  
+  return Number(result[0]?.count || 0);
+}
+
+export async function markNotificationAsRead(notificationId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, notificationId));
+}
+
+export async function markAllNotificationsAsRead(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
+}
+
+export async function deleteNotification(notificationId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(notifications).where(eq(notifications.id, notificationId));
+}
+
+// Helper function to notify all admins
+export async function notifyAllAdmins(notification: Omit<InsertNotification, "userId">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const admins = await db.select().from(users).where(eq(users.role, "admin"));
+  
+  for (const admin of admins) {
+    await createNotification({
+      ...notification,
+      userId: admin.id,
+    });
+  }
 }
