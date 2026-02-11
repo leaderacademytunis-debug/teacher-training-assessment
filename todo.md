@@ -113,3 +113,8 @@
 - [x] Ajouter le numéro de promotion et les informations du programme
 - [x] Tester la génération des nouveaux certificats
 - [x] Créer le checkpoint final
+
+## Correction: Erreur de chargement des images S3 dans les certificats
+- [x] Télécharger les images S3 avant de les ajouter au PDF
+- [x] Tester la génération de certificats
+- [x] Créer le checkpoint final

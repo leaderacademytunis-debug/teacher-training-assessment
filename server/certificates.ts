@@ -1,6 +1,15 @@
 import PDFDocument from "pdfkit";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
+import axios from "axios";
+
+/**
+ * Download image from URL and return as Buffer
+ */
+async function downloadImage(url: string): Promise<Buffer> {
+  const response = await axios.get(url, { responseType: 'arraybuffer' });
+  return Buffer.from(response.data);
+}
 
 interface CertificateData {
   participantName: string;
@@ -136,10 +145,29 @@ function drawDecorativeBorder(doc: PDFKit.PDFDocument, pageWidth: number, pageHe
  * Generate a professional certificate PDF matching the provided design
  */
 export async function generateCertificatePDF(data: CertificateData): Promise<{ url: string; key: string }> {
+  const config = courseConfigs[data.courseType as keyof typeof courseConfigs] || courseConfigs.arabic_teachers;
+  const axes = data.courseAxes || config.defaultAxes;
+  
+  // Download images first
+  const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/aYRTvdXAkBzKfCAY.png";
+  const flagUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/lUjeCQtcebHcrJBL.png";
+  
+  let logoBuffer: Buffer | null = null;
+  let flagBuffer: Buffer | null = null;
+  
+  try {
+    logoBuffer = await downloadImage(logoUrl);
+  } catch (error) {
+    console.error("Failed to load logo:", error);
+  }
+  
+  try {
+    flagBuffer = await downloadImage(flagUrl);
+  } catch (error) {
+    console.error("Failed to load flag:", error);
+  }
+  
   return new Promise((resolve, reject) => {
-    const config = courseConfigs[data.courseType as keyof typeof courseConfigs] || courseConfigs.arabic_teachers;
-    const axes = data.courseAxes || config.defaultAxes;
-    
     const doc = new PDFDocument({
       size: "A4",
       layout: "landscape",
@@ -166,13 +194,15 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
     // Draw decorative border
     drawDecorativeBorder(doc, pageWidth, pageHeight);
 
-    // Add Leader Academy logo (left side) - using S3 URL
-    const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/aYRTvdXAkBzKfCAY.png";
-    doc.image(logoUrl, 50, 50, { width: 120 });
+    // Add Leader Academy logo (left side)
+    if (logoBuffer) {
+      doc.image(logoBuffer, 50, 50, { width: 120 });
+    }
 
-    // Add Tunisia flag and official info (right side) - using S3 URL
-    const flagUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/lUjeCQtcebHcrJBL.png";
-    doc.image(flagUrl, pageWidth - 120, 50, { width: 60 });
+    // Add Tunisia flag (right side)
+    if (flagBuffer) {
+      doc.image(flagBuffer, pageWidth - 120, 50, { width: 60 });
+    }
     
     doc.fontSize(9).fillColor("#333333").font("Helvetica");
     doc.text("الجمهورية التونسية", pageWidth - 150, 120, { width: 130, align: "center" });
