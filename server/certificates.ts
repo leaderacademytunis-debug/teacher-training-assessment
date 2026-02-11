@@ -1,14 +1,31 @@
 import PDFDocument from "pdfkit";
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
-import axios from "axios";
+import https from "node:https";
+import sharp from "sharp";
 
 /**
- * Download image from URL and return as Buffer
+ * Download image from URL and return as PNG Buffer
+ * Converts WebP and other formats to PNG for PDFKit compatibility
  */
 async function downloadImage(url: string): Promise<Buffer> {
-  const response = await axios.get(url, { responseType: 'arraybuffer' });
-  return Buffer.from(response.data);
+  return new Promise((resolve, reject) => {
+    https.get(url, (response) => {
+      const chunks: Buffer[] = [];
+      response.on('data', (chunk) => chunks.push(chunk));
+      response.on('end', async () => {
+        try {
+          const imageBuffer = Buffer.concat(chunks);
+          // Convert to PNG using sharp to ensure PDFKit compatibility
+          const pngBuffer = await sharp(imageBuffer).png().toBuffer();
+          resolve(pngBuffer);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      response.on('error', reject);
+    }).on('error', reject);
+  });
 }
 
 interface CertificateData {

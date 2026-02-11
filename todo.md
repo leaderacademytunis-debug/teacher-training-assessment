@@ -129,3 +129,9 @@
 - [x] Ajouter un lien vers la page de vérification dans le header
 - [x] Tester la fonctionnalité de vérification
 - [x] Créer le checkpoint final
+
+## Correction: Erreur de génération de certificats PDF
+- [x] Diagnostiquer l'erreur de téléchargement des images S3
+- [x] Corriger la fonction de téléchargement des images
+- [x] Tester la génération de certificats
+- [x] Créer le checkpoint final
