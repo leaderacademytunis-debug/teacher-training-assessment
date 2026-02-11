@@ -95,3 +95,11 @@
 - [x] Corriger le problème d'affichage
 - [x] Tester la lecture des vidéos
 - [x] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Designs personnalisés de certificats
+- [x] Créer un design unique pour chaque dورة (7 designs)
+- [x] Ajouter des couleurs et icônes spécifiques par formation
+- [x] Créer des cadres décoratifs différents pour chaque certificat
+- [x] Mettre à jour le module de génération de certificats
+- [x] Tester la génération des certificats personnalisés
+- [x] Créer le checkpoint final

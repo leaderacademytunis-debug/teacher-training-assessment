@@ -370,6 +370,7 @@ export const appRouter = router({
         const { url, key } = await generateCertificatePDF({
           participantName: ctx.user.name || "المشارك",
           courseName: course.titleAr,
+          courseType: course.category,
           completionDate: attempt.submittedAt || new Date(),
           score: attempt.score || 0,
           certificateNumber,
