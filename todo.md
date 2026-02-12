@@ -193,3 +193,8 @@
 - [x] Augmenter la taille du logo dans le code
 - [x] Tester la génération de certificats avec le logo agrandi
 - [ ] Créer le checkpoint final
+
+## Centrage horizontal du logo Leader Academy
+- [x] Modifier le positionnement horizontal du logo pour le centrer
+- [x] Tester la génération de certificats avec le logo centré
+- [ ] Créer le checkpoint final
