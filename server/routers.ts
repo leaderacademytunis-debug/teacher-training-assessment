@@ -368,7 +368,7 @@ export const appRouter = router({
 
         // Generate PDF
         const { url, key } = await generateCertificatePDF({
-          participantName: ctx.user.name || "المشارك",
+          participantName: ctx.user.arabicName || ctx.user.name || "المشارك",
           courseName: course.titleAr,
           courseType: course.category,
           completionDate: attempt.submittedAt || new Date(),
@@ -500,7 +500,7 @@ export const appRouter = router({
 
         // Generate PDF
         const { url, key } = await generateCertificatePDF({
-          participantName: ctx.user.name || "المشارك",
+          participantName: ctx.user.arabicName || ctx.user.name || "المشارك",
           courseName: cumulativeCourse.titleAr,
           courseType: cumulativeCourse.category,
           completionDate: new Date(),

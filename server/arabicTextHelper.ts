@@ -6,20 +6,26 @@ const bidi = bidiFactory();
 /**
  * Process Arabic text for proper display in PDF
  * 1. Reshape Arabic characters to their correct forms (isolated, initial, medial, final)
- * 2. Apply bidirectional algorithm to reverse RTL text
+ * 2. Apply bidirectional algorithm for proper RTL ordering
  */
 export function processArabicText(text: string): string {
+  if (!text || text.trim() === '') {
+    return text;
+  }
+  
   try {
-    // arabic-reshaper exports an object with convertArabic method
+    // Step 1: Reshape Arabic characters to connect them properly
     const reshaper = ArabicReshaper as any;
     const reshaped = reshaper.convertArabic ? reshaper.convertArabic(text) : text;
     
-    // Then apply bidirectional algorithm using getReorderedString
-    const processed = bidi.getReorderedString(reshaped);
+    // Step 2: Apply bidirectional algorithm for RTL
+    // bidi.getReorderedString() handles the text reordering for RTL display
+    const reordered = bidi.getReorderedString(reshaped);
     
-    return processed;
+    return reordered;
   } catch (error) {
     console.error('Error processing Arabic text:', error);
+    // Return original text if processing fails
     return text;
   }
 }

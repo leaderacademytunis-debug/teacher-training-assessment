@@ -47,10 +47,12 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   // Download resources
   const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/aYRTvdXAkBzKfCAY.png";
   const flagUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/lUjeCQtcebHcrJBL.png";
+  const stampUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/yesfhvsAgtOtGlnA.png";
   
-  const [logoBytes, flagBytes, fontBytes] = await Promise.all([
+  const [logoBytes, flagBytes, stampBytes, fontBytes] = await Promise.all([
     downloadResource(logoUrl).catch(() => null),
     downloadResource(flagUrl).catch(() => null),
+    downloadResource(stampUrl).catch(() => null),
     downloadResource(ARABIC_FONT_URL).catch(() => null),
   ]);
 
@@ -116,19 +118,7 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
     }
   }
   
-  if (flagBytes) {
-    try {
-      const flagImage = await pdfDoc.embedPng(flagBytes);
-      page.drawImage(flagImage, {
-        x: width - 120,
-        y: height - 140,
-        width: 60,
-        height: 60 * (flagImage.height / flagImage.width),
-      });
-    } catch (error) {
-      console.error("Failed to embed flag:", error);
-    }
-  }
+  // Flag removed per user request
   
   // Draw text content based on language
   const black = rgb(0, 0, 0);
@@ -137,26 +127,13 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   
   if (content.language === 'ar') {
     // Arabic certificate layout
-    await drawArabicCertificate(page, mainFont, content, data, width, height, gray, lightGray, black);
+    await drawArabicCertificate(page, mainFont, content, data, width, height, gray, lightGray, black, pdfDoc, stampBytes);
   } else if (content.language === 'fr') {
     // French certificate layout
     await drawFrenchCertificate(page, fallbackFont, content, data, width, height, gray, lightGray, black);
   }
   
-  // Add second page with additional info
-  const page2 = pdfDoc.addPage([842, 595]);
-  const footerText = content.language === 'ar' 
-    ? processArabicText(`الدفعة رقم 701 من البرنامج الوطني لتأهيل المدرسين، ديسمبر 2026`)
-    : `Promotion 701 du Programme National de Qualification des Enseignants, Décembre 2026`;
-  
-  const footerWidth = mainFont.widthOfTextAtSize(footerText, 10);
-  page2.drawText(footerText, {
-    x: (page2.getWidth() - footerWidth) / 2,
-    y: page2.getHeight() - 100,
-    size: 10,
-    font: mainFont,
-    color: gray,
-  });
+  // Second page removed per user request
   
   // Save PDF
   const pdfBytes = await pdfDoc.save();
@@ -182,7 +159,9 @@ async function drawArabicCertificate(
   height: number,
   gray: any,
   lightGray: any,
-  black: any
+  black: any,
+  pdfDoc: any,
+  stampBytes: Buffer | null
 ) {
   // Right header - Government info
   const headerText1 = processArabicText("الجمهورية التونسية");
@@ -225,64 +204,65 @@ async function drawArabicCertificate(
     color: lightGray,
   });
   
-  // Main title
+  // Main title (increased size)
   const titleText = processArabicText(content.title);
-  const titleWidth = font.widthOfTextAtSize(titleText, 48);
+  const titleWidth = font.widthOfTextAtSize(titleText, 56);
   page.drawText(titleText, {
     x: (width - titleWidth) / 2,
     y: height - 115,
-    size: 48,
+    size: 56,
     font: font,
     color: black,
   });
   
-  // Subtitle
+  // Subtitle (increased size)
   const subtitleText = processArabicText(content.subtitle);
-  const subtitleWidth = font.widthOfTextAtSize(subtitleText, 12);
+  const subtitleWidth = font.widthOfTextAtSize(subtitleText, 14);
   page.drawText(subtitleText, {
     x: (width - subtitleWidth) / 2,
-    y: height - 175,
-    size: 12,
+    y: height - 180,
+    size: 14,
     font: font,
     color: gray,
   });
   
-  // Participant name (in English, no processing needed)
-  const nameWidth = font.widthOfTextAtSize(data.participantName, 24);
-  page.drawText(data.participantName, {
+  // Participant name (in Arabic, increased size)
+  const participantNameAr = processArabicText(data.participantName);
+  const nameWidth = font.widthOfTextAtSize(participantNameAr, 28);
+  page.drawText(participantNameAr, {
     x: (width - nameWidth) / 2,
-    y: height - 215,
-    size: 24,
+    y: height - 220,
+    size: 28,
     font: font,
     color: black,
   });
   
-  // Main text
+  // Main text (increased size)
   const mainText = processArabicText(content.mainText);
-  const mainTextWidth = font.widthOfTextAtSize(mainText, 11);
+  const mainTextWidth = font.widthOfTextAtSize(mainText, 13);
   page.drawText(mainText, {
     x: (width - mainTextWidth) / 2,
-    y: height - 255,
-    size: 11,
+    y: height - 265,
+    size: 13,
     font: font,
     color: gray,
   });
   
   // Underline
   page.drawLine({
-    start: { x: 210, y: height - 265 },
-    end: { x: width - 210, y: height - 265 },
+    start: { x: 210, y: height - 280 },
+    end: { x: width - 210, y: height - 280 },
     thickness: 1.5,
     color: black,
   });
   
-  // Axes header
+  // Axes header (increased size)
   const axesHeaderText = processArabicText("التي تناولت المحاور التالية :");
-  const axesHeaderWidth = font.widthOfTextAtSize(axesHeaderText, 10);
+  const axesHeaderWidth = font.widthOfTextAtSize(axesHeaderText, 12);
   page.drawText(axesHeaderText, {
-    x: width - 100 - axesHeaderWidth,
+    x: width - 150 - axesHeaderWidth,
     y: height - 295,
-    size: 10,
+    size: 12,
     font: font,
     color: gray,
   });
@@ -315,11 +295,11 @@ async function drawArabicCertificate(
       // Draw wrapped lines
       for (const line of lines) {
         const lineText = processArabicText(`• ${line}`);
-        const lineWidth = font.widthOfTextAtSize(lineText, 9);
+        const lineWidth = font.widthOfTextAtSize(lineText, 11);
         page.drawText(lineText, {
-          x: width - 100 - lineWidth,
+          x: width - 150 - lineWidth,
           y: yPosition,
-          size: 9,
+          size: 11,
           font: font,
           color: gray,
         });
@@ -327,9 +307,9 @@ async function drawArabicCertificate(
       }
     } else {
       page.drawText(axisText, {
-        x: width - 100 - axisWidth,
+        x: width - 150 - axisWidth,
         y: yPosition,
-        size: 9,
+        size: 11,
         font: font,
         color: gray,
       });
@@ -337,46 +317,46 @@ async function drawArabicCertificate(
     }
   }
   
-  // Signatures section
+  // Signatures section (increased size and adjusted position)
   const sig1Text = processArabicText("أ. علي سعدالله");
-  const sig1Width = font.widthOfTextAtSize(sig1Text, 11);
+  const sig1Width = font.widthOfTextAtSize(sig1Text, 13);
   page.drawText(sig1Text, {
     x: width - 150 - sig1Width,
-    y: 110,
-    size: 11,
+    y: 130,
+    size: 13,
     font: font,
     color: black,
   });
   
   const sig1SubText = processArabicText("مدير الأكاديمية");
-  const sig1SubWidth = font.widthOfTextAtSize(sig1SubText, 9);
+  const sig1SubWidth = font.widthOfTextAtSize(sig1SubText, 11);
   page.drawText(sig1SubText, {
     x: width - 150 - sig1SubWidth,
-    y: 95,
-    size: 9,
-    font: font,
-    color: gray,
-  });
-  
-  const sig2Text = processArabicText("أ. سامي الحاج");
-  const sig2Width = font.widthOfTextAtSize(sig2Text, 11);
-  page.drawText(sig2Text, {
-    x: 150 - sig2Width / 2,
-    y: 110,
+    y: 113,
     size: 11,
     font: font,
-    color: black,
-  });
-  
-  const sig2SubText = processArabicText("منسق عام، مصر للتربية");
-  const sig2SubWidth = font.widthOfTextAtSize(sig2SubText, 9);
-  page.drawText(sig2SubText, {
-    x: 150 - sig2SubWidth / 2,
-    y: 95,
-    size: 9,
-    font: font,
     color: gray,
   });
+  
+  // Add stamp and signature below director's name (centered)
+  if (stampBytes) {
+    try {
+      const stampImage = await pdfDoc.embedPng(stampBytes);
+      const stampSize = 90;
+      // Center the stamp under the director's signature
+      const sigCenterX = width - 150 - sig1Width / 2;
+      page.drawImage(stampImage, {
+        x: sigCenterX - stampSize / 2,
+        y: 30,
+        width: stampSize,
+        height: stampSize * (stampImage.height / stampImage.width),
+      });
+    } catch (error) {
+      console.error("Failed to embed stamp:", error);
+    }
+  }
+  
+  // Second signature removed per user request
 }
 
 /**

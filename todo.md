@@ -169,3 +169,16 @@
 - [x] Corriger l'utilisation de bidi-js (getReorderedString au lieu de applyBidi)
 - [x] Tester la génération de certificats pour toutes les formations
 - [x] Créer le checkpoint final
+
+## Modification du design des certificats
+- [x] Supprimer la deuxième signature (أ. سامي الجازي)
+- [x] Supprimer le drapeau tunisien
+- [x] Supprimer la ligne horizontale dans la deuxième page
+- [x] Ajouter le cachet et la signature du directeur
+- [ ] Changer le nom du participant en arabe uniquement (ajouter champ arabicName)
+- [ ] Repositionner le cachet au centre sous le nom du directeur
+- [ ] Corriger le chevauchement entre le nom du directeur et le cachet
+- [ ] Supprimer complètement la page 2 (ne pas créer de deuxième page)
+- [ ] Augmenter la taille des textes arabes
+- [ ] Tester les modifications
+- [ ] Créer le checkpoint final
