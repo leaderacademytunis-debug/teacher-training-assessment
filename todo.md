@@ -198,3 +198,8 @@
 - [x] Modifier le positionnement horizontal du logo pour le centrer
 - [x] Tester la génération de certificats avec le logo centré
 - [ ] Créer le checkpoint final
+
+## Restauration de la position du logo à gauche
+- [x] Remettre le logo à sa position originale (x: 50)
+- [x] Tester la génération de certificats avec le logo repositionné
+- [ ] Créer le checkpoint final

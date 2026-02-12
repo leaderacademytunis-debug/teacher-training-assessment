@@ -110,7 +110,7 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
       const logoWidth = 200;
       const logoHeight = logoWidth * (logoImage.height / logoImage.width);
       page.drawImage(logoImage, {
-        x: (width - logoWidth) / 2, // Center horizontally
+        x: 50, // Position on the left
         y: height - 220,
         width: logoWidth,
         height: logoHeight,
