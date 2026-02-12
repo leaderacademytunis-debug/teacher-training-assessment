@@ -5,7 +5,7 @@ describe("Certificate Generation", () => {
   it("should generate a certificate PDF successfully", async () => {
     const certificateData = {
       participantName: "محمد الأمين",
-      courseName: "تأهيل مدرسي العربية",
+      courseName: "تأهيل مدرّسي العربية",
       courseType: "arabic_teachers",
       completionDate: new Date("2024-12-15"),
       score: 85,

@@ -1,0 +1,1 @@
+ALTER TABLE `certificates` MODIFY COLUMN `examAttemptId` int;

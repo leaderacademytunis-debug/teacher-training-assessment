@@ -142,3 +142,23 @@
 - [x] Implémenter le support RTL pour le texte arabe
 - [x] Tester l'affichage du texte arabe dans les certificats
 - [x] Créer le checkpoint final
+
+## Correction: Erreurs d'espacement et de formatage du texte arabe dans les certificats
+- [x] Analyser les problèmes d'espacement et de taille de police
+- [x] Ajuster les tailles de police pour éviter le chevauchement
+- [x] Corriger l'espacement vertical entre les lignes
+- [x] Améliorer le positionnement des éléments textuels
+- [x] Tester la génération de certificats avec différents noms et titres
+- [x] Implémenter arabic-reshaper + bidi-js pour traitement correct du texte arabe
+- [x] Migrer de PDFKit vers pdf-lib pour meilleur support de l'arabe
+- [x] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Système de certificats personnalisés par formation
+- [x] Créer un fichier de configuration avec le contenu personnalisé de chaque certificat
+- [x] Mettre à jour le module de génération de certificats pour utiliser le contenu personnalisé
+- [x] Ajouter le support de la langue française pour les certificats
+- [x] Implémenter la logique du certificat cumulatif (délivré après complétion de toutes les formations)
+- [x] Créer une route tRPC pour générer le certificat cumulatif
+- [x] Modifier le schéma de la base de données pour supporter les certificats cumulatifs
+- [x] Tester tous les types de certificats
+- [x] Créer le checkpoint final

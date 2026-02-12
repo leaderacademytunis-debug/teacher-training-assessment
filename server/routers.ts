@@ -419,6 +419,141 @@ export const appRouter = router({
         }
         return certificate;
       }),
+
+    // Generate cumulative certificate (after completing all 5 base courses)
+    generateCumulative: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        // Check if cumulative certificate already exists
+        const existing = await db.getCertificatesByUserId(ctx.user.id);
+        const cumulativeCert = existing.find(cert => {
+          const course = cert.course;
+          return course && course.titleAr === 'تأهيل أصحاب الشهادات العليا';
+        });
+        
+        if (cumulativeCert) {
+          return cumulativeCert;
+        }
+
+        // Get all user's certificates
+        const userCertificates = await db.getCertificatesByUserId(ctx.user.id);
+        
+        // Required courses for cumulative certificate
+        const requiredCourses = [
+          'تأهيل مدرّسي العربية',
+          'تأهيل مدرّسي العلوم',
+          'تأهيل مدرّسي الفرنسية',
+          'تأهيل مرافقي التلاميذ ذوي الصعوبات',
+          'تأهيل منشطي التحضيري'
+        ];
+        
+        // Check if user has completed all required courses
+        const completedCourses = new Set(
+          userCertificates.map(cert => cert.course?.titleAr).filter(Boolean)
+        );
+        
+        const hasAllCourses = requiredCourses.every(course => completedCourses.has(course));
+        
+        if (!hasAllCourses) {
+          const missing = requiredCourses.filter(course => !completedCourses.has(course));
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `يجب إكمال جميع الدورات الخمس للحصول على الشهادة التجميعية. الدورات الناقصة: ${missing.join(', ')}`
+          });
+        }
+
+        // Find or create the cumulative course
+        const allCourses = await db.getAllCourses();
+        let cumulativeCourse = allCourses.find(c => c.titleAr === 'تأهيل أصحاب الشهادات العليا');
+        
+        if (!cumulativeCourse) {
+          // Create cumulative course if it doesn't exist
+          await db.createCourse({
+            titleAr: 'تأهيل أصحاب الشهادات العليا',
+            descriptionAr: 'شهادة تجميعية تُمنح بعد إتمام جميع الدورات الخمس الأساسية',
+            category: 'primary_teachers',
+            duration: 150,
+            createdBy: 1, // System
+          });
+          
+          // Fetch the newly created course
+          const allCoursesUpdated = await db.getAllCourses();
+          cumulativeCourse = allCoursesUpdated.find(c => c.titleAr === 'تأهيل أصحاب الشهادات العليا');
+        }
+        
+        if (!cumulativeCourse) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create or find cumulative course"
+          });
+        }
+
+        // Generate certificate number
+        const certificateNumber = `CERT-CUMUL-${Date.now()}-${nanoid(8).toUpperCase()}`;
+
+        // Calculate average score from all certificates
+        const avgScore = Math.round(
+          userCertificates.reduce((sum, cert) => {
+            const attempt = cert.examAttempt;
+            return sum + (attempt?.score || 0);
+          }, 0) / userCertificates.length
+        );
+
+        // Generate PDF
+        const { url, key } = await generateCertificatePDF({
+          participantName: ctx.user.name || "المشارك",
+          courseName: cumulativeCourse.titleAr,
+          courseType: cumulativeCourse.category,
+          completionDate: new Date(),
+          score: avgScore,
+          certificateNumber,
+        });
+
+        // Save certificate record (without examAttemptId since it's cumulative)
+        const certificate = await db.createCertificate({
+          userId: ctx.user.id,
+          courseId: cumulativeCourse.id,
+          examAttemptId: null, // No specific exam attempt for cumulative cert
+          certificateNumber,
+          pdfUrl: url,
+        });
+
+        return certificate;
+      }),
+
+    // Check if user is eligible for cumulative certificate
+    checkCumulativeEligibility: protectedProcedure
+      .query(async ({ ctx }) => {
+        const userCertificates = await db.getCertificatesByUserId(ctx.user.id);
+        
+        const requiredCourses = [
+          'تأهيل مدرّسي العربية',
+          'تأهيل مدرّسي العلوم',
+          'تأهيل مدرّسي الفرنسية',
+          'تأهيل مرافقي التلاميذ ذوي الصعوبات',
+          'تأهيل منشطي التحضيري'
+        ];
+        
+        const completedCourses = new Set(
+          userCertificates.map(cert => cert.course?.titleAr).filter(Boolean)
+        );
+        
+        const hasAllCourses = requiredCourses.every(course => completedCourses.has(course));
+        const missingCourses = requiredCourses.filter(course => !completedCourses.has(course));
+        
+        // Check if already has cumulative certificate
+        const hasCumulative = userCertificates.some(cert => 
+          cert.course?.titleAr === 'تأهيل أصحاب الشهادات العليا'
+        );
+        
+        return {
+          eligible: hasAllCourses && !hasCumulative,
+          hasAllCourses,
+          hasCumulative,
+          missingCourses,
+          completedCount: completedCourses.size,
+          requiredCount: requiredCourses.length
+        };
+      }),
   }),
 
   videos: router({

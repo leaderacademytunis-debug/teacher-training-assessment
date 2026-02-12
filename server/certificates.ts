@@ -1,31 +1,22 @@
-import PDFDocument from "pdfkit";
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { storagePut } from "./storage";
 import { nanoid } from "nanoid";
 import https from "node:https";
-import sharp from "sharp";
-import { WordShaper } from "alif-toolkit";
+import { processArabicText, wrapArabicText } from './arabicTextHelper';
+import { getCertificateContent, type CertificateContent } from './certificateContent';
 
 const ARABIC_FONT_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/tVoWPiuIjSLTpZzt.ttf";
 
 /**
- * Download image from URL and return as PNG Buffer
- * Converts WebP and other formats to PNG for PDFKit compatibility
+ * Download resource from URL
  */
-async function downloadImage(url: string): Promise<Buffer> {
+async function downloadResource(url: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     https.get(url, (response) => {
       const chunks: Buffer[] = [];
       response.on('data', (chunk) => chunks.push(chunk));
-      response.on('end', async () => {
-        try {
-          const imageBuffer = Buffer.concat(chunks);
-          // Convert to PNG using sharp to ensure PDFKit compatibility
-          const pngBuffer = await sharp(imageBuffer).png().toBuffer();
-          resolve(pngBuffer);
-        } catch (error) {
-          reject(error);
-        }
-      });
+      response.on('end', () => resolve(Buffer.concat(chunks)));
       response.on('error', reject);
     }).on('error', reject);
   });
@@ -42,277 +33,526 @@ interface CertificateData {
   certificateNumber: string;
 }
 
-// Course-specific configurations
-const courseConfigs = {
-  primary_teachers: {
-    title: "تأهيل مدرسي الاختصاص في تدريس العربية",
-    defaultAxes: [
-      "تعليمية العربية : المفاهيم الأساسية",
-      "جذاذات التنشيط : القراءة ، التواصل الشفوي ، الإنتاج الكتابي ، قواعد اللغة ، المحفوظات",
-      "التقييم و بناء الاختبارات"
-    ]
-  },
-  arabic_teachers: {
-    title: "تأهيل مدرسي الاختصاص في تدريس العربية",
-    defaultAxes: [
-      "تعليمية العربية : المفاهيم الأساسية",
-      "جذاذات التنشيط : القراءة ، التواصل الشفوي ، الإنتاج الكتابي ، قواعد اللغة ، المحفوظات",
-      "التقييم و بناء الاختبارات"
-    ]
-  },
-  science_teachers: {
-    title: "تأهيل مدرسي الاختصاص في تدريس العلوم",
-    defaultAxes: [
-      "تعليمية العلوم : المفاهيم الأساسية",
-      "التجارب العملية والأساليب التفاعلية",
-      "التقييم و بناء الاختبارات"
-    ]
-  },
-  french_teachers: {
-    title: "تأهيل مدرسي الاختصاص في تدريس الفرنسية",
-    defaultAxes: [
-      "تعليمية الفرنسية : المفاهيم الأساسية",
-      "جذاذات التنشيط والأنشطة التفاعلية",
-      "التقييم و بناء الاختبارات"
-    ]
-  },
-  preschool_facilitators: {
-    title: "تأهيل منشّطي التحضيري",
-    defaultAxes: [
-      "التربية في مرحلة الطفولة المبكرة",
-      "الأنشطة التربوية والترفيهية",
-      "التقييم والمتابعة"
-    ]
-  },
-  special_needs_companions: {
-    title: "تأهيل مرافقي التلاميذ ذوي الصعوبات",
-    defaultAxes: [
-      "فهم الاحتياجات الخاصة",
-      "استراتيجيات الدعم والمرافقة",
-      "التقييم والتكيف"
-    ]
-  },
-  digital_teacher_ai: {
-    title: "المعلم الرقمي والذكاء الاصطناعي",
-    defaultAxes: [
-      "أساسيات الذكاء الاصطناعي في التعليم",
-      "أدوات وتطبيقات الذكاء الاصطناعي",
-      "التقييم والتطوير المهني"
-    ]
-  },
-};
-
 /**
- * Draw decorative Islamic/traditional border
+ * Generate a professional certificate PDF using pdf-lib with proper Arabic/French support
  */
-function drawDecorativeBorder(doc: PDFKit.PDFDocument, pageWidth: number, pageHeight: number) {
+export async function generateCertificatePDF(data: CertificateData): Promise<{ url: string; key: string }> {
+  // Get custom certificate content based on course name
+  const content = getCertificateContent(data.courseName);
+  
+  if (!content) {
+    throw new Error(`No certificate content found for course: ${data.courseName}`);
+  }
+
+  // Download resources
+  const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/aYRTvdXAkBzKfCAY.png";
+  const flagUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/lUjeCQtcebHcrJBL.png";
+  
+  const [logoBytes, flagBytes, fontBytes] = await Promise.all([
+    downloadResource(logoUrl).catch(() => null),
+    downloadResource(flagUrl).catch(() => null),
+    downloadResource(ARABIC_FONT_URL).catch(() => null),
+  ]);
+
+  // Create PDF document
+  const pdfDoc = await PDFDocument.create();
+  
+  // Register fontkit for custom fonts
+  pdfDoc.registerFontkit(fontkit);
+  
+  // Embed fonts
+  let customFont;
+  let fallbackFont;
+  
+  if (fontBytes) {
+    customFont = await pdfDoc.embedFont(fontBytes);
+  }
+  
+  fallbackFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  // Use custom font if available, otherwise fallback
+  const mainFont = customFont || fallbackFont;
+  
+  // Create A4 landscape page
+  const page = pdfDoc.addPage([842, 595]);
+  const { width, height } = page.getSize();
+  
+  // Draw decorative borders
   const margin = 15;
   const innerMargin = 30;
   
   // Outer border
-  doc.strokeColor("#333333").lineWidth(3);
-  doc.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin).stroke();
-  
-  // Inner decorative border
-  doc.strokeColor("#666666").lineWidth(1.5);
-  doc.rect(innerMargin, innerMargin, pageWidth - 2 * innerMargin, pageHeight - 2 * innerMargin).stroke();
-  
-  // Draw corner decorations (simplified Islamic pattern)
-  const cornerSize = 40;
-  const corners = [
-    { x: innerMargin, y: innerMargin }, // top-left
-    { x: pageWidth - innerMargin, y: innerMargin }, // top-right
-    { x: innerMargin, y: pageHeight - innerMargin }, // bottom-left
-    { x: pageWidth - innerMargin, y: pageHeight - innerMargin }, // bottom-right
-  ];
-  
-  doc.strokeColor("#444444").lineWidth(1);
-  corners.forEach((corner, idx) => {
-    const isLeft = idx % 2 === 0;
-    const isTop = idx < 2;
-    const xDir = isLeft ? 1 : -1;
-    const yDir = isTop ? 1 : -1;
-    
-    // Draw corner pattern
-    for (let i = 0; i < 3; i++) {
-      const offset = i * 8;
-      doc.moveTo(corner.x, corner.y + yDir * offset)
-        .lineTo(corner.x + xDir * offset, corner.y)
-        .stroke();
-    }
+  page.drawRectangle({
+    x: margin,
+    y: margin,
+    width: width - 2 * margin,
+    height: height - 2 * margin,
+    borderColor: rgb(0.2, 0.2, 0.2),
+    borderWidth: 3,
   });
   
-  // Draw decorative arcs at top and bottom
-  const arcY = innerMargin - 5;
-  const arcSpacing = 60;
-  doc.strokeColor("#888888").lineWidth(1);
+  // Inner border
+  page.drawRectangle({
+    x: innerMargin,
+    y: innerMargin,
+    width: width - 2 * innerMargin,
+    height: height - 2 * innerMargin,
+    borderColor: rgb(0.4, 0.4, 0.4),
+    borderWidth: 1.5,
+  });
   
-  for (let x = innerMargin + arcSpacing; x < pageWidth - innerMargin; x += arcSpacing) {
-    // Top arcs
-    doc.moveTo(x - 30, arcY)
-      .bezierCurveTo(x - 15, arcY - 15, x + 15, arcY - 15, x + 30, arcY)
-      .stroke();
-    
-    // Bottom arcs
-    const bottomY = pageHeight - innerMargin + 5;
-    doc.moveTo(x - 30, bottomY)
-      .bezierCurveTo(x - 15, bottomY + 15, x + 15, bottomY + 15, x + 30, bottomY)
-      .stroke();
+  // Embed and draw images
+  if (logoBytes) {
+    try {
+      const logoImage = await pdfDoc.embedPng(logoBytes);
+      page.drawImage(logoImage, {
+        x: 50,
+        y: height - 170,
+        width: 120,
+        height: 120 * (logoImage.height / logoImage.width),
+      });
+    } catch (error) {
+      console.error("Failed to embed logo:", error);
+    }
   }
+  
+  if (flagBytes) {
+    try {
+      const flagImage = await pdfDoc.embedPng(flagBytes);
+      page.drawImage(flagImage, {
+        x: width - 120,
+        y: height - 140,
+        width: 60,
+        height: 60 * (flagImage.height / flagImage.width),
+      });
+    } catch (error) {
+      console.error("Failed to embed flag:", error);
+    }
+  }
+  
+  // Draw text content based on language
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.33, 0.33, 0.33);
+  const lightGray = rgb(0.4, 0.4, 0.4);
+  
+  if (content.language === 'ar') {
+    // Arabic certificate layout
+    await drawArabicCertificate(page, mainFont, content, data, width, height, gray, lightGray, black);
+  } else if (content.language === 'fr') {
+    // French certificate layout
+    await drawFrenchCertificate(page, fallbackFont, content, data, width, height, gray, lightGray, black);
+  }
+  
+  // Add second page with additional info
+  const page2 = pdfDoc.addPage([842, 595]);
+  const footerText = content.language === 'ar' 
+    ? processArabicText(`الدفعة رقم 701 من البرنامج الوطني لتأهيل المدرسين، ديسمبر 2026`)
+    : `Promotion 701 du Programme National de Qualification des Enseignants, Décembre 2026`;
+  
+  const footerWidth = mainFont.widthOfTextAtSize(footerText, 10);
+  page2.drawText(footerText, {
+    x: (page2.getWidth() - footerWidth) / 2,
+    y: page2.getHeight() - 100,
+    size: 10,
+    font: mainFont,
+    color: gray,
+  });
+  
+  // Save PDF
+  const pdfBytes = await pdfDoc.save();
+  
+  // Upload to S3
+  const fileName = `${nanoid()}-${data.certificateNumber}.pdf`;
+  const fileKey = `certificates/${fileName}`;
+  
+  const { url } = await storagePut(fileKey, pdfBytes, 'application/pdf');
+  
+  return { url, key: fileKey };
 }
 
 /**
- * Generate a professional certificate PDF matching the provided design
+ * Draw Arabic certificate content
  */
-export async function generateCertificatePDF(data: CertificateData): Promise<{ url: string; key: string }> {
-  const config = courseConfigs[data.courseType as keyof typeof courseConfigs] || courseConfigs.arabic_teachers;
-  const axes = data.courseAxes || config.defaultAxes;
+async function drawArabicCertificate(
+  page: any,
+  font: any,
+  content: CertificateContent,
+  data: CertificateData,
+  width: number,
+  height: number,
+  gray: any,
+  lightGray: any,
+  black: any
+) {
+  // Right header - Government info
+  const headerText1 = processArabicText("الجمهورية التونسية");
+  const headerWidth1 = font.widthOfTextAtSize(headerText1, 8);
+  page.drawText(headerText1, {
+    x: width - 70 - headerWidth1,
+    y: height - 120,
+    size: 8,
+    font: font,
+    color: gray,
+  });
   
-  // Helper function to process Arabic text for RTL display
-  const processArabicText = (text: string): string => {
-    return WordShaper(text);
-  };
-
-  // Download images and font first
-  const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/aYRTvdXAkBzKfCAY.png";
-  const flagUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/lUjeCQtcebHcrJBL.png";
+  const headerText2 = processArabicText("وزارة التشغيل والتكوين المهني");
+  const headerWidth2 = font.widthOfTextAtSize(headerText2, 8);
+  page.drawText(headerText2, {
+    x: width - 70 - headerWidth2,
+    y: height - 133,
+    size: 8,
+    font: font,
+    color: gray,
+  });
   
-  let logoBuffer: Buffer | null = null;
-  let flagBuffer: Buffer | null = null;
-  let arabicFontBuffer: Buffer | null = null;
+  const headerText3 = processArabicText("ليدر أكاديمي");
+  const headerWidth3 = font.widthOfTextAtSize(headerText3, 8);
+  page.drawText(headerText3, {
+    x: width - 70 - headerWidth3,
+    y: height - 146,
+    size: 8,
+    font: font,
+    color: gray,
+  });
   
-  try {
-    logoBuffer = await downloadImage(logoUrl);
-  } catch (error) {
-    console.error("Failed to load logo:", error);
-  }
+  const headerText4 = processArabicText("تسجيل عدد 61-903-16");
+  const headerWidth4 = font.widthOfTextAtSize(headerText4, 7);
+  page.drawText(headerText4, {
+    x: width - 70 - headerWidth4,
+    y: height - 159,
+    size: 7,
+    font: font,
+    color: lightGray,
+  });
   
-  try {
-    flagBuffer = await downloadImage(flagUrl);
-  } catch (error) {
-    console.error("Failed to load flag:", error);
-  }
+  // Main title
+  const titleText = processArabicText(content.title);
+  const titleWidth = font.widthOfTextAtSize(titleText, 48);
+  page.drawText(titleText, {
+    x: (width - titleWidth) / 2,
+    y: height - 115,
+    size: 48,
+    font: font,
+    color: black,
+  });
   
-  try {
-    arabicFontBuffer = await new Promise<Buffer>((resolve, reject) => {
-      https.get(ARABIC_FONT_URL, (response) => {
-        const chunks: Buffer[] = [];
-        response.on('data', (chunk) => chunks.push(chunk));
-        response.on('end', () => resolve(Buffer.concat(chunks)));
-        response.on('error', reject);
-      }).on('error', reject);
-    });
-  } catch (error) {
-    console.error("Failed to load Arabic font:", error);
-  }
+  // Subtitle
+  const subtitleText = processArabicText(content.subtitle);
+  const subtitleWidth = font.widthOfTextAtSize(subtitleText, 12);
+  page.drawText(subtitleText, {
+    x: (width - subtitleWidth) / 2,
+    y: height - 175,
+    size: 12,
+    font: font,
+    color: gray,
+  });
   
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({
-      size: "A4",
-      layout: "landscape",
-      margins: { top: 50, bottom: 50, left: 50, right: 50 },
-    });
-
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk) => chunks.push(chunk));
-    doc.on("end", async () => {
-      try {
-        const pdfBuffer = Buffer.concat(chunks);
-        const fileKey = `certificates/${nanoid()}-${data.certificateNumber}.pdf`;
-        const result = await storagePut(fileKey, pdfBuffer, "application/pdf");
-        resolve(result);
-      } catch (error) {
-        reject(error);
+  // Participant name (in English, no processing needed)
+  const nameWidth = font.widthOfTextAtSize(data.participantName, 24);
+  page.drawText(data.participantName, {
+    x: (width - nameWidth) / 2,
+    y: height - 215,
+    size: 24,
+    font: font,
+    color: black,
+  });
+  
+  // Main text
+  const mainText = processArabicText(content.mainText);
+  const mainTextWidth = font.widthOfTextAtSize(mainText, 11);
+  page.drawText(mainText, {
+    x: (width - mainTextWidth) / 2,
+    y: height - 255,
+    size: 11,
+    font: font,
+    color: gray,
+  });
+  
+  // Underline
+  page.drawLine({
+    start: { x: 210, y: height - 265 },
+    end: { x: width - 210, y: height - 265 },
+    thickness: 1.5,
+    color: black,
+  });
+  
+  // Axes header
+  const axesHeaderText = processArabicText("التي تناولت المحاور التالية :");
+  const axesHeaderWidth = font.widthOfTextAtSize(axesHeaderText, 10);
+  page.drawText(axesHeaderText, {
+    x: width - 100 - axesHeaderWidth,
+    y: height - 295,
+    size: 10,
+    font: font,
+    color: gray,
+  });
+  
+  // Draw axes (right-aligned for Arabic)
+  let yPosition = height - 320;
+  for (const axis of content.axes) {
+    const axisText = processArabicText(`• ${axis}`);
+    const axisWidth = font.widthOfTextAtSize(axisText, 9);
+    
+    // Wrap text if too long
+    if (axisWidth > width - 200) {
+      const words = axis.split(' ');
+      let currentLine = '';
+      const lines: string[] = [];
+      
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = font.widthOfTextAtSize(processArabicText(`• ${testLine}`), 9);
+        
+        if (testWidth > width - 200 && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
       }
+      if (currentLine) lines.push(currentLine);
+      
+      // Draw wrapped lines
+      for (const line of lines) {
+        const lineText = processArabicText(`• ${line}`);
+        const lineWidth = font.widthOfTextAtSize(lineText, 9);
+        page.drawText(lineText, {
+          x: width - 100 - lineWidth,
+          y: yPosition,
+          size: 9,
+          font: font,
+          color: gray,
+        });
+        yPosition -= 15;
+      }
+    } else {
+      page.drawText(axisText, {
+        x: width - 100 - axisWidth,
+        y: yPosition,
+        size: 9,
+        font: font,
+        color: gray,
+      });
+      yPosition -= 15;
+    }
+  }
+  
+  // Signatures section
+  const sig1Text = processArabicText("أ. علي سعدالله");
+  const sig1Width = font.widthOfTextAtSize(sig1Text, 11);
+  page.drawText(sig1Text, {
+    x: width - 150 - sig1Width,
+    y: 110,
+    size: 11,
+    font: font,
+    color: black,
+  });
+  
+  const sig1SubText = processArabicText("مدير الأكاديمية");
+  const sig1SubWidth = font.widthOfTextAtSize(sig1SubText, 9);
+  page.drawText(sig1SubText, {
+    x: width - 150 - sig1SubWidth,
+    y: 95,
+    size: 9,
+    font: font,
+    color: gray,
+  });
+  
+  const sig2Text = processArabicText("أ. سامي الحاج");
+  const sig2Width = font.widthOfTextAtSize(sig2Text, 11);
+  page.drawText(sig2Text, {
+    x: 150 - sig2Width / 2,
+    y: 110,
+    size: 11,
+    font: font,
+    color: black,
+  });
+  
+  const sig2SubText = processArabicText("منسق عام، مصر للتربية");
+  const sig2SubWidth = font.widthOfTextAtSize(sig2SubText, 9);
+  page.drawText(sig2SubText, {
+    x: 150 - sig2SubWidth / 2,
+    y: 95,
+    size: 9,
+    font: font,
+    color: gray,
+  });
+}
+
+/**
+ * Draw French certificate content
+ */
+async function drawFrenchCertificate(
+  page: any,
+  font: any,
+  content: CertificateContent,
+  data: CertificateData,
+  width: number,
+  height: number,
+  gray: any,
+  lightGray: any,
+  black: any
+) {
+  // Header - Government info (in French)
+  page.drawText("République Tunisienne", {
+    x: width - 200,
+    y: height - 120,
+    size: 8,
+    font: font,
+    color: gray,
+  });
+  
+  page.drawText("Ministère de l'Emploi et de la Formation Professionnelle", {
+    x: width - 320,
+    y: height - 133,
+    size: 8,
+    font: font,
+    color: gray,
+  });
+  
+  page.drawText("Leader Academy", {
+    x: width - 150,
+    y: height - 146,
+    size: 8,
+    font: font,
+    color: gray,
+  });
+  
+  page.drawText("Enregistrement N° 61-903-16", {
+    x: width - 180,
+    y: height - 159,
+    size: 7,
+    font: font,
+    color: lightGray,
+  });
+  
+  // Main title
+  const titleLines = content.title.split('\n');
+  let titleY = height - 100;
+  for (const line of titleLines) {
+    const lineWidth = font.widthOfTextAtSize(line, 32);
+    page.drawText(line, {
+      x: (width - lineWidth) / 2,
+      y: titleY,
+      size: 32,
+      font: font,
+      color: black,
     });
-
-    // Page dimensions for A4 landscape
-    const pageWidth = 842;
-    const pageHeight = 595;
-
-    // Register Arabic font if available
-    if (arabicFontBuffer) {
-      doc.registerFont('Cairo', arabicFontBuffer);
+    titleY -= 40;
+  }
+  
+  // Subtitle
+  const subtitleWidth = font.widthOfTextAtSize(content.subtitle, 12);
+  page.drawText(content.subtitle, {
+    x: (width - subtitleWidth) / 2,
+    y: height - 195,
+    size: 12,
+    font: font,
+    color: gray,
+  });
+  
+  // Participant name
+  const nameWidth = font.widthOfTextAtSize(data.participantName, 24);
+  page.drawText(data.participantName, {
+    x: (width - nameWidth) / 2,
+    y: height - 235,
+    size: 24,
+    font: font,
+    color: black,
+  });
+  
+  // Main text
+  const mainTextWidth = font.widthOfTextAtSize(content.mainText, 11);
+  page.drawText(content.mainText, {
+    x: (width - mainTextWidth) / 2,
+    y: height - 275,
+    size: 11,
+    font: font,
+    color: gray,
+  });
+  
+  // Underline
+  page.drawLine({
+    start: { x: 150, y: height - 285 },
+    end: { x: width - 150, y: height - 285 },
+    thickness: 1.5,
+    color: black,
+  });
+  
+  // Axes header
+  page.drawText("Thématiques abordées:", {
+    x: 100,
+    y: height - 315,
+    size: 10,
+    font: font,
+    color: gray,
+  });
+  
+  // Draw axes (left-aligned for French)
+  let yPosition = height - 340;
+  for (const axis of content.axes) {
+    // Wrap text if too long
+    const maxWidth = width - 200;
+    const words = axis.split(' ');
+    let currentLine = '';
+    const lines: string[] = [];
+    
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = font.widthOfTextAtSize(`• ${testLine}`, 9);
+      
+      if (testWidth > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
     }
-
-    // Draw decorative border
-    drawDecorativeBorder(doc, pageWidth, pageHeight);
-
-    // Add Leader Academy logo (left side)
-    if (logoBuffer) {
-      doc.image(logoBuffer, 50, 50, { width: 120 });
+    if (currentLine) lines.push(currentLine);
+    
+    // Draw wrapped lines
+    for (const line of lines) {
+      page.drawText(`• ${line}`, {
+        x: 100,
+        y: yPosition,
+        size: 9,
+        font: font,
+        color: gray,
+      });
+      yPosition -= 15;
     }
-
-    // Add Tunisia flag (right side)
-    if (flagBuffer) {
-      doc.image(flagBuffer, pageWidth - 120, 50, { width: 60 });
-    }
-    
-    // Use Arabic font for all Arabic text
-    const arabicFont = arabicFontBuffer ? 'Cairo' : 'Helvetica';
-    
-    doc.fontSize(9).fillColor("#333333").font(arabicFont);
-    doc.text(processArabicText("الجمهورية التونسية"), pageWidth - 150, 120, { width: 130, align: "center", features: ['rtla'] });
-    doc.text(processArabicText("وزارة التشغيل والتكوين المهني"), pageWidth - 150, 135, { width: 130, align: "center", features: ['rtla'] });
-    doc.text(processArabicText("ليدر أكاديمي"), pageWidth - 150, 150, { width: 130, align: "center", features: ['rtla'] });
-    doc.fontSize(7).fillColor("#666666");
-    doc.text(processArabicText("تسجيل عدد 61-309-16"), pageWidth - 150, 165, { width: 130, align: "center", features: ['rtla'] });
-
-    // Main title "شهادة"
-    doc.fontSize(48).fillColor("#000000").font(arabicFont);
-    doc.text(processArabicText("شهادة"), 0, 110, { align: "center", width: pageWidth, features: ['rtla'] });
-
-    // Subtitle
-    doc.fontSize(14).fillColor("#555555").font(arabicFont);
-    doc.text(processArabicText("أسندت هذه الشهادة إلى السيد(ة)"), 0, 170, { align: "center", width: pageWidth, features: ['rtla'] });
-
-    // Participant name
-    doc.fontSize(24).fillColor("#000000").font(arabicFont);
-    doc.text(processArabicText(data.participantName), 0, 200, { align: "center", width: pageWidth, features: ['rtla'] });
-
-    // Description
-    doc.fontSize(13).fillColor("#444444").font(arabicFont);
-    doc.text(processArabicText("للمشاركة الفاعلة في دورة تكوينيّة بعنوان"), 0, 240, { align: "center", width: pageWidth, features: ['rtla'] });
-
-    // Course title
-    doc.fontSize(18).fillColor("#000000").font(arabicFont);
-    doc.text(processArabicText(`" ${config.title} "`), 0, 270, { align: "center", width: pageWidth, features: ['rtla'] });
-    
-    // Underline
-    doc.strokeColor("#000000").lineWidth(1.5);
-    doc.moveTo(pageWidth / 2 - 250, 295).lineTo(pageWidth / 2 + 250, 295).stroke();
-
-    // Course axes
-    doc.fontSize(11).fillColor("#333333").font(arabicFont);
-    doc.text(processArabicText("والتي تناولت المحاور التالية :"), pageWidth - 200, 315, { width: 180, align: "right", features: ['rtla'] });
-    
-    let axisY = 335;
-    axes.forEach((axis) => {
-      doc.fontSize(10).fillColor("#444444").font(arabicFont);
-      doc.text(processArabicText(`• ${axis}`), pageWidth - 400, axisY, { width: 380, align: "right", features: ['rtla'] });
-      axisY += 18;
-    });
-
-    // Signatures section
-    const sigY = 450;
-    
-    // Left signature (Coordinator)
-    doc.fontSize(11).fillColor("#333333").font(arabicFont);
-    doc.text(processArabicText("أ. سامي الجازي"), 80, sigY, { width: 150, align: "center", features: ['rtla'] });
-    doc.fontSize(10).fillColor("#666666").font(arabicFont);
-    doc.text(processArabicText("منسق عام مميز للتربية"), 80, sigY + 20, { width: 150, align: "center", features: ['rtla'] });
-
-    // Right signature (Director)
-    doc.fontSize(11).fillColor("#333333").font(arabicFont);
-    doc.text(processArabicText("أ. علي سعدالله"), pageWidth - 230, sigY, { width: 150, align: "center", features: ['rtla'] });
-    doc.fontSize(10).fillColor("#666666").font(arabicFont);
-    doc.text(processArabicText("مدير الأكاديمية"), pageWidth - 230, sigY + 20, { width: 150, align: "center", features: ['rtla'] });
-
-    // Footer with batch number
-    const batchText = data.batchNumber || `الدفعة رقم 107 من البرنامج التكويني لتأهيل المدرسين  ديسمبر ${new Date().getFullYear()}`;
-    doc.fontSize(9).fillColor("#666666").font(arabicFont);
-    doc.text(processArabicText(batchText), 0, 530, { align: "center", width: pageWidth, features: ['rtla'] });
-
-    doc.end();
+  }
+  
+  // Signatures section
+  page.drawText("Ali Saadallah", {
+    x: width - 200,
+    y: 110,
+    size: 11,
+    font: font,
+    color: black,
+  });
+  
+  page.drawText("Directeur de l'Académie", {
+    x: width - 220,
+    y: 95,
+    size: 9,
+    font: font,
+    color: gray,
+  });
+  
+  page.drawText("Sami El Haj", {
+    x: 100,
+    y: 110,
+    size: 11,
+    font: font,
+    color: black,
+  });
+  
+  page.drawText("Coordinateur Général, Misr pour l'Éducation", {
+    x: 50,
+    y: 95,
+    size: 9,
+    font: font,
+    color: gray,
   });
 }

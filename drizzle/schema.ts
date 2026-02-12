@@ -148,7 +148,7 @@ export const certificates = mysqlTable("certificates", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   courseId: int("courseId").notNull(),
-  examAttemptId: int("examAttemptId").notNull(),
+  examAttemptId: int("examAttemptId"), // Nullable for cumulative certificates
   certificateNumber: varchar("certificateNumber", { length: 50 }).notNull().unique(),
   issuedAt: timestamp("issuedAt").defaultNow().notNull(),
   pdfUrl: text("pdfUrl"),

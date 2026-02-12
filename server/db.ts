@@ -409,11 +409,26 @@ export async function getCertificateByAttemptId(attemptId: number): Promise<Cert
   return result[0];
 }
 
-export async function getCertificatesByUserId(userId: number): Promise<Certificate[]> {
+export async function getCertificatesByUserId(userId: number) {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(certificates).where(eq(certificates.userId, userId)).orderBy(desc(certificates.issuedAt));
+  const result = await db.select({
+    certificate: certificates,
+    course: courses,
+    examAttempt: examAttempts,
+  })
+  .from(certificates)
+  .leftJoin(courses, eq(certificates.courseId, courses.id))
+  .leftJoin(examAttempts, eq(certificates.examAttemptId, examAttempts.id))
+  .where(eq(certificates.userId, userId))
+  .orderBy(desc(certificates.issuedAt));
+  
+  return result.map(r => ({
+    ...r.certificate,
+    course: r.course,
+    examAttempt: r.examAttempt,
+  }));
 }
 
 export async function getCertificateById(id: number): Promise<Certificate | undefined> {
