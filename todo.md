@@ -239,3 +239,10 @@
 - [x] Ajouter la date de délivrance au certificat français (format DD/MM/YY)
 - [x] Tester la génération de certificats français avec succès
 - [ ] Créer le checkpoint final
+
+## Personnalisation des couleurs de cadre par catégorie de cours
+- [x] Définir une palette de couleurs unique pour chaque catégorie de cours
+- [x] Modifier le code de génération de certificats pour utiliser les couleurs personnalisées
+- [x] Appliquer les couleurs aux bordures extérieures et intérieures
+- [x] Tester la génération de certificats pour toutes les catégories
+- [ ] Créer le checkpoint final

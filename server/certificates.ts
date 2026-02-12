@@ -6,6 +6,71 @@ import https from "node:https";
 import { processArabicText, wrapArabicText } from './arabicTextHelper';
 import { getCertificateContent, type CertificateContent } from './certificateContent';
 
+/**
+ * Get border color based on course category
+ */
+function getBorderColorForCategory(category: string): { outer: any; inner: any } {
+  const { rgb } = require('pdf-lib');
+  
+  switch (category) {
+    case 'science_teachers':
+      // Dark blue - Science and knowledge
+      return {
+        outer: rgb(0.1, 0.2, 0.5),  // Dark blue
+        inner: rgb(0.2, 0.35, 0.65)  // Medium blue
+      };
+    
+    case 'arabic_teachers':
+      // Emerald green - Arabic culture
+      return {
+        outer: rgb(0.0, 0.5, 0.3),   // Dark emerald
+        inner: rgb(0.1, 0.6, 0.4)    // Light emerald
+      };
+    
+    case 'french_teachers':
+      // Burgundy red - French culture
+      return {
+        outer: rgb(0.5, 0.1, 0.2),   // Dark burgundy
+        inner: rgb(0.65, 0.2, 0.3)   // Light burgundy
+      };
+    
+    case 'primary_teachers':
+      // Gold - Excellence
+      return {
+        outer: rgb(0.7, 0.5, 0.1),   // Dark gold
+        inner: rgb(0.85, 0.65, 0.2)  // Light gold
+      };
+    
+    case 'preschool_facilitators':
+      // Purple - Childhood and creativity
+      return {
+        outer: rgb(0.4, 0.2, 0.6),   // Dark purple
+        inner: rgb(0.55, 0.35, 0.75) // Light purple
+      };
+    
+    case 'special_needs_companions':
+      // Orange - Support and care
+      return {
+        outer: rgb(0.8, 0.4, 0.1),   // Dark orange
+        inner: rgb(0.9, 0.55, 0.2)   // Light orange
+      };
+    
+    case 'digital_teacher_ai':
+      // Cyan - Technology
+      return {
+        outer: rgb(0.1, 0.5, 0.7),   // Dark cyan
+        inner: rgb(0.2, 0.65, 0.85)  // Light cyan
+      };
+    
+    default:
+      // Default gray
+      return {
+        outer: rgb(0.2, 0.2, 0.2),
+        inner: rgb(0.4, 0.4, 0.4)
+      };
+  }
+}
+
 const ARABIC_FONT_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/tVoWPiuIjSLTpZzt.ttf";
 
 /**
@@ -79,27 +144,28 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   const page = pdfDoc.addPage([842, 595]);
   const { width, height } = page.getSize();
   
-  // Draw decorative borders
+  // Draw decorative borders with category-specific colors
   const margin = 15;
   const innerMargin = 30;
+  const borderColors = getBorderColorForCategory(data.courseType);
   
-  // Outer border
+  // Outer border (darker color)
   page.drawRectangle({
     x: margin,
     y: margin,
     width: width - 2 * margin,
     height: height - 2 * margin,
-    borderColor: rgb(0.2, 0.2, 0.2),
+    borderColor: borderColors.outer,
     borderWidth: 3,
   });
   
-  // Inner border
+  // Inner border (lighter color)
   page.drawRectangle({
     x: innerMargin,
     y: innerMargin,
     width: width - 2 * innerMargin,
     height: height - 2 * innerMargin,
-    borderColor: rgb(0.4, 0.4, 0.4),
+    borderColor: borderColors.inner,
     borderWidth: 1.5,
   });
   
