@@ -213,3 +213,8 @@
 - [x] Trouver et modifier le texte dans le contenu du certificat
 - [x] Tester la génération de certificats avec le nouveau texte
 - [ ] Créer le checkpoint final
+
+## Ajout de la date de délivrance du certificat
+- [x] Ajouter la date de délivrance dans le coin inférieur gauche au format arabe
+- [x] Tester la génération de certificats avec la date
+- [ ] Créer le checkpoint final

@@ -359,6 +359,25 @@ async function drawArabicCertificate(
   }
   
   // Second signature removed per user request
+  
+  // Add issue date in bottom left corner
+  const months = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'ماي', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+  ];
+  const issueDate = new Date();
+  const day = issueDate.getDate();
+  const month = months[issueDate.getMonth()];
+  const year = issueDate.getFullYear();
+  const dateText = processArabicText(`صدرت بتاريخ: ${day} ${month} ${year}`);
+  
+  page.drawText(dateText, {
+    x: 50,
+    y: 50,
+    size: 10,
+    font: font,
+    color: gray,
+  });
 }
 
 /**
