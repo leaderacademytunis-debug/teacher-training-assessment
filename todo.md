@@ -208,3 +208,8 @@
 - [x] Augmenter l'espacement vertical entre les lignes de texte
 - [x] Tester la génération de certificats avec l'espacement corrigé
 - [ ] Créer le checkpoint final
+
+## Modification du texte "السيد(ة)" vers "السيد/ة"
+- [x] Trouver et modifier le texte dans le contenu du certificat
+- [x] Tester la génération de certificats avec le nouveau texte
+- [ ] Créer le checkpoint final
