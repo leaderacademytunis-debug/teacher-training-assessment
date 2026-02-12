@@ -370,17 +370,13 @@ async function drawArabicCertificate(
   const month = issueDate.getMonth() + 1; // Months are 0-indexed
   const year = issueDate.getFullYear() % 100; // Get last 2 digits of year
   
-  // Convert numbers to Arabic-Indic numerals
-  const toArabicNumerals = (num: number) => {
-    const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    return String(num).padStart(2, '0').split('').map(d => arabicNumerals[parseInt(d)]).join('');
-  };
+  // Format date with Western numerals (padded to 2 digits)
+  const formattedDay = String(day).padStart(2, '0');
+  const formattedMonth = String(month).padStart(2, '0');
+  const formattedYear = String(year).padStart(2, '0');
   
-  const arabicDay = toArabicNumerals(day);
-  const arabicMonth = toArabicNumerals(month);
-  const arabicYear = toArabicNumerals(year);
   const arabicPrefix = processArabicText('صدرت بتاريخ:');
-  const dateText = `${arabicPrefix} ${arabicDay}/${arabicMonth}/${arabicYear}`;
+  const dateText = `${arabicPrefix} ${formattedDay}/${formattedMonth}/${formattedYear}`;
   
   page.drawText(dateText, {
     x: 50,

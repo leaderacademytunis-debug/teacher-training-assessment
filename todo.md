@@ -225,3 +225,8 @@
 - [x] Changer le format vers JJ/MM/AA avec chiffres arabes (٢١/٠٢/٢٦)
 - [x] Tester la génération de certificats avec la date corrigée
 - [ ] Créer le checkpoint final
+
+## Modification des chiffres de la date vers chiffres occidentaux
+- [x] Modifier le code pour utiliser des chiffres occidentaux (21/02/26) au lieu de chiffres arabes (٢١/٠٢/٢٦)
+- [x] Tester la génération de certificats avec les chiffres occidentaux
+- [ ] Créer le checkpoint final
