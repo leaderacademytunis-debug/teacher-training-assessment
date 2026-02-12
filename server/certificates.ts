@@ -45,7 +45,7 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   }
 
   // Download resources
-  const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/aYRTvdXAkBzKfCAY.png";
+  const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/TABMpUkybTgmkLSW.png";
   const flagUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/lUjeCQtcebHcrJBL.png";
   const stampUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/yesfhvsAgtOtGlnA.png";
   

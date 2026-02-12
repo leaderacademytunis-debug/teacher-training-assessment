@@ -182,3 +182,9 @@
 - [ ] Augmenter la taille des textes arabes
 - [ ] Tester les modifications
 - [ ] Créer le checkpoint final
+
+## Intégration du logo Leader Academy
+- [x] Télécharger le logo sur S3
+- [x] Intégrer le logo dans les certificats PDF
+- [x] Tester la génération de certificats avec le nouveau logo
+- [ ] Créer le checkpoint final
