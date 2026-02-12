@@ -218,3 +218,10 @@
 - [x] Ajouter la date de délivrance dans le coin inférieur gauche au format arabe
 - [x] Tester la génération de certificats avec la date
 - [ ] Créer le checkpoint final
+
+## Correction de l'affichage de la date
+- [x] Utiliser les noms de mois tunisiens (فيفري au lieu de فبراير)
+- [x] Corriger l'ordre de l'année (2026 au lieu de 6202)
+- [x] Changer le format vers JJ/MM/AA avec chiffres arabes (٢١/٠٢/٢٦)
+- [x] Tester la génération de certificats avec la date corrigée
+- [ ] Créer le checkpoint final

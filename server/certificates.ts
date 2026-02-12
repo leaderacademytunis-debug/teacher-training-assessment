@@ -362,14 +362,25 @@ async function drawArabicCertificate(
   
   // Add issue date in bottom left corner
   const months = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'ماي', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
+    'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
   ];
   const issueDate = new Date();
   const day = issueDate.getDate();
-  const month = months[issueDate.getMonth()];
-  const year = issueDate.getFullYear();
-  const dateText = processArabicText(`صدرت بتاريخ: ${day} ${month} ${year}`);
+  const month = issueDate.getMonth() + 1; // Months are 0-indexed
+  const year = issueDate.getFullYear() % 100; // Get last 2 digits of year
+  
+  // Convert numbers to Arabic-Indic numerals
+  const toArabicNumerals = (num: number) => {
+    const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return String(num).padStart(2, '0').split('').map(d => arabicNumerals[parseInt(d)]).join('');
+  };
+  
+  const arabicDay = toArabicNumerals(day);
+  const arabicMonth = toArabicNumerals(month);
+  const arabicYear = toArabicNumerals(year);
+  const arabicPrefix = processArabicText('صدرت بتاريخ:');
+  const dateText = `${arabicPrefix} ${arabicDay}/${arabicMonth}/${arabicYear}`;
   
   page.drawText(dateText, {
     x: 50,
