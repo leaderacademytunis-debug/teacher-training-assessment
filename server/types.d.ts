@@ -5,7 +5,9 @@ declare module 'arabic-reshaper' {
 
 declare module 'bidi-js' {
   interface Bidi {
-    applyBidi(text: string): string;
+    getReorderedString(text: string): string;
+    getBidiCharType(char: string): number;
+    getEmbeddingLevels(text: string, direction?: string): number[];
   }
   
   function bidiFactory(): Bidi;

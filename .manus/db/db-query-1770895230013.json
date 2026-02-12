@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, titleAr, category FROM courses WHERE isActive = 1 ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, titleAr, category FROM courses WHERE isActive = 1 ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "titleAr": "تأهيل مدرّسي الابتدائي",
+      "category": "primary_teachers"
+    },
+    {
+      "id": "2",
+      "titleAr": "تأهيل مدرّسي العربية",
+      "category": "arabic_teachers"
+    },
+    {
+      "id": "3",
+      "titleAr": "تأهيل مدرّسي العلوم",
+      "category": "science_teachers"
+    },
+    {
+      "id": "4",
+      "titleAr": "تأهيل مدرّسي الفرنسية ",
+      "category": "french_teachers"
+    },
+    {
+      "id": "5",
+      "titleAr": "تأهيل منشّطي التحضيري",
+      "category": "preschool_facilitators"
+    },
+    {
+      "id": "6",
+      "titleAr": "تأهيل مرافقي التلاميذ ذوي الصعوبات",
+      "category": "special_needs_companions"
+    },
+    {
+      "id": "7",
+      "titleAr": "المعلم الرقمي والذكاء الاصطناعي",
+      "category": "digital_teacher_ai"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitleAr\tcategory\n1\tتأهيل مدرّسي الابتدائي\tprimary_teachers\n2\tتأهيل مدرّسي العربية\tarabic_teachers\n3\tتأهيل مدرّسي العلوم\tscience_teachers\n4\tتأهيل مدرّسي الفرنسية \tfrench_teachers\n5\tتأهيل منشّطي التحضيري\tpreschool_facilitators\n6\tتأهيل مرافقي التلاميذ ذوي الصعوبات\tspecial_needs_companions\n7\tالمعلم الرقمي والذكاء الاصطناعي\tdigital_teacher_ai\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

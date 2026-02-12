@@ -162,3 +162,10 @@
 - [x] Modifier le schéma de la base de données pour supporter les certificats cumulatifs
 - [x] Tester tous les types de certificats
 - [x] Créer le checkpoint final
+
+## Correction: Problème de correspondance des noms de cours
+- [x] Vérifier les noms exacts des cours dans la base de données
+- [x] Corriger la correspondance dans certificateContent.ts (normalization des diacritiques)
+- [x] Corriger l'utilisation de bidi-js (getReorderedString au lieu de applyBidi)
+- [x] Tester la génération de certificats pour toutes les formations
+- [x] Créer le checkpoint final

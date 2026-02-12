@@ -14,8 +14,8 @@ export function processArabicText(text: string): string {
     const reshaper = ArabicReshaper as any;
     const reshaped = reshaper.convertArabic ? reshaper.convertArabic(text) : text;
     
-    // Then apply bidirectional algorithm
-    const processed = bidi.applyBidi(reshaped);
+    // Then apply bidirectional algorithm using getReorderedString
+    const processed = bidi.getReorderedString(reshaped);
     
     return processed;
   } catch (error) {

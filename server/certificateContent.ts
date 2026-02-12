@@ -94,9 +94,25 @@ export const CERTIFICATE_CONTENTS: Record<string, CertificateContent> = {
 
 /**
  * Get certificate content by course title
+ * Handles variations in diacritics (tashkeel)
  */
 export function getCertificateContent(courseTitle: string): CertificateContent | null {
-  return CERTIFICATE_CONTENTS[courseTitle] || null;
+  // Try exact match first
+  if (CERTIFICATE_CONTENTS[courseTitle]) {
+    return CERTIFICATE_CONTENTS[courseTitle];
+  }
+  
+  // Try without diacritics
+  const normalized = courseTitle.normalize('NFD').replace(/[\u064B-\u065F]/g, '');
+  
+  for (const [key, content] of Object.entries(CERTIFICATE_CONTENTS)) {
+    const normalizedKey = key.normalize('NFD').replace(/[\u064B-\u065F]/g, '');
+    if (normalized === normalizedKey) {
+      return content;
+    }
+  }
+  
+  return null;
 }
 
 /**
