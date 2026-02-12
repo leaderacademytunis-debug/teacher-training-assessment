@@ -188,3 +188,8 @@
 - [x] Intégrer le logo dans les certificats PDF
 - [x] Tester la génération de certificats avec le nouveau logo
 - [ ] Créer le checkpoint final
+
+## Ajustement de la taille du logo Leader Academy
+- [x] Augmenter la taille du logo dans le code
+- [x] Tester la génération de certificats avec le logo agrandi
+- [ ] Créer le checkpoint final

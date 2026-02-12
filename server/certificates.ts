@@ -109,9 +109,9 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
       const logoImage = await pdfDoc.embedPng(logoBytes);
       page.drawImage(logoImage, {
         x: 50,
-        y: height - 170,
-        width: 120,
-        height: 120 * (logoImage.height / logoImage.width),
+        y: height - 220,
+        width: 200,
+        height: 200 * (logoImage.height / logoImage.width),
       });
     } catch (error) {
       console.error("Failed to embed logo:", error);
