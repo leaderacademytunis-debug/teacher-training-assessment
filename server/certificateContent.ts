@@ -51,6 +51,21 @@ export const CERTIFICATE_CONTENTS: Record<string, CertificateContent> = {
     ]
   },
 
+  // Version sans diacritiques pour compatibilité
+  'تأهيل مدرسي الفرنسية': {
+    language: 'fr',
+    title: 'CERTIFICAT DE PARTICIPATION',
+    subtitle: 'CE CERTIFICAT A ÉTÉ CONFIÉ A',
+    mainText: 'Pour sa participation à la formation : «Formation pour Enseignants du FLE (Français Langue Étrangère)»',
+    axes: [
+      'La préparation matérielle, mentale et écrite d\'un leçon',
+      'L\'élaboration de scénarios pédagogiques (mise en train/ phonétique/ activité d\'écoute/ communication orale/ lecture compréhension/ lecture fonctionnement/fonctionnement de la langue : grammaire, conjugaison, orthographe/la production écrite)',
+      'Les situations d\'apprentissage. L\'élaboration de l\'objectif de la séance',
+      'Les critères de réussite et leurs indicateurs. La répartition journalière',
+      'L\'élaboration de consignes (chatgpt). Les jeux de lecture'
+    ]
+  },
+
   // 4. تأهيل مرافقي التلاميذ ذوي الصعوبات
   'تأهيل مرافقي التلاميذ ذوي الصعوبات': {
     language: 'ar',

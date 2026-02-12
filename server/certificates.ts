@@ -132,7 +132,7 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
     await drawArabicCertificate(page, mainFont, content, data, width, height, gray, lightGray, black, pdfDoc, stampBytes);
   } else if (content.language === 'fr') {
     // French certificate layout
-    await drawFrenchCertificate(page, fallbackFont, content, data, width, height, gray, lightGray, black);
+    await drawFrenchCertificate(page, fallbackFont, mainFont, content, data, width, height, gray, lightGray, black);
   }
   
   // Second page removed per user request
@@ -392,7 +392,8 @@ async function drawArabicCertificate(
  */
 async function drawFrenchCertificate(
   page: any,
-  font: any,
+  latinFont: any,
+  arabicFont: any,
   content: CertificateContent,
   data: CertificateData,
   width: number,
@@ -406,7 +407,7 @@ async function drawFrenchCertificate(
     x: width - 200,
     y: height - 120,
     size: 8,
-    font: font,
+    font: latinFont,
     color: gray,
   });
   
@@ -414,7 +415,7 @@ async function drawFrenchCertificate(
     x: width - 320,
     y: height - 133,
     size: 8,
-    font: font,
+    font: latinFont,
     color: gray,
   });
   
@@ -422,7 +423,7 @@ async function drawFrenchCertificate(
     x: width - 150,
     y: height - 146,
     size: 8,
-    font: font,
+    font: latinFont,
     color: gray,
   });
   
@@ -430,7 +431,7 @@ async function drawFrenchCertificate(
     x: width - 180,
     y: height - 159,
     size: 7,
-    font: font,
+    font: latinFont,
     color: lightGray,
   });
   
@@ -438,44 +439,45 @@ async function drawFrenchCertificate(
   const titleLines = content.title.split('\n');
   let titleY = height - 100;
   for (const line of titleLines) {
-    const lineWidth = font.widthOfTextAtSize(line, 32);
+    const lineWidth = latinFont.widthOfTextAtSize(line, 32);
     page.drawText(line, {
       x: (width - lineWidth) / 2,
       y: titleY,
       size: 32,
-      font: font,
+      font: latinFont,
       color: black,
     });
     titleY -= 40;
   }
   
   // Subtitle
-  const subtitleWidth = font.widthOfTextAtSize(content.subtitle, 12);
+  const subtitleWidth = latinFont.widthOfTextAtSize(content.subtitle, 12);
   page.drawText(content.subtitle, {
     x: (width - subtitleWidth) / 2,
     y: height - 195,
     size: 12,
-    font: font,
+    font: latinFont,
     color: gray,
   });
   
-  // Participant name
-  const nameWidth = font.widthOfTextAtSize(data.participantName, 24);
-  page.drawText(data.participantName, {
+  // Participant name (use Arabic font for Arabic names)
+  const processedName = processArabicText(data.participantName);
+  const nameWidth = arabicFont.widthOfTextAtSize(processedName, 24);
+  page.drawText(processedName, {
     x: (width - nameWidth) / 2,
     y: height - 235,
     size: 24,
-    font: font,
+    font: arabicFont,
     color: black,
   });
   
   // Main text
-  const mainTextWidth = font.widthOfTextAtSize(content.mainText, 11);
+  const mainTextWidth = latinFont.widthOfTextAtSize(content.mainText, 11);
   page.drawText(content.mainText, {
     x: (width - mainTextWidth) / 2,
     y: height - 275,
     size: 11,
-    font: font,
+    font: latinFont,
     color: gray,
   });
   
@@ -492,7 +494,7 @@ async function drawFrenchCertificate(
     x: 100,
     y: height - 315,
     size: 10,
-    font: font,
+    font: latinFont,
     color: gray,
   });
   
@@ -507,7 +509,7 @@ async function drawFrenchCertificate(
     
     for (const word of words) {
       const testLine = currentLine ? `${currentLine} ${word}` : word;
-      const testWidth = font.widthOfTextAtSize(`• ${testLine}`, 9);
+      const testWidth = latinFont.widthOfTextAtSize(`• ${testLine}`, 9);
       
       if (testWidth > maxWidth && currentLine) {
         lines.push(currentLine);
@@ -524,7 +526,7 @@ async function drawFrenchCertificate(
         x: 100,
         y: yPosition,
         size: 9,
-        font: font,
+        font: latinFont,
         color: gray,
       });
       yPosition -= 15;
@@ -536,7 +538,7 @@ async function drawFrenchCertificate(
     x: width - 200,
     y: 110,
     size: 11,
-    font: font,
+    font: latinFont,
     color: black,
   });
   
@@ -544,7 +546,7 @@ async function drawFrenchCertificate(
     x: width - 220,
     y: 95,
     size: 9,
-    font: font,
+    font: latinFont,
     color: gray,
   });
   
@@ -552,7 +554,7 @@ async function drawFrenchCertificate(
     x: 100,
     y: 110,
     size: 11,
-    font: font,
+    font: latinFont,
     color: black,
   });
   
@@ -560,7 +562,27 @@ async function drawFrenchCertificate(
     x: 50,
     y: 95,
     size: 9,
-    font: font,
+    font: latinFont,
+    color: gray,
+  });
+  
+  // Date in bottom-left corner
+  const issueDate = new Date();
+  const day = issueDate.getDate();
+  const month = issueDate.getMonth() + 1; // Months are 0-indexed
+  const year = issueDate.getFullYear() % 100; // Get last 2 digits of year
+  
+  // Format date with Western numerals (padded to 2 digits)
+  const formattedDay = String(day).padStart(2, '0');
+  const formattedMonth = String(month).padStart(2, '0');
+  const formattedYear = String(year).padStart(2, '0');
+  
+  const dateText = `Délivré le: ${formattedDay}/${formattedMonth}/${formattedYear}`;
+  page.drawText(dateText, {
+    x: 50,
+    y: 50,
+    size: 10,
+    font: latinFont,
     color: gray,
   });
 }

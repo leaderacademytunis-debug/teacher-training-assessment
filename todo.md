@@ -230,3 +230,12 @@
 - [x] Modifier le code pour utiliser des chiffres occidentaux (21/02/26) au lieu de chiffres arabes (٢١/٠٢/٢٦)
 - [x] Tester la génération de certificats avec les chiffres occidentaux
 - [ ] Créer le checkpoint final
+
+## Correction: Erreur de génération de certificat français
+- [x] Diagnostiquer l'erreur "No certificate content found for course"
+- [x] Ajouter une version sans diacritiques du nom de cours français dans certificateContent.ts
+- [x] Modifier drawFrenchCertificate pour accepter deux fonts (latin et arabe)
+- [x] Utiliser le font arabe pour le nom du participant et le font latin pour le texte français
+- [x] Ajouter la date de délivrance au certificat français (format DD/MM/YY)
+- [x] Tester la génération de certificats français avec succès
+- [ ] Créer le checkpoint final
