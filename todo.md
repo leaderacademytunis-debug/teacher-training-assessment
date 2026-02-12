@@ -203,3 +203,8 @@
 - [x] Remettre le logo à sa position originale (x: 50)
 - [x] Tester la génération de certificats avec le logo repositionné
 - [ ] Créer le checkpoint final
+
+## Correction du chevauchement de texte (nom et "السيد(ة)")
+- [x] Augmenter l'espacement vertical entre les lignes de texte
+- [x] Tester la génération de certificats avec l'espacement corrigé
+- [ ] Créer le checkpoint final

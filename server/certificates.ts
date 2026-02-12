@@ -233,7 +233,7 @@ async function drawArabicCertificate(
   const nameWidth = font.widthOfTextAtSize(participantNameAr, 28);
   page.drawText(participantNameAr, {
     x: (width - nameWidth) / 2,
-    y: height - 220,
+    y: height - 235,
     size: 28,
     font: font,
     color: black,
