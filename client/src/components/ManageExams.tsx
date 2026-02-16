@@ -73,12 +73,21 @@ export default function ManageExams() {
       return;
     }
 
+    const courseId = parseInt(formData.courseId, 10);
+    const duration = parseInt(formData.duration, 10);
+    const passingScore = parseInt(formData.passingScore, 10);
+
+    if (isNaN(courseId) || isNaN(duration) || isNaN(passingScore)) {
+      toast.error("قيم غير صالحة في الحقول الرقمية");
+      return;
+    }
+
     const data = {
-      courseId: parseInt(formData.courseId),
+      courseId,
       titleAr: formData.titleAr,
       descriptionAr: formData.descriptionAr || undefined,
-      duration: parseInt(formData.duration),
-      passingScore: parseInt(formData.passingScore),
+      duration,
+      passingScore,
     };
 
     if (editingExam) {

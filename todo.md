@@ -264,3 +264,9 @@
 - [x] Ajouter la validation et la gestion des erreurs
 - [x] Tester l'importation avec le parser (tests unitaires passés)
 - [ ] Créer le checkpoint final
+
+## Bug: Erreur NaN lors de la création d'examen
+- [x] Diagnostiquer pourquoi courseId devient NaN
+- [x] Corriger la conversion de courseId en nombre dans ManageExams
+- [x] Tester la création d'examen
+- [ ] Créer le checkpoint
