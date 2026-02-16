@@ -166,6 +166,80 @@ export const appRouter = router({
         return await db.getExamStatistics(input.examId);
       }),
     
+    getQuestions: protectedProcedure
+      .input(z.object({ examId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getQuestionsByExamId(input.examId);
+      }),
+    
+    updateQuestion: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        questionText: z.string(),
+        optionA: z.string(),
+        optionB: z.string(),
+        optionC: z.string(),
+        optionD: z.string(),
+        correctAnswer: z.enum(["A", "B", "C", "D"]),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, questionText, ...rest } = input;
+        await db.updateQuestion(id, {
+          questionTextAr: questionText,
+          options: {
+            optionA: rest.optionA,
+            optionB: rest.optionB,
+            optionC: rest.optionC,
+            optionD: rest.optionD,
+          },
+          correctAnswer: rest.correctAnswer,
+        });
+        return { success: true };
+      }),
+    
+    deleteQuestion: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteQuestion(input.id);
+        return { success: true };
+      }),
+    
+    reorderQuestion: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        newOrder: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        // Get the question and its exam
+        const question = await db.getQuestionById(input.id);
+        if (!question) throw new TRPCError({ code: 'NOT_FOUND', message: 'Question not found' });
+        
+        const allQuestions = await db.getQuestionsByExamId(question.examId);
+        const currentOrder = question.orderIndex;
+        const newOrder = input.newOrder;
+        
+        // Update order indices
+        if (newOrder < currentOrder) {
+          // Moving up: shift down questions between new and current position
+          for (const q of allQuestions) {
+            if (q.orderIndex >= newOrder && q.orderIndex < currentOrder) {
+              await db.updateQuestion(q.id, { orderIndex: q.orderIndex + 1 });
+            }
+          }
+        } else if (newOrder > currentOrder) {
+          // Moving down: shift up questions between current and new position
+          for (const q of allQuestions) {
+            if (q.orderIndex > currentOrder && q.orderIndex <= newOrder) {
+              await db.updateQuestion(q.id, { orderIndex: q.orderIndex - 1 });
+            }
+          }
+        }
+        
+        // Update the question's order
+        await db.updateQuestion(input.id, { orderIndex: newOrder });
+        return { success: true };
+      }),
+    
     importQuestions: adminProcedure
       .input(z.object({
         courseId: z.number(),

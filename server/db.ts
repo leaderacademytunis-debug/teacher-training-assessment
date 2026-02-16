@@ -280,11 +280,25 @@ export async function getQuestionsByExamId(examId: number) {
   return await db.select().from(questions).where(eq(questions.examId, examId)).orderBy(questions.orderIndex);
 }
 
+export async function getQuestionById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function createQuestion(question: InsertQuestion) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(questions).values(question);
-  return result;
+  
+  // Get the inserted ID
+  const insertId = Number((result as any).insertId || (result as any).lastInsertRowid || (result as any)[0]?.insertId);
+  if (!insertId || isNaN(insertId)) {
+    throw new Error("Failed to get inserted question ID");
+  }
+  
+  return { id: insertId };
 }
 
 export async function updateQuestion(id: number, updates: Partial<InsertQuestion>) {

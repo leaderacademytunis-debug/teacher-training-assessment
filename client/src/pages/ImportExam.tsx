@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,11 +17,17 @@ export default function ImportExam() {
   const [fileContent, setFileContent] = useState("");
   const [fileName, setFileName] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [, setLocation] = useLocation();
 
   const { data: courses } = trpc.courses.list.useQuery();
   const importMutation = trpc.exams.importQuestions.useMutation({
     onSuccess: (data) => {
-      toast.success(`✅ تم استيراد ${data.count} سؤال بنجاح`);
+      toast.success(`✅ تم استيراد ${data.count} سؤال بنجاح`, {
+        action: {
+          label: "تحرير الأسئلة",
+          onClick: () => setLocation(`/edit-questions/${data.examId}`),
+        },
+      });
       setTextInput("");
       setFileContent("");
       setFileName("");

@@ -304,3 +304,15 @@
 - [x] Corriger le retour de l'insertId (ajout de fallbacks multiples)
 - [x] Améliorer la gestion d'erreur
 - [ ] Créer le checkpoint
+
+## Interface d'édition des questions après importation
+- [x] Créer la page EditQuestions.tsx avec liste des questions
+- [x] Ajouter l'édition inline pour chaque question
+- [x] Implémenter la modification de la réponse correcte
+- [x] Ajouter la suppression de questions
+- [x] Implémenter le réordonnancement avec boutons haut/bas
+- [x] Ajouter les procédures tRPC (getQuestions, updateQuestion, deleteQuestion, reorderQuestion)
+- [x] Intégrer la navigation depuis ImportExam (bouton dans toast)
+- [x] Corriger createQuestion pour retourner l'ID
+- [x] Tester toutes les opérations (4 tests passés)
+- [ ] Créer le checkpoint
