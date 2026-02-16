@@ -298,3 +298,9 @@
 - [x] Corriger la logique de validation et conversion (ajout de validation robuste)
 - [x] Améliorer les messages d'erreur pour guider l'utilisateur
 - [ ] Créer le checkpoint
+
+## Bug: createExam retourne NaN au lieu de l'ID
+- [x] Vérifier la fonction createExam dans db.ts (result.insertId peut être undefined)
+- [x] Corriger le retour de l'insertId (ajout de fallbacks multiples)
+- [x] Améliorer la gestion d'erreur
+- [ ] Créer le checkpoint

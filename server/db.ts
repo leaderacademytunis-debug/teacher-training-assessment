@@ -244,10 +244,25 @@ export async function createExam(exam: InsertExam) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result: any = await db.insert(exams).values(exam);
-  // Get the inserted exam ID
-  const insertId = Number(result.insertId);
+  
+  // Get the inserted exam ID - handle different return formats
+  let insertId: number;
+  if (result.insertId !== undefined) {
+    insertId = Number(result.insertId);
+  } else if (result[0]?.insertId !== undefined) {
+    insertId = Number(result[0].insertId);
+  } else if (result.lastInsertRowid !== undefined) {
+    insertId = Number(result.lastInsertRowid);
+  } else {
+    // Fallback: get the last inserted ID
+    const lastInserted = await db.select().from(exams).orderBy(desc(exams.id)).limit(1);
+    if (lastInserted.length === 0) throw new Error("Failed to create exam");
+    insertId = lastInserted[0].id;
+  }
+  
   // Fetch and return the created exam
   const created = await db.select().from(exams).where(eq(exams.id, insertId)).limit(1);
+  if (created.length === 0) throw new Error("Failed to retrieve created exam");
   return created[0];
 }
 
