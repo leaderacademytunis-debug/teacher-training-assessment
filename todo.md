@@ -270,3 +270,9 @@
 - [x] Corriger la conversion de courseId en nombre dans ManageExams
 - [x] Tester la création d'examen
 - [ ] Créer le checkpoint
+
+## Bug: Erreur "Dynamic require of 'pdf-lib' is not supported"
+- [x] Diagnostiquer le problème d'importation de pdf-lib
+- [x] Corriger l'importation pour utiliser ES modules au lieu de require
+- [x] Tester la génération de certificat
+- [ ] Créer le checkpoint

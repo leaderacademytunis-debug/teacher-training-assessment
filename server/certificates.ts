@@ -10,7 +10,6 @@ import { getCertificateContent, type CertificateContent } from './certificateCon
  * Get border color based on course category
  */
 function getBorderColorForCategory(category: string): { outer: any; inner: any } {
-  const { rgb } = require('pdf-lib');
   
   switch (category) {
     case 'science_teachers':
