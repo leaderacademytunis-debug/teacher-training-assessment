@@ -63,10 +63,21 @@ export default function ImportExam() {
 
     setIsProcessing(true);
     try {
+      // Detect format automatically
+      let format: 'text' | 'csv' | 'google_forms' = 'text';
+      if (source === 'file' && fileName.endsWith('.csv')) {
+        // Check if it's Google Forms format (has Question,Type,Options header)
+        if (content.includes('Question,Type,Options')) {
+          format = 'google_forms';
+        } else {
+          format = 'csv';
+        }
+      }
+      
       await importMutation.mutateAsync({
         courseId: parseInt(courseId),
         content,
-        format: source === 'file' && fileName.endsWith('.csv') ? 'csv' : 'text',
+        format,
       });
     } finally {
       setIsProcessing(false);

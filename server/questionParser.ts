@@ -86,6 +86,54 @@ export function parseTextQuestions(content: string): ParsedQuestion[] {
 }
 
 /**
+ * Parse questions from Google Forms CSV export format
+ * Expected format:
+ * Question,Type,Options
+ * "Question text","Multiple Choice","Option A | Option B | Option C | Option D"
+ */
+export function parseGoogleFormsCSV(content: string): ParsedQuestion[] {
+  const questions: ParsedQuestion[] = [];
+  
+  const lines = content.split('\n').map(l => l.trim()).filter(l => l);
+  
+  // Skip header
+  const startIndex = 1;
+  
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Parse CSV line
+    const fields = parseCSVLine(line);
+    
+    if (fields.length < 3) continue;
+    
+    const [question, type, options] = fields;
+    
+    // Only process Multiple Choice questions
+    if (type.trim() !== 'Multiple Choice') continue;
+    
+    // Split options by |
+    const optionsList = options.split('|').map(o => o.trim()).filter(o => o);
+    
+    // We need at least 4 options
+    if (optionsList.length < 4) continue;
+    
+    // For now, assume first option is correct (user will need to specify)
+    // TODO: Add UI to select correct answer after import
+    questions.push({
+      question: question.trim(),
+      optionA: optionsList[0],
+      optionB: optionsList[1],
+      optionC: optionsList[2],
+      optionD: optionsList[3],
+      correctAnswer: 'A', // Default, user should update
+    });
+  }
+  
+  return questions;
+}
+
+/**
  * Parse questions from CSV format
  * Expected format:
  * question,option_a,option_b,option_c,option_d,correct

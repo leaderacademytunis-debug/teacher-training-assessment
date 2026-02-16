@@ -7,7 +7,7 @@ import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
-import { parseTextQuestions, parseCSVQuestions } from "./questionParser";
+import { parseTextQuestions, parseCSVQuestions, parseGoogleFormsCSV } from "./questionParser";
 
 // Admin/Trainer procedure - only for admin, trainer, or supervisor roles
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -170,7 +170,7 @@ export const appRouter = router({
       .input(z.object({
         courseId: z.number(),
         content: z.string(),
-        format: z.enum(['text', 'csv']),
+        format: z.enum(['text', 'csv', 'google_forms']),
       }))
       .mutation(async ({ input, ctx }) => {
         const { courseId, content, format } = input;
@@ -178,9 +178,13 @@ export const appRouter = router({
         // Parse questions based on format
         let questions;
         try {
-          questions = format === 'csv' 
-            ? parseCSVQuestions(content)
-            : parseTextQuestions(content);
+          if (format === 'google_forms') {
+            questions = parseGoogleFormsCSV(content);
+          } else if (format === 'csv') {
+            questions = parseCSVQuestions(content);
+          } else {
+            questions = parseTextQuestions(content);
+          }
         } catch (error) {
           throw new TRPCError({
             code: 'BAD_REQUEST',

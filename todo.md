@@ -284,3 +284,11 @@
 - [x] Ajouter le support des délimiteurs multiples (virgule et point-virgule)
 - [x] Tester le parser avec des fichiers de test
 - [ ] Créer le checkpoint
+
+## Support du format Google Forms natif
+- [x] Créer un parser pour le format Question,Type,Options
+- [x] Filtrer les questions de type "Multiple Choice" uniquement
+- [x] Extraire les 4 premiers choix (réponse correcte par défaut: A)
+- [x] Ajouter la détection automatique du format dans l'interface
+- [x] Tester avec le fichier réel fourni (7 questions importées avec succès)
+- [ ] Créer le checkpoint
