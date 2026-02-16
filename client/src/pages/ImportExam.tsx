@@ -50,8 +50,15 @@ export default function ImportExam() {
   };
 
   const handleImport = async (source: 'text' | 'file') => {
-    if (!courseId) {
+    // Validate courseId
+    if (!courseId || courseId.trim() === '') {
       toast.error("⚠️ يرجى اختيار الدورة أولاً");
+      return;
+    }
+
+    const courseIdNum = parseInt(courseId);
+    if (isNaN(courseIdNum) || courseIdNum <= 0) {
+      toast.error("⚠️ معرف الدورة غير صحيح. يرجى اختيار دورة من القائمة");
       return;
     }
 
@@ -75,7 +82,7 @@ export default function ImportExam() {
       }
       
       await importMutation.mutateAsync({
-        courseId: parseInt(courseId),
+        courseId: courseIdNum,
         content,
         format,
       });

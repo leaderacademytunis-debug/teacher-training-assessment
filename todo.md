@@ -292,3 +292,9 @@
 - [x] Ajouter la détection automatique du format dans l'interface
 - [x] Tester avec le fichier réel fourni (7 questions importées avec succès)
 - [ ] Créer le checkpoint
+
+## Bug: Erreur NaN dans courseId lors de l'importation
+- [x] Vérifier pourquoi courseId devient NaN dans ImportExam (courseId vide car pas de sélection)
+- [x] Corriger la logique de validation et conversion (ajout de validation robuste)
+- [x] Améliorer les messages d'erreur pour guider l'utilisateur
+- [ ] Créer le checkpoint
