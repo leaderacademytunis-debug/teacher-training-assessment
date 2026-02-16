@@ -243,8 +243,12 @@ export async function getExamById(id: number) {
 export async function createExam(exam: InsertExam) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(exams).values(exam);
-  return result;
+  const result: any = await db.insert(exams).values(exam);
+  // Get the inserted exam ID
+  const insertId = Number(result.insertId);
+  // Fetch and return the created exam
+  const created = await db.select().from(exams).where(eq(exams.id, insertId)).limit(1);
+  return created[0];
 }
 
 export async function updateExam(id: number, updates: Partial<InsertExam>) {

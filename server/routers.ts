@@ -7,6 +7,7 @@ import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
+import { parseTextQuestions, parseCSVQuestions } from "./questionParser";
 
 // Admin/Trainer procedure - only for admin, trainer, or supervisor roles
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -163,6 +164,58 @@ export const appRouter = router({
       .input(z.object({ examId: z.number() }))
       .query(async ({ input }) => {
         return await db.getExamStatistics(input.examId);
+      }),
+    
+    importQuestions: adminProcedure
+      .input(z.object({
+        courseId: z.number(),
+        content: z.string(),
+        format: z.enum(['text', 'csv']),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { courseId, content, format } = input;
+        
+        // Parse questions based on format
+        const questions = format === 'csv' 
+          ? parseCSVQuestions(content)
+          : parseTextQuestions(content);
+        
+        if (questions.length === 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'لم يتم العثور على أسئلة صالحة في المحتوى المدخل',
+          });
+        }
+        
+        // Create exam for this import
+        const exam = await db.createExam({
+          courseId,
+          titleAr: `اختبار مستورد - ${new Date().toLocaleDateString('ar-TN')}`,
+          descriptionAr: `تم استيراد ${questions.length} سؤال`,
+          duration: questions.length * 2, // 2 minutes per question
+          passingScore: 60,
+          createdBy: ctx.user.id,
+        });
+        
+        // Insert all questions
+        let orderIndex = 1;
+        for (const q of questions) {
+          await db.createQuestion({
+            examId: exam.id,
+            questionTextAr: q.question,
+            options: {
+              optionA: q.optionA,
+              optionB: q.optionB,
+              optionC: q.optionC,
+              optionD: q.optionD,
+            },
+            correctAnswer: q.correctAnswer,
+            orderIndex: orderIndex++,
+            points: 1,
+          });
+        }
+        
+        return { success: true, count: questions.length, examId: exam.id };
       }),
   }),
 

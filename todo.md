@@ -246,3 +246,21 @@
 - [x] Appliquer les couleurs aux bordures extérieures et intérieures
 - [x] Tester la génération de certificats pour toutes les catégories
 - [ ] Créer le checkpoint final
+
+## Système d'importation des examens depuis Google Forms
+- [x] Analyser la structure du formulaire Google Forms fourni
+- [x] Créer une interface d'importation dans le tableau de bord formateur
+- [x] Implémenter l'extraction automatique des questions depuis Google Forms
+- [x] Convertir les questions au format de la base de données
+- [x] Ajouter la validation et la gestion des erreurs
+- [x] Tester l'importation avec le parser (tests unitaires passés)
+- [ ] Créer le checkpoint final
+
+## Système d'importation des examens depuis Google Forms
+- [x] Analyser la structure du formulaire Google Forms fourni
+- [x] Créer une interface d'importation dans le tableau de bord formateur
+- [x] Implémenter l'extraction automatique des questions depuis Google Forms
+- [x] Convertir les questions au format de la base de données
+- [x] Ajouter la validation et la gestion des erreurs
+- [x] Tester l'importation avec le parser (tests unitaires passés)
+- [ ] Créer le checkpoint final

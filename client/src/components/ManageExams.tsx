@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { Plus, Pencil, Loader2, Users } from "lucide-react";
+import { Plus, Pencil, Loader2, Users, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -107,17 +107,24 @@ export default function ManageExams() {
           <h2 className="text-2xl font-bold">إدارة الاختبارات</h2>
           <p className="text-gray-600">إضافة وتعديل الاختبارات النهائية</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 ml-2" />
-              إضافة اختبار جديد
+        <div className="flex gap-2">
+          <Link href="/import-exam">
+            <Button variant="outline">
+              <Upload className="w-4 h-4 ml-2" />
+              استيراد من Google Forms
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl" dir="rtl">
+          </Link>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 ml-2" />
+                إضافة اختبار جديد
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl" dir="rtl">
             <DialogHeader>
               <DialogTitle>{editingExam ? "تعديل الاختبار" : "إضافة اختبار جديد"}</DialogTitle>
               <DialogDescription>
@@ -221,8 +228,9 @@ export default function ManageExams() {
                 </Button>
               </div>
             </form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Course Selector */}
