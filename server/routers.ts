@@ -176,14 +176,24 @@ export const appRouter = router({
         const { courseId, content, format } = input;
         
         // Parse questions based on format
-        const questions = format === 'csv' 
-          ? parseCSVQuestions(content)
-          : parseTextQuestions(content);
-        
-        if (questions.length === 0) {
+        let questions;
+        try {
+          questions = format === 'csv' 
+            ? parseCSVQuestions(content)
+            : parseTextQuestions(content);
+        } catch (error) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'لم يتم العثور على أسئلة صالحة في المحتوى المدخل',
+            message: `خطأ في تحليل المحتوى: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`,
+          });
+        }
+        
+        if (questions.length === 0) {
+          // Get first few lines for debugging
+          const preview = content.split('\n').slice(0, 3).join('\n');
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `لم يتم العثور على أسئلة صالحة. تأكد من التنسيق: question,option_a,option_b,option_c,option_d,correct\n\nمعاينة: ${preview}`,
           });
         }
         

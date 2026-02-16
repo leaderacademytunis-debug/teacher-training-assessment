@@ -94,6 +94,9 @@ export function parseTextQuestions(content: string): ParsedQuestion[] {
 export function parseCSVQuestions(content: string): ParsedQuestion[] {
   const questions: ParsedQuestion[] = [];
   
+  // Detect delimiter (comma or semicolon)
+  const delimiter = content.includes(';') && !content.includes(',') ? ';' : ',';
+  
   const lines = content.split('\n').map(l => l.trim()).filter(l => l);
   
   // Skip header if present
@@ -103,7 +106,7 @@ export function parseCSVQuestions(content: string): ParsedQuestion[] {
     const line = lines[i];
     
     // Parse CSV line (handle quoted fields)
-    const fields = parseCSVLine(line);
+    const fields = parseCSVLine(line, delimiter);
     
     if (fields.length < 6) continue;
     
@@ -135,7 +138,7 @@ export function parseCSVQuestions(content: string): ParsedQuestion[] {
 /**
  * Parse a single CSV line, handling quoted fields
  */
-function parseCSVLine(line: string): string[] {
+function parseCSVLine(line: string, delimiter: string = ','): string[] {
   const fields: string[] = [];
   let currentField = '';
   let inQuotes = false;
@@ -145,7 +148,7 @@ function parseCSVLine(line: string): string[] {
     
     if (char === '"') {
       inQuotes = !inQuotes;
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === delimiter && !inQuotes) {
       fields.push(currentField);
       currentField = '';
     } else {

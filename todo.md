@@ -276,3 +276,11 @@
 - [x] Corriger l'importation pour utiliser ES modules au lieu de require
 - [x] Tester la génération de certificat
 - [ ] Créer le checkpoint
+
+## Amélioration du parser CSV pour Google Forms
+- [x] Analyser le format exact du fichier CSV fourni
+- [x] Adapter le parser pour supporter les colonnes question,option_a,option_b,option_c,option_d,correct
+- [x] Améliorer les messages d'erreur pour le débogage
+- [x] Ajouter le support des délimiteurs multiples (virgule et point-virgule)
+- [x] Tester le parser avec des fichiers de test
+- [ ] Créer le checkpoint
