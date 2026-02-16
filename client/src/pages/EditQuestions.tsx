@@ -140,6 +140,12 @@ export default function EditQuestions() {
             الاختبار: {exam.titleAr} • {questions.length} سؤال
           </p>
         </div>
+        <Link href={`/preview-exam/${examId}`}>
+          <Button size="lg">
+            <Check className="ml-2 h-5 w-5" />
+            معاينة الاختبار
+          </Button>
+        </Link>
       </div>
 
       <div className="space-y-4">

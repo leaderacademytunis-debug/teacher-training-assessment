@@ -14,7 +14,8 @@ import MyCertificates from "./pages/MyCertificates";
 import CourseVideos from "./pages/CourseVideos";
 import VerifyCertificate from "./pages/VerifyCertificate";
 import ImportExam from "./pages/ImportExam";
-import EditQuestions from "./pages/EditQuestions";
+import EditQuestions from "@/pages/EditQuestions";
+import PreviewExam from "@/pages/PreviewExam";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/verify" component={VerifyCertificate} />
       <Route path="/import-exam" component={ImportExam} />
       <Route path="/edit-questions/:id" component={EditQuestions} />
+      <Route path="/preview-exam/:id" component={PreviewExam} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

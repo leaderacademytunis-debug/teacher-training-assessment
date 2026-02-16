@@ -316,3 +316,14 @@
 - [x] Corriger createQuestion pour retourner l'ID
 - [x] Tester toutes les opérations (4 tests passés)
 - [ ] Créer le checkpoint
+
+## Bouton de prévisualisation du quiz
+- [x] Ajouter un bouton "معاينة الاختبار" dans EditQuestions.tsx
+- [x] Créer une page PreviewExam.tsx qui affiche le quiz en mode participant
+- [x] Implémenter la logique pour ne pas enregistrer les résultats (mode local uniquement)
+- [x] Ajouter une bannière bleue indiquant que c'est un mode prévisualisation
+- [x] Ajouter un compteur de temps avec formatage MM:SS
+- [x] Afficher les résultats avec code couleur (vert/rouge)
+- [x] Ajouter un bouton "réessayer" pour réinitialiser la prévisualisation
+- [x] Ajouter la route dans App.tsx
+- [ ] Créer le checkpoint
