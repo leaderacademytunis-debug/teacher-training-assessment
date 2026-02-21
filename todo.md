@@ -346,3 +346,11 @@
 - [x] Ajouter automatiquement "لا شيء مما سبق" comme 4ème option
 - [x] Tester avec le fichier pre_school_education_test.csv (13 questions importées)
 - [ ] Créer le checkpoint final
+
+## Support des questions à 2 options (vrai/faux) avec ajout automatique des options C et D
+- [x] Modifier le parser CSV pour détecter les questions à 2 options
+- [x] Ajouter automatiquement deux options supplémentaires pour les questions binaires
+- [x] Créer des tests unitaires pour valider l'importation des questions vrai/faux
+- [x] Tester avec un fichier CSV réel contenant des questions binaires
+- [x] Tester avec un fichier CSV mixte (2, 3 et 4 options)
+- [ ] Créer le checkpoint final

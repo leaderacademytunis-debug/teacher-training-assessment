@@ -156,27 +156,47 @@ export function parseCSVQuestions(content: string): ParsedQuestion[] {
     // Parse CSV line (handle quoted fields)
     const fields = parseCSVLine(line, delimiter);
     
-    // Support both 5 fields (3 options + points) and 6 fields (4 options + correct)
-    if (fields.length < 5) continue;
+    // Support 4 fields (2 options + points), 5 fields (3 options + points), and 6 fields (4 options + correct)
+    if (fields.length < 4) continue;
     
     let question, optionA, optionB, optionC, optionD, correct;
     
-    // Format 1: Question,Option 1,Option 2,Option 3,Points (3 options)
-    if (fields.length === 5 || (fields.length === 6 && !fields[4])) {
+    // Determine format based on which fields are filled
+    // For CSV with 6 fields: Question,Option1,Option2,Option3,Option4,Points
+    if (fields.length >= 6) {
+      [question, optionA, optionB, optionC, optionD, correct] = fields;
+      
+      // Check if it's actually a 2-option format (Option3 and Option4 are empty)
+      if ((!optionC || !optionC.trim()) && (!optionD || !optionD.trim())) {
+        optionC = 'غير متأكد'; // Add default 3rd option: "Not sure"
+        optionD = 'لا شيء مما سبق'; // Add default 4th option: "None of the above"
+      }
+      // Check if it's a 3-option format (Option4 is empty)
+      else if (!optionD || !optionD.trim()) {
+        optionD = 'لا شيء مما سبق'; // Add default 4th option
+      }
+    }
+    // Format with 5 fields: Question,Option1,Option2,Option3,Points
+    else if (fields.length === 5) {
       [question, optionA, optionB, optionC, correct] = fields;
       optionD = 'لا شيء مما سبق'; // Add default 4th option
     }
-    // Format 2: Question,Option 1,Option 2,Option 3,Option 4,Correct (4 options)
+    // Format with 4 fields: Question,Option1,Option2,Points
+    else if (fields.length === 4) {
+      [question, optionA, optionB, correct] = fields;
+      optionC = 'غير متأكد'; // Add default 3rd option
+      optionD = 'لا شيء مما سبق'; // Add default 4th option
+    }
     else {
-      [question, optionA, optionB, optionC, optionD, correct] = fields;
+      continue; // Skip invalid lines
     }
     
-    // Skip lines with personal data ("نص حر" or empty options)
-    if (optionA.includes('نص حر') || !optionB || !optionC) continue;
+    // Skip lines with personal data ("نص حر" or empty required options)
+    if (!question || !optionA || optionA.includes('نص حر') || !optionB) continue;
     
     // Normalize correct answer
     let correctAnswer: 'A' | 'B' | 'C' | 'D' | '' = '';
-    const normalizedCorrect = correct.trim().toUpperCase();
+    const normalizedCorrect = correct ? correct.trim().toUpperCase() : '';
     
     // Support letter format (A, B, C, D)
     if (normalizedCorrect === 'A' || normalizedCorrect === 'أ') correctAnswer = 'A';
