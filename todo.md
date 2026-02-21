@@ -327,3 +327,10 @@
 - [x] Ajouter un bouton "réessayer" pour réinitialiser la prévisualisation
 - [x] Ajouter la route dans App.tsx
 - [ ] Créer le checkpoint
+
+## Support du format CSV avec Points
+- [x] Améliorer le parser pour détecter le format Question,Option 1,Option 2,Option 3,Option 4,Points
+- [x] Filtrer les lignes contenant "نص حر" (données personnelles)
+- [x] Convertir le numéro dans Points (1,2,3,4) en lettre (A,B,C,D)
+- [x] Tester avec le fichier google_form_questions_arabic.csv (18 questions importées)
+- [ ] Créer le checkpoint

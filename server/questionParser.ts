@@ -160,13 +160,23 @@ export function parseCSVQuestions(content: string): ParsedQuestion[] {
     
     const [question, optionA, optionB, optionC, optionD, correct] = fields;
     
+    // Skip lines with personal data ("نص حر" or empty options)
+    if (optionA.includes('نص حر') || !optionB || !optionC) continue;
+    
     // Normalize correct answer
     let correctAnswer: 'A' | 'B' | 'C' | 'D' | '' = '';
     const normalizedCorrect = correct.trim().toUpperCase();
+    
+    // Support letter format (A, B, C, D)
     if (normalizedCorrect === 'A' || normalizedCorrect === 'أ') correctAnswer = 'A';
     else if (normalizedCorrect === 'B' || normalizedCorrect === 'ب') correctAnswer = 'B';
     else if (normalizedCorrect === 'C' || normalizedCorrect === 'ج') correctAnswer = 'C';
     else if (normalizedCorrect === 'D' || normalizedCorrect === 'د') correctAnswer = 'D';
+    // Support number format (1, 2, 3, 4) - convert to letters
+    else if (normalizedCorrect === '1') correctAnswer = 'A';
+    else if (normalizedCorrect === '2') correctAnswer = 'B';
+    else if (normalizedCorrect === '3') correctAnswer = 'C';
+    else if (normalizedCorrect === '4') correctAnswer = 'D';
     
     if (question && optionA && optionB && optionC && optionD && correctAnswer) {
       questions.push({
