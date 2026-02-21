@@ -156,9 +156,20 @@ export function parseCSVQuestions(content: string): ParsedQuestion[] {
     // Parse CSV line (handle quoted fields)
     const fields = parseCSVLine(line, delimiter);
     
-    if (fields.length < 6) continue;
+    // Support both 5 fields (3 options + points) and 6 fields (4 options + correct)
+    if (fields.length < 5) continue;
     
-    const [question, optionA, optionB, optionC, optionD, correct] = fields;
+    let question, optionA, optionB, optionC, optionD, correct;
+    
+    // Format 1: Question,Option 1,Option 2,Option 3,Points (3 options)
+    if (fields.length === 5 || (fields.length === 6 && !fields[4])) {
+      [question, optionA, optionB, optionC, correct] = fields;
+      optionD = 'لا شيء مما سبق'; // Add default 4th option
+    }
+    // Format 2: Question,Option 1,Option 2,Option 3,Option 4,Correct (4 options)
+    else {
+      [question, optionA, optionB, optionC, optionD, correct] = fields;
+    }
     
     // Skip lines with personal data ("نص حر" or empty options)
     if (optionA.includes('نص حر') || !optionB || !optionC) continue;

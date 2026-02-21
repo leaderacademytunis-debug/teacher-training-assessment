@@ -334,3 +334,15 @@
 - [x] Convertir le numéro dans Points (1,2,3,4) en lettre (A,B,C,D)
 - [x] Tester avec le fichier google_form_questions_arabic.csv (18 questions importées)
 - [ ] Créer le checkpoint
+
+## Support des questions à 3 options
+- [ ] Modifier parseCSVQuestions pour détecter les questions avec 3 options seulement
+- [ ] Ajouter automatiquement une 4ème option "لا شيء مما سبق"
+- [ ] Tester avec le fichier pre_school_education_test.csv (13 questions)
+- [ ] Créer le checkpoint
+
+## Support des questions à 3 options avec ajout automatique de la 4ème option
+- [x] Modifier le parser CSV pour détecter les questions à 3 options
+- [x] Ajouter automatiquement "لا شيء مما سبق" comme 4ème option
+- [x] Tester avec le fichier pre_school_education_test.csv (13 questions importées)
+- [ ] Créer le checkpoint final
