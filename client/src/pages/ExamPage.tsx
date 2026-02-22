@@ -127,9 +127,10 @@ export default function ExamPage() {
   }
 
   const lastAttempt = attempts?.[0];
-  const hasCompletedAttempt = lastAttempt?.status === "graded";
+  const hasPassedAttempt = lastAttempt?.status === "graded" && lastAttempt?.passed;
 
-  if (hasCompletedAttempt && !attemptId) {
+  // Only block if user has PASSED the exam
+  if (hasPassedAttempt && !attemptId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <header className="bg-white shadow-sm border-b">
@@ -147,14 +148,14 @@ export default function ExamPage() {
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
               <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <CardTitle className="text-2xl">لقد أكملت هذا الاختبار</CardTitle>
+              <CardTitle className="text-2xl">لقد نجحت في هذا الاختبار</CardTitle>
               <CardDescription className="text-base">
-                النتيجة: {lastAttempt.score}% - {lastAttempt.passed ? "ناجح" : "راسب"}
+                النتيجة: {lastAttempt.score}% - ناجح ✅
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <Link href={`/exam-results/${lastAttempt.id}`}>
-                <Button>عرض النتائج التفصيلية</Button>
+                <Button>عرض النتائج والشهادة</Button>
               </Link>
             </CardContent>
           </Card>

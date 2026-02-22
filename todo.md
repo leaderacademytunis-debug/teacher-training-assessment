@@ -354,3 +354,12 @@
 - [x] Tester avec un fichier CSV réel contenant des questions binaires
 - [x] Tester avec un fichier CSV mixte (2, 3 et 4 options)
 - [ ] Créer le checkpoint final
+
+## Amélioration de l'expérience lors de l'échec à un examen
+- [x] Analyser le comportement actuel lors de l'échec (affichage des réponses correctes)
+- [x] Implémenter un bouton "إعادة المحاولة" (Réessayer) sans afficher les réponses
+- [x] Masquer les réponses correctes en cas d'échec
+- [x] Permettre plusieurs tentatives pour le même examen
+- [x] Afficher les réponses uniquement en cas de réussite
+- [x] Tester le nouveau comportement
+- [ ] Créer le checkpoint final

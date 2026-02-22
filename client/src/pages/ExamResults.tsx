@@ -112,14 +112,38 @@ export default function ExamResults() {
             </CardContent>
           </Card>
 
-          {/* Detailed Answers */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">مراجعة الإجابات</CardTitle>
-              <CardDescription>
-                تفاصيل إجاباتك على جميع الأسئلة
-              </CardDescription>
-            </CardHeader>
+          {/* Retry Button (if failed) */}
+          {!passed && (
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl">لا تقلق! يمكنك إعادة المحاولة</CardTitle>
+                <CardDescription className="text-base text-gray-700">
+                  ادرس المواد مرة أخرى وحاول مجدداً. لديك عدد غير محدود من المحاولات.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <Link href={`/exam/${exam?.id}`}>
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                    إعادة المحاولة
+                  </Button>
+                </Link>
+                <p className="text-sm text-gray-600">
+                  نصيحة: راجع مواد الدورة قبل إعادة المحاولة
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Detailed Answers (only if passed) */}
+          {passed && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">مراجعة الإجابات</CardTitle>
+                <CardDescription>
+                  تفاصيل إجاباتك على جميع الأسئلة
+                </CardDescription>
+              </CardHeader>
             <CardContent className="space-y-6">
               {questions?.map((question, index) => {
                 const userAnswer = userAnswers.find(a => a.questionId === question.id);
@@ -194,7 +218,8 @@ export default function ExamResults() {
                 );
               })}
             </CardContent>
-          </Card>
+            </Card>
+          )}
 
           {/* Certificate Section (if passed) */}
           {passed && (
