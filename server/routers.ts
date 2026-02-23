@@ -32,6 +32,60 @@ export const appRouter = router({
     }),
   }),
 
+  profile: router({
+    uploadPaymentReceipt: protectedProcedure
+      .input(z.object({
+        base64Data: z.string(),
+        fileExtension: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        
+        // Convert base64 to buffer
+        const buffer = Buffer.from(input.base64Data, 'base64');
+        
+        // Generate unique filename
+        const fileName = `payment-receipts/${ctx.user.id}-${Date.now()}.${input.fileExtension}`;
+        
+        // Upload to S3
+        const { url } = await storagePut(fileName, buffer, input.mimeType);
+        
+        return { url };
+      }),
+    
+    completeRegistration: protectedProcedure
+      .input(z.object({
+        firstNameAr: z.string().min(1, "الاسم بالعربية مطلوب"),
+        lastNameAr: z.string().min(1, "اللقب بالعربية مطلوب"),
+        firstNameFr: z.string().min(1, "Le prénom en français est requis"),
+        lastNameFr: z.string().min(1, "Le nom en français est requis"),
+        phone: z.string().min(8, "رقم الهاتف غير صحيح"),
+        idCardNumber: z.string().min(1, "رقم بطاقة التعريف مطلوب"),
+        paymentReceiptUrl: z.string().url("رابط وصل الخلاص غير صحيح"),
+        email: z.string().email("البريد الإلكتروني غير صحيح"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.completeUserRegistration(ctx.user.id, input);
+        return { success: true };
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        firstNameAr: z.string().optional(),
+        lastNameAr: z.string().optional(),
+        firstNameFr: z.string().optional(),
+        lastNameFr: z.string().optional(),
+        phone: z.string().optional(),
+        idCardNumber: z.string().optional(),
+        email: z.string().email().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.updateUserProfile(ctx.user.id, input);
+        return { success: true };
+      }),
+  }),
+
   courses: router({
     list: publicProcedure.query(async () => {
       return await db.getAllCourses();

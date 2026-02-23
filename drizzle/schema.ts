@@ -12,6 +12,17 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin", "trainer", "supervisor"]).default("user").notNull(),
+  
+  // Registration fields
+  firstNameAr: varchar("firstNameAr", { length: 100 }),
+  lastNameAr: varchar("lastNameAr", { length: 100 }),
+  firstNameFr: varchar("firstNameFr", { length: 100 }),
+  lastNameFr: varchar("lastNameFr", { length: 100 }),
+  phone: varchar("phone", { length: 20 }),
+  idCardNumber: varchar("idCardNumber", { length: 50 }),
+  paymentReceiptUrl: text("paymentReceiptUrl"),
+  registrationCompleted: boolean("registrationCompleted").default(false).notNull(),
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

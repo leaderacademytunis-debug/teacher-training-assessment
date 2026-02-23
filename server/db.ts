@@ -679,3 +679,55 @@ export async function notifyAllAdmins(notification: Omit<InsertNotification, "us
     });
   }
 }
+
+// ============================================
+// User Profile Management
+// ============================================
+
+export async function completeUserRegistration(
+  userId: number, 
+  data: {
+    firstNameAr: string;
+    lastNameAr: string;
+    firstNameFr: string;
+    lastNameFr: string;
+    phone: string;
+    idCardNumber: string;
+    paymentReceiptUrl: string;
+    email: string;
+  }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users)
+    .set({
+      ...data,
+      registrationCompleted: true,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function updateUserProfile(
+  userId: number,
+  updates: {
+    firstNameAr?: string;
+    lastNameAr?: string;
+    firstNameFr?: string;
+    lastNameFr?: string;
+    phone?: string;
+    idCardNumber?: string;
+    email?: string;
+  }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users)
+    .set({
+      ...updates,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}

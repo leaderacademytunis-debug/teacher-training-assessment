@@ -363,3 +363,14 @@
 - [x] Afficher les réponses uniquement en cas de réussite
 - [x] Tester le nouveau comportement
 - [ ] Créer le checkpoint final
+
+## Page d'inscription complète avec tous les champs requis
+- [x] Mettre à jour le schéma de base de données (user table) avec les nouveaux champs
+- [x] Ajouter les champs: firstNameAr, lastNameAr, firstNameFr, lastNameFr, phone, idCardNumber, paymentReceiptUrl
+- [x] Créer les procédures tRPC pour l'inscription et la mise à jour du profil
+- [x] Créer la page d'inscription avec formulaire complet
+- [x] Implémenter l'upload du fichier de paiement vers S3 via tRPC
+- [x] Ajouter la validation des champs (format téléphone, carte d'identité, email, etc.)
+- [x] Ajouter la route /complete-registration dans App.tsx
+- [x] Validation de la taille et du type de fichier (max 5MB, images/PDF uniquement)
+- [ ] Créer le checkpoint final
