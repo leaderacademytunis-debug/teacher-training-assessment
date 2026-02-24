@@ -493,4 +493,10 @@
 - [x] Inverser l'ordre de dessin: dessiner le numéro AVANT le texte arabe pour qu'il apparaisse APRÈS en RTL
 - [x] Recalculer les positions X en conséquence
 - [x] Tester avec un nouveau certificat
+- [x] Créer le checkpoint final
+
+## Correction de l'ordre RTL de la date
+- [x] Corriger l'ordre de dessin de la date pour afficher: "صدرت بتاريخ 24 فيفري 2026"
+- [x] Inverser l'ordre: dessiner année, mois, jour, puis le préfixe en dernier
+- [x] Tester avec un nouveau certificat
 - [ ] Créer le checkpoint final

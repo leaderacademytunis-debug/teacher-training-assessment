@@ -500,41 +500,46 @@ async function drawArabicCertificate(
   // Second signature removed per user request
   
   // Add issue date in bottom left corner
-  // CRITICAL FIX: Draw date components separately to prevent number reversal
-  const issueDate = data.completionDate; // Use completion date instead of current date
-  const arabicPrefix = processArabicText('صدرت بتاريخ:');
+  // CRITICAL FIX FOR RTL: Calculate total width first, then draw RTL from right to left
+  // Visual order (RTL): صدرت بتاريخ 24 فيفري 2026
+  const issueDate = data.completionDate;
+  const arabicPrefix = processArabicText('صدرت بتاريخ');
   
-  // Get date components without processing (to keep numbers in correct order)
+  // Get date components
   const day = issueDate.getDate().toString();
   const arabicMonths = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   const month = arabicMonths[issueDate.getMonth()];
+  const processedMonth = processArabicText(month);
   const year = issueDate.getFullYear().toString();
   
-  // Draw prefix
-  page.drawText(arabicPrefix, {
-    x: 50,
-    y: 50,
-    size: 10,
-    font: font,
-    color: gray,
-  });
-  
-  // Calculate position for date parts (after prefix)
+  // Calculate widths for all components
+  const yearWidth = font.widthOfTextAtSize(year, 10);
+  const monthWidth = font.widthOfTextAtSize(processedMonth, 10);
+  const dayWidth = font.widthOfTextAtSize(day, 10);
   const prefixWidth = font.widthOfTextAtSize(arabicPrefix, 10);
-  let currentX = 50 + prefixWidth + 5;
+  const spaceWidth = 3;
   
-  // Draw day (number, no processing)
-  page.drawText(day, {
+  // Calculate total width
+  const totalWidth = prefixWidth + spaceWidth + dayWidth + spaceWidth + monthWidth + spaceWidth + yearWidth;
+  
+  // Start from left edge + total width (rightmost position)
+  const startX = 50;
+  let currentX = startX + totalWidth;
+  
+  // RTL ORDER: Draw from RIGHT to LEFT
+  // 1. Draw year (rightmost) - move left by year width first
+  currentX -= yearWidth;
+  page.drawText(year, {
     x: currentX,
     y: 50,
     size: 10,
     font: font,
     color: gray,
   });
-  currentX += font.widthOfTextAtSize(day, 10) + 3;
+  currentX -= spaceWidth;
   
-  // Draw month (Arabic text, needs processing)
-  const processedMonth = processArabicText(month);
+  // 2. Draw month
+  currentX -= monthWidth;
   page.drawText(processedMonth, {
     x: currentX,
     y: 50,
@@ -542,10 +547,22 @@ async function drawArabicCertificate(
     font: font,
     color: gray,
   });
-  currentX += font.widthOfTextAtSize(processedMonth, 10) + 3;
+  currentX -= spaceWidth;
   
-  // Draw year (number, no processing)
-  page.drawText(year, {
+  // 3. Draw day
+  currentX -= dayWidth;
+  page.drawText(day, {
+    x: currentX,
+    y: 50,
+    size: 10,
+    font: font,
+    color: gray,
+  });
+  currentX -= spaceWidth;
+  
+  // 4. Draw prefix (leftmost)
+  currentX -= prefixWidth;
+  page.drawText(arabicPrefix, {
     x: currentX,
     y: 50,
     size: 10,
