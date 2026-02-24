@@ -19,9 +19,8 @@ function formatDateArabic(date: Date): string {
   const day = date.getDate();
   const month = arabicMonths[date.getMonth()];
   const year = date.getFullYear();
-  // Add LRM (Left-to-Right Mark) to force correct display of numbers in RTL context
-  const lrm = '\u200E';
-  return `${lrm}${day}${lrm} ${month} ${lrm}${year}${lrm}`;
+  // processArabicText now automatically protects numbers from RTL reversal
+  return `${day} ${month} ${year}`;
 }
 
 /**
@@ -37,9 +36,8 @@ function formatDateFrench(date: Date): string {
   const day = date.getDate();
   const month = frenchMonths[date.getMonth()];
   const year = date.getFullYear();
-  // Add LRM (Left-to-Right Mark) to ensure correct display
-  const lrm = '\u200E';
-  return `${lrm}${day}${lrm} ${month} ${lrm}${year}${lrm}`;
+  // processArabicText automatically protects numbers from RTL reversal
+  return `${day} ${month} ${year}`;
 }
 
 /**
@@ -343,12 +341,31 @@ async function drawArabicCertificate(
   
   // ID card number below the name (if provided)
   if (data.idCardNumber) {
-    // Use LRM (Left-to-Right Mark) to prevent number reversal in RTL text
-    const LRM = '\u200E'; // Unicode Left-to-Right Mark
-    const idCardText = processArabicText(`صاحب/ة بطاقة تعريف وطنية رقم ${LRM}${data.idCardNumber}${LRM}`);
-    const idCardWidth = font.widthOfTextAtSize(idCardText, 12);
-    page.drawText(idCardText, {
-      x: (width - idCardWidth) / 2,
+    // CRITICAL FIX: Draw Arabic text and numbers separately to prevent number reversal
+    // Process only the Arabic text part, not the number
+    const arabicPart = processArabicText('صاحب/ة بطاقة تعريف وطنية رقم');
+    const numberPart = data.idCardNumber; // Keep number as-is, don't process
+    
+    // Combine for width calculation (approximate)
+    const fullText = `${arabicPart} ${numberPart}`;
+    const fullWidth = font.widthOfTextAtSize(fullText, 12);
+    
+    // Calculate starting X position to center the whole text
+    const startX = (width - fullWidth) / 2;
+    
+    // Draw Arabic part (RTL processed)
+    const arabicWidth = font.widthOfTextAtSize(arabicPart, 12);
+    page.drawText(arabicPart, {
+      x: startX,
+      y: height - 255,
+      size: 12,
+      font: font,
+      color: gray,
+    });
+    
+    // Draw number part (LTR, no processing) right after Arabic text
+    page.drawText(numberPart, {
+      x: startX + arabicWidth + 5, // Small space between text and number
       y: height - 255,
       size: 12,
       font: font,
@@ -481,13 +498,53 @@ async function drawArabicCertificate(
   // Second signature removed per user request
   
   // Add issue date in bottom left corner
+  // CRITICAL FIX: Draw date components separately to prevent number reversal
   const issueDate = data.completionDate; // Use completion date instead of current date
-  const formattedDate = formatDateArabic(issueDate);
-  
   const arabicPrefix = processArabicText('صدرت بتاريخ:');
-  const dateText = `${arabicPrefix} ${formattedDate}`; 
-  page.drawText(dateText, {
+  
+  // Get date components without processing (to keep numbers in correct order)
+  const day = issueDate.getDate().toString();
+  const arabicMonths = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const month = arabicMonths[issueDate.getMonth()];
+  const year = issueDate.getFullYear().toString();
+  
+  // Draw prefix
+  page.drawText(arabicPrefix, {
     x: 50,
+    y: 50,
+    size: 10,
+    font: font,
+    color: gray,
+  });
+  
+  // Calculate position for date parts (after prefix)
+  const prefixWidth = font.widthOfTextAtSize(arabicPrefix, 10);
+  let currentX = 50 + prefixWidth + 5;
+  
+  // Draw day (number, no processing)
+  page.drawText(day, {
+    x: currentX,
+    y: 50,
+    size: 10,
+    font: font,
+    color: gray,
+  });
+  currentX += font.widthOfTextAtSize(day, 10) + 3;
+  
+  // Draw month (Arabic text, needs processing)
+  const processedMonth = processArabicText(month);
+  page.drawText(processedMonth, {
+    x: currentX,
+    y: 50,
+    size: 10,
+    font: font,
+    color: gray,
+  });
+  currentX += font.widthOfTextAtSize(processedMonth, 10) + 3;
+  
+  // Draw year (number, no processing)
+  page.drawText(year, {
+    x: currentX,
     y: 50,
     size: 10,
     font: font,
