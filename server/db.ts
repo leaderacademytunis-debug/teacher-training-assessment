@@ -280,6 +280,20 @@ export async function updateExam(id: number, updates: Partial<InsertExam>) {
   await db.update(exams).set(updates).where(eq(exams.id, id));
 }
 
+export async function deleteExam(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Delete all questions associated with this exam (cascade delete)
+  await db.delete(questions).where(eq(questions.examId, id));
+  
+  // Delete all exam attempts associated with this exam
+  await db.delete(examAttempts).where(eq(examAttempts.examId, id));
+  
+  // Delete the exam itself
+  await db.delete(exams).where(eq(exams.id, id));
+}
+
 // ========== QUESTIONS ==========
 
 export async function getQuestionsByExamId(examId: number) {

@@ -473,3 +473,12 @@
 - [x] Ajouter Unicode LRM markers dans formatDateFrench() pour cohérence
 - [x] Utiliser \u200E avant et après chaque nombre (jour et année)
 - [ ] Créer le checkpoint final
+
+## Ajout de la fonctionnalité de suppression d'examen
+- [x] Créer la procédure backend deleteExam dans db.ts
+- [x] Ajouter la route tRPC exams.delete
+- [x] Ajouter le bouton "حذف" (Supprimer) dans ManageExams.tsx
+- [x] Ajouter une boîte de dialogue de confirmation avant suppression
+- [x] Supprimer en cascade toutes les questions associées à l'examen
+- [x] Tester la suppression d'un examen
+- [ ] Créer le checkpoint final

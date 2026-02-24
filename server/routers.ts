@@ -214,6 +214,13 @@ export const appRouter = router({
         return { success: true };
       }),
     
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteExam(input.id);
+        return { success: true };
+      }),
+    
     getStatistics: adminProcedure
       .input(z.object({ examId: z.number() }))
       .query(async ({ input }) => {

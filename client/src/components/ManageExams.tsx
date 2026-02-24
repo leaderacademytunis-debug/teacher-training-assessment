@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { Plus, Pencil, Loader2, Users, Upload } from "lucide-react";
+import { Plus, Pencil, Loader2, Users, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -15,6 +16,8 @@ export default function ManageExams() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<any>(null);
   const [selectedCourse, setSelectedCourse] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [examToDelete, setExamToDelete] = useState<any>(null);
   const [formData, setFormData] = useState({
     courseId: "",
     titleAr: "",
@@ -48,6 +51,18 @@ export default function ManageExams() {
       utils.exams.listByCourse.invalidate();
       setIsDialogOpen(false);
       resetForm();
+    },
+    onError: (error) => {
+      toast.error("حدث خطأ: " + error.message);
+    },
+  });
+
+  const deleteMutation = trpc.exams.delete.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف الاختبار بنجاح!");
+      utils.exams.listByCourse.invalidate();
+      setDeleteDialogOpen(false);
+      setExamToDelete(null);
     },
     onError: (error) => {
       toast.error("حدث خطأ: " + error.message);
@@ -107,6 +122,17 @@ export default function ManageExams() {
       passingScore: exam.passingScore?.toString() || "60",
     });
     setIsDialogOpen(true);
+  };
+
+  const handleDelete = (exam: any) => {
+    setExamToDelete(exam);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (examToDelete) {
+      deleteMutation.mutate({ id: examToDelete.id });
+    }
   };
 
   return (
@@ -300,6 +326,14 @@ export default function ManageExams() {
                           المحاولات
                         </Button>
                       </Link>
+                      <Button 
+                        variant="destructive" 
+                        className="flex-1"
+                        onClick={() => handleDelete(exam)}
+                      >
+                        <Trash2 className="w-4 h-4 ml-2" />
+                        حذف
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -316,6 +350,31 @@ export default function ManageExams() {
           )}
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف الاختبار "{examToDelete?.titleAr}"?
+              <br />
+              <strong className="text-destructive">سيتم حذف جميع الأسئلة والمحاولات المرتبطة بهذا الاختبار.</strong>
+              <br />
+              هذه العملية لا يمكن التراجع عنها.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
