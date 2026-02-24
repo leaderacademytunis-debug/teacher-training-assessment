@@ -433,3 +433,14 @@
 - [x] Certificats PDF déjà stockés dans S3 pour accès permanent
 - [x] Gestion des erreurs d'envoi d'é-mail sans bloquer la génération
 - [ ] Créer le checkpoint final
+
+## Amélioration des certificats (ID, date, nom arabe)
+- [x] Ajouter le champ idCardNumber dans l'interface CertificateData
+- [x] Mettre à jour le générateur de certificats pour afficher le numéro de carte d'identité
+- [x] Afficher "صاحب(ة) بطاقة تعريف وطنية رقم X" sous le nom du participant
+- [x] Corriger le format de date pour utiliser completionDate au lieu de new Date()
+- [x] Format de date déjà correct (JJ/MM/AA) - pas de changement nécessaire
+- [x] Utiliser firstNameAr + lastNameAr du formulaire d'inscription au lieu de arabicName
+- [x] Mettre à jour les appels dans routers.ts pour passer idCardNumber (certificat individuel)
+- [x] Mettre à jour les appels dans routers.ts pour passer idCardNumber (certificat cumulatif)
+- [ ] Créer le checkpoint final

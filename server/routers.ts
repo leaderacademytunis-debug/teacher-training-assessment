@@ -561,14 +561,16 @@ export const appRouter = router({
         // Generate certificate number
         const certificateNumber = `CERT-${Date.now()}-${nanoid(8).toUpperCase()}`;
 
-        // Generate PDF
+        // Generate PDF with Arabic name from registration form
+        const participantNameAr = `${ctx.user.firstNameAr || ''} ${ctx.user.lastNameAr || ''}`.trim() || ctx.user.name || "المشارك";
         const { url, key } = await generateCertificatePDF({
-          participantName: ctx.user.arabicName || ctx.user.name || "المشارك",
+          participantName: participantNameAr,
           courseName: course.titleAr,
           courseType: course.category,
           completionDate: attempt.submittedAt || new Date(),
           score: attempt.score || 0,
           certificateNumber,
+          idCardNumber: ctx.user.idCardNumber || undefined,
         });
 
         // Save certificate record
@@ -708,14 +710,16 @@ export const appRouter = router({
           }, 0) / userCertificates.length
         );
 
-        // Generate PDF
+        // Generate PDF with Arabic name from registration form
+        const participantNameAr = `${ctx.user.firstNameAr || ''} ${ctx.user.lastNameAr || ''}`.trim() || ctx.user.name || "المشارك";
         const { url, key } = await generateCertificatePDF({
-          participantName: ctx.user.arabicName || ctx.user.name || "المشارك",
+          participantName: participantNameAr,
           courseName: cumulativeCourse.titleAr,
           courseType: cumulativeCourse.category,
           completionDate: new Date(),
           score: avgScore,
           certificateNumber,
+          idCardNumber: ctx.user.idCardNumber || undefined,
         });
 
         // Save certificate record (without examAttemptId since it's cumulative)

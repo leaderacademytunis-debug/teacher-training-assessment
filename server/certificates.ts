@@ -95,6 +95,7 @@ interface CertificateData {
   completionDate: Date;
   score: number;
   certificateNumber: string;
+  idCardNumber?: string; // National ID card number
 }
 
 /**
@@ -304,6 +305,19 @@ async function drawArabicCertificate(
     color: black,
   });
   
+  // ID card number below the name (if provided)
+  if (data.idCardNumber) {
+    const idCardText = processArabicText(`صاحب(ة) بطاقة تعريف وطنية رقم ${data.idCardNumber}`);
+    const idCardWidth = font.widthOfTextAtSize(idCardText, 12);
+    page.drawText(idCardText, {
+      x: (width - idCardWidth) / 2,
+      y: height - 255,
+      size: 12,
+      font: font,
+      color: gray,
+    });
+  }
+  
   // Main text (increased size)
   const mainText = processArabicText(content.mainText);
   const mainTextWidth = font.widthOfTextAtSize(mainText, 13);
@@ -430,7 +444,7 @@ async function drawArabicCertificate(
     'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
     'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
   ];
-  const issueDate = new Date();
+  const issueDate = data.completionDate; // Use completion date instead of current date
   const day = issueDate.getDate();
   const month = issueDate.getMonth() + 1; // Months are 0-indexed
   const year = issueDate.getFullYear() % 100; // Get last 2 digits of year
@@ -632,7 +646,7 @@ async function drawFrenchCertificate(
   });
   
   // Date in bottom-left corner
-  const issueDate = new Date();
+  const issueDate = data.completionDate; // Use completion date instead of current date
   const day = issueDate.getDate();
   const month = issueDate.getMonth() + 1; // Months are 0-indexed
   const year = issueDate.getFullYear() % 100; // Get last 2 digits of year
