@@ -374,3 +374,11 @@
 - [x] Ajouter la route /complete-registration dans App.tsx
 - [x] Validation de la taille et du type de fichier (max 5MB, images/PDF uniquement)
 - [ ] Créer le checkpoint final
+
+## Ajouter un bouton d'inscription sur la page d'accueil
+- [x] Ajouter un bouton "إكمال التسجيل" visible sur la page d'accueil
+- [x] Le bouton redirige vers /complete-registration
+- [x] Afficher le bouton uniquement pour les utilisateurs connectés qui n'ont pas complété leur inscription
+- [x] Style distinctif (orange) pour attirer l'attention
+- [x] Icône UserPlus pour clarté visuelle
+- [ ] Créer le checkpoint final

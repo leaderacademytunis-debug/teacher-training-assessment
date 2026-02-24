@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, GraduationCap, Users, Award, Loader2 } from "lucide-react";
+import { BookOpen, GraduationCap, Users, Award, Loader2, UserPlus } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link } from "wouter";
 
@@ -48,6 +48,14 @@ export default function Home() {
               {user ? (
                 <>
                   <NotificationBell />
+                  {!user.registrationCompleted && (
+                    <Link href="/complete-registration">
+                      <Button className="bg-orange-500 hover:bg-orange-600 text-white">
+                        <UserPlus className="w-4 h-4 ml-2" />
+                        إكمال التسجيل
+                      </Button>
+                    </Link>
+                  )}
                   {["admin", "trainer", "supervisor"].includes(user.role) && (
                     <Link href="/dashboard">
                       <Button variant="outline">لوحة التحكم</Button>
