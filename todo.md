@@ -481,4 +481,16 @@
 - [x] Ajouter une boîte de dialogue de confirmation avant suppression
 - [x] Supprimer en cascade toutes les questions associées à l'examen
 - [x] Tester la suppression d'un examen
+- [x] Créer le checkpoint final
+
+## Réorganisation de l'ordre des informations dans le certificat
+- [ ] Modifier l'ordre pour commencer par "صدرت بتاريخ" suivi de la date
+- [ ] Déplacer le numéro de carte d'identité à la fin de la phrase
+- [ ] Tester la génération du certificat avec le nouvel ordre
+- [ ] Créer le checkpoint final
+
+## Correction de l'ordre RTL du numéro de carte d'identité
+- [x] Inverser l'ordre de dessin: dessiner le numéro AVANT le texte arabe pour qu'il apparaisse APRÈS en RTL
+- [x] Recalculer les positions X en conséquence
+- [x] Tester avec un nouveau certificat
 - [ ] Créer le checkpoint final

@@ -341,21 +341,23 @@ async function drawArabicCertificate(
   
   // ID card number below the name (if provided)
   if (data.idCardNumber) {
-    // CRITICAL FIX: Draw Arabic text and numbers separately to prevent number reversal
-    // Process only the Arabic text part, not the number
+    // CRITICAL FIX FOR RTL: In RTL context, we need to draw from RIGHT to LEFT
+    // So we draw the NUMBER first (rightmost), then the ARABIC TEXT (leftmost)
     const arabicPart = processArabicText('صاحب/ة بطاقة تعريف وطنية رقم');
     const numberPart = data.idCardNumber; // Keep number as-is, don't process
     
-    // Combine for width calculation (approximate)
-    const fullText = `${arabicPart} ${numberPart}`;
-    const fullWidth = font.widthOfTextAtSize(fullText, 12);
+    // Calculate widths
+    const arabicWidth = font.widthOfTextAtSize(arabicPart, 12);
+    const numberWidth = font.widthOfTextAtSize(numberPart, 12);
+    const spaceWidth = 5;
+    const fullWidth = arabicWidth + spaceWidth + numberWidth;
     
     // Calculate starting X position to center the whole text
     const startX = (width - fullWidth) / 2;
     
-    // Draw Arabic part (RTL processed)
-    const arabicWidth = font.widthOfTextAtSize(arabicPart, 12);
-    page.drawText(arabicPart, {
+    // RTL ORDER: Draw NUMBER first (appears on the right), then ARABIC TEXT (appears on the left)
+    // Draw number part FIRST (rightmost position in RTL)
+    page.drawText(numberPart, {
       x: startX,
       y: height - 255,
       size: 12,
@@ -363,9 +365,9 @@ async function drawArabicCertificate(
       color: gray,
     });
     
-    // Draw number part (LTR, no processing) right after Arabic text
-    page.drawText(numberPart, {
-      x: startX + arabicWidth + 5, // Small space between text and number
+    // Draw Arabic part SECOND (leftmost position in RTL)
+    page.drawText(arabicPart, {
+      x: startX + numberWidth + spaceWidth,
       y: height - 255,
       size: 12,
       font: font,
