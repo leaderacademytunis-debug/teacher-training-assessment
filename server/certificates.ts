@@ -7,6 +7,38 @@ import { processArabicText, wrapArabicText } from './arabicTextHelper';
 import { getCertificateContent, type CertificateContent } from './certificateContent';
 
 /**
+ * Format date with Arabic month names
+ * @param date - Date object
+ * @returns Formatted date string (e.g., "24 فيفري 2026")
+ */
+function formatDateArabic(date: Date): string {
+  const arabicMonths = [
+    'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 
+    'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+  ];
+  const day = date.getDate();
+  const month = arabicMonths[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
+/**
+ * Format date with French month names
+ * @param date - Date object
+ * @returns Formatted date string (e.g., "24 février 2026")
+ */
+function formatDateFrench(date: Date): string {
+  const frenchMonths = [
+    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
+  ];
+  const day = date.getDate();
+  const month = frenchMonths[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+}
+
+/**
  * Get border color based on course category
  */
 function getBorderColorForCategory(category: string): { outer: any; inner: any } {
@@ -445,23 +477,11 @@ async function drawArabicCertificate(
   // Second signature removed per user request
   
   // Add issue date in bottom left corner
-  const months = [
-    'جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان',
-    'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
-  ];
   const issueDate = data.completionDate; // Use completion date instead of current date
-  const day = issueDate.getDate();
-  const month = issueDate.getMonth() + 1; // Months are 0-indexed
-  const year = issueDate.getFullYear() % 100; // Get last 2 digits of year
-  
-  // Format date with Western numerals (padded to 2 digits)
-  const formattedDay = String(day).padStart(2, '0');
-  const formattedMonth = String(month).padStart(2, '0');
-  const formattedYear = String(year).padStart(2, '0');
+  const formattedDate = formatDateArabic(issueDate);
   
   const arabicPrefix = processArabicText('صدرت بتاريخ:');
-  const dateText = `${arabicPrefix} ${formattedDay}/${formattedMonth}/${formattedYear}`;
-  
+  const dateText = `${arabicPrefix} ${formattedDate}`; 
   page.drawText(dateText, {
     x: 50,
     y: 50,
@@ -652,16 +672,9 @@ async function drawFrenchCertificate(
   
   // Date in bottom-left corner
   const issueDate = data.completionDate; // Use completion date instead of current date
-  const day = issueDate.getDate();
-  const month = issueDate.getMonth() + 1; // Months are 0-indexed
-  const year = issueDate.getFullYear() % 100; // Get last 2 digits of year
+  const formattedDate = formatDateFrench(issueDate);
   
-  // Format date with Western numerals (padded to 2 digits)
-  const formattedDay = String(day).padStart(2, '0');
-  const formattedMonth = String(month).padStart(2, '0');
-  const formattedYear = String(year).padStart(2, '0');
-  
-  const dateText = `Délivré le: ${formattedDay}/${formattedMonth}/${formattedYear}`;
+  const dateText = `Délivré le: ${formattedDate}`;
   page.drawText(dateText, {
     x: 50,
     y: 50,

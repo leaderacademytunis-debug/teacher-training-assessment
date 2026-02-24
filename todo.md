@@ -459,3 +459,11 @@
 - [x] Ajuster aussi les positions des axes et de leur header
 - [x] Utiliser un espacement conditionnel basé sur la présence du numéro de carte d'identité
 - [ ] Créer le checkpoint final
+
+## Modification du format de date dans les certificats
+- [x] Créer une fonction pour formater la date avec les mois en arabe (formatDateArabic)
+- [x] Créer une fonction pour formater la date avec les mois en français (formatDateFrench)
+- [x] Remplacer le format JJ/MM/AA par "JJ mois AAAA" (ex: 24 فيفري 2026)
+- [x] Mettre à jour les certificats arabes (صدرت بتاريخ: 24 فيفري 2026)
+- [x] Mettre à jour les certificats français (Délivré le: 24 février 2026)
+- [ ] Créer le checkpoint final
