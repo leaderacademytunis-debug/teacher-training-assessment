@@ -500,10 +500,9 @@ async function drawArabicCertificate(
   // Second signature removed per user request
   
   // Add issue date in bottom left corner
-  // CRITICAL FIX FOR RTL: Calculate total width first, then draw RTL from right to left
-  // Visual order (RTL): صدرت بتاريخ 24 فيفري 2026
+  // Display only the date without prefix: "24 فيفري 2026"
+  // RTL ORDER: year, month, day (drawn from right to left)
   const issueDate = data.completionDate;
-  const arabicPrefix = processArabicText('صدرت بتاريخ');
   
   // Get date components
   const day = issueDate.getDate().toString();
@@ -516,18 +515,17 @@ async function drawArabicCertificate(
   const yearWidth = font.widthOfTextAtSize(year, 10);
   const monthWidth = font.widthOfTextAtSize(processedMonth, 10);
   const dayWidth = font.widthOfTextAtSize(day, 10);
-  const prefixWidth = font.widthOfTextAtSize(arabicPrefix, 10);
   const spaceWidth = 3;
   
-  // Calculate total width
-  const totalWidth = prefixWidth + spaceWidth + dayWidth + spaceWidth + monthWidth + spaceWidth + yearWidth;
+  // Calculate total width (no prefix)
+  const totalWidth = dayWidth + spaceWidth + monthWidth + spaceWidth + yearWidth;
   
   // Start from left edge + total width (rightmost position)
   const startX = 50;
   let currentX = startX + totalWidth;
   
   // RTL ORDER: Draw from RIGHT to LEFT
-  // 1. Draw year (rightmost) - move left by year width first
+  // 1. Draw year (rightmost)
   currentX -= yearWidth;
   page.drawText(year, {
     x: currentX,
@@ -549,20 +547,9 @@ async function drawArabicCertificate(
   });
   currentX -= spaceWidth;
   
-  // 3. Draw day
+  // 3. Draw day (leftmost)
   currentX -= dayWidth;
   page.drawText(day, {
-    x: currentX,
-    y: 50,
-    size: 10,
-    font: font,
-    color: gray,
-  });
-  currentX -= spaceWidth;
-  
-  // 4. Draw prefix (leftmost)
-  currentX -= prefixWidth;
-  page.drawText(arabicPrefix, {
     x: currentX,
     y: 50,
     size: 10,

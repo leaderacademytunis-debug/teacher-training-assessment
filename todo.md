@@ -499,4 +499,9 @@
 - [x] Corriger l'ordre de dessin de la date pour afficher: "صدرت بتاريخ 24 فيفري 2026"
 - [x] Inverser l'ordre: dessiner année, mois, jour, puis le préfixe en dernier
 - [x] Tester avec un nouveau certificat
-- [ ] Créer le checkpoint final
+- [x] Créer le checkpoint final
+
+## Suppression du préfixe "صدرت بتاريخ" dans la date
+- [x] Supprimer le préfixe "صدرت بتاريخ" et afficher uniquement "24 فيفري 2026"
+- [x] Ajuster le positionnement RTL pour la date seule
+- [ ] Tester et créer le checkpoint final
