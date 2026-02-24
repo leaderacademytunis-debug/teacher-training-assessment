@@ -444,3 +444,8 @@
 - [x] Mettre à jour les appels dans routers.ts pour passer idCardNumber (certificat individuel)
 - [x] Mettre à jour les appels dans routers.ts pour passer idCardNumber (certificat cumulatif)
 - [ ] Créer le checkpoint final
+
+## Correction de l'affichage inversé du numéro de carte d'identité
+- [x] Ajouter Unicode LRM (Left-to-Right Mark) pour forcer l'affichage correct des chiffres
+- [x] Utiliser \u200E avant et après le numéro pour maintenir l'ordre LTR
+- [ ] Créer le checkpoint final
