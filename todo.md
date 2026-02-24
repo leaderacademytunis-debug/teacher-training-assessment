@@ -395,3 +395,15 @@
 - [x] Ajouter un lien vers la page dans le header du Dashboard
 - [x] Dialog pour afficher les détails complets de chaque inscription
 - [ ] Créer le checkpoint final
+
+## Exportation Excel des inscriptions
+- [x] Installer la bibliothèque ExcelJS pour générer des fichiers Excel
+- [x] Créer une procédure tRPC pour exporter les inscriptions
+- [x] Formater les données avec en-têtes en arabe et style professionnel
+- [x] Ajouter un bouton "تصدير إلى Excel" dans la page de gestion des inscriptions
+- [x] Gérer le téléchargement du fichier côté client (conversion base64 -> blob)
+- [x] Respecter le filtre actif lors de l'exportation
+- [x] Ajouter des bordures et alignement pour un rendu professionnel
+- [x] Traduire les statuts en arabe dans le fichier Excel
+- [x] Format de date tunisien (JJ/MM/AA)
+- [ ] Créer le checkpoint final

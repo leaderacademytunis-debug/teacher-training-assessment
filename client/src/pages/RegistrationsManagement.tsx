@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { trpc } from "@/lib/trpc";
 import { 
   Loader2, CheckCircle, XCircle, Eye, Filter, 
-  User, Phone, Mail, CreditCard, FileText 
+  User, Phone, Mail, CreditCard, FileText, Download 
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -61,6 +61,38 @@ export default function RegistrationsManagement() {
       toast.error("حدث خطأ: " + error.message);
     },
   });
+
+  const exportMutation = trpc.registrations.exportToExcel.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("تم تصدير البيانات بنجاح!");
+    },
+    onError: (error) => {
+      toast.error("حدث خطأ أثناء التصدير: " + error.message);
+    },
+  });
+
+  const handleExport = () => {
+    exportMutation.mutate({ filter });
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -158,6 +190,18 @@ export default function RegistrationsManagement() {
               <span className="text-sm text-gray-500 mr-auto">
                 {registrations?.length || 0} تسجيل
               </span>
+              <Button
+                onClick={handleExport}
+                disabled={exportMutation.isPending || !registrations || registrations.length === 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {exportMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 ml-2" />
+                )}
+                تصدير إلى Excel
+              </Button>
             </div>
           </CardContent>
         </Card>

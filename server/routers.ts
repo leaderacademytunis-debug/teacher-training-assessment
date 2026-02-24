@@ -911,6 +911,88 @@ export const appRouter = router({
         await db.rejectRegistration(input.userId, ctx.user.id, input.reason);
         return { success: true };
       }),
+
+    exportToExcel: adminProcedure
+      .input(z.object({
+        filter: z.enum(["all", "pending", "approved", "rejected"]).optional(),
+      }).optional())
+      .mutation(async ({ input }) => {
+        const ExcelJS = (await import('exceljs')).default;
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('التسجيلات');
+
+        // Get registrations
+        const filter = input?.filter === "all" ? undefined : input?.filter;
+        const registrations = await db.getAllRegistrations(filter);
+
+        // Define columns with Arabic headers
+        worksheet.columns = [
+          { header: 'الرقم', key: 'id', width: 10 },
+          { header: 'الاسم بالعربية', key: 'nameAr', width: 25 },
+          { header: 'الاسم بالفرنسية', key: 'nameFr', width: 25 },
+          { header: 'البريد الإلكتروني', key: 'email', width: 30 },
+          { header: 'رقم الهاتف', key: 'phone', width: 20 },
+          { header: 'رقم بطاقة التعريف', key: 'idCardNumber', width: 20 },
+          { header: 'الحالة', key: 'status', width: 15 },
+          { header: 'تاريخ التسجيل', key: 'createdAt', width: 20 },
+        ];
+
+        // Style header row
+        worksheet.getRow(1).font = { bold: true, size: 12 };
+        worksheet.getRow(1).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF4472C4' }
+        };
+        worksheet.getRow(1).font = { ...worksheet.getRow(1).font, color: { argb: 'FFFFFFFF' } };
+        worksheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Add data rows
+        registrations.forEach((reg) => {
+          const statusMap: Record<string, string> = {
+            pending: 'قيد الانتظار',
+            approved: 'مقبول',
+            rejected: 'مرفوض'
+          };
+
+          worksheet.addRow({
+            id: reg.id,
+            nameAr: `${reg.firstNameAr} ${reg.lastNameAr}`,
+            nameFr: `${reg.firstNameFr} ${reg.lastNameFr}`,
+            email: reg.email,
+            phone: reg.phone || '-',
+            idCardNumber: reg.idCardNumber || '-',
+            status: statusMap[reg.registrationStatus] || reg.registrationStatus,
+            createdAt: new Date(reg.createdAt).toLocaleDateString('ar-TN'),
+          });
+        });
+
+        // Auto-fit columns and add borders
+        worksheet.eachRow((row, rowNumber) => {
+          row.eachCell((cell) => {
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+            if (rowNumber > 1) {
+              cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            }
+          });
+        });
+
+        // Generate buffer
+        const buffer = await workbook.xlsx.writeBuffer();
+        
+        // Convert to base64
+        const base64 = Buffer.from(buffer).toString('base64');
+        
+        return { 
+          data: base64,
+          filename: `registrations-${new Date().toISOString().split('T')[0]}.xlsx`
+        };
+      }),
   }),
 
   notifications: router({
