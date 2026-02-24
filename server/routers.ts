@@ -1067,6 +1067,291 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // ============================================
+  // Pedagogical Tools - أدوات المدرس
+  // ============================================
+
+  pedagogicalSheets: router({
+    create: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string().min(1, "السنة الدراسية إلزامية"),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string().min(1),
+        subject: z.string().min(1),
+        lessonTitle: z.string().min(1),
+        lessonObjectives: z.string().optional(),
+        duration: z.number().optional(),
+        materials: z.string().optional(),
+        introduction: z.string().optional(),
+        mainActivities: z.array(z.object({
+          title: z.string(),
+          description: z.string(),
+          duration: z.number(),
+        })).optional(),
+        conclusion: z.string().optional(),
+        evaluation: z.string().optional(),
+        guidePageReference: z.string().optional(),
+        programReference: z.string().optional(),
+        status: z.enum(["draft", "completed"]).default("draft"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const sheet = await db.createPedagogicalSheet({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+        return sheet;
+      }),
+
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await db.getPedagogicalSheetsByUser(ctx.user.id);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getPedagogicalSheetById(input.id);
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        data: z.object({
+          schoolYear: z.string().optional(),
+          educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+          grade: z.string().optional(),
+          subject: z.string().optional(),
+          lessonTitle: z.string().optional(),
+          lessonObjectives: z.string().optional(),
+          duration: z.number().optional(),
+          materials: z.string().optional(),
+          introduction: z.string().optional(),
+          mainActivities: z.array(z.object({
+            title: z.string(),
+            description: z.string(),
+            duration: z.number(),
+          })).optional(),
+          conclusion: z.string().optional(),
+          evaluation: z.string().optional(),
+          guidePageReference: z.string().optional(),
+          programReference: z.string().optional(),
+          status: z.enum(["draft", "completed"]).optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        await db.updatePedagogicalSheet(input.id, input.data);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deletePedagogicalSheet(input.id);
+        return { success: true };
+      }),
+  }),
+
+  lessonPlans: router({
+    create: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string().min(1, "السنة الدراسية إلزامية"),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string().min(1),
+        subject: z.string().min(1),
+        planTitle: z.string().min(1),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        totalLessons: z.number().optional(),
+        lessons: z.array(z.object({
+          week: z.number(),
+          lessonTitle: z.string(),
+          objectives: z.string(),
+          duration: z.number(),
+        })).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const plan = await db.createLessonPlan({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+        return plan;
+      }),
+
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await db.getLessonPlansByUser(ctx.user.id);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getLessonPlanById(input.id);
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        data: z.object({
+          schoolYear: z.string().optional(),
+          educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+          grade: z.string().optional(),
+          subject: z.string().optional(),
+          planTitle: z.string().optional(),
+          startDate: z.date().optional(),
+          endDate: z.date().optional(),
+          totalLessons: z.number().optional(),
+          lessons: z.array(z.object({
+            week: z.number(),
+            lessonTitle: z.string(),
+            objectives: z.string(),
+            duration: z.number(),
+          })).optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        await db.updateLessonPlan(input.id, input.data);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteLessonPlan(input.id);
+        return { success: true };
+      }),
+  }),
+
+  teacherExams: router({
+    create: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string().min(1, "السنة الدراسية إلزامية"),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string().min(1),
+        subject: z.string().min(1),
+        examTitle: z.string().min(1),
+        examType: z.enum(["formative", "summative", "diagnostic"]),
+        duration: z.number().optional(),
+        totalPoints: z.number().default(20),
+        questions: z.array(z.object({
+          questionText: z.string(),
+          questionType: z.enum(["mcq", "short_answer", "essay"]),
+          points: z.number(),
+          options: z.array(z.string()).optional(),
+          correctAnswer: z.string().optional(),
+        })).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const exam = await db.createTeacherExam({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+        return exam;
+      }),
+
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await db.getTeacherExamsByUser(ctx.user.id);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getTeacherExamById(input.id);
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        data: z.object({
+          schoolYear: z.string().optional(),
+          educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+          grade: z.string().optional(),
+          subject: z.string().optional(),
+          examTitle: z.string().optional(),
+          examType: z.enum(["formative", "summative", "diagnostic"]).optional(),
+          duration: z.number().optional(),
+          totalPoints: z.number().optional(),
+          questions: z.array(z.object({
+            questionText: z.string(),
+            questionType: z.enum(["mcq", "short_answer", "essay"]),
+            points: z.number(),
+            options: z.array(z.string()).optional(),
+            correctAnswer: z.string().optional(),
+          })).optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        await db.updateTeacherExam(input.id, input.data);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteTeacherExam(input.id);
+        return { success: true };
+      }),
+  }),
+
+  referenceDocuments: router({
+    upload: protectedProcedure
+      .input(z.object({
+        base64Data: z.string(),
+        fileExtension: z.string(),
+        mimeType: z.string(),
+        schoolYear: z.string().min(1),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+        documentType: z.enum(["teacher_guide", "official_program", "other"]),
+        documentTitle: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        
+        // Convert base64 to buffer
+        const buffer = Buffer.from(input.base64Data, 'base64');
+        
+        // Generate unique filename
+        const fileName = `reference-docs/${ctx.user.id}-${Date.now()}.${input.fileExtension}`;
+        
+        // Upload to S3
+        const { url } = await storagePut(fileName, buffer, input.mimeType);
+        
+        // Save to database
+        const doc = await db.createReferenceDocument({
+          uploadedBy: ctx.user.id,
+          schoolYear: input.schoolYear,
+          educationLevel: input.educationLevel,
+          grade: input.grade,
+          subject: input.subject,
+          documentType: input.documentType,
+          documentTitle: input.documentTitle,
+          documentUrl: url,
+        });
+        
+        return doc;
+      }),
+
+    list: protectedProcedure
+      .input(z.object({
+        educationLevel: z.string().optional(),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+        documentType: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getReferenceDocuments(input);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteReferenceDocument(input.id);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

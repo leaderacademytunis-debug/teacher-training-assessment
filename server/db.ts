@@ -11,7 +11,11 @@ import {
   certificates, Certificate, InsertCertificate,
   videos, Video, InsertVideo,
   videoProgress, VideoProgress, InsertVideoProgress,
-  notifications, Notification, InsertNotification
+  notifications, Notification, InsertNotification,
+  pedagogicalSheets, PedagogicalSheet, InsertPedagogicalSheet,
+  lessonPlans, LessonPlan, InsertLessonPlan,
+  teacherExams, TeacherExam, InsertTeacherExam,
+  referenceDocuments, ReferenceDocument, InsertReferenceDocument
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -848,4 +852,188 @@ export async function rejectRegistration(userId: number, rejectedBy: number, rea
     subject: 'إشعار بخصوص طلب التسجيل',
     html: getRejectionEmailTemplate(userName, userNameAr, reason || undefined),
   });
+}
+
+// ============================================
+// Pedagogical Tools - المذكرات البيداغوجية
+// ============================================
+
+export async function createPedagogicalSheet(data: InsertPedagogicalSheet): Promise<PedagogicalSheet> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [sheet] = await db.insert(pedagogicalSheets).values(data).$returningId();
+  const [result] = await db.select().from(pedagogicalSheets).where(eq(pedagogicalSheets.id, sheet.id));
+  return result;
+}
+
+export async function getPedagogicalSheetsByUser(userId: number): Promise<PedagogicalSheet[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(pedagogicalSheets)
+    .where(eq(pedagogicalSheets.createdBy, userId))
+    .orderBy(desc(pedagogicalSheets.createdAt));
+}
+
+export async function getPedagogicalSheetById(id: number): Promise<PedagogicalSheet | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [sheet] = await db.select().from(pedagogicalSheets).where(eq(pedagogicalSheets.id, id)).limit(1);
+  return sheet || null;
+}
+
+export async function updatePedagogicalSheet(id: number, data: Partial<InsertPedagogicalSheet>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(pedagogicalSheets).set(data).where(eq(pedagogicalSheets.id, id));
+}
+
+export async function deletePedagogicalSheet(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(pedagogicalSheets).where(eq(pedagogicalSheets.id, id));
+}
+
+// ============================================
+// Lesson Plans - تخطيط الدروس
+// ============================================
+
+export async function createLessonPlan(data: InsertLessonPlan): Promise<LessonPlan> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [plan] = await db.insert(lessonPlans).values(data).$returningId();
+  const [result] = await db.select().from(lessonPlans).where(eq(lessonPlans.id, plan.id));
+  return result;
+}
+
+export async function getLessonPlansByUser(userId: number): Promise<LessonPlan[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(lessonPlans)
+    .where(eq(lessonPlans.createdBy, userId))
+    .orderBy(desc(lessonPlans.createdAt));
+}
+
+export async function getLessonPlanById(id: number): Promise<LessonPlan | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [plan] = await db.select().from(lessonPlans).where(eq(lessonPlans.id, id)).limit(1);
+  return plan || null;
+}
+
+export async function updateLessonPlan(id: number, data: Partial<InsertLessonPlan>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(lessonPlans).set(data).where(eq(lessonPlans.id, id));
+}
+
+export async function deleteLessonPlan(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(lessonPlans).where(eq(lessonPlans.id, id));
+}
+
+// ============================================
+// Teacher Exams - اختبارات المدرسين
+// ============================================
+
+export async function createTeacherExam(data: InsertTeacherExam): Promise<TeacherExam> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [exam] = await db.insert(teacherExams).values(data).$returningId();
+  const [result] = await db.select().from(teacherExams).where(eq(teacherExams.id, exam.id));
+  return result;
+}
+
+export async function getTeacherExamsByUser(userId: number): Promise<TeacherExam[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(teacherExams)
+    .where(eq(teacherExams.createdBy, userId))
+    .orderBy(desc(teacherExams.createdAt));
+}
+
+export async function getTeacherExamById(id: number): Promise<TeacherExam | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [exam] = await db.select().from(teacherExams).where(eq(teacherExams.id, id)).limit(1);
+  return exam || null;
+}
+
+export async function updateTeacherExam(id: number, data: Partial<InsertTeacherExam>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(teacherExams).set(data).where(eq(teacherExams.id, id));
+}
+
+export async function deleteTeacherExam(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(teacherExams).where(eq(teacherExams.id, id));
+}
+
+// ============================================
+// Reference Documents - المراجع الرسمية
+// ============================================
+
+export async function createReferenceDocument(data: InsertReferenceDocument): Promise<ReferenceDocument> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [doc] = await db.insert(referenceDocuments).values(data).$returningId();
+  const [result] = await db.select().from(referenceDocuments).where(eq(referenceDocuments.id, doc.id));
+  return result;
+}
+
+export async function getReferenceDocuments(filters?: {
+  educationLevel?: string;
+  grade?: string;
+  subject?: string;
+  documentType?: string;
+}): Promise<ReferenceDocument[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db.select().from(referenceDocuments);
+  
+  const conditions = [];
+  if (filters?.educationLevel && filters.educationLevel !== "all") {
+    conditions.push(eq(referenceDocuments.educationLevel, filters.educationLevel as any));
+  }
+  if (filters?.grade && filters.grade !== "all") {
+    conditions.push(eq(referenceDocuments.grade, filters.grade));
+  }
+  if (filters?.subject && filters.subject !== "all") {
+    conditions.push(eq(referenceDocuments.subject, filters.subject));
+  }
+  if (filters?.documentType && filters.documentType !== "all") {
+    conditions.push(eq(referenceDocuments.documentType, filters.documentType as any));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  return await query.orderBy(desc(referenceDocuments.uploadedAt));
+}
+
+export async function deleteReferenceDocument(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(referenceDocuments).where(eq(referenceDocuments.id, id));
 }

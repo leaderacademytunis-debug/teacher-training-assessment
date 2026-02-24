@@ -221,3 +221,142 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * Pedagogical sheets table - stores lesson preparation sheets (مذكرات بيداغوجية)
+ */
+export const pedagogicalSheets = mysqlTable("pedagogicalSheets", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  
+  // Mandatory identification
+  schoolYear: varchar("schoolYear", { length: 20 }).notNull(), // e.g., "2025-2026"
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(), // ابتدائي، إعدادي، ثانوي
+  grade: varchar("grade", { length: 50 }).notNull(), // e.g., "السنة الأولى ابتدائي"
+  subject: varchar("subject", { length: 100 }).notNull(), // e.g., "اللغة العربية"
+  
+  // Lesson details
+  lessonTitle: varchar("lessonTitle", { length: 255 }).notNull(),
+  lessonObjectives: text("lessonObjectives"), // Competences and objectives
+  duration: int("duration"), // in minutes
+  materials: text("materials"), // Required materials
+  
+  // Pedagogical structure
+  introduction: text("introduction"),
+  mainActivities: json("mainActivities").$type<Array<{
+    title: string;
+    description: string;
+    duration: number;
+  }>>(),
+  conclusion: text("conclusion"),
+  evaluation: text("evaluation"),
+  
+  // Official references
+  guidePageReference: varchar("guidePageReference", { length: 100 }), // Page from official guide
+  programReference: text("programReference"), // Terminal competence from official program
+  
+  // Metadata
+  status: mysqlEnum("status", ["draft", "completed"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PedagogicalSheet = typeof pedagogicalSheets.$inferSelect;
+export type InsertPedagogicalSheet = typeof pedagogicalSheets.$inferInsert;
+
+/**
+ * Lesson plans table - stores lesson planning (تخطيط الدروس)
+ */
+export const lessonPlans = mysqlTable("lessonPlans", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  
+  // Mandatory identification
+  schoolYear: varchar("schoolYear", { length: 20 }).notNull(),
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  
+  // Planning details
+  planTitle: varchar("planTitle", { length: 255 }).notNull(),
+  startDate: timestamp("startDate"),
+  endDate: timestamp("endDate"),
+  totalLessons: int("totalLessons"),
+  
+  // Lessons breakdown
+  lessons: json("lessons").$type<Array<{
+    week: number;
+    lessonTitle: string;
+    objectives: string;
+    duration: number;
+  }>>(),
+  
+  // Metadata
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LessonPlan = typeof lessonPlans.$inferSelect;
+export type InsertLessonPlan = typeof lessonPlans.$inferInsert;
+
+/**
+ * Teacher exams table - stores teacher-created exams (اختبارات المدرسين)
+ * Different from training course exams
+ */
+export const teacherExams = mysqlTable("teacherExams", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  
+  // Mandatory identification
+  schoolYear: varchar("schoolYear", { length: 20 }).notNull(),
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  
+  // Exam details
+  examTitle: varchar("examTitle", { length: 255 }).notNull(),
+  examType: mysqlEnum("examType", ["formative", "summative", "diagnostic"]).notNull(), // تقييم تكويني، ختامي، تشخيصي
+  duration: int("duration"), // in minutes
+  totalPoints: int("totalPoints").default(20).notNull(), // Out of 20
+  
+  // Exam content
+  questions: json("questions").$type<Array<{
+    questionText: string;
+    questionType: "mcq" | "short_answer" | "essay";
+    points: number;
+    options?: string[]; // For MCQ
+    correctAnswer?: string;
+  }>>(),
+  
+  // Metadata
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TeacherExam = typeof teacherExams.$inferSelect;
+export type InsertTeacherExam = typeof teacherExams.$inferInsert;
+
+/**
+ * Reference documents table - stores uploaded official guides and programs
+ */
+export const referenceDocuments = mysqlTable("referenceDocuments", {
+  id: int("id").autoincrement().primaryKey(),
+  uploadedBy: int("uploadedBy").notNull(),
+  
+  // Document identification
+  schoolYear: varchar("schoolYear", { length: 20 }).notNull(),
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }),
+  subject: varchar("subject", { length: 100 }),
+  
+  // Document details
+  documentType: mysqlEnum("documentType", ["teacher_guide", "official_program", "other"]).notNull(),
+  documentTitle: varchar("documentTitle", { length: 255 }).notNull(),
+  documentUrl: text("documentUrl").notNull(), // S3 URL
+  
+  // Metadata
+  uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+});
+
+export type ReferenceDocument = typeof referenceDocuments.$inferSelect;
+export type InsertReferenceDocument = typeof referenceDocuments.$inferInsert;

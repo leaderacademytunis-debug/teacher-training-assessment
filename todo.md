@@ -509,4 +509,72 @@
 ## Correction de l'ordre visuel de la date (RTL)
 - [x] Inverser l'ordre de dessin: dessiner JOUR en premier (droite), puis MOIS, puis ANNÉE (gauche)
 - [x] La date doit s'afficher visuellement: "23 فيفري 2026" (de droite à gauche)
-- [ ] Tester et créer le checkpoint final
+- [x] Tester et créer le checkpoint final
+
+## Ajout d'un outil d'assistance pédagogique pour les enseignants tunisiens
+
+### Phase 1: Structure de la base de données
+- [ ] Créer table `pedagogical_resources` (ressources pédagogiques)
+- [ ] Créer table `lesson_plans` (plans de cours)
+- [ ] Créer table `pedagogical_sheets` (fiches pédagogiques/مذكرات)
+- [ ] Créer table `reference_documents` (documents de référence officiels)
+- [ ] Ajouter champs: niveau (ابتدائي/إعدادي/ثانوي), matière, année scolaire
+
+### Phase 2: Procédures backend
+- [ ] Créer procédures CRUD pour les fiches pédagogiques
+- [ ] Créer procédures pour la planification des cours
+- [ ] Créer procédures pour la génération d'examens
+- [ ] Ajouter validation: année scolaire obligatoire
+- [ ] Ajouter validation: cohérence niveau/référence
+
+### Phase 3: Interface utilisateur
+- [ ] Créer page "أدوات المدرس" (Outils de l'enseignant)
+- [ ] Interface de création de مذكرات بيداغوجية
+- [ ] Interface de تخطيط الدروس
+- [ ] Interface de إنشاء اختبارات وتقييمات
+- [ ] Formulaires avec sélection: niveau, matière, année scolaire
+
+### Phase 4: Génération de documents
+- [ ] Intégrer génération Word pour les fiches pédagogiques
+- [ ] Intégrer génération PDF pour les plans de cours
+- [ ] Template Word pour المذكرات البيداغوجية
+- [ ] Template PDF pour الاختبارات
+
+### Phase 5: Tests et livraison
+- [ ] Tester la création de fiches pédagogiques
+- [ ] Tester la génération de documents
+- [ ] Tester la validation des références
+- [ ] Créer le checkpoint final
+
+
+## Intégration de l'outil pédagogique pour les enseignants tunisiens
+- [x] Créer la structure de base de données (4 tables: pedagogicalSheets, lessonPlans, teacherExams, referenceDocuments)
+- [x] Créer les fonctions CRUD dans db.ts
+- [x] Créer les routers tRPC (pedagogicalSheets, lessonPlans, teacherExams, referenceDocuments)
+- [x] Créer la page principale TeacherTools.tsx
+- [x] Créer le formulaire PedagogicalSheetForm
+- [ ] Uploader les références officielles (7 PDFs du degré 1) vers S3 et base de données
+- [ ] Créer LessonPlanForm component
+- [ ] Créer TeacherExamForm component
+- [ ] Créer ReferenceDocumentsManager component
+- [ ] Créer use-toast hook manquant
+- [ ] Intégrer la génération Word/PDF pour les fiches pédagogiques
+- [ ] Ajouter la route /teacher-tools dans App.tsx
+- [ ] Tester l'outil complet
+- [ ] Créer le checkpoint final
+
+
+## Intégration de l'outil pédagogique pour les enseignants
+- [x] Créer la structure de base de données (4 tables)
+- [x] Créer les fonctions CRUD dans db.ts
+- [x] Créer les routers tRPC
+- [x] Créer la page principale TeacherTools.tsx
+- [x] Créer le formulaire PedagogicalSheetForm
+- [x] Uploader les références officielles (27 PDFs pour les 3 degrés)
+- [x] Créer LessonPlanForm component
+- [x] Créer TeacherExamForm component
+- [x] Créer ReferenceDocumentsManager component
+- [ ] Intégrer la génération Word/PDF (Phase 2)
+- [x] Ajouter la route dans App.tsx
+- [ ] Tester l'outil complet
+- [ ] Créer le checkpoint final
