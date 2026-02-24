@@ -504,4 +504,9 @@
 ## Suppression du préfixe "صدرت بتاريخ" dans la date
 - [x] Supprimer le préfixe "صدرت بتاريخ" et afficher uniquement "24 فيفري 2026"
 - [x] Ajuster le positionnement RTL pour la date seule
+- [x] Tester et créer le checkpoint final
+
+## Correction de l'ordre visuel de la date (RTL)
+- [x] Inverser l'ordre de dessin: dessiner JOUR en premier (droite), puis MOIS, puis ANNÉE (gauche)
+- [x] La date doit s'afficher visuellement: "23 فيفري 2026" (de droite à gauche)
 - [ ] Tester et créer le checkpoint final

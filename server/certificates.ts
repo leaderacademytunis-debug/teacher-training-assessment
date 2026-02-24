@@ -525,9 +525,10 @@ async function drawArabicCertificate(
   let currentX = startX + totalWidth;
   
   // RTL ORDER: Draw from RIGHT to LEFT
-  // 1. Draw year (rightmost)
-  currentX -= yearWidth;
-  page.drawText(year, {
+  // Visual result: 23 فيفري 2026 (right to left)
+  // 1. Draw day (rightmost)
+  currentX -= dayWidth;
+  page.drawText(day, {
     x: currentX,
     y: 50,
     size: 10,
@@ -536,7 +537,7 @@ async function drawArabicCertificate(
   });
   currentX -= spaceWidth;
   
-  // 2. Draw month
+  // 2. Draw month (middle)
   currentX -= monthWidth;
   page.drawText(processedMonth, {
     x: currentX,
@@ -547,9 +548,9 @@ async function drawArabicCertificate(
   });
   currentX -= spaceWidth;
   
-  // 3. Draw day (leftmost)
-  currentX -= dayWidth;
-  page.drawText(day, {
+  // 3. Draw year (leftmost)
+  currentX -= yearWidth;
+  page.drawText(year, {
     x: currentX,
     y: 50,
     size: 10,
