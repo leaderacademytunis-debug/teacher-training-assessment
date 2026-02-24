@@ -259,3 +259,154 @@ export function getRejectionEmailTemplate(userName: string, userNameAr: string, 
 </html>
   `;
 }
+
+export function getCertificateEmailTemplate(
+  userName: string,
+  userNameAr: string,
+  courseName: string,
+  certificateUrl: string
+): string {
+  const appUrl = ENV.VITE_APP_URL || 'https://your-domain.manus.space';
+  
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .certificate-icon {
+      text-align: center;
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+    .message {
+      font-size: 18px;
+      line-height: 1.8;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .course-name {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      margin: 30px 0;
+    }
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 15px 40px;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 10px;
+    }
+    .cta-button:hover {
+      opacity: 0.9;
+    }
+    .secondary-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .footer {
+      background-color: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+    }
+    .highlight {
+      color: #f5576c;
+      font-weight: bold;
+    }
+    .achievement-box {
+      background-color: #e8f5e9;
+      border-right: 4px solid #4caf50;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .achievement-box p {
+      margin: 10px 0;
+      font-size: 16px;
+      color: #2e7d32;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎓 مبروك! حصلت على شهادة إتمام</h1>
+    </div>
+    <div class="content">
+      <div class="certificate-icon">🏆</div>
+      <div class="message">
+        <p>عزيزي/عزيزتي <span class="highlight">${userNameAr || userName}</span>،</p>
+        <p>تهانينا الحارة! 🎉</p>
+        <p>يسعدنا إبلاغك بأنك أتممت بنجاح الدورة التدريبية:</p>
+        <div class="course-name">
+          📚 ${courseName}
+        </div>
+        <div class="achievement-box">
+          <p><strong>✨ إنجاز رائع!</strong></p>
+          <p>لقد أظهرت التزاماً وتفانياً في التعلم والتطوير المهني</p>
+        </div>
+        <p>تم إرفاق شهادة الإتمام الرسمية بهذا البريد الإلكتروني. يمكنك تحميلها ومشاركتها مع الآخرين.</p>
+        <center>
+          <a href="${certificateUrl}" class="cta-button">
+            📥 تحميل الشهادة (PDF)
+          </a>
+          <a href="${appUrl}/my-certificates" class="cta-button secondary-button">
+            📋 عرض جميع شهاداتي
+          </a>
+        </center>
+        <p style="margin-top: 30px; font-size: 16px; color: #666;">
+          نتمنى لك المزيد من التوفيق والنجاح في مسيرتك المهنية! 🌟
+        </p>
+      </div>
+    </div>
+    <div class="footer">
+      <p>© 2026 منصة تأهيل المدرسين - جميع الحقوق محفوظة</p>
+      <p>هذا البريد الإلكتروني تم إرساله تلقائياً، يرجى عدم الرد عليه</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}

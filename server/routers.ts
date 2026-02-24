@@ -580,6 +580,21 @@ export const appRouter = router({
           pdfUrl: url,
         });
 
+        // Send certificate via email
+        try {
+          const { sendEmail, getCertificateEmailTemplate } = await import('./emailService');
+          const userNameAr = `${ctx.user.firstNameAr || ''} ${ctx.user.lastNameAr || ''}`.trim();
+          const userName = ctx.user.name || ctx.user.email;
+          await sendEmail({
+            to: ctx.user.email,
+            subject: `مبروك! حصلت على شهادة إتمام - ${course.titleAr}`,
+            html: getCertificateEmailTemplate(userName, userNameAr, course.titleAr, url),
+          });
+        } catch (emailError) {
+          console.error('[Certificate] Failed to send certificate email:', emailError);
+          // Don't fail the certificate generation if email fails
+        }
+
         return certificate;
       }),
 
@@ -711,6 +726,21 @@ export const appRouter = router({
           certificateNumber,
           pdfUrl: url,
         });
+
+        // Send certificate via email
+        try {
+          const { sendEmail, getCertificateEmailTemplate } = await import('./emailService');
+          const userNameAr = `${ctx.user.firstNameAr || ''} ${ctx.user.lastNameAr || ''}`.trim();
+          const userName = ctx.user.name || ctx.user.email;
+          await sendEmail({
+            to: ctx.user.email,
+            subject: `مبروك! حصلت على شهادة إتمام - ${cumulativeCourse.titleAr}`,
+            html: getCertificateEmailTemplate(userName, userNameAr, cumulativeCourse.titleAr, url),
+          });
+        } catch (emailError) {
+          console.error('[Certificate] Failed to send cumulative certificate email:', emailError);
+          // Don't fail the certificate generation if email fails
+        }
 
         return certificate;
       }),

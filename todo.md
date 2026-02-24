@@ -420,3 +420,16 @@
 - [x] Corriger le schéma pour rendre email obligatoire (notNull)
 - [x] Mettre à jour toutes les fonctions upsertUser pour fournir email
 - [ ] Créer le checkpoint final
+
+## Système de génération et envoi automatique de certificats PDF
+- [x] Analyser le système de certificats existant (certificates.ts)
+- [x] Le design du certificat PDF est déjà professionnel avec style arabe
+- [x] Génération automatique déjà implémentée lors de la réussite à un examen
+- [x] Créer un template d'é-mail HTML pour l'envoi du certificat
+- [x] Intégrer l'envoi automatique du certificat par é-mail (certificat individuel)
+- [x] Intégrer l'envoi automatique du certificat par é-mail (certificat cumulatif)
+- [x] Page MyCertificates.tsx existe déjà pour consulter tous les certificats
+- [x] Bouton de téléchargement déjà présent dans la page
+- [x] Certificats PDF déjà stockés dans S3 pour accès permanent
+- [x] Gestion des erreurs d'envoi d'é-mail sans bloquer la génération
+- [ ] Créer le checkpoint final
