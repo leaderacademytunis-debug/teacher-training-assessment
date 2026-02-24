@@ -449,3 +449,7 @@
 - [x] Ajouter Unicode LRM (Left-to-Right Mark) pour forcer l'affichage correct des chiffres
 - [x] Utiliser \u200E avant et après le numéro pour maintenir l'ordre LTR
 - [ ] Créer le checkpoint final
+
+## Correction des parenthèses inversées dans le texte arabe
+- [x] Remplacer "صاحب(ة)" par "صاحب/ة" dans le certificat
+- [ ] Créer le checkpoint final

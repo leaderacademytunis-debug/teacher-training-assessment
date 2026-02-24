@@ -309,7 +309,7 @@ async function drawArabicCertificate(
   if (data.idCardNumber) {
     // Use LRM (Left-to-Right Mark) to prevent number reversal in RTL text
     const LRM = '\u200E'; // Unicode Left-to-Right Mark
-    const idCardText = processArabicText(`صاحب(ة) بطاقة تعريف وطنية رقم ${LRM}${data.idCardNumber}${LRM}`);
+    const idCardText = processArabicText(`صاحب/ة بطاقة تعريف وطنية رقم ${LRM}${data.idCardNumber}${LRM}`);
     const idCardWidth = font.widthOfTextAtSize(idCardText, 12);
     page.drawText(idCardText, {
       x: (width - idCardWidth) / 2,
