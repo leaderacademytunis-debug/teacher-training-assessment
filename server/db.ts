@@ -43,6 +43,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   try {
     const values: InsertUser = {
       openId: user.openId,
+      email: user.email || `${user.openId}@temp.local`, // Provide default email if missing
     };
     const updateSet: Record<string, unknown> = {};
 
@@ -52,9 +53,16 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     const assignNullable = (field: TextField) => {
       const value = user[field];
       if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
+      // For email field, ensure it's never null since it's required
+      if (field === 'email') {
+        const emailValue = value || values.email; // Use existing email if value is null
+        values[field] = emailValue;
+        updateSet[field] = emailValue;
+      } else {
+        const normalized = value ?? null;
+        values[field] = normalized;
+        updateSet[field] = normalized;
+      }
     };
 
     textFields.forEach(assignNullable);
@@ -764,6 +772,10 @@ export async function approveRegistration(userId: number, approvedBy: number): P
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Get user details before update
+  const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user || user.length === 0) throw new Error("User not found");
+
   await db.update(users)
     .set({
       registrationStatus: "approved",
@@ -778,11 +790,25 @@ export async function approveRegistration(userId: number, approvedBy: number): P
     messageAr: "تم قبول طلب تسجيلك بنجاح. يمكنك الآن الوصول إلى جميع الدورات.",
     type: "enrollment_approved",
   });
+
+  // Send email notification
+  const { sendEmail, getApprovalEmailTemplate } = await import('./emailService');
+  const userNameAr = `${user[0].firstNameAr || ''} ${user[0].lastNameAr || ''}`.trim();
+  const userName = user[0].name || user[0].email;
+  await sendEmail({
+    to: user[0].email,
+    subject: '🎉 مبروك! تم قبول تسجيلك في منصة تأهيل المدرسين',
+    html: getApprovalEmailTemplate(userName, userNameAr),
+  });
 }
 
 export async function rejectRegistration(userId: number, rejectedBy: number, reason?: string): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // Get user details before update
+  const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user || user.length === 0) throw new Error("User not found");
 
   await db.update(users)
     .set({
@@ -797,5 +823,15 @@ export async function rejectRegistration(userId: number, rejectedBy: number, rea
     titleAr: "تم رفض تسجيلك",
     messageAr: reason || "تم رفض طلب تسجيلك. يرجى التواصل مع الإدارة للمزيد من المعلومات.",
     type: "enrollment_rejected",
+  });
+
+  // Send email notification
+  const { sendEmail, getRejectionEmailTemplate } = await import('./emailService');
+  const userNameAr = `${user[0].firstNameAr || ''} ${user[0].lastNameAr || ''}`.trim();
+  const userName = user[0].name || user[0].email;
+  await sendEmail({
+    to: user[0].email,
+    subject: 'إشعار بخصوص طلب التسجيل',
+    html: getRejectionEmailTemplate(userName, userNameAr, reason || undefined),
   });
 }

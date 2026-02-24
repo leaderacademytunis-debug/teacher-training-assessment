@@ -407,3 +407,16 @@
 - [x] Traduire les statuts en arabe dans le fichier Excel
 - [x] Format de date tunisien (JJ/MM/AA)
 - [ ] Créer le checkpoint final
+
+## Système d'envoi d'é-mails automatiques pour validation d'inscription
+- [x] Créer un service d'envoi d'é-mails (emailService.ts)
+- [x] Installer Nodemailer pour l'envoi SMTP
+- [x] Créer des templates HTML pour les é-mails (approbation et rejet)
+- [x] Intégrer l'envoi d'é-mails dans la procédure approveRegistration
+- [x] Intégrer l'envoi d'é-mails dans la procédure rejectRegistration
+- [x] Personnaliser les é-mails avec le nom de l'utilisateur (AR/FR) et les détails
+- [x] Ajouter un lien direct vers la plateforme dans l'é-mail d'approbation
+- [x] Configurer les variables d'environnement SMTP
+- [x] Corriger le schéma pour rendre email obligatoire (notNull)
+- [x] Mettre à jour toutes les fonctions upsertUser pour fournir email
+- [ ] Créer le checkpoint final

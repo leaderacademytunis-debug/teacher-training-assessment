@@ -9,7 +9,7 @@ export const users = mysqlTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   arabicName: text("arabicName"), // Arabic name for certificates
-  email: varchar("email", { length: 320 }),
+  email: varchar("email", { length: 320 }).notNull(),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin", "trainer", "supervisor"]).default("user").notNull(),
   
