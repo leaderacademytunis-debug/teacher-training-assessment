@@ -467,3 +467,9 @@
 - [x] Mettre à jour les certificats arabes (صدرت بتاريخ: 24 فيفري 2026)
 - [x] Mettre à jour les certificats français (Délivré le: 24 février 2026)
 - [ ] Créer le checkpoint final
+
+## Correction de l'affichage inversé des chiffres dans les dates
+- [x] Ajouter Unicode LRM markers dans formatDateArabic() pour corriger l'ordre des chiffres
+- [x] Ajouter Unicode LRM markers dans formatDateFrench() pour cohérence
+- [x] Utiliser \u200E avant et après chaque nombre (jour et année)
+- [ ] Créer le checkpoint final

@@ -19,7 +19,9 @@ function formatDateArabic(date: Date): string {
   const day = date.getDate();
   const month = arabicMonths[date.getMonth()];
   const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  // Add LRM (Left-to-Right Mark) to force correct display of numbers in RTL context
+  const lrm = '\u200E';
+  return `${lrm}${day}${lrm} ${month} ${lrm}${year}${lrm}`;
 }
 
 /**
@@ -35,7 +37,9 @@ function formatDateFrench(date: Date): string {
   const day = date.getDate();
   const month = frenchMonths[date.getMonth()];
   const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  // Add LRM (Left-to-Right Mark) to ensure correct display
+  const lrm = '\u200E';
+  return `${lrm}${day}${lrm} ${month} ${lrm}${year}${lrm}`;
 }
 
 /**
