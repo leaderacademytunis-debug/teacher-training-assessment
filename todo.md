@@ -578,3 +578,32 @@
 - [x] Ajouter la route dans App.tsx
 - [ ] Tester l'outil complet
 - [ ] Créer le checkpoint final
+
+
+## Phase 2: Amélioration des outils pédagogiques avec IA et export
+
+### Notes Pédagogiques
+- [x] Activer le bouton "إنشاء مذكرة جديدة"
+- [x] Créer formulaire complet avec validation (matière, niveau, sujet, objectifs, compétences)
+- [x] Intégrer assistant IA pour suggérer contenu basé sur références officielles
+- [x] Afficher la liste des notes créées avec filtres
+- [x] Ajouter fonctionnalité d'édition des notes
+- [x] Ajouter fonctionnalité de suppression des notes
+- [x] Ajouter export PDF des notes pédagogiques
+
+### Plans de Leçons
+- [x] Créer formulaire de création de plans (hebdomadaire/mensuel)
+- [ ] Ajouter système de liaison avec notes pédagogiques existantes
+- [x] Afficher la liste des plans créés avec filtres
+- [x] Ajouter fonctionnalité d'édition des plans
+- [x] Ajouter fonctionnalité de suppression des plans
+- [x] Ajouter export PDF des plans de leçons
+
+### Examens (Teacher Exams)
+- [x] Créer formulaire de création d'examens (niveau, matière, durée, consignes)
+- [x] Créer banque de questions par niveau et matière
+- [x] Ajouter système d'ajout de questions à l'examen (sélection multiple)
+- [x] Afficher la liste des examens créés avec filtres
+- [x] Ajouter fonctionnalité d'édition des examens
+- [x] Ajouter fonctionnalité de suppression des examens
+- [x] Ajouter export PDF pour impression (format examen + corrigé séparé)

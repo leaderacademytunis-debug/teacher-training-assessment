@@ -1150,6 +1150,121 @@ export const appRouter = router({
         await db.deletePedagogicalSheet(input.id);
         return { success: true };
       }),
+
+    exportToPdf: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const sheet = await db.getPedagogicalSheetById(input.id);
+        if (!sheet || sheet.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على المذكرة" });
+        }
+
+        const { generatePedagogicalSheetPdf } = await import("./pdfGenerator");
+        const pdfBuffer = await generatePedagogicalSheetPdf(sheet);
+        
+        const { storagePut } = await import("./storage");
+        const fileName = `pedagogical-sheets/sheet-${sheet.id}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileName, pdfBuffer, "application/pdf");
+        
+        return { url };
+      }),
+
+    generateAiSuggestion: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string(),
+        subject: z.string(),
+        lessonTitle: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        
+        // Get relevant reference documents
+        const references = await db.getReferenceDocuments({
+          educationLevel: input.educationLevel,
+          grade: input.grade,
+          subject: input.subject,
+        });
+
+        const referenceContext = references.length > 0
+          ? `المراجع الرسمية المتاحة:\n${references.map(r => `- ${r.documentTitle}`).join('\n')}`
+          : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة.";
+
+        const prompt = `أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين.
+
+المعلومات:
+- السنة الدراسية: ${input.schoolYear}
+- المستوى: ${input.educationLevel === "primary" ? "ابتدائي" : input.educationLevel === "middle" ? "إعدادي" : "ثانوي"}
+- الصف: ${input.grade}
+- المادة: ${input.subject}
+- عنوان الدرس: ${input.lessonTitle}
+
+${referenceContext}
+
+المطلوب:
+1. اقترح أهداف الدرس والكفايات المستهدفة (2-3 أهداف)
+2. اقترح نشاط تمهيدي مناسب
+3. اقترح 3-4 أنشطة رئيسية للدرس
+4. اقترح نشاط ختامي
+5. اقترح طريقة تقييم مناسبة
+6. اقترح الوسائل المطلوبة
+
+ملاحظات مهمة:
+- يجب أن تكون الاقتراحات متوافقة مع البرامج الرسمية التونسية
+- استخدم مصطلحات تربوية دقيقة
+- كن محدداً وعملياً
+- لا تنسخ من المراجع بل اقترح بناءً عليها
+
+قدم الاقتراحات بشكل منظم ومنسق.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين. تلتزم بالبرامج الرسمية التونسية وتستخدم مصطلحات تربوية دقيقة." },
+            { role: "user", content: prompt },
+          ],
+        });
+
+        const suggestionContent = response.choices[0]?.message?.content;
+        const suggestion = typeof suggestionContent === 'string' ? suggestionContent : "لم يتم الحصول على اقتراح";
+
+        // Try to parse the suggestion into structured data
+        const parsedContent = {
+          objectives: "",
+          introduction: "",
+          mainActivities: "",
+          conclusion: "",
+          evaluation: "",
+          materials: "",
+        };
+
+        // Simple parsing based on keywords (can be improved)
+        const lines = suggestion.split('\n');
+        let currentSection = "";
+        
+        for (const line of lines) {
+          if (line.includes("أهداف") || line.includes("الكفايات")) {
+            currentSection = "objectives";
+          } else if (line.includes("تمهيد") || line.includes("المقدمة")) {
+            currentSection = "introduction";
+          } else if (line.includes("أنشطة رئيسية") || line.includes("الأنشطة")) {
+            currentSection = "mainActivities";
+          } else if (line.includes("خاتمة") || line.includes("الخاتمة")) {
+            currentSection = "conclusion";
+          } else if (line.includes("تقييم") || line.includes("التقييم")) {
+            currentSection = "evaluation";
+          } else if (line.includes("وسائل") || line.includes("الوسائل")) {
+            currentSection = "materials";
+          } else if (currentSection && line.trim()) {
+            parsedContent[currentSection as keyof typeof parsedContent] += line + "\n";
+          }
+        }
+
+        return {
+          suggestion,
+          parsedContent,
+        };
+      }),
   }),
 
   lessonPlans: router({
@@ -1219,6 +1334,24 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await db.deleteLessonPlan(input.id);
         return { success: true };
+      }),
+
+    exportToPdf: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const plan = await db.getLessonPlanById(input.id);
+        if (!plan || plan.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على الخطة" });
+        }
+
+        const { generateLessonPlanPdf } = await import("./pdfGenerator");
+        const pdfBuffer = await generateLessonPlanPdf(plan);
+        
+        const { storagePut } = await import("./storage");
+        const fileName = `lesson-plans/plan-${plan.id}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileName, pdfBuffer, "application/pdf");
+        
+        return { url };
       }),
   }),
 
@@ -1291,6 +1424,24 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await db.deleteTeacherExam(input.id);
         return { success: true };
+      }),
+
+    exportToPdf: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const exam = await db.getTeacherExamById(input.id);
+        if (!exam || exam.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على الاختبار" });
+        }
+
+        const { generateTeacherExamPdf } = await import("./pdfGenerator");
+        const pdfBuffer = await generateTeacherExamPdf(exam);
+        
+        const { storagePut } = await import("./storage");
+        const fileName = `teacher-exams/exam-${exam.id}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileName, pdfBuffer, "application/pdf");
+        
+        return { url };
       }),
   }),
 

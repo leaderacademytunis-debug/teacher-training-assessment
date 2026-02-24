@@ -1,0 +1,416 @@
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { X, Loader2, Sparkles, BookOpen } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface PedagogicalSheetFormEnhancedProps {
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: PedagogicalSheetFormEnhancedProps) {
+  const [formData, setFormData] = useState({
+    schoolYear: "",
+    educationLevel: "" as "primary" | "middle" | "secondary" | "",
+    grade: "",
+    subject: "",
+    lessonTitle: "",
+    lessonObjectives: "",
+    duration: "",
+    materials: "",
+    introduction: "",
+    mainActivitiesText: "", // Temporary text field
+    conclusion: "",
+    evaluation: "",
+    guidePageReference: "",
+    programReference: "",
+  });
+
+  const [aiSuggestion, setAiSuggestion] = useState<string>("");
+  const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+
+  const createSheet = trpc.pedagogicalSheets.create.useMutation({
+    onSuccess: () => {
+      alert("تم حفظ المذكرة البيداغوجية بنجاح");
+      onSuccess();
+    },
+    onError: (error) => {
+      alert(`خطأ: ${error.message}`);
+    },
+  });
+
+  const generateAiSuggestion = trpc.pedagogicalSheets.generateAiSuggestion.useMutation({
+    onSuccess: (data: any) => {
+      const suggestionText = typeof data.suggestion === 'string' ? data.suggestion : '';
+      setAiSuggestion(suggestionText);
+      setShowAiSuggestion(true);
+      
+      // Auto-fill form fields from AI suggestion
+      if (data.parsedContent) {
+        setFormData(prev => ({
+          ...prev,
+          lessonObjectives: data.parsedContent.objectives || prev.lessonObjectives,
+          introduction: data.parsedContent.introduction || prev.introduction,
+          mainActivitiesText: data.parsedContent.mainActivities || prev.mainActivitiesText,
+          conclusion: data.parsedContent.conclusion || prev.conclusion,
+          evaluation: data.parsedContent.evaluation || prev.evaluation,
+          materials: data.parsedContent.materials || prev.materials,
+        }));
+      }
+    },
+    onError: (error: any) => {
+      alert(`خطأ في الحصول على الاقتراح: ${error.message}`);
+    },
+  });
+
+  const handleAiSuggestion = () => {
+    if (!formData.schoolYear || !formData.educationLevel || !formData.grade || 
+        !formData.subject || !formData.lessonTitle) {
+      alert("يرجى ملء المعلومات الأساسية أولاً (السنة الدراسية، المستوى، الصف، المادة، عنوان الدرس)");
+      return;
+    }
+
+    generateAiSuggestion.mutate({
+      schoolYear: formData.schoolYear,
+      educationLevel: formData.educationLevel as "primary" | "middle" | "secondary",
+      grade: formData.grade,
+      subject: formData.subject,
+      lessonTitle: formData.lessonTitle,
+    });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.schoolYear || !formData.educationLevel || !formData.grade || 
+        !formData.subject || !formData.lessonTitle) {
+      alert("يرجى ملء جميع الحقول الإلزامية");
+      return;
+    }
+
+    // Parse mainActivities from text to JSON array
+    const mainActivities = formData.mainActivitiesText
+      ? formData.mainActivitiesText.split('\n').filter(line => line.trim()).map((line, idx) => ({
+          title: `نشاط ${idx + 1}`,
+          description: line.trim(),
+          duration: 10, // Default duration
+        }))
+      : undefined;
+
+    createSheet.mutate({
+      schoolYear: formData.schoolYear,
+      educationLevel: formData.educationLevel as "primary" | "middle" | "secondary",
+      grade: formData.grade,
+      subject: formData.subject,
+      lessonTitle: formData.lessonTitle,
+      lessonObjectives: formData.lessonObjectives || undefined,
+      duration: formData.duration ? parseInt(formData.duration) : undefined,
+      materials: formData.materials || undefined,
+      introduction: formData.introduction || undefined,
+      mainActivities,
+      conclusion: formData.conclusion || undefined,
+      evaluation: formData.evaluation || undefined,
+      guidePageReference: formData.guidePageReference || undefined,
+      programReference: formData.programReference || undefined,
+      status: "draft",
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>إنشاء مذكرة بيداغوجية جديدة</CardTitle>
+            <CardDescription>
+              املأ المعلومات التالية واستخدم المساعد الذكي للحصول على اقتراحات بناءً على المراجع الرسمية
+            </CardDescription>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* معلومات التعريف الإلزامية */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">معلومات التعريف (إلزامية)</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="schoolYear">السنة الدراسية *</Label>
+                <Input
+                  id="schoolYear"
+                  placeholder="مثال: 2025-2026"
+                  value={formData.schoolYear}
+                  onChange={(e) => setFormData({ ...formData, schoolYear: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="educationLevel">المستوى التعليمي *</Label>
+                <Select
+                  value={formData.educationLevel}
+                  onValueChange={(value) => setFormData({ ...formData, educationLevel: value as any })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر المستوى" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primary">ابتدائي</SelectItem>
+                    <SelectItem value="middle">إعدادي</SelectItem>
+                    <SelectItem value="secondary">ثانوي</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="grade">الصف *</Label>
+                <Select
+                  value={formData.grade}
+                  onValueChange={(value) => setFormData({ ...formData, grade: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر الصف" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formData.educationLevel === "primary" && (
+                      <>
+                        <SelectItem value="السنة الأولى ابتدائي">السنة الأولى ابتدائي</SelectItem>
+                        <SelectItem value="السنة الثانية ابتدائي">السنة الثانية ابتدائي</SelectItem>
+                        <SelectItem value="السنة الثالثة ابتدائي">السنة الثالثة ابتدائي</SelectItem>
+                        <SelectItem value="السنة الرابعة ابتدائي">السنة الرابعة ابتدائي</SelectItem>
+                        <SelectItem value="السنة الخامسة ابتدائي">السنة الخامسة ابتدائي</SelectItem>
+                        <SelectItem value="السنة السادسة ابتدائي">السنة السادسة ابتدائي</SelectItem>
+                      </>
+                    )}
+                    {formData.educationLevel === "middle" && (
+                      <>
+                        <SelectItem value="السنة السابعة أساسي">السنة السابعة أساسي</SelectItem>
+                        <SelectItem value="السنة الثامنة أساسي">السنة الثامنة أساسي</SelectItem>
+                        <SelectItem value="السنة التاسعة أساسي">السنة التاسعة أساسي</SelectItem>
+                      </>
+                    )}
+                    {formData.educationLevel === "secondary" && (
+                      <>
+                        <SelectItem value="السنة الأولى ثانوي">السنة الأولى ثانوي</SelectItem>
+                        <SelectItem value="السنة الثانية ثانوي">السنة الثانية ثانوي</SelectItem>
+                        <SelectItem value="السنة الثالثة ثانوي">السنة الثالثة ثانوي</SelectItem>
+                        <SelectItem value="السنة الرابعة ثانوي">السنة الرابعة ثانوي</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subject">المادة *</Label>
+                <Select
+                  value={formData.subject}
+                  onValueChange={(value) => setFormData({ ...formData, subject: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر المادة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="اللغة العربية">اللغة العربية</SelectItem>
+                    <SelectItem value="الرياضيات">الرياضيات</SelectItem>
+                    <SelectItem value="الإيقاظ العلمي">الإيقاظ العلمي</SelectItem>
+                    <SelectItem value="التربية الإسلامية">التربية الإسلامية</SelectItem>
+                    <SelectItem value="التربية المدنية">التربية المدنية</SelectItem>
+                    <SelectItem value="اللغة الفرنسية">اللغة الفرنسية</SelectItem>
+                    <SelectItem value="التاريخ والجغرافيا">التاريخ والجغرافيا</SelectItem>
+                    <SelectItem value="التربية الموسيقية">التربية الموسيقية</SelectItem>
+                    <SelectItem value="التربية التشكيلية">التربية التشكيلية</SelectItem>
+                    <SelectItem value="التربية البدنية">التربية البدنية</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* تفاصيل الدرس */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-lg">تفاصيل الدرس</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAiSuggestion}
+                disabled={generateAiSuggestion.isPending || !formData.lessonTitle}
+                className="gap-2"
+              >
+                {generateAiSuggestion.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    جاري الحصول على الاقتراح...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    اقتراح محتوى بالذكاء الاصطناعي
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {showAiSuggestion && aiSuggestion && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <BookOpen className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-sm text-blue-900 whitespace-pre-wrap">
+                  {aiSuggestion}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="lessonTitle">عنوان الدرس *</Label>
+              <Input
+                id="lessonTitle"
+                placeholder="أدخل عنوان الدرس"
+                value={formData.lessonTitle}
+                onChange={(e) => setFormData({ ...formData, lessonTitle: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lessonObjectives">الأهداف والكفايات</Label>
+              <Textarea
+                id="lessonObjectives"
+                placeholder="أدخل أهداف الدرس والكفايات المستهدفة"
+                value={formData.lessonObjectives}
+                onChange={(e) => setFormData({ ...formData, lessonObjectives: e.target.value })}
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duration">المدة (بالدقائق)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  placeholder="مثال: 45"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="materials">الوسائل المطلوبة</Label>
+                <Input
+                  id="materials"
+                  placeholder="مثال: كتاب، سبورة، بطاقات"
+                  value={formData.materials}
+                  onChange={(e) => setFormData({ ...formData, materials: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* البنية البيداغوجية */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">البنية البيداغوجية</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="introduction">المقدمة / التمهيد</Label>
+              <Textarea
+                id="introduction"
+                placeholder="أدخل نشاط التمهيد أو المقدمة"
+                value={formData.introduction}
+                onChange={(e) => setFormData({ ...formData, introduction: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mainActivities">الأنشطة الرئيسية</Label>
+              <Textarea
+                id="mainActivities"
+                placeholder="أدخل الأنشطة الرئيسية للدرس (كل سطر نشاط منفصل)"
+                value={formData.mainActivitiesText}
+                onChange={(e) => setFormData({ ...formData, mainActivitiesText: e.target.value })}
+                rows={5}
+              />
+              <p className="text-xs text-muted-foreground">ملاحظة: كل سطر سيتم تحويله إلى نشاط منفصل</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="conclusion">الخاتمة</Label>
+              <Textarea
+                id="conclusion"
+                placeholder="أدخل نشاط الخاتمة أو التلخيص"
+                value={formData.conclusion}
+                onChange={(e) => setFormData({ ...formData, conclusion: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="evaluation">التقييم</Label>
+              <Textarea
+                id="evaluation"
+                placeholder="أدخل طريقة التقييم أو الأسئلة التقييمية"
+                value={formData.evaluation}
+                onChange={(e) => setFormData({ ...formData, evaluation: e.target.value })}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          {/* المراجع الرسمية */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">المراجع الرسمية</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="guidePageReference">مرجع دليل المعلم</Label>
+              <Input
+                id="guidePageReference"
+                placeholder="مثال: صفحة 24"
+                value={formData.guidePageReference}
+                onChange={(e) => setFormData({ ...formData, guidePageReference: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="programReference">مرجع البرنامج الرسمي</Label>
+              <Textarea
+                id="programReference"
+                placeholder="أدخل الكفاية الختامية من البرنامج الرسمي (سطر أو سطرين فقط)"
+                value={formData.programReference}
+                onChange={(e) => setFormData({ ...formData, programReference: e.target.value })}
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={onClose}>
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={createSheet.isPending}>
+              {createSheet.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  جاري الإنشاء...
+                </>
+              ) : (
+                "إنشاء المذكرة"
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

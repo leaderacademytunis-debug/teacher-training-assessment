@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Calendar, ClipboardList, BookOpen, Plus } from "lucide-react";
-import { PedagogicalSheetForm } from "@/components/PedagogicalSheetForm";
-import { LessonPlanForm } from "@/components/LessonPlanForm";
-import { TeacherExamForm } from "@/components/TeacherExamForm";
+import { PedagogicalSheetFormEnhanced } from "@/components/PedagogicalSheetFormEnhanced";
+import { LessonPlanFormEnhanced } from "@/components/LessonPlanFormEnhanced";
+import { TeacherExamFormEnhanced } from "@/components/TeacherExamFormEnhanced";
 import { ReferenceDocumentsManager } from "@/components/ReferenceDocumentsManager";
 
 function TeacherTools() {
@@ -60,7 +60,7 @@ function TeacherTools() {
             </div>
 
             {showSheetForm && (
-              <PedagogicalSheetForm
+              <PedagogicalSheetFormEnhanced
                 onClose={() => setShowSheetForm(false)}
                 onSuccess={() => {
                   setShowSheetForm(false);
@@ -128,7 +128,8 @@ function TeacherTools() {
             </div>
 
             {showPlanForm && (
-              <LessonPlanForm
+              <LessonPlanFormEnhanced
+                onClose={() => setShowPlanForm(false)}
                 onSuccess={() => {
                   setShowPlanForm(false);
                   refetchPlans();
@@ -188,7 +189,8 @@ function TeacherTools() {
             </div>
 
             {showExamForm && (
-              <TeacherExamForm
+              <TeacherExamFormEnhanced
+                onClose={() => setShowExamForm(false)}
                 onSuccess={() => {
                   setShowExamForm(false);
                   refetchExams();
