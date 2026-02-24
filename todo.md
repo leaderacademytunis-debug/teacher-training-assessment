@@ -382,3 +382,16 @@
 - [x] Style distinctif (orange) pour attirer l'attention
 - [x] Icône UserPlus pour clarté visuelle
 - [ ] Créer le checkpoint final
+
+## Page de gestion des inscriptions pour les instructeurs
+- [x] Ajouter un champ `registrationStatus` dans la table users (pending, approved, rejected)
+- [x] Créer les procédures tRPC pour lister, approuver et rejeter les inscriptions
+- [x] Créer la page `/dashboard/registrations` pour les instructeurs
+- [x] Afficher un tableau avec toutes les données des utilisateurs
+- [x] Permettre de visualiser les reçus de paiement (images et PDF)
+- [x] Ajouter des boutons d'approbation/rejet avec confirmation
+- [x] Ajouter des filtres par statut (tous, en attente, approuvés, rejetés)
+- [x] Envoyer des notifications aux utilisateurs lors de l'approbation/rejet
+- [x] Ajouter un lien vers la page dans le header du Dashboard
+- [x] Dialog pour afficher les détails complets de chaque inscription
+- [ ] Créer le checkpoint final

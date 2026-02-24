@@ -883,6 +883,36 @@ export const appRouter = router({
       }),
   }),
 
+  registrations: router({
+    list: adminProcedure
+      .input(z.object({
+        filter: z.enum(["all", "pending", "approved", "rejected"]).optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        const filter = input?.filter === "all" ? undefined : input?.filter;
+        return await db.getAllRegistrations(filter);
+      }),
+
+    approve: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.approveRegistration(input.userId, ctx.user.id);
+        return { success: true };
+      }),
+
+    reject: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.rejectRegistration(input.userId, ctx.user.id, input.reason);
+        return { success: true };
+      }),
+  }),
+
   notifications: router({
     list: protectedProcedure
       .query(async ({ ctx }) => {

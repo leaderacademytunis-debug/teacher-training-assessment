@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Loader2, BookOpen, Users, FileText, BarChart3, ArrowRight, Video, CheckSquare } from "lucide-react";
+import { Loader2, BookOpen, Users, FileText, BarChart3, ArrowRight, Video, CheckSquare, UserCheck } from "lucide-react";
 import { Link } from "wouter";
 import ManageCourses from "@/components/ManageCourses";
 import ManageExams from "@/components/ManageExams";
@@ -54,12 +54,20 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold text-gray-900">لوحة التحكم</h1>
               <p className="text-gray-600 mt-1">إدارة الدورات والاختبارات والمشاركين</p>
             </div>
-            <Link href="/">
-              <Button variant="outline">
-                <ArrowRight className="w-4 h-4 ml-2" />
-                العودة للرئيسية
-              </Button>
-            </Link>
+            <div className="flex gap-3">
+              <Link href="/dashboard/registrations">
+                <Button className="bg-orange-500 hover:bg-orange-600">
+                  <UserCheck className="w-4 h-4 ml-2" />
+                  إدارة التسجيلات
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline">
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                  العودة للرئيسية
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>

@@ -731,3 +731,71 @@ export async function updateUserProfile(
     })
     .where(eq(users.id, userId));
 }
+
+// ============================================
+// Registration Management (for instructors)
+// ============================================
+
+export async function getAllRegistrations(filter?: "pending" | "approved" | "rejected") {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (filter) {
+    const results = await db
+      .select()
+      .from(users)
+      .where(and(
+        eq(users.registrationCompleted, true),
+        eq(users.registrationStatus, filter)
+      ))
+      .orderBy(desc(users.createdAt));
+    return results;
+  } else {
+    const results = await db
+      .select()
+      .from(users)
+      .where(eq(users.registrationCompleted, true))
+      .orderBy(desc(users.createdAt));
+    return results;
+  }
+}
+
+export async function approveRegistration(userId: number, approvedBy: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users)
+    .set({
+      registrationStatus: "approved",
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  // Send notification to user
+  await createNotification({
+    userId,
+    titleAr: "تم قبول تسجيلك",
+    messageAr: "تم قبول طلب تسجيلك بنجاح. يمكنك الآن الوصول إلى جميع الدورات.",
+    type: "enrollment_approved",
+  });
+}
+
+export async function rejectRegistration(userId: number, rejectedBy: number, reason?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users)
+    .set({
+      registrationStatus: "rejected",
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  // Send notification to user
+  await createNotification({
+    userId,
+    titleAr: "تم رفض تسجيلك",
+    messageAr: reason || "تم رفض طلب تسجيلك. يرجى التواصل مع الإدارة للمزيد من المعلومات.",
+    type: "enrollment_rejected",
+  });
+}

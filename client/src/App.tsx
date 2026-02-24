@@ -17,6 +17,7 @@ import ImportExam from "./pages/ImportExam";
 import EditQuestions from "@/pages/EditQuestions";
 import PreviewExam from "@/pages/PreviewExam";
 import CompleteRegistration from "@/pages/CompleteRegistration";
+import RegistrationsManagement from "@/pages/RegistrationsManagement";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/edit-questions/:id" component={EditQuestions} />
       <Route path="/preview-exam/:id" component={PreviewExam} />
       <Route path="/complete-registration" component={CompleteRegistration} />
+      <Route path="/dashboard/registrations" component={RegistrationsManagement} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

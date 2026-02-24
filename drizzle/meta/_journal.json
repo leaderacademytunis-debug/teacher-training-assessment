@@ -71,6 +71,13 @@
       "when": 1771846684755,
       "tag": "0009_lowly_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1771920712410,
+      "tag": "0010_loose_psylocke",
+      "breakpoints": true
     }
   ]
 }

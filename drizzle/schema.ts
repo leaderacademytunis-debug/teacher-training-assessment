@@ -22,6 +22,7 @@ export const users = mysqlTable("users", {
   idCardNumber: varchar("idCardNumber", { length: 50 }),
   paymentReceiptUrl: text("paymentReceiptUrl"),
   registrationCompleted: boolean("registrationCompleted").default(false).notNull(),
+  registrationStatus: mysqlEnum("registrationStatus", ["pending", "approved", "rejected"]).default("pending").notNull(),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
