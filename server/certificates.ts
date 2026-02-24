@@ -320,38 +320,41 @@ async function drawArabicCertificate(
     });
   }
   
-  // Main text (increased size)
+  // Main text (increased size) - adjusted position to avoid overlap with ID card number
   const mainText = processArabicText(content.mainText);
   const mainTextWidth = font.widthOfTextAtSize(mainText, 13);
+  const mainTextY = data.idCardNumber ? height - 280 : height - 265; // More space if ID card is shown
   page.drawText(mainText, {
     x: (width - mainTextWidth) / 2,
-    y: height - 265,
+    y: mainTextY,
     size: 13,
     font: font,
     color: gray,
   });
   
-  // Underline
+  // Underline - adjusted position
+  const underlineY = data.idCardNumber ? height - 295 : height - 280;
   page.drawLine({
-    start: { x: 210, y: height - 280 },
-    end: { x: width - 210, y: height - 280 },
+    start: { x: 210, y: underlineY },
+    end: { x: width - 210, y: underlineY },
     thickness: 1.5,
     color: black,
   });
   
-  // Axes header (increased size)
+  // Axes header (increased size) - adjusted position
   const axesHeaderText = processArabicText("التي تناولت المحاور التالية :");
   const axesHeaderWidth = font.widthOfTextAtSize(axesHeaderText, 12);
+  const axesHeaderY = data.idCardNumber ? height - 310 : height - 295;
   page.drawText(axesHeaderText, {
     x: width - 150 - axesHeaderWidth,
-    y: height - 295,
+    y: axesHeaderY,
     size: 12,
     font: font,
     color: gray,
   });
   
-  // Draw axes (right-aligned for Arabic)
-  let yPosition = height - 320;
+  // Draw axes (right-aligned for Arabic) - adjusted starting position
+  let yPosition = data.idCardNumber ? height - 335 : height - 320;
   for (const axis of content.axes) {
     const axisText = processArabicText(`• ${axis}`);
     const axisWidth = font.widthOfTextAtSize(axisText, 9);

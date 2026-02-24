@@ -453,3 +453,9 @@
 ## Correction des parenthèses inversées dans le texte arabe
 - [x] Remplacer "صاحب(ة)" par "صاحب/ة" dans le certificat
 - [ ] Créer le checkpoint final
+
+## Correction du chevauchement entre les lignes dans le certificat
+- [x] Ajuster les positions Y pour augmenter l'espacement entre le numéro de carte d'identité et la ligne suivante
+- [x] Ajuster aussi les positions des axes et de leur header
+- [x] Utiliser un espacement conditionnel basé sur la présence du numéro de carte d'identité
+- [ ] Créer le checkpoint final
