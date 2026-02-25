@@ -717,3 +717,10 @@
 
 - [x] Ajouter un bouton "العودة إلى الرئيسية" en haut de la page أدوات المدرس
 - [x] Ajouter le même bouton dans la page المكتبة المشتركة
+
+
+## Phase 9: Ajout du Logo Leader Academy
+
+- [x] Télécharger le logo sur S3
+- [x] Ajouter le logo dans l'en-tête de la page d'accueil
+- [ ] Ajouter le logo dans les autres pages principales

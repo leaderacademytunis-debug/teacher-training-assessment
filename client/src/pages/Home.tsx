@@ -40,9 +40,16 @@ export default function Home() {
       <header className="bg-white shadow-sm border-b">
         <div className="container py-6">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">منصة تأهيل المدرسين</h1>
-              <p className="text-gray-600 mt-1">تطوير مهارات المعلمين وتقييم مكتسباتهم</p>
+            <div className="flex items-center gap-4">
+              <img 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png" 
+                alt="Leader Academy Logo" 
+                className="h-16 w-auto"
+              />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">منصة تأهيل المدرسين</h1>
+                <p className="text-gray-600 mt-1">تطوير مهارات المعلمين وتقييم مكتسباتهم</p>
+              </div>
             </div>
             <div className="flex gap-3 items-center">
               {user ? (
