@@ -757,3 +757,19 @@
 - [ ] Ajouter le lien dans la navigation
 - [ ] Créer une galerie des créations sauvegardées
 - [ ] Ajouter des filtres par type et date
+
+
+## Phase 11: Correction du Bouton "إنشاء مذكرة جديدة"
+
+- [x] Vérifier pourquoi le bouton "إنشاء مذكرة جديدة" ne fonctionne pas
+- [x] Corriger le gestionnaire d'événements du bouton
+- [x] S'assurer que le formulaire s'ouvre correctement
+- [x] Tester le flux complet de création de notes
+
+## Phase 12: Correction du Bouton "اقتراح محتوى بالذكاء الاصطناعي"
+
+- [x] Vérifier les logs de la console pour voir les erreurs
+- [x] Vérifier la fonction handleAiSuggestion dans PedagogicalSheetFormEnhanced
+- [x] Vérifier la procédure tRPC generateAiSuggestion
+- [x] Corriger les erreurs trouvées (déplacé le champ lessonTitle avant les boutons)
+- [x] Tester le bouton IA

@@ -290,6 +290,18 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                 </Select>
               </div>
             </div>
+            
+            {/* عنوان الدرس */}
+            <div className="space-y-2">
+              <Label htmlFor="lessonTitle">عنوان الدرس *</Label>
+              <Input
+                id="lessonTitle"
+                placeholder="أدخل عنوان الدرس"
+                value={formData.lessonTitle}
+                onChange={(e) => setFormData({ ...formData, lessonTitle: e.target.value })}
+                required
+              />
+            </div>
           </div>
 
           {/* تفاصيل الدرس */}
@@ -381,17 +393,6 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                 </Button>
               </>
             )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="lessonTitle">عنوان الدرس *</Label>
-              <Input
-                id="lessonTitle"
-                placeholder="أدخل عنوان الدرس"
-                value={formData.lessonTitle}
-                onChange={(e) => setFormData({ ...formData, lessonTitle: e.target.value })}
-                required
-              />
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="lessonObjectives">الأهداف والكفايات</Label>
