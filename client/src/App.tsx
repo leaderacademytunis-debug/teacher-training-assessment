@@ -21,7 +21,6 @@ import RegistrationsManagement from "@/pages/RegistrationsManagement";
 import TeacherTools from "@/pages/TeacherTools";
 import SharedLibrary from "@/pages/SharedLibrary";
 import ReferenceLibrary from "@/pages/ReferenceLibrary";
-import { ChatAssistant } from "@/components/ChatAssistant";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
 
 function Router() {
@@ -68,7 +67,6 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
-          <ChatAssistant />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

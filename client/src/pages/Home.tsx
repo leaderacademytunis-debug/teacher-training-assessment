@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, GraduationCap, Users, Award, Loader2, UserPlus } from "lucide-react";
+import { BookOpen, GraduationCap, Users, Award, Loader2, UserPlus, MessageSquare } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link } from "wouter";
+import { useState } from "react";
+import { ChatAssistant } from "@/components/ChatAssistant";
 
 const courseIcons: Record<string, typeof BookOpen> = {
   primary_teachers: GraduationCap,
@@ -18,6 +20,7 @@ const courseIcons: Record<string, typeof BookOpen> = {
 };
 
 export default function Home() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const { data: courses, isLoading } = trpc.courses.list.useQuery();
   const { data: enrollments } = trpc.enrollments.myEnrollments.useQuery(undefined, {
@@ -68,6 +71,14 @@ export default function Home() {
                       <Button variant="outline">لوحة التحكم</Button>
                     </Link>
                   )}
+                  <Button 
+                    variant="default" 
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => setIsChatOpen(true)}
+                  >
+                    <MessageSquare className="w-4 h-4 ml-2" />
+                    مساعد EduGPT
+                  </Button>
                   <Link href="/teacher-tools">
                     <Button variant="outline">أدوات المدرس</Button>
                   </Link>
@@ -207,6 +218,11 @@ export default function Home() {
           </p>
         </div>
       </footer>
+      
+      <ChatAssistant 
+        externalIsOpen={isChatOpen} 
+        onExternalOpenChange={setIsChatOpen} 
+      />
     </div>
   );
 }

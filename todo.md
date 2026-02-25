@@ -862,4 +862,10 @@
 - [x] Créer les procédures tRPC pour communiquer avec OpenAI
 - [x] Ajouter un bouton flottant pour ouvrir le chat
 - [x] Tester toutes les fonctionnalités
+- [x] Créer le checkpoint final
+
+## Ajouter bouton EduGPT dans le menu principal
+- [ ] Modifier ChatAssistant pour supporter l'ouverture via prop externe
+- [ ] Ajouter le bouton dans le menu de navigation principal
+- [ ] Tester l'ouverture depuis le menu
 - [ ] Créer le checkpoint final

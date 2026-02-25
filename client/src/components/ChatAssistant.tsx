@@ -12,8 +12,21 @@ interface Message {
   content: string;
 }
 
-export function ChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatAssistantProps {
+  externalIsOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
+}
+
+export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssistantProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = (open: boolean) => {
+    if (onExternalOpenChange) {
+      onExternalOpenChange(open);
+    } else {
+      setInternalIsOpen(open);
+    }
+  };
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
