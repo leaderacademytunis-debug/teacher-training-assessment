@@ -809,4 +809,11 @@
 - [x] Corriger le sélecteur de langue pour utiliser "auto" au lieu de "" comme valeur par défaut
 - [x] Mettre à jour la logique backend pour gérer "auto" comme détection automatique
 - [x] Tester le sélecteur de langue
+- [x] Créer le checkpoint final
+
+## Correction: Erreur ENOENT pour Amiri-Regular.ttf
+- [x] Vérifier si le fichier de police existe
+- [x] Télécharger la police Amiri si nécessaire
+- [x] Corriger le chemin dans pdfGenerator.ts (utilisation de path.join avec __dirname)
+- [x] Tester la génération PDF
 - [ ] Créer le checkpoint final

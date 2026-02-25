@@ -1,5 +1,11 @@
 import PDFDocument from "pdfkit";
+import path from "path";
+import { fileURLToPath } from "url";
 import type { PedagogicalSheet, LessonPlan, TeacherExam } from "../drizzle/schema";
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Helper to create PDF buffer from PDFDocument
 function createPdfBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
@@ -260,7 +266,7 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
       doc.on("error", reject);
 
       // Register Arabic font (Amiri)
-      const amiriFontPath = "/home/ubuntu/teacher_training_assessment/server/fonts/Amiri-Regular.ttf";
+      const amiriFontPath = path.join(__dirname, "fonts", "Amiri-Regular.ttf");
       doc.registerFont("Amiri", amiriFontPath);
       doc.font("Amiri");
 
