@@ -834,3 +834,8 @@
 - [x] Télécharger les 3 fichiers PDF sur S3
 - [x] Insérer les références dans la base de données
 - [x] Créer le checkpoint final
+
+## Intégration des références officielles - Collège (7ème, 8ème, 9ème année)
+- [x] Télécharger les 3 fichiers PDF sur S3
+- [x] Insérer les références dans la base de données
+- [x] Créer le checkpoint final
