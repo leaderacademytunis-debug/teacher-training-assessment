@@ -773,3 +773,9 @@
 - [x] Vérifier la procédure tRPC generateAiSuggestion
 - [x] Corriger les erreurs trouvées (déplacé le champ lessonTitle avant les boutons)
 - [x] Tester le bouton IA
+
+## Export Word des suggestions IA
+- [x] Créer la procédure tRPC pour générer le document Word avec tableau
+- [x] Ajouter le bouton d'export dans l'interface utilisateur
+- [x] Tester l'export Word
+- [ ] Créer le checkpoint final

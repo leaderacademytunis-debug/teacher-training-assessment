@@ -1292,6 +1292,37 @@ ${referenceContext}
         };
       }),
 
+    exportAiSuggestionToWord: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string(),
+        subject: z.string(),
+        lessonTitle: z.string(),
+        duration: z.number().optional(),
+        lessonObjectives: z.string().optional(),
+        materials: z.string().optional(),
+        introduction: z.string().optional(),
+        mainActivities: z.array(z.object({
+          title: z.string(),
+          duration: z.number(),
+          description: z.string(),
+        })).optional(),
+        conclusion: z.string().optional(),
+        evaluation: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import("./storage");
+        const { generateAiSuggestionWord } = await import("./wordGenerator");
+        
+        const wordBuffer = await generateAiSuggestionWord(input);
+        
+        const fileName = `ai-suggestions/suggestion-${Date.now()}.docx`;
+        const { url } = await storagePut(fileName, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        
+        return { url };
+      }),
+
     // Saved Prompts procedures
     savePrompt: protectedProcedure
       .input(z.object({

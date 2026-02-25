@@ -281,6 +281,149 @@ export async function generateLessonPlanWord(plan: LessonPlan): Promise<Buffer> 
   return await Packer.toBuffer(doc);
 }
 
+// Helper to create a table for AI suggestions
+function createSuggestionTable(data: { label: string; content: string }[]): Table {
+  const rows = data.map(
+    (item) =>
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: item.label,
+                    bold: true,
+                    size: 26,
+                  }),
+                ],
+                alignment: AlignmentType.RIGHT,
+              }),
+            ],
+            width: { size: 30, type: WidthType.PERCENTAGE },
+            shading: { fill: "E7E6E6" },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                text: item.content,
+                alignment: AlignmentType.RIGHT,
+                spacing: { before: 100, after: 100 },
+              }),
+            ],
+            width: { size: 70, type: WidthType.PERCENTAGE },
+          }),
+        ],
+      })
+  );
+
+  return new Table({
+    rows,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+  });
+}
+
+export async function generateAiSuggestionWord(
+  suggestion: {
+    schoolYear: string;
+    educationLevel: string;
+    grade: string;
+    subject: string;
+    lessonTitle: string;
+    duration?: number;
+    lessonObjectives?: string;
+    materials?: string;
+    introduction?: string;
+    mainActivities?: { title: string; duration: number; description: string }[];
+    conclusion?: string;
+    evaluation?: string;
+  }
+): Promise<Buffer> {
+  const educationLevelMap: Record<string, string> = {
+    primary: "ابتدائي",
+    middle: "إعدادي",
+    secondary: "ثانوي",
+  };
+
+  const tableData: { label: string; content: string }[] = [
+    { label: "السنة الدراسية", content: suggestion.schoolYear },
+    { label: "المستوى", content: educationLevelMap[suggestion.educationLevel] || suggestion.educationLevel },
+    { label: "الصف", content: suggestion.grade },
+    { label: "المادة", content: suggestion.subject },
+    { label: "عنوان الدرس", content: suggestion.lessonTitle },
+  ];
+
+  if (suggestion.duration) {
+    tableData.push({ label: "المدة", content: `${suggestion.duration} دقيقة` });
+  }
+
+  if (suggestion.lessonObjectives) {
+    tableData.push({ label: "الأهداف والكفايات", content: suggestion.lessonObjectives });
+  }
+
+  if (suggestion.materials) {
+    tableData.push({ label: "الوسائل المطلوبة", content: suggestion.materials });
+  }
+
+  if (suggestion.introduction) {
+    tableData.push({ label: "المقدمة / التمهيد", content: suggestion.introduction });
+  }
+
+  if (suggestion.mainActivities && Array.isArray(suggestion.mainActivities) && suggestion.mainActivities.length > 0) {
+    const activitiesText = suggestion.mainActivities
+      .map((activity, index) => `${index + 1}. ${activity.title} (${activity.duration} دقيقة)\n${activity.description}`)
+      .join("\n\n");
+    tableData.push({ label: "الأنشطة الرئيسية", content: activitiesText });
+  }
+
+  if (suggestion.conclusion) {
+    tableData.push({ label: "الخاتمة", content: suggestion.conclusion });
+  }
+
+  if (suggestion.evaluation) {
+    tableData.push({ label: "التقييم", content: suggestion.evaluation });
+  }
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        children: [
+          new Paragraph({
+            text: "اقتراح محتوى بالذكاء الاصطناعي",
+            heading: HeadingLevel.TITLE,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 400 },
+          }),
+          new Paragraph({
+            text: "مذكرة بيداغوجية مقترحة",
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 300 },
+          }),
+          createSuggestionTable(tableData),
+          new Paragraph({
+            text: "",
+            spacing: { after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: "ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.",
+                italics: true,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 400 },
+          }),
+        ],
+      },
+    ],
+  });
+
+  return await Packer.toBuffer(doc);
+}
+
 export async function generateTeacherExamWord(exam: TeacherExam): Promise<Buffer> {
   const educationLevelMap = {
     primary: "ابتدائي",

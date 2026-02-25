@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Loader2, Sparkles, BookOpen, Info, Bookmark, Save } from "lucide-react";
+import { X, Loader2, Sparkles, BookOpen, Info, Bookmark, Save, FileText } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PromptEngineeringGuide } from "@/components/PromptEngineeringGuide";
 import { SavedPromptsDialog } from "@/components/SavedPromptsDialog";
@@ -88,6 +88,16 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
 
   const incrementUsage = trpc.pedagogicalSheets.incrementUsage.useMutation();
 
+  const exportToWord = trpc.pedagogicalSheets.exportAiSuggestionToWord.useMutation({
+    onSuccess: (data) => {
+      toast.success("تم تصدير الاقتراح إلى Word بنجاح");
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في التصدير: ${error.message}`);
+    },
+  });
+
   const handleAiSuggestion = () => {
     if (!formData.schoolYear || !formData.educationLevel || !formData.grade || 
         !formData.subject || !formData.lessonTitle) {
@@ -105,6 +115,38 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
       grade: formData.grade,
       subject: formData.subject,
       lessonTitle: formData.lessonTitle,
+    });
+  };
+
+  const handleExportToWord = () => {
+    if (!formData.schoolYear || !formData.educationLevel || !formData.grade || 
+        !formData.subject || !formData.lessonTitle) {
+      toast.error("يرجى ملء المعلومات الأساسية أولاً");
+      return;
+    }
+
+    // Parse mainActivitiesText into array
+    const mainActivities = formData.mainActivitiesText
+      ? formData.mainActivitiesText.split('\n').filter(line => line.trim()).map((line, index) => ({
+          title: `نشاط ${index + 1}`,
+          duration: 15,
+          description: line.trim(),
+        }))
+      : undefined;
+
+    exportToWord.mutate({
+      schoolYear: formData.schoolYear,
+      educationLevel: formData.educationLevel as "primary" | "middle" | "secondary",
+      grade: formData.grade,
+      subject: formData.subject,
+      lessonTitle: formData.lessonTitle,
+      duration: formData.duration ? parseInt(formData.duration) : undefined,
+      lessonObjectives: formData.lessonObjectives || undefined,
+      materials: formData.materials || undefined,
+      introduction: formData.introduction || undefined,
+      mainActivities,
+      conclusion: formData.conclusion || undefined,
+      evaluation: formData.evaluation || undefined,
     });
   };
 
@@ -381,16 +423,33 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                     </ul>
                   </div>
                 )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSavePrompt}
-                  className="gap-2 mt-2"
-                >
-                  <Save className="h-4 w-4" />
-                  حفظ في المفضلة
-                </Button>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSavePrompt}
+                    className="gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    حفظ في المفضلة
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={handleExportToWord}
+                    disabled={exportToWord.isPending}
+                    className="gap-2 bg-green-600 hover:bg-green-700"
+                  >
+                    {exportToWord.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileText className="h-4 w-4" />
+                    )}
+                    تصدير إلى Word
+                  </Button>
+                </div>
               </>
             )}
 
