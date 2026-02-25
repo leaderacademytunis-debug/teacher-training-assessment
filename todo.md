@@ -839,3 +839,8 @@
 - [x] Télécharger les 3 fichiers PDF sur S3
 - [x] Insérer les références dans la base de données
 - [x] Créer le checkpoint final
+
+## Intégration des références officielles - Secondaire (1ère-4ème année)
+- [x] Télécharger les 6 fichiers PDF sur S3
+- [x] Insérer les références dans la base de données
+- [x] Créer le checkpoint final
