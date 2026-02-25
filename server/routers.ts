@@ -2171,6 +2171,145 @@ Tu dois toujours répondre en arabe sauf si l'utilisateur demande explicitement 
         const { uploadFile } = await import("./uploadFile");
         return await uploadFile(input, ctx.user.id);
       }),
+    
+    analyzeFile: protectedProcedure
+      .input(z.object({
+        fileUrl: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { analyzeFile } = await import("./fileAnalysis");
+        
+        // Download file from URL
+        const response = await fetch(input.fileUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        
+        return await analyzeFile(buffer, input.mimeType);
+      }),
+    
+    saveConversation: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string(),
+          })).optional(),
+          timestamp: z.number(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.saveConversation(ctx.user.id, input);
+      }),
+    
+    updateConversation: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string(),
+          })).optional(),
+          timestamp: z.number(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.updateConversation(input.id, ctx.user.id, input);
+      }),
+    
+    getConversations: protectedProcedure
+      .input(z.object({
+        searchQuery: z.string().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        return await db.getUserConversations(ctx.user.id, input.searchQuery);
+      }),
+    
+    getConversation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        return await db.getConversationById(input.id, ctx.user.id);
+      }),
+    
+    deleteConversation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.deleteConversation(input.id, ctx.user.id);
+      }),
+    
+    exportConversationAsPDF: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string(),
+          })).optional(),
+          timestamp: z.number(),
+        })),
+        createdAt: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportConversationAsPDF } = await import("./exportConversation");
+        const pdfBuffer = await exportConversationAsPDF({
+          title: input.title,
+          messages: input.messages,
+          createdAt: new Date(input.createdAt),
+        });
+        
+        // Upload to S3
+        const { storagePut } = await import("./storage");
+        const fileName = `conversation-${Date.now()}.pdf`;
+        const { url } = await storagePut(`conversations/${fileName}`, pdfBuffer, "application/pdf");
+        
+        return { url };
+      }),
+    
+    exportConversationAsWord: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string(),
+          })).optional(),
+          timestamp: z.number(),
+        })),
+        createdAt: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportConversationAsWord } = await import("./exportConversation");
+        const wordBuffer = await exportConversationAsWord({
+          title: input.title,
+          messages: input.messages,
+          createdAt: new Date(input.createdAt),
+        });
+        
+        // Upload to S3
+        const { storagePut } = await import("./storage");
+        const fileName = `conversation-${Date.now()}.docx`;
+        const { url } = await storagePut(`conversations/${fileName}`, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        
+        return { url };
+      }),
   }),
 
   templates: router({

@@ -916,3 +916,18 @@
 - [x] Mettre à jour le menu pour pointer vers la nouvelle page
 - [x] Tester avec différents types de fichiers
 - [ ] Créer le checkpoint final
+
+## Fonctionnalités avancées EduGPT: Analyse de fichiers, Historique et Export
+- [x] Créer le schéma de base de données pour l'historique des conversations
+- [x] Implémenter l'extraction de texte depuis PDF (pdf-parse)
+- [x] Implémenter OCR pour les images (Tesseract.js ou API)
+- [x] Intégrer l'analyse de fichiers dans le contexte LLM
+- [x] Créer les procédures tRPC pour sauvegarder/charger les conversations
+- [x] Ajouter un sidebar avec liste des conversations passées
+- [x] Implémenter la recherche dans l'historique des conversations
+- [x] Ajouter la fonctionnalité de suppression de conversations
+- [x] Créer une fonction d'export en PDF avec formatage
+- [x] Créer une fonction d'export en Word (DOCX)
+- [x] Ajouter un bouton d'export dans l'interface
+- [x] Tester toutes les fonctionnalités
+- [ ] Créer le checkpoint final

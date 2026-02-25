@@ -17,7 +17,8 @@ import {
   teacherExams, TeacherExam, InsertTeacherExam,
   referenceDocuments, ReferenceDocument, InsertReferenceDocument,
   aiSuggestions, AiSuggestion, InsertAiSuggestion,
-  templates, Template, InsertTemplate
+  templates, Template, InsertTemplate,
+  conversations, Conversation, InsertConversation
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1169,4 +1170,101 @@ export async function incrementTemplateUsage(id: number): Promise<void> {
   await db.update(templates)
     .set({ usageCount: sql`${templates.usageCount} + 1` })
     .where(eq(templates.id, id));
+}
+
+// Conversations functions
+export async function saveConversation(userId: number, data: {
+  title: string;
+  messages: Array<{
+    role: "user" | "assistant";
+    content: string;
+    attachments?: Array<{
+      name: string;
+      size: number;
+      type: string;
+      url: string;
+    }>;
+    timestamp: number;
+  }>;
+}): Promise<Conversation> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [conversation] = await db.insert(conversations).values({
+    userId,
+    title: data.title,
+    messages: data.messages,
+    lastMessageAt: new Date(),
+  }).$returningId();
+  
+  const [result] = await db.select().from(conversations).where(eq(conversations.id, conversation.id));
+  return result;
+}
+
+export async function updateConversation(id: number, userId: number, data: {
+  title?: string;
+  messages: Array<{
+    role: "user" | "assistant";
+    content: string;
+    attachments?: Array<{
+      name: string;
+      size: number;
+      type: string;
+      url: string;
+    }>;
+    timestamp: number;
+  }>;
+}): Promise<Conversation> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(conversations)
+    .set({
+      ...(data.title && { title: data.title }),
+      messages: data.messages,
+      lastMessageAt: new Date(),
+    })
+    .where(eq(conversations.id, id));
+  
+  const [result] = await db.select().from(conversations).where(eq(conversations.id, id));
+  return result;
+}
+
+export async function getUserConversations(userId: number, searchQuery?: string): Promise<Conversation[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [eq(conversations.userId, userId)];
+  
+  // If search query is provided, filter by title
+  if (searchQuery) {
+    conditions.push(sql`${conversations.title} LIKE ${`%${searchQuery}%`}`);
+  }
+  
+  return await db.select()
+    .from(conversations)
+    .where(and(...conditions))
+    .orderBy(desc(conversations.lastMessageAt));
+}
+
+export async function getConversationById(id: number, userId: number): Promise<Conversation | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [conversation] = await db.select()
+    .from(conversations)
+    .where(sql`${conversations.id} = ${id} AND ${conversations.userId} = ${userId}`)
+    .limit(1);
+  
+  return conversation || null;
+}
+
+export async function deleteConversation(id: number, userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db.delete(conversations)
+    .where(sql`${conversations.id} = ${id} AND ${conversations.userId} = ${userId}`);
+  
+  return true;
 }

@@ -588,3 +588,33 @@ export const templates = mysqlTable("templates", {
 
 export type Template = typeof templates.$inferSelect;
 export type InsertTemplate = typeof templates.$inferInsert;
+
+/**
+ * Conversations table - stores chat history with EduGPT
+ */
+export const conversations = mysqlTable("conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Conversation metadata
+  title: varchar("title", { length: 255 }).notNull(), // Auto-generated from first message
+  messages: json("messages").$type<Array<{
+    role: "user" | "assistant";
+    content: string;
+    attachments?: Array<{
+      name: string;
+      size: number;
+      type: string;
+      url: string;
+    }>;
+    timestamp: number;
+  }>>().notNull(),
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
+});
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = typeof conversations.$inferInsert;

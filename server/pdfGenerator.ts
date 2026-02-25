@@ -238,6 +238,51 @@ function processArabicText(text: string): string {
   return bidi(text);
 }
 
+/**
+ * Generate PDF from HTML content using weasyprint
+ * @param htmlContent - HTML content to convert to PDF
+ * @returns Buffer containing the PDF
+ */
+export async function createPDF(htmlContent: string): Promise<Buffer> {
+  const { exec } = await import("child_process");
+  const { promisify } = await import("util");
+  const { writeFile, unlink, readFile } = await import("fs/promises");
+  const { join } = await import("path");
+  const { tmpdir } = await import("os");
+  const { randomBytes } = await import("crypto");
+
+  const execAsync = promisify(exec);
+  const tempId = randomBytes(16).toString("hex");
+  const htmlPath = join(tmpdir(), `${tempId}.html`);
+  const pdfPath = join(tmpdir(), `${tempId}.pdf`);
+
+  try {
+    // Write HTML to temp file
+    await writeFile(htmlPath, htmlContent, "utf-8");
+
+    // Convert HTML to PDF using weasyprint
+    await execAsync(`weasyprint ${htmlPath} ${pdfPath}`);
+
+    // Read PDF file
+    const pdfBuffer = await readFile(pdfPath);
+
+    // Cleanup temp files
+    await Promise.all([
+      unlink(htmlPath).catch(() => {}),
+      unlink(pdfPath).catch(() => {}),
+    ]);
+
+    return pdfBuffer;
+  } catch (error) {
+    // Cleanup on error
+    await Promise.all([
+      unlink(htmlPath).catch(() => {}),
+      unlink(pdfPath).catch(() => {}),
+    ]);
+    throw new Error(`Failed to generate PDF: ${error}`);
+  }
+}
+
 export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
