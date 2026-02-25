@@ -823,4 +823,9 @@
 - [x] Insérer les références dans la base de données avec les métadonnées appropriées
 - [x] Vérifier que les références sont filtrées correctement lors de la génération
 - [x] Tester la génération d'une mذكرة pour la 6ème année primaire en français
+- [x] Créer le checkpoint final
+
+## Intégration des références officielles - 5ème année primaire
+- [x] Télécharger les 4 fichiers PDF sur S3
+- [x] Insérer les références dans la base de données
 - [ ] Créer le checkpoint final
