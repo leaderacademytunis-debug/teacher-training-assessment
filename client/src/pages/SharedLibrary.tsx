@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Eye, Copy, Star, User, Calendar } from "lucide-react";
+import { BookOpen, Eye, Copy, Star, User, Calendar, Home } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -48,6 +48,14 @@ export default function SharedLibrary() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <Link href="/">
+            <Button variant="outline" className="gap-2">
+              <Home className="h-4 w-4" />
+              العودة إلى الرئيسية
+            </Button>
+          </Link>
+        </div>
         <h1 className="text-3xl font-bold text-right mb-2">المكتبة المشتركة للمذكرات البيداغوجية</h1>
         <p className="text-muted-foreground text-right">
           تصفح واستفد من مذكرات زملائك المدرسين

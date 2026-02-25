@@ -711,3 +711,9 @@
 - [ ] Ajouter un compteur de clonages
 - [ ] Permettre la recherche par mots-clés
 - [ ] Ajouter un badge "أكثر المذكرات شعبية"
+
+
+## Phase 8: Amélioration de la Navigation
+
+- [x] Ajouter un bouton "العودة إلى الرئيسية" en haut de la page أدوات المدرس
+- [x] Ajouter le même bouton dans la page المكتبة المشتركة
