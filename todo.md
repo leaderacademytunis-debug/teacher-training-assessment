@@ -899,3 +899,8 @@
 - [x] Ajouter un bouton pour basculer en mode plein écran
 - [x] Tester l'affichage sur différentes tailles d'écran
 - [ ] Créer le checkpoint final
+
+## Bug Fix: Problème de défilement dans EduGPT
+- [x] Corriger le ScrollArea pour permettre le défilement vertical
+- [x] Tester le défilement avec des messages longs
+- [ ] Créer le checkpoint final

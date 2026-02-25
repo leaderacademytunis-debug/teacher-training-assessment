@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { X, Send, MessageSquare, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
@@ -129,7 +128,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+          <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground mt-8">
                 <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -174,7 +173,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Input */}
           <div className="p-4 border-t">
