@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, decimal } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -385,3 +385,63 @@ export const savedPrompts = mysqlTable("savedPrompts", {
 
 export type SavedPrompt = typeof savedPrompts.$inferSelect;
 export type InsertSavedPrompt = typeof savedPrompts.$inferInsert;
+
+/**
+ * Shared pedagogical sheets table - stores published notes in the shared library
+ */
+export const sharedPedagogicalSheets = mysqlTable("sharedPedagogicalSheets", {
+  id: int("id").autoincrement().primaryKey(),
+  originalSheetId: int("originalSheetId").notNull(), // Reference to pedagogicalSheets
+  publishedBy: int("publishedBy").notNull(), // User who published
+  
+  // Cached data from original sheet (for faster queries)
+  schoolYear: varchar("schoolYear", { length: 20 }).notNull(),
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  lessonTitle: varchar("lessonTitle", { length: 255 }).notNull(),
+  
+  // Full sheet data as JSON
+  sheetData: json("sheetData").notNull(),
+  
+  // Engagement metrics
+  viewCount: int("viewCount").default(0).notNull(),
+  cloneCount: int("cloneCount").default(0).notNull(),
+  averageRating: decimal("averageRating", { precision: 3, scale: 2 }).default("0.00"),
+  ratingCount: int("ratingCount").default(0).notNull(),
+  
+  // Metadata
+  publishedAt: timestamp("publishedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SharedPedagogicalSheet = typeof sharedPedagogicalSheets.$inferSelect;
+export type InsertSharedPedagogicalSheet = typeof sharedPedagogicalSheets.$inferInsert;
+
+/**
+ * Sheet ratings table - stores user ratings for shared sheets
+ */
+export const sheetRatings = mysqlTable("sheetRatings", {
+  id: int("id").autoincrement().primaryKey(),
+  sharedSheetId: int("sharedSheetId").notNull(),
+  userId: int("userId").notNull(),
+  rating: int("rating").notNull(), // 1-5 stars
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SheetRating = typeof sheetRatings.$inferSelect;
+export type InsertSheetRating = typeof sheetRatings.$inferInsert;
+
+/**
+ * Sheet comments table - stores comments on shared sheets
+ */
+export const sheetComments = mysqlTable("sheetComments", {
+  id: int("id").autoincrement().primaryKey(),
+  sharedSheetId: int("sharedSheetId").notNull(),
+  userId: int("userId").notNull(),
+  commentText: text("commentText").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SheetComment = typeof sheetComments.$inferSelect;
+export type InsertSheetComment = typeof sheetComments.$inferInsert;

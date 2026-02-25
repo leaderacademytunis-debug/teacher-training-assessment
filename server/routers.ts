@@ -1366,6 +1366,159 @@ ${referenceContext}
         
         return { success: true };
       }),
+
+    // Shared Library procedures
+    publishSheet: protectedProcedure
+      .input(z.object({ sheetId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { pedagogicalSheets, sharedPedagogicalSheets } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+
+        // Get the original sheet
+        const [sheet] = await database
+          .select()
+          .from(pedagogicalSheets)
+          .where(eq(pedagogicalSheets.id, input.sheetId));
+
+        if (!sheet) throw new TRPCError({ code: "NOT_FOUND", message: "المذكرة غير موجودة" });
+        if (sheet.createdBy !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك نشر مذكرة ليست لك" });
+
+        // Check if already published
+        const [existing] = await database
+          .select()
+          .from(sharedPedagogicalSheets)
+          .where(eq(sharedPedagogicalSheets.originalSheetId, input.sheetId));
+
+        if (existing) throw new TRPCError({ code: "BAD_REQUEST", message: "هذه المذكرة منشورة بالفعل" });
+
+        // Publish the sheet
+        await database.insert(sharedPedagogicalSheets).values({
+          originalSheetId: sheet.id,
+          publishedBy: ctx.user.id,
+          schoolYear: sheet.schoolYear,
+          educationLevel: sheet.educationLevel,
+          grade: sheet.grade,
+          subject: sheet.subject,
+          lessonTitle: sheet.lessonTitle,
+          sheetData: sheet as any,
+        });
+
+        return { success: true };
+      }),
+
+    listSharedSheets: publicProcedure
+      .input(z.object({
+        educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+        minRating: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { sharedPedagogicalSheets, users } = await import("../drizzle/schema");
+        const { eq, and, gte, desc } = await import("drizzle-orm");
+
+        const conditions = [];
+        if (input.educationLevel) conditions.push(eq(sharedPedagogicalSheets.educationLevel, input.educationLevel));
+        if (input.grade) conditions.push(eq(sharedPedagogicalSheets.grade, input.grade));
+        if (input.subject) conditions.push(eq(sharedPedagogicalSheets.subject, input.subject));
+        if (input.minRating) conditions.push(gte(sharedPedagogicalSheets.averageRating, input.minRating.toString()));
+
+        const sheets = await database
+          .select({
+            id: sharedPedagogicalSheets.id,
+            lessonTitle: sharedPedagogicalSheets.lessonTitle,
+            schoolYear: sharedPedagogicalSheets.schoolYear,
+            educationLevel: sharedPedagogicalSheets.educationLevel,
+            grade: sharedPedagogicalSheets.grade,
+            subject: sharedPedagogicalSheets.subject,
+            viewCount: sharedPedagogicalSheets.viewCount,
+            cloneCount: sharedPedagogicalSheets.cloneCount,
+            averageRating: sharedPedagogicalSheets.averageRating,
+            ratingCount: sharedPedagogicalSheets.ratingCount,
+            publishedAt: sharedPedagogicalSheets.publishedAt,
+            publishedBy: sharedPedagogicalSheets.publishedBy,
+            publisherName: users.name,
+          })
+          .from(sharedPedagogicalSheets)
+          .leftJoin(users, eq(sharedPedagogicalSheets.publishedBy, users.id))
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(desc(sharedPedagogicalSheets.publishedAt));
+
+        return sheets;
+      }),
+
+    getSharedSheetById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { sharedPedagogicalSheets, users } = await import("../drizzle/schema");
+        const { eq, sql } = await import("drizzle-orm");
+
+        // Increment view count
+        await database
+          .update(sharedPedagogicalSheets)
+          .set({ viewCount: sql`${sharedPedagogicalSheets.viewCount} + 1` })
+          .where(eq(sharedPedagogicalSheets.id, input.id));
+
+        const [sheet] = await database
+          .select({
+            id: sharedPedagogicalSheets.id,
+            sheetData: sharedPedagogicalSheets.sheetData,
+            viewCount: sharedPedagogicalSheets.viewCount,
+            cloneCount: sharedPedagogicalSheets.cloneCount,
+            averageRating: sharedPedagogicalSheets.averageRating,
+            ratingCount: sharedPedagogicalSheets.ratingCount,
+            publishedAt: sharedPedagogicalSheets.publishedAt,
+            publishedBy: sharedPedagogicalSheets.publishedBy,
+            publisherName: users.name,
+          })
+          .from(sharedPedagogicalSheets)
+          .leftJoin(users, eq(sharedPedagogicalSheets.publishedBy, users.id))
+          .where(eq(sharedPedagogicalSheets.id, input.id));
+
+        if (!sheet) throw new TRPCError({ code: "NOT_FOUND", message: "المذكرة غير موجودة" });
+        return sheet;
+      }),
+
+    cloneSheet: protectedProcedure
+      .input(z.object({ sharedSheetId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { sharedPedagogicalSheets, pedagogicalSheets } = await import("../drizzle/schema");
+        const { eq, sql } = await import("drizzle-orm");
+
+        // Get the shared sheet
+        const [sharedSheet] = await database
+          .select()
+          .from(sharedPedagogicalSheets)
+          .where(eq(sharedPedagogicalSheets.id, input.sharedSheetId));
+
+        if (!sharedSheet) throw new TRPCError({ code: "NOT_FOUND", message: "المذكرة غير موجودة" });
+
+        // Clone to user's personal sheets
+        const sheetData = sharedSheet.sheetData as any;
+        await database.insert(pedagogicalSheets).values({
+          ...sheetData,
+          id: undefined, // Let DB generate new ID
+          createdBy: ctx.user.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // Increment clone count
+        await database
+          .update(sharedPedagogicalSheets)
+          .set({ cloneCount: sql`${sharedPedagogicalSheets.cloneCount} + 1` })
+          .where(eq(sharedPedagogicalSheets.id, input.sharedSheetId));
+
+        return { success: true };
+      }),
   }),
 
   lessonPlans: router({

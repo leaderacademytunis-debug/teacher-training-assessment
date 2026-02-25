@@ -64,6 +64,9 @@ export default function Home() {
                   <Link href="/teacher-tools">
                     <Button variant="outline">أدوات المدرس</Button>
                   </Link>
+                  <Link href="/shared-library">
+                    <Button variant="outline">المكتبة المشتركة</Button>
+                  </Link>
                   <Link href="/my-courses">
                     <Button>دوراتي</Button>
                   </Link>

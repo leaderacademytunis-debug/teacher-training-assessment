@@ -678,3 +678,36 @@
 - [x] Intégrer le contenu des références dans le contexte du prompt
 - [x] Afficher les références utilisées dans la suggestion
 - [x] Améliorer la qualité des suggestions générées
+
+
+## Phase 7: Bibliothèque Partagée de Notes Pédagogiques
+
+### Schéma de Base de Données
+- [x] Créer une table `sharedPedagogicalSheets` pour les notes publiées
+- [x] Créer une table `sheetRatings` pour les évaluations
+- [x] Créer une table `sheetComments` pour les commentaires
+- [ ] Ajouter un champ `isPublic` dans la table `pedagogicalSheets`
+- [x] Pousser les migrations vers la base de données
+
+### Procedures tRPC
+- [x] Créer `publishSheet` pour publier une note dans la bibliothèque
+- [x] Créer `listSharedSheets` avec filtres (matière, niveau, note)
+- [x] Créer `getSharedSheetById` pour afficher les détails
+- [x] Créer `cloneSheet` pour copier une note partagée
+- [ ] Créer `rateSheet` pour évaluer une note
+- [ ] Créer `addComment` pour ajouter un commentaire
+- [ ] Créer `listComments` pour afficher les commentaires
+
+### Interface Utilisateur
+- [x] Créer la page "المكتبة المشتركة" avec grille de cartes
+- [x] Ajouter des filtres (matière, niveau, évaluation)
+- [ ] Créer la page de détails d'une note partagée
+- [x] Ajouter le bouton "نشر في المكتبة" dans les notes personnelles
+- [ ] Créer le système d'évaluation par étoiles
+- [ ] Créer la section des commentaires avec formulaire
+
+### Fonctionnalités Avancées
+- [ ] Ajouter un compteur de vues pour chaque note
+- [ ] Ajouter un compteur de clonages
+- [ ] Permettre la recherche par mots-clés
+- [ ] Ajouter un badge "أكثر المذكرات شعبية"

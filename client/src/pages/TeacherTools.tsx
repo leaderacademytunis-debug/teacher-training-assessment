@@ -9,6 +9,7 @@ import { LessonPlanFormEnhanced } from "@/components/LessonPlanFormEnhanced";
 import { TeacherExamFormEnhanced } from "@/components/TeacherExamFormEnhanced";
 import { ReferenceDocumentsManager } from "@/components/ReferenceDocumentsManager";
 import { ExportDialog } from "@/components/ExportDialog";
+import { toast } from "sonner";
 
 function TeacherTools() {
   const [activeTab, setActiveTab] = useState("sheets");
@@ -25,6 +26,22 @@ function TeacherTools() {
   const { data: sheets = [], refetch: refetchSheets } = trpc.pedagogicalSheets.list.useQuery();
   const { data: plans = [], refetch: refetchPlans } = trpc.lessonPlans.list.useQuery();
   const { data: exams = [], refetch: refetchExams } = trpc.teacherExams.list.useQuery();
+
+  const publishSheet = trpc.pedagogicalSheets.publishSheet.useMutation({
+    onSuccess: () => {
+      toast.success("تم نشر المذكرة في المكتبة المشتركة بنجاح");
+      refetchSheets();
+    },
+    onError: (error) => {
+      toast.error(`خطأ: ${error.message}`);
+    },
+  });
+
+  const handlePublishSheet = (sheetId: number) => {
+    if (confirm("هل تريد نشر هذه المذكرة في المكتبة المشتركة? سيتمكن جميع المدرسين من رؤيتها ونسخها.")) {
+      publishSheet.mutate({ sheetId });
+    }
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -104,25 +121,35 @@ function TeacherTools() {
                           sheet.status === "draft" ? "مسودة" : "مكتملة"
                         }</p>
                       </div>
-                      <div className="flex gap-2 mt-4">
-                        <Button variant="outline" size="sm" className="flex-1">
-                          عرض
-                        </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          تعديل
-                        </Button>
+                      <div className="space-y-2 mt-4">
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1">
+                            عرض
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1">
+                            تعديل
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1"
+                            onClick={() => setExportDialog({
+                              open: true,
+                              itemId: sheet.id,
+                              itemTitle: sheet.lessonTitle,
+                              exportType: "pedagogicalSheet",
+                            })}
+                          >
+                            تصدير
+                          </Button>
+                        </div>
                         <Button 
-                          variant="outline" 
+                          variant="default" 
                           size="sm" 
-                          className="flex-1"
-                          onClick={() => setExportDialog({
-                            open: true,
-                            itemId: sheet.id,
-                            itemTitle: sheet.lessonTitle,
-                            exportType: "pedagogicalSheet",
-                          })}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => handlePublishSheet(sheet.id)}
                         >
-                          تصدير
+                          نشر في المكتبة المشتركة
                         </Button>
                       </div>
                     </CardContent>

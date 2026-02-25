@@ -19,6 +19,7 @@ import PreviewExam from "@/pages/PreviewExam";
 import CompleteRegistration from "@/pages/CompleteRegistration";
 import RegistrationsManagement from "@/pages/RegistrationsManagement";
 import TeacherTools from "@/pages/TeacherTools";
+import SharedLibrary from "@/pages/SharedLibrary";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/complete-registration" component={CompleteRegistration} />
       <Route path="/dashboard/registrations" component={RegistrationsManagement} />
       <Route path="/teacher-tools" component={TeacherTools} />
+      <Route path="/shared-library" component={SharedLibrary} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
