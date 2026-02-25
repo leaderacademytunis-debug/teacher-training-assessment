@@ -15,7 +15,8 @@ import {
   pedagogicalSheets, PedagogicalSheet, InsertPedagogicalSheet,
   lessonPlans, LessonPlan, InsertLessonPlan,
   teacherExams, TeacherExam, InsertTeacherExam,
-  referenceDocuments, ReferenceDocument, InsertReferenceDocument
+  referenceDocuments, ReferenceDocument, InsertReferenceDocument,
+  aiSuggestions, AiSuggestion, InsertAiSuggestion
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1036,4 +1037,67 @@ export async function deleteReferenceDocument(id: number): Promise<void> {
   if (!db) throw new Error("Database not available");
 
   await db.delete(referenceDocuments).where(eq(referenceDocuments.id, id));
+}
+
+
+// AI Suggestions functions
+export async function createAiSuggestion(data: InsertAiSuggestion): Promise<AiSuggestion> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [suggestion] = await db.insert(aiSuggestions).values(data).$returningId();
+  const [result] = await db.select().from(aiSuggestions).where(eq(aiSuggestions.id, suggestion.id));
+  return result;
+}
+
+export async function getUserAiSuggestions(userId: number): Promise<AiSuggestion[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(aiSuggestions)
+    .where(eq(aiSuggestions.userId, userId))
+    .orderBy(desc(aiSuggestions.createdAt));
+}
+
+export async function getAiSuggestionById(id: number): Promise<AiSuggestion | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [suggestion] = await db.select().from(aiSuggestions).where(eq(aiSuggestions.id, id)).limit(1);
+  return suggestion || null;
+}
+
+export async function searchAiSuggestions(userId: number, filters?: {
+  educationLevel?: string;
+  grade?: string;
+  subject?: string;
+}): Promise<AiSuggestion[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [eq(aiSuggestions.userId, userId)];
+  
+  if (filters?.educationLevel && filters.educationLevel !== "all") {
+    conditions.push(eq(aiSuggestions.educationLevel, filters.educationLevel as any));
+  }
+  if (filters?.grade && filters.grade !== "all") {
+    conditions.push(eq(aiSuggestions.grade, filters.grade));
+  }
+  if (filters?.subject && filters.subject !== "all") {
+    conditions.push(eq(aiSuggestions.subject, filters.subject));
+  }
+
+  return await db.select().from(aiSuggestions)
+    .where(and(...conditions))
+    .orderBy(desc(aiSuggestions.createdAt));
+}
+
+export async function deleteAiSuggestion(id: number, userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db.delete(aiSuggestions)
+    .where(and(eq(aiSuggestions.id, id), eq(aiSuggestions.userId, userId)));
+  
+  return true;
 }

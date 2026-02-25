@@ -1,0 +1,21 @@
+CREATE TABLE `aiSuggestions` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`schoolYear` varchar(20) NOT NULL,
+	`educationLevel` enum('primary','middle','secondary') NOT NULL,
+	`grade` varchar(50) NOT NULL,
+	`subject` varchar(100) NOT NULL,
+	`lessonTitle` varchar(255) NOT NULL,
+	`duration` int,
+	`lessonObjectives` text,
+	`materials` text,
+	`introduction` text,
+	`mainActivities` json,
+	`conclusion` text,
+	`evaluation` text,
+	`rawSuggestion` text,
+	`usedReferences` json,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `aiSuggestions_id` PRIMARY KEY(`id`)
+);

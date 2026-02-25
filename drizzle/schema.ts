@@ -387,6 +387,41 @@ export type SavedPrompt = typeof savedPrompts.$inferSelect;
 export type InsertSavedPrompt = typeof savedPrompts.$inferInsert;
 
 /**
+ * AI Suggestions table - archives AI-generated pedagogical suggestions
+ */
+export const aiSuggestions = mysqlTable("aiSuggestions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Basic information
+  schoolYear: varchar("schoolYear", { length: 20 }).notNull(),
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  lessonTitle: varchar("lessonTitle", { length: 255 }).notNull(),
+  
+  // Suggestion content
+  duration: int("duration"),
+  lessonObjectives: text("lessonObjectives"),
+  materials: text("materials"),
+  introduction: text("introduction"),
+  mainActivities: json("mainActivities"), // Array of {title, duration, description}
+  conclusion: text("conclusion"),
+  evaluation: text("evaluation"),
+  
+  // AI metadata
+  rawSuggestion: text("rawSuggestion"), // Original AI response
+  usedReferences: json("usedReferences"), // Array of reference documents used
+  
+  // Metadata
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AiSuggestion = typeof aiSuggestions.$inferSelect;
+export type InsertAiSuggestion = typeof aiSuggestions.$inferInsert;
+
+/**
  * Shared pedagogical sheets table - stores published notes in the shared library
  */
 export const sharedPedagogicalSheets = mysqlTable("sharedPedagogicalSheets", {

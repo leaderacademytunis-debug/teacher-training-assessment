@@ -120,6 +120,13 @@
       "when": 1772004723164,
       "tag": "0016_right_gladiator",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1772008299646,
+      "tag": "0017_redundant_nicolaos",
+      "breakpoints": true
     }
   ]
 }

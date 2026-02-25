@@ -1323,6 +1323,98 @@ ${referenceContext}
         return { url };
       }),
 
+    exportAiSuggestionToPDF: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string(),
+        subject: z.string(),
+        lessonTitle: z.string(),
+        duration: z.number().optional(),
+        lessonObjectives: z.string().optional(),
+        materials: z.string().optional(),
+        introduction: z.string().optional(),
+        mainActivities: z.array(z.object({
+          title: z.string(),
+          duration: z.number(),
+          description: z.string(),
+        })).optional(),
+        conclusion: z.string().optional(),
+        evaluation: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import("./storage");
+        const { generateAiSuggestionPDF } = await import("./pdfGenerator");
+        
+        const pdfBuffer = await generateAiSuggestionPDF(input);
+        
+        const fileName = `ai-suggestions/suggestion-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileName, pdfBuffer, "application/pdf");
+        
+        return { url };
+      }),
+
+    saveAiSuggestion: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string(),
+        subject: z.string(),
+        lessonTitle: z.string(),
+        duration: z.number().optional(),
+        lessonObjectives: z.string().optional(),
+        materials: z.string().optional(),
+        introduction: z.string().optional(),
+        mainActivities: z.array(z.object({
+          title: z.string(),
+          duration: z.number(),
+          description: z.string(),
+        })).optional(),
+        conclusion: z.string().optional(),
+        evaluation: z.string().optional(),
+        rawSuggestion: z.string().optional(),
+        usedReferences: z.array(z.object({
+          title: z.string(),
+          type: z.string(),
+          url: z.string(),
+        })).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const suggestion = await db.createAiSuggestion({
+          userId: ctx.user.id,
+          ...input,
+        });
+        return { success: true, id: suggestion.id };
+      }),
+
+    listAiSuggestions: protectedProcedure
+      .query(async ({ ctx }) => {
+        return await db.getUserAiSuggestions(ctx.user.id);
+      }),
+
+    searchAiSuggestions: protectedProcedure
+      .input(z.object({
+        educationLevel: z.string().optional(),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        return await db.searchAiSuggestions(ctx.user.id, input);
+      }),
+
+    getAiSuggestion: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getAiSuggestionById(input.id);
+      }),
+
+    deleteAiSuggestion: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const success = await db.deleteAiSuggestion(input.id, ctx.user.id);
+        return { success };
+      }),
+
     // Saved Prompts procedures
     savePrompt: protectedProcedure
       .input(z.object({

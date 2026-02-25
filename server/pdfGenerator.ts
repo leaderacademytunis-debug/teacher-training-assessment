@@ -210,3 +210,191 @@ export async function generateTeacherExamPdf(exam: TeacherExam): Promise<Buffer>
 
   return createPdfBuffer(doc);
 }
+
+interface AiSuggestionData {
+  schoolYear: string;
+  educationLevel: string;
+  grade: string;
+  subject: string;
+  lessonTitle: string;
+  duration?: number;
+  lessonObjectives?: string;
+  materials?: string;
+  introduction?: string;
+  mainActivities?: { title: string; duration: number; description: string }[];
+  conclusion?: string;
+  evaluation?: string;
+}
+
+// Helper to process Arabic text for PDF
+function processArabicText(text: string): string {
+  const bidi = require("bidi-js");
+  return bidi(text);
+}
+
+export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: "A4",
+        margins: { top: 50, bottom: 50, left: 50, right: 50 },
+      });
+
+      const chunks: Buffer[] = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      // Register Arabic font (Amiri)
+      const amiriFontPath = "/home/ubuntu/teacher_training_assessment/server/fonts/Amiri-Regular.ttf";
+      doc.registerFont("Amiri", amiriFontPath);
+      doc.font("Amiri");
+
+      const educationLevelMap: Record<string, string> = {
+        primary: "ابتدائي",
+        middle: "إعدادي",
+        secondary: "ثانوي",
+      };
+
+      const pageWidth = doc.page.width;
+      const leftMargin = 50;
+      const rightMargin = 50;
+      const contentWidth = pageWidth - leftMargin - rightMargin;
+
+      // Title
+      doc.fontSize(24).fillColor("#1e40af");
+      const title = processArabicText("اقتراح محتوى بالذكاء الاصطناعي");
+      doc.text(title, leftMargin, doc.y, {
+        width: contentWidth,
+        align: "right",
+      });
+
+      doc.moveDown(0.5);
+      doc.fontSize(18).fillColor("#3b82f6");
+      const subtitle = processArabicText("مذكرة بيداغوجية مقترحة");
+      doc.text(subtitle, leftMargin, doc.y, {
+        width: contentWidth,
+        align: "right",
+      });
+
+      doc.moveDown(1);
+
+      // Table data
+      const tableData: { label: string; content: string }[] = [
+        { label: "السنة الدراسية", content: suggestion.schoolYear },
+        {
+          label: "المستوى",
+          content: educationLevelMap[suggestion.educationLevel] || suggestion.educationLevel,
+        },
+        { label: "الصف", content: suggestion.grade },
+        { label: "المادة", content: suggestion.subject },
+        { label: "عنوان الدرس", content: suggestion.lessonTitle },
+      ];
+
+      if (suggestion.duration) {
+        tableData.push({ label: "المدة", content: `${suggestion.duration} دقيقة` });
+      }
+
+      if (suggestion.lessonObjectives) {
+        tableData.push({ label: "الأهداف والكفايات", content: suggestion.lessonObjectives });
+      }
+
+      if (suggestion.materials) {
+        tableData.push({ label: "الوسائل المطلوبة", content: suggestion.materials });
+      }
+
+      if (suggestion.introduction) {
+        tableData.push({ label: "المقدمة / التمهيد", content: suggestion.introduction });
+      }
+
+      if (suggestion.mainActivities && suggestion.mainActivities.length > 0) {
+        const activitiesText = suggestion.mainActivities
+          .map((activity, index) => `${index + 1}. ${activity.title} (${activity.duration} دقيقة)\n${activity.description}`)
+          .join("\n\n");
+        tableData.push({ label: "الأنشطة الرئيسية", content: activitiesText });
+      }
+
+      if (suggestion.conclusion) {
+        tableData.push({ label: "الخاتمة", content: suggestion.conclusion });
+      }
+
+      if (suggestion.evaluation) {
+        tableData.push({ label: "التقييم", content: suggestion.evaluation });
+      }
+
+      // Draw table
+      const labelColumnWidth = contentWidth * 0.3;
+      const contentColumnWidth = contentWidth * 0.7;
+      const rowPadding = 10;
+      const fontSize = 14;
+
+      doc.fontSize(fontSize).fillColor("#000000");
+
+      tableData.forEach((row) => {
+        const startY = doc.y;
+
+        // Calculate row height based on content
+        const labelText = processArabicText(row.label);
+        const contentText = processArabicText(row.content);
+
+        const labelHeight = doc.heightOfString(labelText, {
+          width: labelColumnWidth - rowPadding * 2,
+          align: "right",
+        });
+
+        const contentHeight = doc.heightOfString(contentText, {
+          width: contentColumnWidth - rowPadding * 2,
+          align: "right",
+        });
+
+        const rowHeight = Math.max(labelHeight, contentHeight) + rowPadding * 2;
+
+        // Check if we need a new page
+        if (startY + rowHeight > doc.page.height - 50) {
+          doc.addPage();
+        }
+
+        const currentY = doc.y;
+
+        // Draw label cell (left side in RTL)
+        doc
+          .rect(leftMargin, currentY, labelColumnWidth, rowHeight)
+          .fillAndStroke("#E7E6E6", "#CCCCCC");
+
+        doc.fillColor("#000000");
+        doc.font("Amiri").fontSize(fontSize + 2);
+        doc.text(labelText, leftMargin + rowPadding, currentY + rowPadding, {
+          width: labelColumnWidth - rowPadding * 2,
+          align: "right",
+        });
+
+        // Draw content cell (right side in RTL)
+        doc
+          .rect(leftMargin + labelColumnWidth, currentY, contentColumnWidth, rowHeight)
+          .stroke("#CCCCCC");
+
+        doc.fillColor("#000000");
+        doc.font("Amiri").fontSize(fontSize);
+        doc.text(contentText, leftMargin + labelColumnWidth + rowPadding, currentY + rowPadding, {
+          width: contentColumnWidth - rowPadding * 2,
+          align: "right",
+        });
+
+        doc.y = currentY + rowHeight;
+      });
+
+      // Footer note
+      doc.moveDown(2);
+      doc.fontSize(12).fillColor("#666666");
+      const note = processArabicText("ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.");
+      doc.text(note, leftMargin, doc.y, {
+        width: contentWidth,
+        align: "center",
+      });
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

@@ -778,4 +778,13 @@
 - [x] Créer la procédure tRPC pour générer le document Word avec tableau
 - [x] Ajouter le bouton d'export dans l'interface utilisateur
 - [x] Tester l'export Word
+- [x] Créer le checkpoint final
+
+## Amélioration du système de suggestions IA
+- [x] Créer le schéma de base de données pour archiver les suggestions IA
+- [x] Implémenter l'export PDF avec support arabe professionnel et format tableau
+- [x] Créer les procédures tRPC pour sauvegarder et récupérer les suggestions
+- [x] Implémenter la fenêtre de prévisualisation interactive avec édition
+- [x] Ajouter les boutons PDF et Prévisualisation dans l'interface
+- [x] Tester toutes les fonctionnalités
 - [ ] Créer le checkpoint final

@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Loader2, Sparkles, BookOpen, Info, Bookmark, Save, FileText } from "lucide-react";
+import { X, Loader2, Sparkles, BookOpen, Info, Bookmark, Save, FileText, Download, Eye } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PromptEngineeringGuide } from "@/components/PromptEngineeringGuide";
 import { SavedPromptsDialog } from "@/components/SavedPromptsDialog";
+import { PreviewSuggestionDialog } from "@/components/PreviewSuggestionDialog";
 import { toast } from "sonner";
 
 interface PedagogicalSheetFormEnhancedProps {
@@ -38,9 +39,10 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
   const [showPromptGuide, setShowPromptGuide] = useState(false);
-  const [showSavedPrompts, setShowSavedPrompts] = useState(false);
-  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<string>("");
+  const [showSavedPromptsDialog, setShowSavedPromptsDialog] = useState(false);
   const [usedReferences, setUsedReferences] = useState<Array<{ title: string; type: string; url: string }>>([]);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<string>("");
 
   const createSheet = trpc.pedagogicalSheets.create.useMutation({
     onSuccess: () => {
@@ -98,6 +100,16 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     },
   });
 
+  const exportToPDF = trpc.pedagogicalSheets.exportAiSuggestionToPDF.useMutation({
+    onSuccess: (data) => {
+      toast.success("تم تصدير الاقتراح إلى PDF بنجاح");
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في التصدير: ${error.message}`);
+    },
+  });
+
   const handleAiSuggestion = () => {
     if (!formData.schoolYear || !formData.educationLevel || !formData.grade || 
         !formData.subject || !formData.lessonTitle) {
@@ -115,6 +127,37 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
       grade: formData.grade,
       subject: formData.subject,
       lessonTitle: formData.lessonTitle,
+    });
+  };
+
+  const handleExportToPDF = () => {
+    if (!formData.schoolYear || !formData.educationLevel || !formData.grade || 
+        !formData.subject || !formData.lessonTitle) {
+      toast.error("يرجى ملء المعلومات الأساسية أولاً");
+      return;
+    }
+
+    const mainActivities = formData.mainActivitiesText
+      ? formData.mainActivitiesText.split('\n').filter(line => line.trim()).map((line, index) => ({
+          title: `نشاط ${index + 1}`,
+          duration: 15,
+          description: line.trim(),
+        }))
+      : undefined;
+
+    exportToPDF.mutate({
+      schoolYear: formData.schoolYear,
+      educationLevel: formData.educationLevel as "primary" | "middle" | "secondary",
+      grade: formData.grade,
+      subject: formData.subject,
+      lessonTitle: formData.lessonTitle,
+      duration: formData.duration ? parseInt(formData.duration) : undefined,
+      lessonObjectives: formData.lessonObjectives || undefined,
+      materials: formData.materials || undefined,
+      introduction: formData.introduction || undefined,
+      mainActivities,
+      conclusion: formData.conclusion || undefined,
+      evaluation: formData.evaluation || undefined,
     });
   };
 
@@ -365,7 +408,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowSavedPrompts(true)}
+                  onClick={() => setShowSavedPromptsDialog(true)}
                   className="gap-1"
                 >
                   <Bookmark className="h-4 w-4" />
@@ -423,7 +466,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                     </ul>
                   </div>
                 )}
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -438,6 +481,16 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                     type="button"
                     variant="default"
                     size="sm"
+                    onClick={() => setShowPreviewDialog(true)}
+                    className="gap-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Eye className="h-4 w-4" />
+                    معاينة وتعديل
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
                     onClick={handleExportToWord}
                     disabled={exportToWord.isPending}
                     className="gap-2 bg-green-600 hover:bg-green-700"
@@ -447,7 +500,22 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                     ) : (
                       <FileText className="h-4 w-4" />
                     )}
-                    تصدير إلى Word
+                    Word
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={handleExportToPDF}
+                    disabled={exportToPDF.isPending}
+                    className="gap-2 bg-red-600 hover:bg-red-700"
+                  >
+                    {exportToPDF.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    PDF
                   </Button>
                 </div>
               </>
@@ -584,9 +652,29 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     </Card>
     <PromptEngineeringGuide open={showPromptGuide} onOpenChange={setShowPromptGuide} />
     <SavedPromptsDialog 
-      open={showSavedPrompts} 
-      onOpenChange={setShowSavedPrompts}
+      open={showSavedPromptsDialog} 
+      onOpenChange={setShowSavedPromptsDialog}
       onSelectPrompt={handleSelectSavedPrompt}
+    />
+    <PreviewSuggestionDialog
+      open={showPreviewDialog}
+      onClose={() => setShowPreviewDialog(false)}
+      initialData={{
+        schoolYear: formData.schoolYear,
+        educationLevel: formData.educationLevel as "primary" | "middle" | "secondary",
+        grade: formData.grade,
+        subject: formData.subject,
+        lessonTitle: formData.lessonTitle,
+        duration: formData.duration ? parseInt(formData.duration) : undefined,
+        lessonObjectives: formData.lessonObjectives,
+        materials: formData.materials,
+        introduction: formData.introduction,
+        mainActivitiesText: formData.mainActivitiesText,
+        conclusion: formData.conclusion,
+        evaluation: formData.evaluation,
+      }}
+      rawSuggestion={aiSuggestion}
+      usedReferences={usedReferences}
     />
     </>
   );
