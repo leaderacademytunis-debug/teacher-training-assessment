@@ -20,6 +20,7 @@ import CompleteRegistration from "@/pages/CompleteRegistration";
 import RegistrationsManagement from "@/pages/RegistrationsManagement";
 import TeacherTools from "@/pages/TeacherTools";
 import SharedLibrary from "@/pages/SharedLibrary";
+import ReferenceLibrary from "@/pages/ReferenceLibrary";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
 
 function Router() {
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/dashboard/registrations" component={RegistrationsManagement} />
       <Route path="/teacher-tools" component={TeacherTools} />
       <Route path="/shared-library" component={SharedLibrary} />
+      <Route path="/reference-library" component={ReferenceLibrary} />
       {/* <Route path="/infographic-generator" component={InfographicGenerator} /> */}
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

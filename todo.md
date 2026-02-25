@@ -844,3 +844,13 @@
 - [x] Télécharger les 6 fichiers PDF sur S3
 - [x] Insérer les références dans la base de données
 - [x] Créer le checkpoint final
+
+## Bibliothèque de références et amélioration de la qualité
+- [x] Ajouter le champ extractedContent à la table referenceDocuments
+- [x] Ajouter la table suggestionRatings pour les évaluations
+- [x] Créer la page bibliothèque de références avec filtres
+- [x] Implémenter la prévisualisation PDF dans une fenêtre modale
+- [x] Créer le service d'extraction PDF automatique
+- [x] Ajouter le système d'évaluation par étoiles aux suggestions
+- [x] Tester toutes les fonctionnalités
+- [ ] Créer le checkpoint final

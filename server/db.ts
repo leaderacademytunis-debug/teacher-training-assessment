@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -1006,6 +1006,7 @@ export async function getReferenceDocuments(filters?: {
   subject?: string;
   documentType?: string;
   language?: string;
+  searchQuery?: string;
 }): Promise<ReferenceDocument[]> {
   const db = await getDb();
   if (!db) return [];
@@ -1027,6 +1028,9 @@ export async function getReferenceDocuments(filters?: {
   }
   if (filters?.language && filters.language !== "all") {
     conditions.push(eq(referenceDocuments.language, filters.language as any));
+  }
+  if (filters?.searchQuery) {
+    conditions.push(like(referenceDocuments.documentTitle, `%${filters.searchQuery}%`));
   }
 
   if (conditions.length > 0) {

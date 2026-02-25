@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, decimal } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json, decimal, mediumtext } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -355,6 +355,7 @@ export const referenceDocuments = mysqlTable("referenceDocuments", {
   documentTitle: varchar("documentTitle", { length: 255 }).notNull(),
   documentUrl: text("documentUrl").notNull(), // S3 URL
   language: mysqlEnum("language", ["arabic", "french", "english"]).default("arabic").notNull(), // Document language
+  extractedContent: mediumtext("extractedContent"), // Extracted text from PDF for better AI suggestions
   
   // Metadata
   uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
@@ -520,3 +521,30 @@ export const mindMaps = mysqlTable("mindMaps", {
 
 export type MindMap = typeof mindMaps.$inferSelect;
 export type InsertMindMap = typeof mindMaps.$inferInsert;
+
+/**
+ * Suggestion ratings table - stores user ratings for AI-generated suggestions
+ */
+export const suggestionRatings = mysqlTable("suggestionRatings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Rating details
+  rating: int("rating").notNull(), // 1-5 stars
+  comment: text("comment"), // Optional feedback
+  
+  // Context for analysis
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  language: mysqlEnum("language", ["arabic", "french", "english"]).notNull(),
+  
+  // Reference tracking
+  usedReferences: json("usedReferences").$type<Array<number>>(), // IDs of references used
+  
+  // Metadata
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SuggestionRating = typeof suggestionRatings.$inferSelect;
+export type InsertSuggestionRating = typeof suggestionRatings.$inferInsert;

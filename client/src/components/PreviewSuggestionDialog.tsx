@@ -37,6 +37,8 @@ export function PreviewSuggestionDialog({
   usedReferences,
 }: PreviewSuggestionDialogProps) {
   const [formData, setFormData] = useState(initialData);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
 
   useEffect(() => {
     setFormData(initialData);
@@ -271,6 +273,39 @@ export function PreviewSuggestionDialog({
               className="min-h-[100px] text-right"
             />
           </div>
+        </div>
+
+        {/* Rating Section */}
+        <div className="border-t pt-4 mt-4">
+          <Label className="text-base font-semibold mb-3 block">تقييم جودة الاقتراح</Label>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  className="text-2xl focus:outline-none transition-colors"
+                >
+                  {star <= rating ? "⭐" : "☆"}
+                </button>
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {rating === 0 ? "لم يتم التقييم" :
+               rating === 1 ? "ضعيف" :
+               rating === 2 ? "مقبول" :
+               rating === 3 ? "جيد" :
+               rating === 4 ? "جيد جداً" : "ممتاز"}
+            </span>
+          </div>
+          <Textarea
+            placeholder="ملاحظات إضافية (اختياري)..."
+            value={ratingComment}
+            onChange={(e) => setRatingComment(e.target.value)}
+            className="mt-3 text-right"
+            rows={2}
+          />
         </div>
 
         <DialogFooter className="flex gap-2 justify-center sm:justify-center">

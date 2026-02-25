@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -2034,6 +2034,53 @@ export const appRouter = router({
           .orderBy(desc(mindMaps.createdAt));
       }),
   }), */
+
+  references: router({
+    getAll: publicProcedure
+      .input(z.object({
+        educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+        language: z.enum(["arabic", "french", "english"]).optional(),
+        searchQuery: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getReferenceDocuments({
+          educationLevel: input.educationLevel,
+          language: input.language,
+          searchQuery: input.searchQuery,
+        });
+      }),
+
+    extractContent: adminProcedure
+      .input(z.object({
+        referenceId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const { extractPdfContent } = await import("./pdfExtractor");
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+        // Get reference document
+        const [ref] = await database
+          .select()
+          .from(referenceDocuments)
+          .where(eq(referenceDocuments.id, input.referenceId));
+
+        if (!ref) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Reference not found" });
+        }
+
+        // Extract content
+        const content = await extractPdfContent(ref.documentUrl);
+
+        // Update database
+        await database
+          .update(referenceDocuments)
+          .set({ extractedContent: content })
+          .where(eq(referenceDocuments.id, input.referenceId));
+
+        return { success: true, contentLength: content.length };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
