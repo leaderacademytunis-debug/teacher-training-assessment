@@ -85,6 +85,9 @@ export default function Home() {
                   <Link href="/shared-library">
                     <Button variant="outline">المكتبة المشتركة</Button>
                   </Link>
+                  <Link href="/template-library">
+                    <Button variant="outline">القوالب الجاهزة</Button>
+                  </Link>
                   <Link href="/my-courses">
                     <Button>دوراتي</Button>
                   </Link>

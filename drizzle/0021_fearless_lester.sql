@@ -1,0 +1,22 @@
+CREATE TABLE `templates` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`createdBy` int NOT NULL,
+	`templateName` varchar(255) NOT NULL,
+	`description` text,
+	`educationLevel` enum('primary','middle','secondary') NOT NULL,
+	`grade` varchar(50),
+	`subject` varchar(100),
+	`language` enum('arabic','french','english') NOT NULL,
+	`duration` int,
+	`lessonObjectives` text,
+	`materials` text,
+	`introduction` text,
+	`mainActivities` json,
+	`conclusion` text,
+	`evaluation` text,
+	`isPublic` boolean NOT NULL DEFAULT true,
+	`usageCount` int NOT NULL DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `templates_id` PRIMARY KEY(`id`)
+);

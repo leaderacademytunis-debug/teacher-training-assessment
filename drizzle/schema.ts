@@ -548,3 +548,43 @@ export const suggestionRatings = mysqlTable("suggestionRatings", {
 
 export type SuggestionRating = typeof suggestionRatings.$inferSelect;
 export type InsertSuggestionRating = typeof suggestionRatings.$inferInsert;
+
+/**
+ * Templates table - stores predefined pedagogical note templates
+ */
+export const templates = mysqlTable("templates", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  
+  // Template identification
+  templateName: varchar("templateName", { length: 255 }).notNull(),
+  description: text("description"),
+  
+  // Context
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }),
+  subject: varchar("subject", { length: 100 }),
+  language: mysqlEnum("language", ["arabic", "french", "english"]).notNull(),
+  
+  // Template content
+  duration: int("duration"), // in minutes
+  lessonObjectives: text("lessonObjectives"),
+  materials: text("materials"),
+  introduction: text("introduction"),
+  mainActivities: json("mainActivities").$type<Array<{
+    title: string;
+    description: string;
+    duration: number;
+  }>>(),
+  conclusion: text("conclusion"),
+  evaluation: text("evaluation"),
+  
+  // Metadata
+  isPublic: boolean("isPublic").default(true).notNull(), // Whether visible to all users
+  usageCount: int("usageCount").default(0).notNull(), // How many times used
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Template = typeof templates.$inferSelect;
+export type InsertTemplate = typeof templates.$inferInsert;

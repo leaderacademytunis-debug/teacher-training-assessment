@@ -16,7 +16,8 @@ import {
   lessonPlans, LessonPlan, InsertLessonPlan,
   teacherExams, TeacherExam, InsertTeacherExam,
   referenceDocuments, ReferenceDocument, InsertReferenceDocument,
-  aiSuggestions, AiSuggestion, InsertAiSuggestion
+  aiSuggestions, AiSuggestion, InsertAiSuggestion,
+  templates, Template, InsertTemplate
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1108,4 +1109,64 @@ export async function deleteAiSuggestion(id: number, userId: number): Promise<bo
     .where(and(eq(aiSuggestions.id, id), eq(aiSuggestions.userId, userId)));
   
   return true;
+}
+
+// Templates functions
+export async function getTemplates(filters?: {
+  educationLevel?: "primary" | "middle" | "secondary";
+  grade?: string;
+  subject?: string;
+  language?: "arabic" | "french" | "english";
+}): Promise<Template[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [eq(templates.isPublic, true)];
+  
+  if (filters?.educationLevel) {
+    conditions.push(eq(templates.educationLevel, filters.educationLevel));
+  }
+  if (filters?.grade) {
+    conditions.push(eq(templates.grade, filters.grade));
+  }
+  if (filters?.subject) {
+    conditions.push(eq(templates.subject, filters.subject));
+  }
+  if (filters?.language) {
+    conditions.push(eq(templates.language, filters.language));
+  }
+
+  return await db.select().from(templates)
+    .where(and(...conditions))
+    .orderBy(desc(templates.usageCount), desc(templates.createdAt));
+}
+
+export async function getTemplateById(id: number): Promise<Template | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [template] = await db.select().from(templates).where(eq(templates.id, id)).limit(1);
+  return template || null;
+}
+
+export async function createTemplate(userId: number, data: Omit<InsertTemplate, "createdBy">): Promise<Template> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [template] = await db.insert(templates).values({
+    ...data,
+    createdBy: userId,
+  }).$returningId();
+  
+  const [result] = await db.select().from(templates).where(eq(templates.id, template.id));
+  return result;
+}
+
+export async function incrementTemplateUsage(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(templates)
+    .set({ usageCount: sql`${templates.usageCount} + 1` })
+    .where(eq(templates.id, id));
 }

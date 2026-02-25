@@ -869,3 +869,14 @@
 - [ ] Ajouter le bouton dans le menu de navigation principal
 - [ ] Tester l'ouverture depuis le menu
 - [ ] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Bibliothèque de modèles de notes pédagogiques
+- [x] Créer le schéma de base de données pour les modèles (templates)
+- [x] Créer les procédures tRPC pour gérer les modèles
+- [x] Créer des modèles prédéfinis pour différents niveaux et matières
+- [x] Créer la page de bibliothèque de modèles avec filtres
+- [x] Ajouter la fonctionnalité de prévisualisation des modèles
+- [x] Intégrer les modèles dans le formulaire de création de notes
+- [x] Ajouter un bouton "Utiliser ce modèle" qui remplit automatiquement le formulaire
+- [x] Tester toutes les fonctionnalités
+- [ ] Créer le checkpoint final

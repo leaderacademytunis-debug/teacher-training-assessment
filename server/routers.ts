@@ -2155,6 +2155,56 @@ Tu dois toujours répondre en arabe sauf si l'utilisateur demande explicitement 
         return { message: messageText };
       }),
   }),
+
+  templates: router({
+    list: protectedProcedure
+      .input(z.object({
+        educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+        language: z.enum(["arabic", "french", "english"]).optional(),
+      }))
+      .query(async ({ input, ctx }) => {
+        return await db.getTemplates(input);
+      }),
+    
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getTemplateById(input.id);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        templateName: z.string().min(1),
+        description: z.string().optional(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+        language: z.enum(["arabic", "french", "english"]),
+        duration: z.number().optional(),
+        lessonObjectives: z.string().optional(),
+        materials: z.string().optional(),
+        introduction: z.string().optional(),
+        mainActivities: z.array(z.object({
+          title: z.string(),
+          description: z.string(),
+          duration: z.number(),
+        })).optional(),
+        conclusion: z.string().optional(),
+        evaluation: z.string().optional(),
+        isPublic: z.boolean().default(true),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.createTemplate(ctx.user.id, input);
+      }),
+    
+    incrementUsage: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.incrementTemplateUsage(input.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

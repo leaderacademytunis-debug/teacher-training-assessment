@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,15 @@ interface PedagogicalSheetFormEnhancedProps {
 }
 
 export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: PedagogicalSheetFormEnhancedProps) {
+  // Check for templateId in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const templateId = urlParams.get('templateId');
+  
+  // Load template if templateId is provided
+  const { data: template } = trpc.templates.getById.useQuery(
+    { id: parseInt(templateId || '0') },
+    { enabled: !!templateId }
+  );
   const [formData, setFormData] = useState({
     schoolYear: "",
     educationLevel: "" as "primary" | "middle" | "secondary" | "",
@@ -44,6 +53,29 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
   const [usedReferences, setUsedReferences] = useState<Array<{ title: string; type: string; url: string }>>([]);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<string>("");
+
+  // Fill form with template data when template is loaded
+  useEffect(() => {
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        educationLevel: template.educationLevel,
+        grade: template.grade || "",
+        subject: template.subject || "",
+        lessonObjectives: template.lessonObjectives || "",
+        duration: template.duration?.toString() || "",
+        materials: template.materials || "",
+        introduction: template.introduction || "",
+        mainActivitiesText: template.mainActivities
+          ? template.mainActivities.map((a: any) => a.description).join('\n')
+          : "",
+        conclusion: template.conclusion || "",
+        evaluation: template.evaluation || "",
+        language: template.language,
+      }));
+      toast.success(`تم تحميل القالب: ${template.templateName}`);
+    }
+  }, [template]);
 
   const createSheet = trpc.pedagogicalSheets.create.useMutation({
     onSuccess: () => {
