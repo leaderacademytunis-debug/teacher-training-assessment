@@ -880,3 +880,16 @@
 - [x] Ajouter un bouton "Utiliser ce modèle" qui remplit automatiquement le formulaire
 - [x] Tester toutes les fonctionnalités
 - [ ] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Intégration du manuel de lecture 6ème année
+- [x] Télécharger le manuel PDF vers S3
+- [x] Ajouter le manuel à la table referenceDocuments
+- [x] Extraire le contenu pédagogique (8 modules, thèmes, objectifs)
+- [x] Créer une structure de données pour les unités et leçons
+- [x] Créer des modèles spécialisés pour la lecture (6ème année)
+- [x] Créer des modèles pour l'expression écrite
+- [x] Créer des modèles pour la grammaire
+- [x] Créer des modèles pour l'orthographe
+- [x] Tester l'utilisation des nouveaux modèles
+- [x] Vérifier que EduGPT utilise le manuel comme référence
+- [ ] Créer le checkpoint final
