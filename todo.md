@@ -787,4 +787,10 @@
 - [x] Implémenter la fenêtre de prévisualisation interactive avec édition
 - [x] Ajouter les boutons PDF et Prévisualisation dans l'interface
 - [x] Tester toutes les fonctionnalités
+- [x] Créer le checkpoint final
+
+## Support multilingue pour les suggestions IA
+- [x] Modifier le prompt système pour détecter la matière et générer en français si c'est "اللغة الفرنسية"
+- [x] Mettre à jour les générateurs Word et PDF pour supporter le contenu français
+- [x] Tester avec des exemples en français
 - [ ] Créer le checkpoint final

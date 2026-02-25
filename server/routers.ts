@@ -1208,11 +1208,47 @@ export const appRouter = router({
           subject: input.subject,
         });
 
-        const referenceContext = references.length > 0
-          ? `المراجع الرسمية المتاحة (يجب الالتزام بها):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'دليل المعلم' : r.documentType === 'official_program' ? 'برنامج رسمي' : 'مرجع'})`).join('\n')}\n\nملاحظة: استخدم هذه المراجع كأساس لاقتراحاتك وتأكد من مطابقة المحتوى للبرامج الرسمية التونسية."`
-          : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة. اقترح محتوى بيداغوجي عام مناسب للمستوى التعليمي.";
+        // Detect if the subject is French
+        const isFrenchSubject = input.subject.toLowerCase().includes("فرنسية") || 
+                                input.subject.toLowerCase().includes("français") ||
+                                input.subject.toLowerCase().includes("francais");
 
-        const prompt = `أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين.
+        const referenceContext = references.length > 0
+          ? (isFrenchSubject 
+              ? `Références officielles disponibles (à respecter):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'Guide de l\'enseignant' : r.documentType === 'official_program' ? 'Programme officiel' : 'Référence'})`).join('\n')}\n\nNote: Utilisez ces références comme base pour vos suggestions et assurez-vous que le contenu est conforme aux programmes officiels tunisiens.`
+              : `المراجع الرسمية المتاحة (يجب الالتزام بها):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'دليل المعلم' : r.documentType === 'official_program' ? 'برنامج رسمي' : 'مرجع'})`).join('\n')}\n\nملاحظة: استخدم هذه المراجع كأساس لاقتراحاتك وتأكد من مطابقة المحتوى للبرامج الرسمية التونسية.`)
+          : (isFrenchSubject
+              ? "Aucune référence officielle disponible pour ce niveau et cette matière. Proposez un contenu pédagogique général adapté au niveau scolaire."
+              : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة. اقترح محتوى بيداغوجي عام مناسب للمستوى التعليمي.");
+
+        const prompt = isFrenchSubject
+          ? `Vous êtes un assistant pédagogique spécialisé dans la préparation de fiches pédagogiques pour les enseignants tunisiens.
+
+Informations:
+- Année scolaire: ${input.schoolYear}
+- Niveau: ${input.educationLevel === "primary" ? "Primaire" : input.educationLevel === "middle" ? "Collège" : "Lycée"}
+- Classe: ${input.grade}
+- Matière: ${input.subject}
+- Titre de la leçon: ${input.lessonTitle}
+
+${referenceContext}
+
+Demande:
+1. Proposez les objectifs de la leçon et les compétences visées (2-3 objectifs)
+2. Proposez une activité d'introduction appropriée
+3. Proposez 3-4 activités principales pour la leçon
+4. Proposez une activité de clôture
+5. Proposez une méthode d'évaluation appropriée
+6. Proposez les moyens nécessaires
+
+Notes importantes:
+- Les suggestions doivent être conformes aux programmes officiels tunisiens
+- Utilisez des termes pédagogiques précis
+- Soyez spécifique et pratique
+- Ne copiez pas les références mais proposez en vous basant sur elles
+
+Présentez les suggestions de manière organisée et structurée.`
+          : `أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين.
 
 المعلومات:
 - السنة الدراسية: ${input.schoolYear}
@@ -1239,9 +1275,13 @@ ${referenceContext}
 
 قدم الاقتراحات بشكل منظم ومنسق.`;
 
+        const systemMessage = isFrenchSubject
+          ? "Vous êtes un assistant pédagogique spécialisé dans la préparation de fiches pédagogiques pour les enseignants tunisiens. Vous respectez les programmes officiels tunisiens et utilisez des termes pédagogiques précis."
+          : "أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين. تلتزم بالبرامج الرسمية التونسية وتستخدم مصطلحات تربوية دقيقة.";
+
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين. تلتزم بالبرامج الرسمية التونسية وتستخدم مصطلحات تربوية دقيقة." },
+            { role: "system", content: systemMessage },
             { role: "user", content: prompt },
           ],
         });

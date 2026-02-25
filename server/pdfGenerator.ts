@@ -235,6 +235,11 @@ function processArabicText(text: string): string {
 export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
+      // Detect if the subject is French
+      const isFrenchSubject = suggestion.subject.toLowerCase().includes("فرنسية") || 
+                              suggestion.subject.toLowerCase().includes("français") ||
+                              suggestion.subject.toLowerCase().includes("francais");
+
       const doc = new PDFDocument({
         size: "A4",
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
@@ -250,11 +255,17 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
       doc.registerFont("Amiri", amiriFontPath);
       doc.font("Amiri");
 
-      const educationLevelMap: Record<string, string> = {
-        primary: "ابتدائي",
-        middle: "إعدادي",
-        secondary: "ثانوي",
-      };
+      const educationLevelMap: Record<string, string> = isFrenchSubject
+        ? {
+            primary: "Primaire",
+            middle: "Collège",
+            secondary: "Lycée",
+          }
+        : {
+            primary: "ابتدائي",
+            middle: "إعدادي",
+            secondary: "ثانوي",
+          };
 
       const pageWidth = doc.page.width;
       const leftMargin = 50;
@@ -263,63 +274,102 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
 
       // Title
       doc.fontSize(24).fillColor("#1e40af");
-      const title = processArabicText("اقتراح محتوى بالذكاء الاصطناعي");
+      const title = isFrenchSubject 
+        ? "Suggestion de contenu par IA"
+        : processArabicText("اقتراح محتوى بالذكاء الاصطناعي");
       doc.text(title, leftMargin, doc.y, {
         width: contentWidth,
-        align: "right",
+        align: isFrenchSubject ? "left" : "right",
       });
 
       doc.moveDown(0.5);
       doc.fontSize(18).fillColor("#3b82f6");
-      const subtitle = processArabicText("مذكرة بيداغوجية مقترحة");
+      const subtitle = isFrenchSubject
+        ? "Fiche pédagogique proposée"
+        : processArabicText("مذكرة بيداغوجية مقترحة");
       doc.text(subtitle, leftMargin, doc.y, {
         width: contentWidth,
-        align: "right",
+        align: isFrenchSubject ? "left" : "right",
       });
 
       doc.moveDown(1);
 
+      // Labels
+      const labels = isFrenchSubject
+        ? {
+            schoolYear: "Année scolaire",
+            level: "Niveau",
+            grade: "Classe",
+            subject: "Matière",
+            lessonTitle: "Titre de la leçon",
+            duration: "Durée",
+            minutes: "minutes",
+            objectives: "Objectifs et compétences",
+            materials: "Moyens nécessaires",
+            introduction: "Introduction",
+            mainActivities: "Activités principales",
+            conclusion: "Clôture",
+            evaluation: "Évaluation",
+            note: "Note: Ce contenu est généré par intelligence artificielle et peut être modifié selon les besoins.",
+          }
+        : {
+            schoolYear: "السنة الدراسية",
+            level: "المستوى",
+            grade: "الصف",
+            subject: "المادة",
+            lessonTitle: "عنوان الدرس",
+            duration: "المدة",
+            minutes: "دقيقة",
+            objectives: "الأهداف والكفايات",
+            materials: "الوسائل المطلوبة",
+            introduction: "المقدمة / التمهيد",
+            mainActivities: "الأنشطة الرئيسية",
+            conclusion: "الخاتمة",
+            evaluation: "التقييم",
+            note: "ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.",
+          };
+
       // Table data
       const tableData: { label: string; content: string }[] = [
-        { label: "السنة الدراسية", content: suggestion.schoolYear },
+        { label: labels.schoolYear, content: suggestion.schoolYear },
         {
-          label: "المستوى",
+          label: labels.level,
           content: educationLevelMap[suggestion.educationLevel] || suggestion.educationLevel,
         },
-        { label: "الصف", content: suggestion.grade },
-        { label: "المادة", content: suggestion.subject },
-        { label: "عنوان الدرس", content: suggestion.lessonTitle },
+        { label: labels.grade, content: suggestion.grade },
+        { label: labels.subject, content: suggestion.subject },
+        { label: labels.lessonTitle, content: suggestion.lessonTitle },
       ];
 
       if (suggestion.duration) {
-        tableData.push({ label: "المدة", content: `${suggestion.duration} دقيقة` });
+        tableData.push({ label: labels.duration, content: `${suggestion.duration} ${labels.minutes}` });
       }
 
       if (suggestion.lessonObjectives) {
-        tableData.push({ label: "الأهداف والكفايات", content: suggestion.lessonObjectives });
+        tableData.push({ label: labels.objectives, content: suggestion.lessonObjectives });
       }
 
       if (suggestion.materials) {
-        tableData.push({ label: "الوسائل المطلوبة", content: suggestion.materials });
+        tableData.push({ label: labels.materials, content: suggestion.materials });
       }
 
       if (suggestion.introduction) {
-        tableData.push({ label: "المقدمة / التمهيد", content: suggestion.introduction });
+        tableData.push({ label: labels.introduction, content: suggestion.introduction });
       }
 
       if (suggestion.mainActivities && suggestion.mainActivities.length > 0) {
         const activitiesText = suggestion.mainActivities
-          .map((activity, index) => `${index + 1}. ${activity.title} (${activity.duration} دقيقة)\n${activity.description}`)
+          .map((activity, index) => `${index + 1}. ${activity.title} (${activity.duration} ${labels.minutes})\n${activity.description}`)
           .join("\n\n");
-        tableData.push({ label: "الأنشطة الرئيسية", content: activitiesText });
+        tableData.push({ label: labels.mainActivities, content: activitiesText });
       }
 
       if (suggestion.conclusion) {
-        tableData.push({ label: "الخاتمة", content: suggestion.conclusion });
+        tableData.push({ label: labels.conclusion, content: suggestion.conclusion });
       }
 
       if (suggestion.evaluation) {
-        tableData.push({ label: "التقييم", content: suggestion.evaluation });
+        tableData.push({ label: labels.evaluation, content: suggestion.evaluation });
       }
 
       // Draw table
@@ -386,7 +436,7 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
       // Footer note
       doc.moveDown(2);
       doc.fontSize(12).fillColor("#666666");
-      const note = processArabicText("ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.");
+      const note = isFrenchSubject ? labels.note : processArabicText(labels.note);
       doc.text(note, leftMargin, doc.y, {
         width: contentWidth,
         align: "center",

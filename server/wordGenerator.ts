@@ -339,49 +339,92 @@ export async function generateAiSuggestionWord(
     evaluation?: string;
   }
 ): Promise<Buffer> {
-  const educationLevelMap: Record<string, string> = {
-    primary: "ابتدائي",
-    middle: "إعدادي",
-    secondary: "ثانوي",
-  };
+  // Detect if the subject is French
+  const isFrenchSubject = suggestion.subject.toLowerCase().includes("فرنسية") || 
+                          suggestion.subject.toLowerCase().includes("français") ||
+                          suggestion.subject.toLowerCase().includes("francais");
+
+  const educationLevelMap: Record<string, string> = isFrenchSubject
+    ? {
+        primary: "Primaire",
+        middle: "Collège",
+        secondary: "Lycée",
+      }
+    : {
+        primary: "ابتدائي",
+        middle: "إعدادي",
+        secondary: "ثانوي",
+      };
+
+  const labels = isFrenchSubject
+    ? {
+        schoolYear: "Année scolaire",
+        level: "Niveau",
+        grade: "Classe",
+        subject: "Matière",
+        lessonTitle: "Titre de la leçon",
+        duration: "Durée",
+        minutes: "minutes",
+        objectives: "Objectifs et compétences",
+        materials: "Moyens nécessaires",
+        introduction: "Introduction",
+        mainActivities: "Activités principales",
+        conclusion: "Clôture",
+        evaluation: "Évaluation",
+      }
+    : {
+        schoolYear: "السنة الدراسية",
+        level: "المستوى",
+        grade: "الصف",
+        subject: "المادة",
+        lessonTitle: "عنوان الدرس",
+        duration: "المدة",
+        minutes: "دقيقة",
+        objectives: "الأهداف والكفايات",
+        materials: "الوسائل المطلوبة",
+        introduction: "المقدمة / التمهيد",
+        mainActivities: "الأنشطة الرئيسية",
+        conclusion: "الخاتمة",
+        evaluation: "التقييم",
+      };
 
   const tableData: { label: string; content: string }[] = [
-    { label: "السنة الدراسية", content: suggestion.schoolYear },
-    { label: "المستوى", content: educationLevelMap[suggestion.educationLevel] || suggestion.educationLevel },
-    { label: "الصف", content: suggestion.grade },
-    { label: "المادة", content: suggestion.subject },
-    { label: "عنوان الدرس", content: suggestion.lessonTitle },
+    { label: labels.schoolYear, content: suggestion.schoolYear },
+    { label: labels.level, content: educationLevelMap[suggestion.educationLevel] || suggestion.educationLevel },
+    { label: labels.grade, content: suggestion.grade },
+    { label: labels.subject, content: suggestion.subject },
+    { label: labels.lessonTitle, content: suggestion.lessonTitle },
   ];
 
   if (suggestion.duration) {
-    tableData.push({ label: "المدة", content: `${suggestion.duration} دقيقة` });
+    tableData.push({ label: labels.duration, content: `${suggestion.duration} ${labels.minutes}` });
   }
 
   if (suggestion.lessonObjectives) {
-    tableData.push({ label: "الأهداف والكفايات", content: suggestion.lessonObjectives });
+    tableData.push({ label: labels.objectives, content: suggestion.lessonObjectives });
   }
 
   if (suggestion.materials) {
-    tableData.push({ label: "الوسائل المطلوبة", content: suggestion.materials });
+    tableData.push({ label: labels.materials, content: suggestion.materials });
   }
 
   if (suggestion.introduction) {
-    tableData.push({ label: "المقدمة / التمهيد", content: suggestion.introduction });
+    tableData.push({ label: labels.introduction, content: suggestion.introduction });
   }
 
   if (suggestion.mainActivities && Array.isArray(suggestion.mainActivities) && suggestion.mainActivities.length > 0) {
     const activitiesText = suggestion.mainActivities
-      .map((activity, index) => `${index + 1}. ${activity.title} (${activity.duration} دقيقة)\n${activity.description}`)
+      .map((activity, index) => `${index + 1}. ${activity.title} (${activity.duration} ${labels.minutes})\n${activity.description}`)
       .join("\n\n");
-    tableData.push({ label: "الأنشطة الرئيسية", content: activitiesText });
+    tableData.push({ label: labels.mainActivities, content: activitiesText });
   }
 
   if (suggestion.conclusion) {
-    tableData.push({ label: "الخاتمة", content: suggestion.conclusion });
+    tableData.push({ label: labels.conclusion, content: suggestion.conclusion });
   }
 
   if (suggestion.evaluation) {
-    tableData.push({ label: "التقييم", content: suggestion.evaluation });
+    tableData.push({ label: labels.evaluation, content: suggestion.evaluation });
   }
 
   const doc = new Document({
@@ -390,13 +433,13 @@ export async function generateAiSuggestionWord(
         properties: {},
         children: [
           new Paragraph({
-            text: "اقتراح محتوى بالذكاء الاصطناعي",
+            text: isFrenchSubject ? "Suggestion de contenu par IA" : "اقتراح محتوى بالذكاء الاصطناعي",
             heading: HeadingLevel.TITLE,
             alignment: AlignmentType.CENTER,
             spacing: { after: 400 },
           }),
           new Paragraph({
-            text: "مذكرة بيداغوجية مقترحة",
+            text: isFrenchSubject ? "Fiche pédagogique proposée" : "مذكرة بيداغوجية مقترحة",
             heading: HeadingLevel.HEADING_1,
             alignment: AlignmentType.CENTER,
             spacing: { after: 300 },
@@ -409,7 +452,9 @@ export async function generateAiSuggestionWord(
           new Paragraph({
             children: [
               new TextRun({
-                text: "ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.",
+                text: isFrenchSubject 
+                  ? "Note: Ce contenu est généré par intelligence artificielle et peut être modifié selon les besoins."
+                  : "ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.",
                 italics: true,
               }),
             ],
