@@ -639,3 +639,11 @@
 - [ ] Tester l'export Word avec différents contenus
 - [ ] Vérifier l'affichage correct de l'arabe dans Word
 - [ ] Créer le checkpoint final
+
+
+## Phase 4: Amélioration de la navigation
+
+### Navigation principale
+- [x] Ajouter le lien vers la page "أدوات المدرس" dans la navigation principale (App.tsx ou Header)
+- [x] S'assurer que le lien est visible pour tous les utilisateurs connectés
+- [x] Tester l'accès à la page depuis la navigation

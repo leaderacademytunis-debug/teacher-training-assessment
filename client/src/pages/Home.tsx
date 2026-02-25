@@ -61,6 +61,9 @@ export default function Home() {
                       <Button variant="outline">لوحة التحكم</Button>
                     </Link>
                   )}
+                  <Link href="/teacher-tools">
+                    <Button variant="outline">أدوات المدرس</Button>
+                  </Link>
                   <Link href="/my-courses">
                     <Button>دوراتي</Button>
                   </Link>
