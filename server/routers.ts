@@ -1197,87 +1197,63 @@ export const appRouter = router({
         grade: z.string(),
         subject: z.string(),
         lessonTitle: z.string(),
+        language: z.enum(["arabic", "french", "english"]).optional(), // Optional language override
       }))
       .mutation(async ({ input }) => {
         const { invokeLLM } = await import("./_core/llm");
         
-        // Get relevant reference documents
+        // Detect language from subject
+        const detectLanguage = (subject: string): "arabic" | "french" | "english" => {
+          const subjectLower = subject.toLowerCase();
+          if (subjectLower.includes("فرنسية") || subjectLower.includes("français") || subjectLower.includes("francais")) {
+            return "french";
+          }
+          if (subjectLower.includes("إنجليزية") || subjectLower.includes("english") || subjectLower.includes("anglais")) {
+            return "english";
+          }
+          return "arabic";
+        };
+
+        // Use provided language or detect from subject
+        const language = input.language || detectLanguage(input.subject);
+
+        // Get relevant reference documents filtered by language
         const references = await db.getReferenceDocuments({
           educationLevel: input.educationLevel,
           grade: input.grade,
           subject: input.subject,
+          language: language, // Filter by detected/selected language
         });
 
-        // Detect if the subject is French
-        const isFrenchSubject = input.subject.toLowerCase().includes("فرنسية") || 
-                                input.subject.toLowerCase().includes("français") ||
-                                input.subject.toLowerCase().includes("francais");
+        const referenceContextByLang = {
+          french: references.length > 0
+            ? `Références officielles disponibles (à respecter):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'Guide de l\'enseignant' : r.documentType === 'official_program' ? 'Programme officiel' : 'Référence'})`).join('\n')}\n\nNote: Utilisez ces références comme base pour vos suggestions et assurez-vous que le contenu est conforme aux programmes officiels tunisiens.`
+            : "Aucune référence officielle disponible pour ce niveau et cette matière. Proposez un contenu pédagogique général adapté au niveau scolaire.",
+          english: references.length > 0
+            ? `Available official references (to be followed):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'Teacher\'s Guide' : r.documentType === 'official_program' ? 'Official Program' : 'Reference'})`).join('\n')}\n\nNote: Use these references as a basis for your suggestions and ensure the content complies with Tunisian official programs.`
+            : "No official references available for this level and subject. Propose general pedagogical content suitable for the educational level.",
+          arabic: references.length > 0
+            ? `المراجع الرسمية المتاحة (يجب الالتزام بها):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'دليل المعلم' : r.documentType === 'official_program' ? 'برنامج رسمي' : 'مرجع'})`).join('\n')}\n\nملاحظة: استخدم هذه المراجع كأساس لاقتراحاتك وتأكد من مطابقة المحتوى للبرامج الرسمية التونسية.`
+            : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة. اقترح محتوى بيداغوجي عام مناسب للمستوى التعليمي.",
+        };
 
-        const referenceContext = references.length > 0
-          ? (isFrenchSubject 
-              ? `Références officielles disponibles (à respecter):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'Guide de l\'enseignant' : r.documentType === 'official_program' ? 'Programme officiel' : 'Référence'})`).join('\n')}\n\nNote: Utilisez ces références comme base pour vos suggestions et assurez-vous que le contenu est conforme aux programmes officiels tunisiens.`
-              : `المراجع الرسمية المتاحة (يجب الالتزام بها):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'دليل المعلم' : r.documentType === 'official_program' ? 'برنامج رسمي' : 'مرجع'})`).join('\n')}\n\nملاحظة: استخدم هذه المراجع كأساس لاقتراحاتك وتأكد من مطابقة المحتوى للبرامج الرسمية التونسية.`)
-          : (isFrenchSubject
-              ? "Aucune référence officielle disponible pour ce niveau et cette matière. Proposez un contenu pédagogique général adapté au niveau scolaire."
-              : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة. اقترح محتوى بيداغوجي عام مناسب للمستوى التعليمي.");
+        const referenceContext = referenceContextByLang[language];
 
-        const prompt = isFrenchSubject
-          ? `Vous êtes un assistant pédagogique spécialisé dans la préparation de fiches pédagogiques pour les enseignants tunisiens.
+        const promptsByLang = {
+          french: `Vous êtes un assistant pédagogique spécialisé dans la préparation de fiches pédagogiques pour les enseignants tunisiens.\n\nInformations:\n- Année scolaire: ${input.schoolYear}\n- Niveau: ${input.educationLevel === "primary" ? "Primaire" : input.educationLevel === "middle" ? "Collège" : "Lycée"}\n- Classe: ${input.grade}\n- Matière: ${input.subject}\n- Titre de la leçon: ${input.lessonTitle}\n\n${referenceContext}\n\nDemande:\n1. Proposez les objectifs de la leçon et les compétences visées (2-3 objectifs)\n2. Proposez une activité d'introduction appropriée\n3. Proposez 3-4 activités principales pour la leçon\n4. Proposez une activité de clôture\n5. Proposez une méthode d'évaluation appropriée\n6. Proposez les moyens nécessaires\n\nNotes importantes:\n- Les suggestions doivent être conformes aux programmes officiels tunisiens\n- Utilisez des termes pédagogiques précis\n- Soyez spécifique et pratique\n- Ne copiez pas les références mais proposez en vous basant sur elles\n\nPrésentez les suggestions de manière organisée et structurée.`,
+          english: `You are a pedagogical assistant specialized in preparing lesson plans for Tunisian teachers.\n\nInformation:\n- School year: ${input.schoolYear}\n- Level: ${input.educationLevel === "primary" ? "Primary" : input.educationLevel === "middle" ? "Middle" : "Secondary"}\n- Grade: ${input.grade}\n- Subject: ${input.subject}\n- Lesson title: ${input.lessonTitle}\n\n${referenceContext}\n\nRequest:\n1. Propose lesson objectives and targeted competencies (2-3 objectives)\n2. Propose an appropriate introductory activity\n3. Propose 3-4 main activities for the lesson\n4. Propose a closing activity\n5. Propose an appropriate evaluation method\n6. Propose the necessary resources\n\nImportant notes:\n- Suggestions must comply with Tunisian official programs\n- Use precise pedagogical terms\n- Be specific and practical\n- Do not copy from references but propose based on them\n\nPresent the suggestions in an organized and structured manner.`,
+          arabic: `أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين.\n\nالمعلومات:\n- السنة الدراسية: ${input.schoolYear}\n- المستوى: ${input.educationLevel === "primary" ? "ابتدائي" : input.educationLevel === "middle" ? "إعدادي" : "ثانوي"}\n- الصف: ${input.grade}\n- المادة: ${input.subject}\n- عنوان الدرس: ${input.lessonTitle}\n\n${referenceContext}\n\nالمطلوب:\n1. اقترح أهداف الدرس والكفايات المستهدفة (2-3 أهداف)\n2. اقترح نشاط تمهيدي مناسب\n3. اقترح 3-4 أنشطة رئيسية للدرس\n4. اقترح نشاط ختامي\n5. اقترح طريقة تقييم مناسبة\n6. اقترح الوسائل المطلوبة\n\nملاحظات مهمة:\n- يجب أن تكون الاقتراحات متوافقة مع البرامج الرسمية التونسية\n- استخدم مصطلحات تربوية دقيقة\n- كن محدداً وعملياً\n- لا تنسخ من المراجع بل اقترح بناءً عليها\n\nقدم الاقتراحات بشكل منظم ومنسق.`,
+        };
 
-Informations:
-- Année scolaire: ${input.schoolYear}
-- Niveau: ${input.educationLevel === "primary" ? "Primaire" : input.educationLevel === "middle" ? "Collège" : "Lycée"}
-- Classe: ${input.grade}
-- Matière: ${input.subject}
-- Titre de la leçon: ${input.lessonTitle}
+        const prompt = promptsByLang[language];
 
-${referenceContext}
+        const systemMessagesByLang = {
+          french: "Vous êtes un assistant pédagogique spécialisé dans la préparation de fiches pédagogiques pour les enseignants tunisiens. Vous respectez les programmes officiels tunisiens et utilisez des termes pédagogiques précis.",
+          english: "You are a pedagogical assistant specialized in preparing lesson plans for Tunisian teachers. You follow Tunisian official programs and use precise pedagogical terms.",
+          arabic: "أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين. تلتزم بالبرامج الرسمية التونسية وتستخدم مصطلحات تربوية دقيقة.",
+        };
 
-Demande:
-1. Proposez les objectifs de la leçon et les compétences visées (2-3 objectifs)
-2. Proposez une activité d'introduction appropriée
-3. Proposez 3-4 activités principales pour la leçon
-4. Proposez une activité de clôture
-5. Proposez une méthode d'évaluation appropriée
-6. Proposez les moyens nécessaires
-
-Notes importantes:
-- Les suggestions doivent être conformes aux programmes officiels tunisiens
-- Utilisez des termes pédagogiques précis
-- Soyez spécifique et pratique
-- Ne copiez pas les références mais proposez en vous basant sur elles
-
-Présentez les suggestions de manière organisée et structurée.`
-          : `أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين.
-
-المعلومات:
-- السنة الدراسية: ${input.schoolYear}
-- المستوى: ${input.educationLevel === "primary" ? "ابتدائي" : input.educationLevel === "middle" ? "إعدادي" : "ثانوي"}
-- الصف: ${input.grade}
-- المادة: ${input.subject}
-- عنوان الدرس: ${input.lessonTitle}
-
-${referenceContext}
-
-المطلوب:
-1. اقترح أهداف الدرس والكفايات المستهدفة (2-3 أهداف)
-2. اقترح نشاط تمهيدي مناسب
-3. اقترح 3-4 أنشطة رئيسية للدرس
-4. اقترح نشاط ختامي
-5. اقترح طريقة تقييم مناسبة
-6. اقترح الوسائل المطلوبة
-
-ملاحظات مهمة:
-- يجب أن تكون الاقتراحات متوافقة مع البرامج الرسمية التونسية
-- استخدم مصطلحات تربوية دقيقة
-- كن محدداً وعملياً
-- لا تنسخ من المراجع بل اقترح بناءً عليها
-
-قدم الاقتراحات بشكل منظم ومنسق.`;
-
-        const systemMessage = isFrenchSubject
-          ? "Vous êtes un assistant pédagogique spécialisé dans la préparation de fiches pédagogiques pour les enseignants tunisiens. Vous respectez les programmes officiels tunisiens et utilisez des termes pédagogiques précis."
-          : "أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين. تلتزم بالبرامج الرسمية التونسية وتستخدم مصطلحات تربوية دقيقة.";
+        const systemMessage = systemMessagesByLang[language];
 
         const response = await invokeLLM({
           messages: [

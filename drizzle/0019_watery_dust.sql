@@ -1,0 +1,1 @@
+ALTER TABLE `pedagogicalSheets` ADD `language` enum('arabic','french','english');

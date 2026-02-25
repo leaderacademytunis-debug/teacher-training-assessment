@@ -240,6 +240,7 @@ export const pedagogicalSheets = mysqlTable("pedagogicalSheets", {
   lessonObjectives: text("lessonObjectives"), // Competences and objectives
   duration: int("duration"), // in minutes
   materials: text("materials"), // Required materials
+  language: mysqlEnum("language", ["arabic", "french", "english"]), // Optional: override auto-detection
   
   // Pedagogical structure
   introduction: text("introduction"),
@@ -353,6 +354,7 @@ export const referenceDocuments = mysqlTable("referenceDocuments", {
   documentType: mysqlEnum("documentType", ["teacher_guide", "official_program", "other"]).notNull(),
   documentTitle: varchar("documentTitle", { length: 255 }).notNull(),
   documentUrl: text("documentUrl").notNull(), // S3 URL
+  language: mysqlEnum("language", ["arabic", "french", "english"]).default("arabic").notNull(), // Document language
   
   // Metadata
   uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),

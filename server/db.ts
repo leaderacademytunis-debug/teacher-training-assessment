@@ -1005,6 +1005,7 @@ export async function getReferenceDocuments(filters?: {
   grade?: string;
   subject?: string;
   documentType?: string;
+  language?: string;
 }): Promise<ReferenceDocument[]> {
   const db = await getDb();
   if (!db) return [];
@@ -1023,6 +1024,9 @@ export async function getReferenceDocuments(filters?: {
   }
   if (filters?.documentType && filters.documentType !== "all") {
     conditions.push(eq(referenceDocuments.documentType, filters.documentType as any));
+  }
+  if (filters?.language && filters.language !== "all") {
+    conditions.push(eq(referenceDocuments.language, filters.language as any));
   }
 
   if (conditions.length > 0) {

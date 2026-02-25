@@ -235,10 +235,19 @@ function processArabicText(text: string): string {
 export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      // Detect if the subject is French
-      const isFrenchSubject = suggestion.subject.toLowerCase().includes("فرنسية") || 
-                              suggestion.subject.toLowerCase().includes("français") ||
-                              suggestion.subject.toLowerCase().includes("francais");
+      // Detect language from subject
+      const detectLanguage = (subject: string): "arabic" | "french" | "english" => {
+        const subjectLower = subject.toLowerCase();
+        if (subjectLower.includes("فرنسية") || subjectLower.includes("français") || subjectLower.includes("francais")) {
+          return "french";
+        }
+        if (subjectLower.includes("إنجليزية") || subjectLower.includes("english") || subjectLower.includes("anglais")) {
+          return "english";
+        }
+        return "arabic";
+      };
+
+      const language = detectLanguage(suggestion.subject);
 
       const doc = new PDFDocument({
         size: "A4",
@@ -255,17 +264,25 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
       doc.registerFont("Amiri", amiriFontPath);
       doc.font("Amiri");
 
-      const educationLevelMap: Record<string, string> = isFrenchSubject
-        ? {
-            primary: "Primaire",
-            middle: "Collège",
-            secondary: "Lycée",
-          }
-        : {
-            primary: "ابتدائي",
-            middle: "إعدادي",
-            secondary: "ثانوي",
-          };
+      const educationLevelMaps = {
+        french: {
+          primary: "Primaire",
+          middle: "Collège",
+          secondary: "Lycée",
+        },
+        english: {
+          primary: "Primary",
+          middle: "Middle",
+          secondary: "Secondary",
+        },
+        arabic: {
+          primary: "ابتدائي",
+          middle: "إعدادي",
+          secondary: "ثانوي",
+        },
+      };
+
+      const educationLevelMap: Record<string, string> = educationLevelMaps[language];
 
       const pageWidth = doc.page.width;
       const leftMargin = 50;
@@ -273,61 +290,88 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
       const contentWidth = pageWidth - leftMargin - rightMargin;
 
       // Title
+      const titlesByLang = {
+        french: "Suggestion de contenu par IA",
+        english: "AI Content Suggestion",
+        arabic: processArabicText("اقتراح محتوى بالذكاء الاصطناعي"),
+      };
+
+      const subtitlesByLang = {
+        french: "Fiche pédagogique proposée",
+        english: "Proposed Lesson Plan",
+        arabic: processArabicText("مذكرة بيداغوجية مقترحة"),
+      };
+
       doc.fontSize(24).fillColor("#1e40af");
-      const title = isFrenchSubject 
-        ? "Suggestion de contenu par IA"
-        : processArabicText("اقتراح محتوى بالذكاء الاصطناعي");
+      const title = titlesByLang[language];
       doc.text(title, leftMargin, doc.y, {
         width: contentWidth,
-        align: isFrenchSubject ? "left" : "right",
+        align: language === "arabic" ? "right" : "left",
       });
 
       doc.moveDown(0.5);
       doc.fontSize(18).fillColor("#3b82f6");
-      const subtitle = isFrenchSubject
-        ? "Fiche pédagogique proposée"
-        : processArabicText("مذكرة بيداغوجية مقترحة");
+      const subtitle = subtitlesByLang[language];
       doc.text(subtitle, leftMargin, doc.y, {
         width: contentWidth,
-        align: isFrenchSubject ? "left" : "right",
+        align: language === "arabic" ? "right" : "left",
       });
 
       doc.moveDown(1);
 
       // Labels
-      const labels = isFrenchSubject
-        ? {
-            schoolYear: "Année scolaire",
-            level: "Niveau",
-            grade: "Classe",
-            subject: "Matière",
-            lessonTitle: "Titre de la leçon",
-            duration: "Durée",
-            minutes: "minutes",
-            objectives: "Objectifs et compétences",
-            materials: "Moyens nécessaires",
-            introduction: "Introduction",
-            mainActivities: "Activités principales",
-            conclusion: "Clôture",
-            evaluation: "Évaluation",
-            note: "Note: Ce contenu est généré par intelligence artificielle et peut être modifié selon les besoins.",
-          }
-        : {
-            schoolYear: "السنة الدراسية",
-            level: "المستوى",
-            grade: "الصف",
-            subject: "المادة",
-            lessonTitle: "عنوان الدرس",
-            duration: "المدة",
-            minutes: "دقيقة",
-            objectives: "الأهداف والكفايات",
-            materials: "الوسائل المطلوبة",
-            introduction: "المقدمة / التمهيد",
-            mainActivities: "الأنشطة الرئيسية",
-            conclusion: "الخاتمة",
-            evaluation: "التقييم",
-            note: "ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.",
-          };
+      const labelsByLang = {
+        french: {
+          schoolYear: "Année scolaire",
+          level: "Niveau",
+          grade: "Classe",
+          subject: "Matière",
+          lessonTitle: "Titre de la leçon",
+          duration: "Durée",
+          minutes: "minutes",
+          objectives: "Objectifs et compétences",
+          materials: "Moyens nécessaires",
+          introduction: "Introduction",
+          mainActivities: "Activités principales",
+          conclusion: "Clôture",
+          evaluation: "Évaluation",
+          note: "Note: Ce contenu est généré par intelligence artificielle et peut être modifié selon les besoins.",
+        },
+        english: {
+          schoolYear: "School year",
+          level: "Level",
+          grade: "Grade",
+          subject: "Subject",
+          lessonTitle: "Lesson title",
+          duration: "Duration",
+          minutes: "minutes",
+          objectives: "Objectives and competencies",
+          materials: "Required resources",
+          introduction: "Introduction",
+          mainActivities: "Main activities",
+          conclusion: "Conclusion",
+          evaluation: "Evaluation",
+          note: "Note: This content is generated by artificial intelligence and can be modified as needed.",
+        },
+        arabic: {
+          schoolYear: "السنة الدراسية",
+          level: "المستوى",
+          grade: "الصف",
+          subject: "المادة",
+          lessonTitle: "عنوان الدرس",
+          duration: "المدة",
+          minutes: "دقيقة",
+          objectives: "الأهداف والكفايات",
+          materials: "الوسائل المطلوبة",
+          introduction: "المقدمة / التمهيد",
+          mainActivities: "الأنشطة الرئيسية",
+          conclusion: "الخاتمة",
+          evaluation: "التقييم",
+          note: "ملاحظة: هذا المحتوى مُولّد بواسطة الذكاء الاصطناعي ويمكن تعديله حسب الحاجة.",
+        },
+      };
+
+      const labels = labelsByLang[language];
 
       // Table data
       const tableData: { label: string; content: string }[] = [
@@ -436,7 +480,7 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
       // Footer note
       doc.moveDown(2);
       doc.fontSize(12).fillColor("#666666");
-      const note = isFrenchSubject ? labels.note : processArabicText(labels.note);
+      const note = language === "arabic" ? processArabicText(labels.note) : labels.note;
       doc.text(note, leftMargin, doc.y, {
         width: contentWidth,
         align: "center",

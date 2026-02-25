@@ -793,4 +793,14 @@
 - [x] Modifier le prompt système pour détecter la matière et générer en français si c'est "اللغة الفرنسية"
 - [x] Mettre à jour les générateurs Word et PDF pour supporter le contenu français
 - [x] Tester avec des exemples en français
+- [x] Créer le checkpoint final
+
+## Support multilingue complet (Arabe, Français, Anglais)
+- [x] Ajouter le champ langue dans le schéma de la table referenceDocuments
+- [x] Ajouter le support de l'anglais dans les générateurs Word et PDF
+- [x] Ajouter le support de l'anglais dans les prompts IA
+- [x] Ajouter un sélecteur de langue dans l'interface (قائمة منسدلة)
+- [x] Modifier la logique de détection pour inclure l'anglais
+- [x] Implémenter le filtrage des références par langue
+- [x] Tester avec des exemples en anglais
 - [ ] Créer le checkpoint final

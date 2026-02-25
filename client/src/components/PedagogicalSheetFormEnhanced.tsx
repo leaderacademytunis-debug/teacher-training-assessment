@@ -34,6 +34,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     evaluation: "",
     guidePageReference: "",
     programReference: "",
+    language: "" as "arabic" | "french" | "english" | "", // Optional language override
   });
 
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
@@ -127,6 +128,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
       grade: formData.grade,
       subject: formData.subject,
       lessonTitle: formData.lessonTitle,
+      language: formData.language || undefined, // Pass language if selected
     });
   };
 
@@ -373,6 +375,27 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                     <SelectItem value="التربية البدنية">التربية البدنية</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="language">لغة التوليد (اختياري)</Label>
+                <Select
+                  value={formData.language}
+                  onValueChange={(value) => setFormData({ ...formData, language: value as "arabic" | "french" | "english" | "" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="كشف تلقائي من المادة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">كشف تلقائي من المادة</SelectItem>
+                    <SelectItem value="arabic">العربية</SelectItem>
+                    <SelectItem value="french">Français</SelectItem>
+                    <SelectItem value="english">English</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  إذا لم تختر لغة، سيتم كشفها تلقائيًا من المادة (مثلاً: اللغة الفرنسية → فرنسية)
+                </p>
               </div>
             </div>
             
