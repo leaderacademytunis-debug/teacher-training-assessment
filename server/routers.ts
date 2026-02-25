@@ -1206,8 +1206,8 @@ export const appRouter = router({
         });
 
         const referenceContext = references.length > 0
-          ? `المراجع الرسمية المتاحة:\n${references.map(r => `- ${r.documentTitle}`).join('\n')}`
-          : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة.";
+          ? `المراجع الرسمية المتاحة (يجب الالتزام بها):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'دليل المعلم' : r.documentType === 'official_program' ? 'برنامج رسمي' : 'مرجع'})`).join('\n')}\n\nملاحظة: استخدم هذه المراجع كأساس لاقتراحاتك وتأكد من مطابقة المحتوى للبرامج الرسمية التونسية."`
+          : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة. اقترح محتوى بيداغوجي عام مناسب للمستوى التعليمي.";
 
         const prompt = `أنت مساعد تربوي متخصص في إعداد المذكرات البيداغوجية للمدرسين التونسيين.
 
@@ -1281,7 +1281,90 @@ ${referenceContext}
         return {
           suggestion,
           parsedContent,
+          usedReferences: references.map(r => ({
+            title: r.documentTitle,
+            type: r.documentType,
+            url: r.documentUrl,
+          })),
         };
+      }),
+
+    // Saved Prompts procedures
+    savePrompt: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1, "العنوان إلزامي"),
+        promptText: z.string().min(1),
+        educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { savedPrompts } = await import("../drizzle/schema");
+        
+        const [prompt] = await database.insert(savedPrompts).values({
+          userId: ctx.user.id,
+          title: input.title,
+          promptText: input.promptText,
+          educationLevel: input.educationLevel,
+          grade: input.grade,
+          subject: input.subject,
+          usageCount: 0,
+        });
+        
+        return { success: true, id: prompt.insertId };
+      }),
+
+    listSavedPrompts: protectedProcedure
+      .query(async ({ ctx }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { savedPrompts } = await import("../drizzle/schema");
+        const { eq, desc } = await import("drizzle-orm");
+        
+        return await database
+          .select()
+          .from(savedPrompts)
+          .where(eq(savedPrompts.userId, ctx.user.id))
+          .orderBy(desc(savedPrompts.createdAt));
+      }),
+
+    deletePrompt: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { savedPrompts } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        
+        await database
+          .delete(savedPrompts)
+          .where(and(
+            eq(savedPrompts.id, input.id),
+            eq(savedPrompts.userId, ctx.user.id)
+          ));
+        
+        return { success: true };
+      }),
+
+    incrementUsage: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const { savedPrompts } = await import("../drizzle/schema");
+        const { eq, sql } = await import("drizzle-orm");
+        
+        await database
+          .update(savedPrompts)
+          .set({ 
+            usageCount: sql`${savedPrompts.usageCount} + 1`,
+            lastUsedAt: new Date(),
+          })
+          .where(eq(savedPrompts.id, input.id));
+        
+        return { success: true };
       }),
   }),
 

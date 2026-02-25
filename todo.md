@@ -656,3 +656,25 @@
 - [x] Améliorer le style du bouton pour le rendre plus attractif
 - [x] Ajouter une animation ou effet visuel au bouton
 - [ ] Tester l'interface améliorée
+
+
+## Phase 6: Amélioration avancée de l'assistance IA
+
+### Fenêtre d'aide Prompt Engineering
+- [x] Créer un composant Dialog pour expliquer le Prompt Engineering
+- [x] Ajouter des exemples pratiques de prompts efficaces
+- [x] Ajouter des conseils pour formuler des objectifs pédagogiques clairs
+- [x] Ajouter une icône Info à côté du bouton IA
+
+### Bibliothèque de Prompts Favoris
+- [x] Créer une table `savedPrompts` dans le schéma de base de données
+- [x] Ajouter un bouton "حفظ في المفضلة" après génération réussie
+- [x] Créer une interface pour afficher les prompts sauvegardés
+- [x] Permettre la réutilisation des prompts favoris
+- [x] Ajouter la suppression de prompts de la bibliothèque
+
+### Amélioration avec Références Officielles
+- [x] Modifier la procedure generateAiSuggestion pour récupérer les références pertinentes
+- [x] Intégrer le contenu des références dans le contexte du prompt
+- [x] Afficher les références utilisées dans la suggestion
+- [x] Améliorer la qualité des suggestions générées

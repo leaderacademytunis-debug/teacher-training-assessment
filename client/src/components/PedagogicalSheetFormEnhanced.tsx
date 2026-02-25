@@ -6,8 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Loader2, Sparkles, BookOpen } from "lucide-react";
+import { X, Loader2, Sparkles, BookOpen, Info, Bookmark, Save } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PromptEngineeringGuide } from "@/components/PromptEngineeringGuide";
+import { SavedPromptsDialog } from "@/components/SavedPromptsDialog";
+import { toast } from "sonner";
 
 interface PedagogicalSheetFormEnhancedProps {
   onClose: () => void;
@@ -34,6 +37,10 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
 
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
   const [showAiSuggestion, setShowAiSuggestion] = useState(false);
+  const [showPromptGuide, setShowPromptGuide] = useState(false);
+  const [showSavedPrompts, setShowSavedPrompts] = useState(false);
+  const [lastGeneratedPrompt, setLastGeneratedPrompt] = useState<string>("");
+  const [usedReferences, setUsedReferences] = useState<Array<{ title: string; type: string; url: string }>>([]);
 
   const createSheet = trpc.pedagogicalSheets.create.useMutation({
     onSuccess: () => {
@@ -50,6 +57,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
       const suggestionText = typeof data.suggestion === 'string' ? data.suggestion : '';
       setAiSuggestion(suggestionText);
       setShowAiSuggestion(true);
+      setUsedReferences(data.usedReferences || []);
       
       // Auto-fill form fields from AI suggestion
       if (data.parsedContent) {
@@ -69,12 +77,27 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     },
   });
 
+  const savePrompt = trpc.pedagogicalSheets.savePrompt.useMutation({
+    onSuccess: () => {
+      toast.success("تم حفظ Prompt في المفضلة بنجاح");
+    },
+    onError: (error) => {
+      toast.error(`خطأ: ${error.message}`);
+    },
+  });
+
+  const incrementUsage = trpc.pedagogicalSheets.incrementUsage.useMutation();
+
   const handleAiSuggestion = () => {
     if (!formData.schoolYear || !formData.educationLevel || !formData.grade || 
         !formData.subject || !formData.lessonTitle) {
       alert("يرجى ملء المعلومات الأساسية أولاً (السنة الدراسية، المستوى، الصف، المادة، عنوان الدرس)");
       return;
     }
+
+    // Build the prompt text
+    const promptText = `السنة الدراسية: ${formData.schoolYear}\nالمستوى: ${formData.educationLevel === "primary" ? "ابتدائي" : formData.educationLevel === "middle" ? "إعدادي" : "ثانوي"}\nالصف: ${formData.grade}\nالمادة: ${formData.subject}\nعنوان الدرس: ${formData.lessonTitle}`;
+    setLastGeneratedPrompt(promptText);
 
     generateAiSuggestion.mutate({
       schoolYear: formData.schoolYear,
@@ -83,6 +106,37 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
       subject: formData.subject,
       lessonTitle: formData.lessonTitle,
     });
+  };
+
+  const handleSavePrompt = () => {
+    const title = prompt("أدخل عنواناً للPrompt:", `مذكرة ${formData.subject} - ${formData.lessonTitle}`);
+    if (!title) return;
+
+    savePrompt.mutate({
+      title,
+      promptText: lastGeneratedPrompt,
+      educationLevel: formData.educationLevel as "primary" | "middle" | "secondary",
+      grade: formData.grade,
+      subject: formData.subject,
+    });
+  };
+
+  const handleSelectSavedPrompt = (promptText: string, promptId: number) => {
+    // Parse the prompt text and fill form fields
+    const lines = promptText.split('\n');
+    lines.forEach(line => {
+      if (line.includes('السنة الدراسية:')) {
+        const value = line.split(':')[1]?.trim();
+        if (value) setFormData(prev => ({ ...prev, schoolYear: value }));
+      }
+      // Add more parsing as needed
+    });
+
+    // Increment usage count
+    incrementUsage.mutate({ id: promptId });
+    
+    // Trigger AI suggestion with the saved prompt
+    handleAiSuggestion();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -123,6 +177,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
   };
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex justify-between items-start">
@@ -241,14 +296,35 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-lg">تفاصيل الدرس</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAiSuggestion}
-                disabled={generateAiSuggestion.isPending || !formData.lessonTitle}
-                className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-md hover:shadow-lg transition-all duration-300"
-              >
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowPromptGuide(true)}
+                  className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  <Info className="h-4 w-4" />
+                  دليل هندسة الأوامر
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSavedPrompts(true)}
+                  className="gap-1"
+                >
+                  <Bookmark className="h-4 w-4" />
+                  مكتبة Prompts
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAiSuggestion}
+                  disabled={generateAiSuggestion.isPending || !formData.lessonTitle}
+                  className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-md hover:shadow-lg transition-all duration-300"
+                >
                 {generateAiSuggestion.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -260,16 +336,50 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                     اقتراح محتوى بالذكاء الاصطناعي
                   </>
                 )}
-              </Button>
+                </Button>
+              </div>
             </div>
 
             {showAiSuggestion && aiSuggestion && (
-              <Alert className="bg-blue-50 border-blue-200">
-                <BookOpen className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-sm text-blue-900 whitespace-pre-wrap">
-                  {aiSuggestion}
-                </AlertDescription>
-              </Alert>
+              <>
+                <Alert className="bg-blue-50 border-blue-200">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-sm text-blue-900 whitespace-pre-wrap">
+                    {aiSuggestion}
+                  </AlertDescription>
+                </Alert>
+                {usedReferences.length > 0 && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+                    <h4 className="text-sm font-semibold text-green-800 mb-2">المراجع الرسمية المستخدمة:</h4>
+                    <ul className="space-y-1">
+                      {usedReferences.map((ref, idx) => (
+                        <li key={idx} className="text-xs text-green-700">
+                          <a 
+                            href={ref.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="hover:underline flex items-center gap-1"
+                          >
+                            <BookOpen className="h-3 w-3" />
+                            {ref.title}
+                            <span className="text-green-600">({ref.type === 'teacher_guide' ? 'دليل المعلم' : ref.type === 'official_program' ? 'برنامج رسمي' : 'مرجع'})</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSavePrompt}
+                  className="gap-2 mt-2"
+                >
+                  <Save className="h-4 w-4" />
+                  حفظ في المفضلة
+                </Button>
+              </>
             )}
             
             <div className="space-y-2">
@@ -412,5 +522,12 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
         </form>
       </CardContent>
     </Card>
+    <PromptEngineeringGuide open={showPromptGuide} onOpenChange={setShowPromptGuide} />
+    <SavedPromptsDialog 
+      open={showSavedPrompts} 
+      onOpenChange={setShowSavedPrompts}
+      onSelectPrompt={handleSelectSavedPrompt}
+    />
+    </>
   );
 }

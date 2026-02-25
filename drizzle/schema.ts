@@ -360,3 +360,28 @@ export const referenceDocuments = mysqlTable("referenceDocuments", {
 
 export type ReferenceDocument = typeof referenceDocuments.$inferSelect;
 export type InsertReferenceDocument = typeof referenceDocuments.$inferInsert;
+
+/**
+ * Saved prompts table - stores favorite prompts for reuse
+ */
+export const savedPrompts = mysqlTable("savedPrompts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Prompt details
+  title: varchar("title", { length: 255 }).notNull(), // User-given title
+  promptText: text("promptText").notNull(), // The full prompt
+  
+  // Context for filtering
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]),
+  grade: varchar("grade", { length: 50 }),
+  subject: varchar("subject", { length: 100 }),
+  
+  // Metadata
+  usageCount: int("usageCount").default(0).notNull(), // How many times reused
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+});
+
+export type SavedPrompt = typeof savedPrompts.$inferSelect;
+export type InsertSavedPrompt = typeof savedPrompts.$inferInsert;
