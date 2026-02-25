@@ -828,4 +828,9 @@
 ## Intégration des références officielles - 5ème année primaire
 - [x] Télécharger les 4 fichiers PDF sur S3
 - [x] Insérer les références dans la base de données
-- [ ] Créer le checkpoint final
+- [x] Créer le checkpoint final
+
+## Intégration des références officielles - 4ème année primaire
+- [x] Télécharger les 3 fichiers PDF sur S3
+- [x] Insérer les références dans la base de données
+- [x] Créer le checkpoint final
