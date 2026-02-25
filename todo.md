@@ -816,4 +816,11 @@
 - [x] Télécharger la police Amiri si nécessaire
 - [x] Corriger le chemin dans pdfGenerator.ts (utilisation de path.join avec __dirname)
 - [x] Tester la génération PDF
+- [x] Créer le checkpoint final
+
+## Intégration des références officielles - 6ème année primaire
+- [x] Télécharger les 4 fichiers PDF sur S3
+- [x] Insérer les références dans la base de données avec les métadonnées appropriées
+- [x] Vérifier que les références sont filtrées correctement lors de la génération
+- [x] Tester la génération d'une mذكرة pour la 6ème année primaire en français
 - [ ] Créer le checkpoint final
