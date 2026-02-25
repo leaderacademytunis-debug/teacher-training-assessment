@@ -803,4 +803,10 @@
 - [x] Modifier la logique de détection pour inclure l'anglais
 - [x] Implémenter le filtrage des références par langue
 - [x] Tester avec des exemples en anglais
+- [x] Créer le checkpoint final
+
+## Correction: Erreur Select.Item avec valeur vide
+- [x] Corriger le sélecteur de langue pour utiliser "auto" au lieu de "" comme valeur par défaut
+- [x] Mettre à jour la logique backend pour gérer "auto" comme détection automatique
+- [x] Tester le sélecteur de langue
 - [ ] Créer le checkpoint final

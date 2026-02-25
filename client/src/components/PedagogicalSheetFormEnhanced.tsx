@@ -34,7 +34,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     evaluation: "",
     guidePageReference: "",
     programReference: "",
-    language: "" as "arabic" | "french" | "english" | "", // Optional language override
+    language: "auto" as "arabic" | "french" | "english" | "auto", // Optional language override
   });
 
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
@@ -128,7 +128,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
       grade: formData.grade,
       subject: formData.subject,
       lessonTitle: formData.lessonTitle,
-      language: formData.language || undefined, // Pass language if selected
+      language: formData.language === "auto" ? undefined : (formData.language as "arabic" | "french" | "english"), // Pass language if selected
     });
   };
 
@@ -381,13 +381,13 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                 <Label htmlFor="language">لغة التوليد (اختياري)</Label>
                 <Select
                   value={formData.language}
-                  onValueChange={(value) => setFormData({ ...formData, language: value as "arabic" | "french" | "english" | "" })}
+                  onValueChange={(value) => setFormData({ ...formData, language: value as "arabic" | "french" | "english" | "auto" })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="كشف تلقائي من المادة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">كشف تلقائي من المادة</SelectItem>
+                    <SelectItem value="auto">كشف تلقائي من المادة</SelectItem>
                     <SelectItem value="arabic">العربية</SelectItem>
                     <SelectItem value="french">Français</SelectItem>
                     <SelectItem value="english">English</SelectItem>
