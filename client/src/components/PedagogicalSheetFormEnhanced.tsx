@@ -247,7 +247,7 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                 size="sm"
                 onClick={handleAiSuggestion}
                 disabled={generateAiSuggestion.isPending || !formData.lessonTitle}
-                className="gap-2"
+                className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 shadow-md hover:shadow-lg transition-all duration-300"
               >
                 {generateAiSuggestion.isPending ? (
                   <>

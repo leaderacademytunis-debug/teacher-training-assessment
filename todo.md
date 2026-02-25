@@ -647,3 +647,12 @@
 - [x] Ajouter le lien vers la page "أدوات المدرس" dans la navigation principale (App.tsx ou Header)
 - [x] S'assurer que le lien est visible pour tous les utilisateurs connectés
 - [x] Tester l'accès à la page depuis la navigation
+
+
+## Phase 5: Amélioration du bouton d'assistance IA
+
+### Design et UX
+- [x] Remplacer l'icône du bouton IA par l'icône Sparkles (✨)
+- [x] Améliorer le style du bouton pour le rendre plus attractif
+- [x] Ajouter une animation ou effet visuel au bouton
+- [ ] Tester l'interface améliorée
