@@ -607,3 +607,35 @@
 - [x] Ajouter fonctionnalité d'édition des examens
 - [x] Ajouter fonctionnalité de suppression des examens
 - [x] Ajouter export PDF pour impression (format examen + corrigé séparé)
+
+
+## Phase 3: Amélioration du système d'export (Word + Templates professionnels)
+
+### Export Word
+- [x] Installer la bibliothèque docx (officegen ou docx)
+- [x] Créer le module wordGenerator.ts
+- [x] Implémenter generatePedagogicalSheetWord
+- [x] Implémenter generateLessonPlanWord
+- [x] Implémenter generateTeacherExamWord
+- [x] Ajouter les procedures tRPC exportToWord
+- [ ] Tester l'export Word pour les 3 types de documents (en cours)
+
+### Templates PDF professionnels
+- [x] Créer 3 templates de design pour les مذكرات (classique, moderne, coloré)
+- [ ] Créer 3 templates de design pour les خطط (simple, détaillé, visuel)
+- [ ] Créer 3 templates de design pour les اختبارات (standard, avec logo, avec en-tête)
+- [ ] Améliorer le design PDF avec couleurs, bordures, et mise en page
+- [ ] Ajouter support des polices arabes dans les PDFs
+
+### Interface utilisateur
+- [x] Ajouter menu déroulant pour choisir le format (PDF/Word)
+- [x] Ajouter sélecteur de template de design
+- [ ] Ajouter prévisualisation du template sélectionné
+- [x] Améliorer les boutons d'export dans les cartes
+- [ ] Tester l'interface complète
+
+### Tests et livraison
+- [ ] Tester l'export PDF avec différents templates
+- [ ] Tester l'export Word avec différents contenus
+- [ ] Vérifier l'affichage correct de l'arabe dans Word
+- [ ] Créer le checkpoint final

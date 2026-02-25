@@ -8,12 +8,19 @@ import { PedagogicalSheetFormEnhanced } from "@/components/PedagogicalSheetFormE
 import { LessonPlanFormEnhanced } from "@/components/LessonPlanFormEnhanced";
 import { TeacherExamFormEnhanced } from "@/components/TeacherExamFormEnhanced";
 import { ReferenceDocumentsManager } from "@/components/ReferenceDocumentsManager";
+import { ExportDialog } from "@/components/ExportDialog";
 
 function TeacherTools() {
   const [activeTab, setActiveTab] = useState("sheets");
   const [showSheetForm, setShowSheetForm] = useState(false);
   const [showPlanForm, setShowPlanForm] = useState(false);
   const [showExamForm, setShowExamForm] = useState(false);
+  const [exportDialog, setExportDialog] = useState<{
+    open: boolean;
+    itemId: number;
+    itemTitle: string;
+    exportType: "pedagogicalSheet" | "lessonPlan" | "teacherExam";
+  }>({ open: false, itemId: 0, itemTitle: "", exportType: "pedagogicalSheet" });
 
   const { data: sheets = [], refetch: refetchSheets } = trpc.pedagogicalSheets.list.useQuery();
   const { data: plans = [], refetch: refetchPlans } = trpc.lessonPlans.list.useQuery();
@@ -104,7 +111,17 @@ function TeacherTools() {
                         <Button variant="outline" size="sm" className="flex-1">
                           تعديل
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => setExportDialog({
+                            open: true,
+                            itemId: sheet.id,
+                            itemTitle: sheet.lessonTitle,
+                            exportType: "pedagogicalSheet",
+                          })}
+                        >
                           تصدير
                         </Button>
                       </div>
@@ -165,7 +182,17 @@ function TeacherTools() {
                         <Button variant="outline" size="sm" className="flex-1">
                           تعديل
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => setExportDialog({
+                            open: true,
+                            itemId: plan.id,
+                            itemTitle: plan.planTitle,
+                            exportType: "lessonPlan",
+                          })}
+                        >
                           تصدير
                         </Button>
                       </div>
@@ -231,7 +258,17 @@ function TeacherTools() {
                         <Button variant="outline" size="sm" className="flex-1">
                           تعديل
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => setExportDialog({
+                            open: true,
+                            itemId: exam.id,
+                            itemTitle: exam.examTitle,
+                            exportType: "teacherExam",
+                          })}
+                        >
                           تصدير
                         </Button>
                       </div>
@@ -248,6 +285,14 @@ function TeacherTools() {
           <ReferenceDocumentsManager />
         </TabsContent>
       </Tabs>
+
+      <ExportDialog
+        open={exportDialog.open}
+        onOpenChange={(open) => setExportDialog({ ...exportDialog, open })}
+        itemId={exportDialog.itemId}
+        itemTitle={exportDialog.itemTitle}
+        exportType={exportDialog.exportType}
+      />
     </div>
   );
 }

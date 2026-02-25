@@ -1169,6 +1169,24 @@ export const appRouter = router({
         return { url };
       }),
 
+    exportToWord: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const sheet = await db.getPedagogicalSheetById(input.id);
+        if (!sheet || sheet.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على المذكرة" });
+        }
+
+        const { generatePedagogicalSheetWord } = await import("./wordGenerator");
+        const wordBuffer = await generatePedagogicalSheetWord(sheet);
+        
+        const { storagePut } = await import("./storage");
+        const fileName = `pedagogical-sheets/sheet-${sheet.id}-${Date.now()}.docx`;
+        const { url } = await storagePut(fileName, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        
+        return { url };
+      }),
+
     generateAiSuggestion: protectedProcedure
       .input(z.object({
         schoolYear: z.string(),
@@ -1353,6 +1371,24 @@ ${referenceContext}
         
         return { url };
       }),
+
+    exportToWord: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const plan = await db.getLessonPlanById(input.id);
+        if (!plan || plan.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على الخطة" });
+        }
+
+        const { generateLessonPlanWord } = await import("./wordGenerator");
+        const wordBuffer = await generateLessonPlanWord(plan);
+        
+        const { storagePut } = await import("./storage");
+        const fileName = `lesson-plans/plan-${plan.id}-${Date.now()}.docx`;
+        const { url } = await storagePut(fileName, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        
+        return { url };
+      }),
   }),
 
   teacherExams: router({
@@ -1440,6 +1476,24 @@ ${referenceContext}
         const { storagePut } = await import("./storage");
         const fileName = `teacher-exams/exam-${exam.id}-${Date.now()}.pdf`;
         const { url } = await storagePut(fileName, pdfBuffer, "application/pdf");
+        
+        return { url };
+      }),
+
+    exportToWord: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const exam = await db.getTeacherExamById(input.id);
+        if (!exam || exam.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على الاختبار" });
+        }
+
+        const { generateTeacherExamWord } = await import("./wordGenerator");
+        const wordBuffer = await generateTeacherExamWord(exam);
+        
+        const { storagePut } = await import("./storage");
+        const fileName = `teacher-exams/exam-${exam.id}-${Date.now()}.docx`;
+        const { url } = await storagePut(fileName, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         
         return { url };
       }),
