@@ -4,6 +4,9 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { getDb } from "./db";
+import { infographics, mindMaps } from "../drizzle/schema";
+import { eq, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
@@ -1793,6 +1796,105 @@ ${referenceContext}
         return { success: true };
       }),
   }),
+
+  /* visualTools: router({
+    generateInfographic: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        subject: z.string(),
+        description: z.string().optional(),
+        style: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { generateImage } = await import("./_core/imageGeneration");
+        
+        // Build prompt for infographic
+        const styleDescriptions: Record<string, string> = {
+          educational: "تعليمي واضح ومبسط للطلاب",
+          scientific: "علمي دقيق مع رسوم توضيحية",
+          statistical: "إحصائي مع رسوم بيانية وأرقام",
+          timeline: "خط زمني متسلسل",
+          comparison: "مقارنة بين عناصر مختلفة",
+        };
+        
+        const prompt = `Create a professional infographic in Arabic about "${input.title}". Subject: ${input.subject}. ${input.description ? `Content: ${input.description}.` : ""} Style: ${styleDescriptions[input.style] || input.style}. Use vibrant colors, clear icons, and well-organized layout. Include title in Arabic at the top. Make it visually appealing and educational.`;
+        
+        const { url } = await generateImage({
+          prompt,
+        });
+        
+        // Save to database
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        await database.insert(infographics).values({
+          userId: ctx.user.id,
+          title: input.title,
+          subject: input.subject,
+          description: input.description || "",
+          style: input.style,
+          imageUrl: url,
+          prompt,
+        });
+        
+        return { imageUrl: url };
+      }),
+
+    generateMindMap: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        centralTopic: z.string(),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { generateImage } = await import("./_core/imageGeneration");
+        
+        const prompt = `Create a colorful mind map in Arabic with "${input.centralTopic}" as the central topic. ${input.description ? `Include these branches and elements: ${input.description}.` : "Generate relevant branches automatically."} Use different colors for each branch, clear connections, and icons. Make it visually organized and easy to understand. Professional educational style.`;
+        
+        const { url } = await generateImage({
+          prompt,
+        });
+        
+        // Save to database
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        
+        await database.insert(mindMaps).values({
+          userId: ctx.user.id,
+          title: input.title,
+          centralTopic: input.centralTopic,
+          description: input.description || "",
+          mapData: { prompt }, // Store prompt as map data
+          imageUrl: url,
+        });
+        
+        return { imageUrl: url };
+      }),
+
+    listInfographics: protectedProcedure
+      .query(async ({ ctx }) => {
+        const database = await getDb();
+        if (!database) return [];
+        
+        return await database
+          .select()
+          .from(infographics)
+          .where(eq(infographics.userId, ctx.user.id))
+          .orderBy(desc(infographics.createdAt));
+      }),
+
+    listMindMaps: protectedProcedure
+      .query(async ({ ctx }) => {
+        const database = await getDb();
+        if (!database) return [];
+        
+        return await database
+          .select()
+          .from(mindMaps)
+          .where(eq(mindMaps.userId, ctx.user.id))
+          .orderBy(desc(mindMaps.createdAt));
+      }),
+  }), */
 });
 
 export type AppRouter = typeof appRouter;

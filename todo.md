@@ -724,3 +724,36 @@
 - [x] Télécharger le logo sur S3
 - [x] Ajouter le logo dans l'en-tête de la page d'accueil
 - [ ] Ajouter le logo dans les autres pages principales
+
+
+## Phase 10: Génération d'Infographies et Cartes Mentales
+
+### Schéma de Base de Données
+- [x] Créer une table `infographics` pour stocker les infographies générées
+- [x] Créer une table `mindMaps` pour stocker les cartes mentales
+- [x] Pousser les migrations vers la base de données
+
+### Génération d'Infographies avec IA
+- [ ] Créer un formulaire de génération d'infographies (sujet, style, couleurs)
+- [ ] Intégrer l'API de génération d'images IA
+- [ ] Ajouter des templates prédéfinis (éducatif, scientifique, statistique)
+- [ ] Afficher l'aperçu de l'infographie générée
+
+### Génération de Cartes Mentales
+- [ ] Créer un formulaire de génération de cartes mentales (sujet central, branches)
+- [ ] Utiliser une bibliothèque de visualisation (D3.js ou Mermaid)
+- [ ] Générer la structure avec IA basée sur le sujet
+- [ ] Permettre l'édition interactive des nœuds
+
+### Export et Impression
+- [ ] Ajouter export PNG pour infographies et cartes mentales
+- [ ] Ajouter export PDF optimisé pour l'impression
+- [ ] Ajouter export SVG pour édition ultérieure
+- [ ] Créer une vue de prévisualisation avant impression
+- [ ] Ajouter des options de mise en page (A4, A3, paysage/portrait)
+
+### Interface Utilisateur
+- [ ] Créer la page "مولد الإنفوجرافيك والخرائط الذهنية"
+- [ ] Ajouter le lien dans la navigation
+- [ ] Créer une galerie des créations sauvegardées
+- [ ] Ajouter des filtres par type et date

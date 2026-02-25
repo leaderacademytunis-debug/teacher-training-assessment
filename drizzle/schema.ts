@@ -445,3 +445,41 @@ export const sheetComments = mysqlTable("sheetComments", {
 
 export type SheetComment = typeof sheetComments.$inferSelect;
 export type InsertSheetComment = typeof sheetComments.$inferInsert;
+
+
+/**
+ * Infographics table - stores AI-generated infographics
+ */
+export const infographics = mysqlTable("infographics", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  description: text("description"),
+  style: varchar("style", { length: 50 }).notNull(), // educational, scientific, statistical
+  imageUrl: varchar("imageUrl", { length: 500 }).notNull(),
+  prompt: text("prompt").notNull(), // The AI prompt used
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Infographic = typeof infographics.$inferSelect;
+export type InsertInfographic = typeof infographics.$inferInsert;
+
+/**
+ * Mind maps table - stores AI-generated mind maps
+ */
+export const mindMaps = mysqlTable("mindMaps", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  centralTopic: varchar("centralTopic", { length: 255 }).notNull(),
+  description: text("description"),
+  mapData: json("mapData").notNull(), // Stores the mind map structure
+  imageUrl: varchar("imageUrl", { length: 500 }), // Optional rendered image
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MindMap = typeof mindMaps.$inferSelect;
+export type InsertMindMap = typeof mindMaps.$inferInsert;
