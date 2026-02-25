@@ -2088,6 +2088,12 @@ export const appRouter = router({
         messages: z.array(z.object({
           role: z.enum(["user", "assistant"]),
           content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string().optional(),
+          })).optional(),
         })),
       }))
       .mutation(async ({ input }) => {
@@ -2153,6 +2159,17 @@ Tu dois toujours répondre en arabe sauf si l'utilisateur demande explicitement 
         const content = response.choices[0].message.content;
         const messageText = typeof content === "string" ? content : "";
         return { message: messageText };
+      }),
+    
+    uploadFile: protectedProcedure
+      .input(z.object({
+        base64Data: z.string(),
+        fileName: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { uploadFile } = await import("./uploadFile");
+        return await uploadFile(input, ctx.user.id);
       }),
   }),
 

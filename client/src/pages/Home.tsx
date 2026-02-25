@@ -71,14 +71,15 @@ export default function Home() {
                       <Button variant="outline">لوحة التحكم</Button>
                     </Link>
                   )}
-                  <Button 
-                    variant="default" 
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => setIsChatOpen(true)}
-                  >
-                    <MessageSquare className="w-4 h-4 ml-2" />
-                    مساعد EduGPT
-                  </Button>
+                  <Link href="/assistant">
+                    <Button 
+                      variant="default" 
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <MessageSquare className="w-4 h-4 ml-2" />
+                      مساعد EduGPT
+                    </Button>
+                  </Link>
                   <Link href="/teacher-tools">
                     <Button variant="outline">أدوات المدرس</Button>
                   </Link>

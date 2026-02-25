@@ -22,6 +22,7 @@ import TeacherTools from "@/pages/TeacherTools";
 import SharedLibrary from "@/pages/SharedLibrary";
 import ReferenceLibrary from "@/pages/ReferenceLibrary";
 import TemplateLibrary from "@/pages/TemplateLibrary";
+import EduGPTAssistant from "@/pages/EduGPTAssistant";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/shared-library" component={SharedLibrary} />
       <Route path="/reference-library" component={ReferenceLibrary} />
       <Route path="/template-library" component={TemplateLibrary} />
+      <Route path="/assistant" component={EduGPTAssistant} />
       {/* <Route path="/infographic-generator" component={InfographicGenerator} /> */}
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

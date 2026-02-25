@@ -904,3 +904,15 @@
 - [x] Corriger le ScrollArea pour permettre le défilement vertical
 - [x] Tester le défilement avec des messages longs
 - [ ] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: Page complète EduGPT avec pièces jointes
+- [x] Créer une nouvelle page dédiée à EduGPT (route /assistant)
+- [x] Concevoir une interface professionnelle pleine page
+- [x] Ajouter un bouton pour joindre des fichiers (PDF, images, documents)
+- [x] Implémenter le téléchargement de fichiers vers S3
+- [x] Intégrer les fichiers dans le contexte de la conversation
+- [x] Ajouter un aperçu des fichiers joints dans l'interface
+- [x] Permettre la suppression des fichiers avant l'envoi
+- [x] Mettre à jour le menu pour pointer vers la nouvelle page
+- [x] Tester avec différents types de fichiers
+- [ ] Créer le checkpoint final
