@@ -893,3 +893,9 @@
 - [x] Tester l'utilisation des nouveaux modèles
 - [x] Vérifier que EduGPT utilise le manuel comme référence
 - [ ] Créer le checkpoint final
+
+## Amélioration UX: Agrandir la fenêtre du chatbot EduGPT
+- [x] Modifier le composant AIChatBox pour augmenter la taille de la fenêtre
+- [x] Ajouter un bouton pour basculer en mode plein écran
+- [x] Tester l'affichage sur différentes tailles d'écran
+- [ ] Créer le checkpoint final

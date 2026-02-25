@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Send, MessageSquare, Loader2 } from "lucide-react";
+import { X, Send, MessageSquare, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,6 +30,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -95,21 +96,36 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 left-6 w-96 h-[600px] bg-background border rounded-lg shadow-2xl flex flex-col z-50">
+        <div className={`fixed bg-background border shadow-2xl flex flex-col z-50 transition-all duration-300 ${
+          isFullScreen 
+            ? 'inset-4 rounded-lg' 
+            : 'bottom-6 left-6 w-[600px] h-[700px] rounded-lg'
+        }`}>
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-blue-600 text-white rounded-t-lg">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
               <h3 className="font-semibold">مساعد EduGPT</h3>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              className="text-white hover:bg-blue-700"
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                className="text-white hover:bg-blue-700"
+                title={isFullScreen ? "تصغير" : "تكبير"}
+              >
+                {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+                className="text-white hover:bg-blue-700"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Messages */}
