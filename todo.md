@@ -853,4 +853,13 @@
 - [x] Créer le service d'extraction PDF automatique
 - [x] Ajouter le système d'évaluation par étoiles aux suggestions
 - [x] Tester toutes les fonctionnalités
+- [x] Créer le checkpoint final
+
+## Intégration de l'assistant IA EduGPT
+- [x] Créer le composant ChatAssistant.tsx avec interface de chat moderne
+- [x] Implémenter l'intégration OpenAI API avec les instructions EduGPT
+- [x] Ajouter la gestion de l'historique des conversations
+- [x] Créer les procédures tRPC pour communiquer avec OpenAI
+- [x] Ajouter un bouton flottant pour ouvrir le chat
+- [x] Tester toutes les fonctionnalités
 - [ ] Créer le checkpoint final
