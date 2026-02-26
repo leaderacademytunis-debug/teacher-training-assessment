@@ -500,20 +500,20 @@ export default function EduGPTAssistantEnhanced() {
               </div>
               <h2 className="text-2xl font-bold mb-2">مرحباً بك في EduGPT</h2>
               <p className="text-gray-600 mb-6 max-w-md">
-                مساعدك الذكي المتخصص في التعليم. يمكنني مساعدتك في إنشاء المذكرات البيداغوجية وتحليل الوثائق التربوية.
+                الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات البيداغوجية وفق البرامج الرسمية لوزارة التربية التونسية.
               </p>
               <div className="grid grid-cols-2 gap-3 max-w-2xl">
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أنشئ مذكرة بيداغوجية للسنة السادسة ابتدائي")}>
-                  <p className="text-sm font-medium">إنشاء مذكرة بيداغوجية</p>
+                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أريد إعداد مذكرة بيداغوجية (Fiche de préparation) وفق البرامج الرسمية التونسية")}>
+                  <p className="text-sm font-medium">إعداد مذكرة بيداغوجية رسمية</p>
                 </Card>
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("ساعدني في تحضير درس قراءة")}>
-                  <p className="text-sm font-medium">تحضير درس قراءة</p>
+                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("ساعدني في بناء تمارين متمايزة (علاجي، دعم، تميّز)")}>
+                  <p className="text-sm font-medium">تمارين متمايزة (بيداغوجيا فارقية)</p>
                 </Card>
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("اقترح أنشطة تفاعلية للتلاميذ")}>
-                  <p className="text-sm font-medium">اقتراح أنشطة تفاعلية</p>
+                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج")}>
+                  <p className="text-sm font-medium">توزيع سنوي/فصلي</p>
                 </Card>
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("قيّم هذه المذكرة البيداغوجية")}>
-                  <p className="text-sm font-medium">تقييم مذكرة بيداغوجية</p>
+                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("قيّم هذه المذكرة على 20 وفق معايير وزارة التربية")}>
+                  <p className="text-sm font-medium">تقييم بيداغوجي على 20</p>
                 </Card>
               </div>
             </div>

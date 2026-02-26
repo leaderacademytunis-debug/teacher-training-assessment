@@ -931,3 +931,23 @@
 - [x] Ajouter un bouton d'export dans l'interface
 - [x] Tester toutes les fonctionnalités
 - [ ] Créer le checkpoint final
+
+## Nouvelle fonctionnalité: OAuth externe (Google & Facebook)
+- [ ] Mettre à jour le schéma user pour supporter plusieurs providers OAuth
+- [ ] Créer une table pour stocker les connexions OAuth externes
+- [ ] Implémenter les routes OAuth pour Google
+- [ ] Implémenter les routes OAuth pour Facebook
+- [ ] Créer une page de connexion avec boutons Google et Facebook
+- [ ] Gérer la fusion des comptes (même email, différents providers)
+- [ ] Configurer les secrets (Google Client ID/Secret, Facebook App ID/Secret)
+- [ ] Tester le flux complet de connexion avec Google
+- [ ] Tester le flux complet de connexion avec Facebook
+- [ ] Créer le checkpoint final
+
+## Personnalisation EduGPT: Expert pédagogique tunisien
+- [x] Intégrer les instructions pédagogiques tunisiennes dans le system prompt
+- [x] Ajouter le protocole de questionnement (degré, module, matière)
+- [x] Mettre à jour les suggestions rapides pour refléter le contexte tunisien
+- [x] Ajouter un formulaire de pré-qualification avant la conversation
+- [x] Tester avec des cas d'usage réels (préparation de fiches)
+- [ ] Créer le checkpoint final
