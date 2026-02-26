@@ -951,3 +951,8 @@
 - [x] Ajouter un formulaire de pré-qualification avant la conversation
 - [x] Tester avec des cas d'usage réels (préparation de fiches)
 - [ ] Créer le checkpoint final
+
+## Intégration du guide officiel des programmes de l'enseignement primaire
+- [x] Télécharger le guide PDF vers S3
+- [x] Ajouter le guide à la table referenceDocuments
+- [ ] Créer le checkpoint final
