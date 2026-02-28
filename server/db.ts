@@ -818,7 +818,7 @@ export async function approveRegistration(userId: number, approvedBy: number): P
   const userName = user[0].name || user[0].email;
   await sendEmail({
     to: user[0].email,
-    subject: '🎉 مبروك! تم قبول تسجيلك في منصة تأهيل المدرسين',
+    subject: '🎉 مبروك! تم قبول تسجيلك في ليدر أكاديمي',
     html: getApprovalEmailTemplate(userName, userNameAr),
   });
 }

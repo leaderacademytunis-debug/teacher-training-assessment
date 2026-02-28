@@ -36,7 +36,7 @@ export async function sendEmail({ to, subject, html }: SendEmailOptions): Promis
 
   try {
     await transporter.sendMail({
-      from: `"${ENV.SMTP_FROM_NAME || 'منصة تأهيل المدرسين'}" <${ENV.SMTP_USER}>`,
+      from: `"${ENV.SMTP_FROM_NAME || 'ليدر أكاديمي'}" <${ENV.SMTP_USER}>`,
       to,
       subject,
       html,
@@ -136,7 +136,7 @@ export function getApprovalEmailTemplate(userName: string, userNameAr: string): 
       <div class="success-icon">✅</div>
       <div class="message">
         <p>عزيزي/عزيزتي <span class="highlight">${userNameAr || userName}</span>،</p>
-        <p>يسعدنا إبلاغك بأنه تم <strong>قبول طلب تسجيلك</strong> في منصة تأهيل المدرسين بنجاح!</p>
+        <p>يسعدنا إبلاغك بأنه تم <strong>قبول طلب تسجيلك</strong> في ليدر أكاديمي بنجاح!</p>
         <p>يمكنك الآن الوصول إلى جميع الدورات التدريبية المتاحة والبدء في رحلتك التعليمية لتطوير مهاراتك المهنية.</p>
         <center>
           <a href="${appUrl}" class="cta-button">
@@ -149,7 +149,7 @@ export function getApprovalEmailTemplate(userName: string, userNameAr: string): 
       </div>
     </div>
     <div class="footer">
-      <p>© 2026 منصة تأهيل المدرسين - جميع الحقوق محفوظة</p>
+      <p>© 2026 ليدر أكاديمي - جميع الحقوق محفوظة</p>
       <p>هذا البريد الإلكتروني تم إرساله تلقائياً، يرجى عدم الرد عليه</p>
     </div>
   </div>
@@ -238,7 +238,7 @@ export function getRejectionEmailTemplate(userName: string, userNameAr: string, 
       <div class="info-icon">ℹ️</div>
       <div class="message">
         <p>عزيزي/عزيزتي <span class="highlight">${userNameAr || userName}</span>،</p>
-        <p>نشكرك على اهتمامك بالتسجيل في منصة تأهيل المدرسين.</p>
+        <p>نشكرك على اهتمامك بالتسجيل في ليدر أكاديمي.</p>
         <p>بعد مراجعة طلبك، نأسف لإبلاغك بأنه <strong>لم يتم قبول التسجيل</strong> في الوقت الحالي.</p>
         ${reason ? `
         <div class="reason-box">
@@ -251,7 +251,7 @@ export function getRejectionEmailTemplate(userName: string, userNameAr: string, 
       </div>
     </div>
     <div class="footer">
-      <p>© 2026 منصة تأهيل المدرسين - جميع الحقوق محفوظة</p>
+      <p>© 2026 ليدر أكاديمي - جميع الحقوق محفوظة</p>
       <p>هذا البريد الإلكتروني تم إرساله تلقائياً، يرجى عدم الرد عليه</p>
     </div>
   </div>
@@ -402,7 +402,7 @@ export function getCertificateEmailTemplate(
       </div>
     </div>
     <div class="footer">
-      <p>© 2026 منصة تأهيل المدرسين - جميع الحقوق محفوظة</p>
+      <p>© 2026 ليدر أكاديمي - جميع الحقوق محفوظة</p>
       <p>هذا البريد الإلكتروني تم إرساله تلقائياً، يرجى عدم الرد عليه</p>
     </div>
   </div>

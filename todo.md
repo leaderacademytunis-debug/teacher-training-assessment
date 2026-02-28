@@ -963,3 +963,10 @@
 - [x] Ajouter le bouton Supprimer avec dialog de confirmation
 - [x] Tester la suppression
 - [ ] Créer le checkpoint final
+
+## تغيير اسم المنصة إلى "ليدر أكاديمي"
+- [x] تغيير VITE_APP_TITLE إلى "ليدر أكاديمي" (تم تغييره في index.html)
+- [x] تغيير الاسم في Home.tsx
+- [x] تغيير الاسم في emailService.ts
+- [x] تغيير الاسم في db.ts
+- [x] حفظ نقطة تفتيش

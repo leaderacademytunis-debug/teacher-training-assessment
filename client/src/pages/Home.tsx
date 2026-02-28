@@ -50,7 +50,7 @@ export default function Home() {
                 className="h-16 w-auto"
               />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">منصة تأهيل المدرسين</h1>
+                <h1 className="text-3xl font-bold text-gray-900">ليدر أكاديمي</h1>
                 <p className="text-gray-600 mt-1">تطوير مهارات المعلمين وتقييم مكتسباتهم</p>
               </div>
             </div>
@@ -218,7 +218,7 @@ export default function Home() {
       <footer className="bg-gray-900 text-white py-8">
         <div className="container text-center">
           <p className="text-gray-400">
-            © 2026 منصة تأهيل المدرسين. جميع الحقوق محفوظة.
+            © 2026 ليدر أكاديمي. جميع الحقوق محفوظة.
           </p>
         </div>
       </footer>
