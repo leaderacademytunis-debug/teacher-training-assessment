@@ -40,6 +40,45 @@ interface Conversation {
   lastMessageAt: Date | string;
 }
 
+const SUBJECTS = [
+  "اللغة العربية",
+  "اللغة الفرنسية",
+  "اللغة الإنجليزية",
+  "الرياضيات",
+  "العلوم",
+  "التربية الإسلامية",
+  "التربية المدنية",
+  "التاريخ",
+  "الجغرافيا",
+  "الفلسفة",
+  "الفيزياء",
+  "الكيمياء",
+  "الأحياء",
+  "التكنولوجيا",
+  "الفنون",
+  "التربية البدنية",
+  "أخرى",
+];
+
+const LEVELS = [
+  // ابتدائي
+  "السنة الأولى ابتدائي",
+  "السنة الثانية ابتدائي",
+  "السنة الثالثة ابتدائي",
+  "السنة الرابعة ابتدائي",
+  "السنة الخامسة ابتدائي",
+  "السنة السادسة ابتدائي",
+  // إعدادي
+  "السنة السابعة إعدادي",
+  "السنة الثامنة إعدادي",
+  "السنة التاسعة إعدادي",
+  // ثانوي
+  "السنة العاشرة ثانوي",
+  "السنة الحادية عشرة ثانوي",
+  "السنة الثانية عشرة ثانوي",
+  "السنة الثالثة عشرة ثانوي",
+];
+
 export default function EduGPTAssistantEnhanced() {
   const [, navigate] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,6 +89,9 @@ export default function EduGPTAssistantEnhanced() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [conversationTitle, setConversationTitle] = useState("محادثة جديدة");
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [showContextSelector, setShowContextSelector] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -155,6 +197,8 @@ export default function EduGPTAssistantEnhanced() {
     setConversationTitle("محادثة جديدة");
     setAttachedFiles([]);
     setInput("");
+    setSelectedSubject(null);
+    setSelectedLevel(null);
   };
 
   // Delete conversation
@@ -297,6 +341,8 @@ export default function EduGPTAssistantEnhanced() {
 
       sendMessage.mutate({
         messages: newMessages,
+        subject: selectedSubject || undefined,
+        level: selectedLevel || undefined,
       });
     } catch (error) {
       console.error("Error uploading files:", error);
@@ -476,7 +522,26 @@ export default function EduGPTAssistantEnhanced() {
             </Button>
             <div>
               <h1 className="text-xl font-bold text-gray-900">{conversationTitle}</h1>
-              <p className="text-sm text-gray-500">مساعدك الذكي في التعليم</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                {selectedSubject && selectedLevel ? (
+                  <button
+                    onClick={() => setShowContextSelector(true)}
+                    className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5 hover:bg-blue-100 transition-colors"
+                  >
+                    <span>📚 {selectedSubject}</span>
+                    <span className="text-blue-400">|</span>
+                    <span>🎓 {selectedLevel}</span>
+                    <span className="text-blue-400 mr-1">• تغيير</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowContextSelector(true)}
+                    className="flex items-center gap-1 text-xs bg-orange-50 text-orange-600 border border-orange-200 rounded-full px-2 py-0.5 hover:bg-orange-100 transition-colors animate-pulse"
+                  >
+                    <span>⚠️ حدد المادة والمستوى</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           
@@ -502,6 +567,66 @@ export default function EduGPTAssistantEnhanced() {
           </div>
         </div>
 
+        {/* Context Selector Modal */}
+        {showContextSelector && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => {
+            if (selectedSubject && selectedLevel) setShowContextSelector(false);
+          }}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
+              <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">🎓 تحديد سياق التعليم</h2>
+              <p className="text-sm text-gray-500 text-center mb-5">حدد المادة والمستوى لتخصيص إجابات المساعد بدقة</p>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">📚 المادة الدراسية</label>
+                <div className="flex flex-wrap gap-2">
+                  {SUBJECTS.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setSelectedSubject(s)}
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                        selectedSubject === s
+                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:text-blue-600"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">🎓 المستوى الدراسي</label>
+                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                  {LEVELS.map(l => (
+                    <button
+                      key={l}
+                      onClick={() => setSelectedLevel(l)}
+                      className={`px-3 py-2 rounded-lg text-sm border text-right transition-all ${
+                        selectedLevel === l
+                          ? "bg-green-600 text-white border-green-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:text-green-600"
+                      }`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={!selectedSubject || !selectedLevel}
+                onClick={() => setShowContextSelector(false)}
+              >
+                {selectedSubject && selectedLevel
+                  ? `تأكيد: ${selectedSubject} — ${selectedLevel}`
+                  : "يرجى اختيار المادة والمستوى"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.length === 0 && (
@@ -510,25 +635,43 @@ export default function EduGPTAssistantEnhanced() {
                 <MessageSquare className="h-12 w-12 text-blue-600" />
               </div>
               <h2 className="text-2xl font-bold mb-2">مرحباً بك في المساعد البيداغوجي</h2>
-              <p className="text-gray-600 mb-6 max-w-md">
-                الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات البيداغوجية وفق البرامج الرسمية لوزارة التربية التونسية.
-              </p>
-              <div className="grid grid-cols-2 gap-3 max-w-2xl">
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أريد إعداد مذكرة بيداغوجية (Fiche de préparation) وفق البرامج الرسمية التونسية")}>
-                  <p className="text-sm font-medium">إعداد مذكرة بيداغوجية رسمية</p>
-                </Card>
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("ساعدني في بناء تمارين متمايزة (علاجي، دعم، تميّز)")}>
-                  <p className="text-sm font-medium">تمارين متمايزة (بيداغوجيا فارقية)</p>
-                </Card>
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج")}>
-                  <p className="text-sm font-medium">توزيع سنوي/فصلي</p>
-                </Card>
-                <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("قيّم هذه المذكرة على 20 وفق معايير وزارة التربية")}>
-                  <p className="text-sm font-medium">تقييم بيداغوجي على 20</p>
-                </Card>
-              </div>
+              {!selectedSubject || !selectedLevel ? (
+                <>
+                  <p className="text-gray-600 mb-4 max-w-md">
+                    لبدء المحادثة، يرجى تحديد المادة الدراسية والمستوى أولاً حتى يتمكن المساعد من تقديم إجابات دقيقة ومتوافقة مع البرامج الرسمية التونسية.
+                  </p>
+                  <Button
+                    onClick={() => setShowContextSelector(true)}
+                    className="bg-blue-600 hover:bg-blue-700 mb-6 gap-2"
+                  >
+                    📚 حدد المادة والمستوى الدراسي
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-600 mb-2 max-w-md">
+                    جاهز لمساعدتك في <strong>{selectedSubject}</strong> — <strong>{selectedLevel}</strong>
+                  </p>
+                  <p className="text-sm text-gray-500 mb-6">الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات والتقييمات وفق البرامج الرسمية.</p>
+                  <div className="grid grid-cols-2 gap-3 max-w-2xl">
+                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أريد إعداد مذكرة بيداغوجية (Fiche de préparation) وفق البرامج الرسمية التونسية")}>
+                      <p className="text-sm font-medium">إعداد مذكرة بيداغوجية رسمية</p>
+                    </Card>
+                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("ساعدني في بناء تمارين متمايزة (علاجي، دعم، تميّز)")}>
+                      <p className="text-sm font-medium">تمارين متمايزة (بيداغوجيا فارقية)</p>
+                    </Card>
+                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج")}>
+                      <p className="text-sm font-medium">توزيع سنوي/فصلي</p>
+                    </Card>
+                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("قيّم هذه المذكرة على 20 وفق معايير وزارة التربية")}>
+                      <p className="text-sm font-medium">تقييم بيداغوجي على 20</p>
+                    </Card>
+                  </div>
+                </>
+              )}
             </div>
           )}
+        
 
           {messages.map((message, index) => (
             <div

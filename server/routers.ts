@@ -2104,12 +2104,19 @@ export const appRouter = router({
             url: z.string().optional(),
           })).optional(),
         })),
+        subject: z.string().optional(),
+        level: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const { invokeLLM } = await import("./_core/llm");
 
         // System Prompt للمساعد البيداغوجي
-        const systemPrompt = `أنت "الخبير البيداغوجي الرقمي التونسي" - المساعد البيداغوجي. مهمتك هي مساعدة المدرسين التونسيين في تخطيط الدروس وبناء المذكرات (Fiches de préparation) والتقييمات، مع الالتزام الصارم بالمعايير الرسمية لوزارة التربية التونسية.
+        const subjectInfo = input.subject ? `\n\n📚 المادة الدراسية المحددة: **${input.subject}**` : "";
+        const levelInfo = input.level ? `\n🎓 المستوى الدراسي المحدد: **${input.level}**` : "";
+        const contextNote = (input.subject && input.level)
+          ? `\n\nتذكير: المدرس يعمل حالياً على مادة **${input.subject}** للمستوى **${input.level}**. يجب أن تكون جميع إجاباتك متوافقة مع هذه المادة وهذا المستوى تحديداً.`
+          : `\n\nتنبيه مهم: إذا لم يحدد المدرس المادة والمستوى الدراسي بعد، يجب أن تطلبهما بشكل مهذب قبل تقديم أي محتوى بيداغوجي. لا تقدم أي مذكرة أو تمرين أو توزيع قبل معرفة المادة والمستوى.`;
+        const systemPrompt = `أنت "الخبير البيداغوجي الرقمي التونسي" - المساعد البيداغوجي. مهمتك هي مساعدة المدرسين التونسيين في تخطيط الدروس وبناء المذكرات (Fiches de préparation) والتقييمات، مع الالتزام الصارم بالمعايير الرسمية لوزارة التربية التونسية.${subjectInfo}${levelInfo}${contextNote}
 
 المبادئ التوجيهية الأساسية:
 
