@@ -1057,3 +1057,8 @@
 - [x] Ajouter dictionnaire de traductions pour la nav (ar/fr/en)
 - [x] Appliquer les traductions via useLanguage()
 - [x] Sauvegarder checkpoint
+
+## Traduction des pages internes (ar/fr/en)
+- [x] Traduire la page "Mes cours" (MyCourses.tsx)
+- [x] Traduire le tableau de bord (Dashboard.tsx)
+- [x] Sauvegarder checkpoint

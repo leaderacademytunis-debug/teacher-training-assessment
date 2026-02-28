@@ -11,10 +11,58 @@ import ManageQuestions from "@/components/ManageQuestions";
 import Statistics from "@/components/Statistics";
 import ManageVideos from "@/components/ManageVideos";
 import EnrollmentApprovals from "@/components/EnrollmentApprovals";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+const i18n = {
+  ar: {
+    unauthorized: "غير مصرح",
+    unauthorizedDesc: "ليس لديك صلاحية للوصول إلى لوحة التحكم",
+    backHome: "العودة للرئيسية",
+    title: "لوحة التحكم",
+    subtitle: "إدارة الدورات والاختبارات والمشاركين",
+    manageRegistrations: "إدارة التسجيلات",
+    tabCourses: "الدورات",
+    tabExams: "الاختبارات",
+    tabQuestions: "الأسئلة",
+    tabStats: "الإحصائيات",
+    tabVideos: "الفيديوهات",
+    tabApprovals: "طلبات التسجيل",
+  },
+  fr: {
+    unauthorized: "Accès refusé",
+    unauthorizedDesc: "Vous n'avez pas les droits pour accéder au tableau de bord",
+    backHome: "Retour à l'accueil",
+    title: "Tableau de bord",
+    subtitle: "Gérer les formations, examens et participants",
+    manageRegistrations: "Gérer les inscriptions",
+    tabCourses: "Formations",
+    tabExams: "Examens",
+    tabQuestions: "Questions",
+    tabStats: "Statistiques",
+    tabVideos: "Vidéos",
+    tabApprovals: "Demandes d'inscription",
+  },
+  en: {
+    unauthorized: "Unauthorized",
+    unauthorizedDesc: "You don't have permission to access the dashboard",
+    backHome: "Back to Home",
+    title: "Dashboard",
+    subtitle: "Manage courses, exams and participants",
+    manageRegistrations: "Manage registrations",
+    tabCourses: "Courses",
+    tabExams: "Exams",
+    tabQuestions: "Questions",
+    tabStats: "Statistics",
+    tabVideos: "Videos",
+    tabApprovals: "Registration requests",
+  },
+};
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const { data: courses } = trpc.courses.list.useQuery();
+  const { language } = useLanguage();
+  const tx = i18n[language as keyof typeof i18n] || i18n.ar;
 
   if (authLoading) {
     return (
@@ -29,14 +77,14 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>غير مصرح</CardTitle>
+            <CardTitle>{tx.unauthorized}</CardTitle>
             <CardDescription>
-              ليس لديك صلاحية للوصول إلى لوحة التحكم
+              {tx.unauthorizedDesc}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/">
-              <Button>العودة للرئيسية</Button>
+              <Button>{tx.backHome}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -51,20 +99,20 @@ export default function Dashboard() {
         <div className="container py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">لوحة التحكم</h1>
-              <p className="text-gray-600 mt-1">إدارة الدورات والاختبارات والمشاركين</p>
+              <h1 className="text-3xl font-bold text-gray-900">{tx.title}</h1>
+              <p className="text-gray-600 mt-1">{tx.subtitle}</p>
             </div>
             <div className="flex gap-3">
               <Link href="/dashboard/registrations">
                 <Button className="bg-orange-500 hover:bg-orange-600">
                   <UserCheck className="w-4 h-4 ml-2" />
-                  إدارة التسجيلات
+                  {tx.manageRegistrations}
                 </Button>
               </Link>
               <Link href="/">
                 <Button variant="outline">
                   <ArrowRight className="w-4 h-4 ml-2" />
-                  العودة للرئيسية
+                  {tx.backHome}
                 </Button>
               </Link>
             </div>
@@ -78,27 +126,27 @@ export default function Dashboard() {
           <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="courses" className="gap-2">
               <BookOpen className="w-4 h-4" />
-              الدورات
+              {tx.tabCourses}
             </TabsTrigger>
             <TabsTrigger value="exams" className="gap-2">
               <FileText className="w-4 h-4" />
-              الاختبارات
+              {tx.tabExams}
             </TabsTrigger>
             <TabsTrigger value="questions" className="gap-2">
               <Users className="w-4 h-4" />
-              الأسئلة
+              {tx.tabQuestions}
             </TabsTrigger>
             <TabsTrigger value="statistics" className="gap-2">
               <BarChart3 className="w-4 h-4" />
-              الإحصائيات
+              {tx.tabStats}
             </TabsTrigger>
             <TabsTrigger value="videos" className="gap-2">
               <Video className="w-4 h-4" />
-              الفيديوهات
+              {tx.tabVideos}
             </TabsTrigger>
             <TabsTrigger value="approvals" className="gap-2">
               <CheckSquare className="w-4 h-4" />
-              طلبات التسجيل
+              {tx.tabApprovals}
             </TabsTrigger>
           </TabsList>
 

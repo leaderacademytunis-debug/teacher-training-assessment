@@ -5,10 +5,64 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { BookOpen, Loader2, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function MyCourses() {
   const { user, loading: authLoading } = useAuth();
   const { data: enrollments, isLoading } = trpc.enrollments.myEnrollments.useQuery();
+  const { t, language } = useLanguage();
+
+  const i18n = {
+    ar: {
+      loginRequired: "يجب تسجيل الدخول",
+      loginDesc: "الرجاء تسجيل الدخول لعرض دوراتك",
+      title: "دوراتي",
+      subtitle: "تابع تقدمك في الدورات التدريبية",
+      backHome: "العودة للرئيسية",
+      enrollDate: "تاريخ التسجيل:",
+      completedDate: "تاريخ الإكمال:",
+      viewDetails: "عرض التفاصيل",
+      noCourses: "لا توجد دورات مسجلة",
+      noCoursesDesc: "لم تسجل في أي دورة تدريبية بعد. تصفح الدورات المتاحة وابدأ رحلتك التعليمية",
+      browseCourses: "تصفح الدورات المتاحة",
+      defaultDesc: "دورة تدريبية متخصصة",
+      statusLabels: { pending: "قيد الانتظار", approved: "مقبول", rejected: "مرفوض", active: "نشط", completed: "مكتمل", cancelled: "ملغي" },
+      locale: "ar-EG",
+    },
+    fr: {
+      loginRequired: "Connexion requise",
+      loginDesc: "Veuillez vous connecter pour voir vos cours",
+      title: "Mes cours",
+      subtitle: "Suivez votre progression dans les formations",
+      backHome: "Retour à l'accueil",
+      enrollDate: "Date d'inscription :",
+      completedDate: "Date de complétion :",
+      viewDetails: "Voir les détails",
+      noCourses: "Aucun cours inscrit",
+      noCoursesDesc: "Vous n'êtes inscrit à aucune formation. Parcourez les formations disponibles et commencez votre parcours",
+      browseCourses: "Parcourir les formations",
+      defaultDesc: "Formation spécialisée",
+      statusLabels: { pending: "En attente", approved: "Accepté", rejected: "Refusé", active: "Actif", completed: "Terminé", cancelled: "Annulé" },
+      locale: "fr-FR",
+    },
+    en: {
+      loginRequired: "Login required",
+      loginDesc: "Please log in to view your courses",
+      title: "My Courses",
+      subtitle: "Track your progress in training programs",
+      backHome: "Back to Home",
+      enrollDate: "Enrollment date:",
+      completedDate: "Completion date:",
+      viewDetails: "View details",
+      noCourses: "No courses enrolled",
+      noCoursesDesc: "You haven't enrolled in any course yet. Browse available courses and start your learning journey",
+      browseCourses: "Browse available courses",
+      defaultDesc: "Specialized training course",
+      statusLabels: { pending: "Pending", approved: "Approved", rejected: "Rejected", active: "Active", completed: "Completed", cancelled: "Cancelled" },
+      locale: "en-US",
+    },
+  };
+  const tx = i18n[language as keyof typeof i18n] || i18n.ar;
 
   if (authLoading || isLoading) {
     return (
@@ -23,8 +77,8 @@ export default function MyCourses() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>يجب تسجيل الدخول</CardTitle>
-            <CardDescription>الرجاء تسجيل الدخول لعرض دوراتك</CardDescription>
+            <CardTitle>{tx.loginRequired}</CardTitle>
+            <CardDescription>{tx.loginDesc}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -38,12 +92,7 @@ export default function MyCourses() {
     cancelled: "bg-red-100 text-red-800",
   };
 
-  const statusLabels: Record<string, string> = {
-    pending: "قيد الانتظار",
-    active: "نشط",
-    completed: "مكتمل",
-    cancelled: "ملغي",
-  };
+  const statusLabels = tx.statusLabels;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -52,13 +101,13 @@ export default function MyCourses() {
         <div className="container py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">دوراتي</h1>
-              <p className="text-gray-600 mt-1">تابع تقدمك في الدورات التدريبية</p>
+              <h1 className="text-3xl font-bold text-gray-900">{tx.title}</h1>
+              <p className="text-gray-600 mt-1">{tx.subtitle}</p>
             </div>
             <Link href="/">
               <Button variant="outline">
                 <ArrowRight className="w-4 h-4 ml-2" />
-                العودة للرئيسية
+                {tx.backHome}
               </Button>
             </Link>
           </div>
@@ -85,24 +134,24 @@ export default function MyCourses() {
                     </div>
                     <CardTitle className="text-xl">{course.titleAr}</CardTitle>
                     <CardDescription className="leading-relaxed">
-                      {course.descriptionAr || "دورة تدريبية متخصصة"}
+                      {course.descriptionAr || tx.defaultDesc}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="text-sm text-gray-600">
-                        <span className="font-medium">تاريخ التسجيل:</span>{" "}
-                        {new Date(enrollment.enrolledAt).toLocaleDateString("ar-EG")}
+                        <span className="font-medium">{tx.enrollDate}</span>{" "}
+                        {new Date(enrollment.enrolledAt).toLocaleDateString(tx.locale)}
                       </div>
                       {enrollment.completedAt && (
                         <div className="text-sm text-gray-600">
-                          <span className="font-medium">تاريخ الإكمال:</span>{" "}
-                          {new Date(enrollment.completedAt).toLocaleDateString("ar-EG")}
+                          <span className="font-medium">{tx.completedDate}</span>{" "}
+                          {new Date(enrollment.completedAt).toLocaleDateString(tx.locale)}
                         </div>
                       )}
                       <Link href={`/courses/${course.id}`}>
                         <Button className="w-full mt-4">
-                          عرض التفاصيل
+                          {tx.viewDetails}
                         </Button>
                       </Link>
                     </div>
@@ -115,14 +164,14 @@ export default function MyCourses() {
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
               <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <CardTitle>لا توجد دورات مسجلة</CardTitle>
+              <CardTitle>{tx.noCourses}</CardTitle>
               <CardDescription className="text-base">
-                لم تسجل في أي دورة تدريبية بعد. تصفح الدورات المتاحة وابدأ رحلتك التعليمية
+                {tx.noCoursesDesc}
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
               <Link href="/">
-                <Button>تصفح الدورات المتاحة</Button>
+                <Button>{tx.browseCourses}</Button>
               </Link>
             </CardContent>
           </Card>
