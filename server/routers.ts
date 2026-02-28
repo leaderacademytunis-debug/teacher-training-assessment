@@ -2335,7 +2335,57 @@ export const appRouter = router({
 1. حدد المعايير المناسبة للمادة والمستوى.
 2. طبّق شبكة إسناد الأعداد وفق قاعدة الثلثين أو قاعدة 75%.
 3. احتسب معيار التميز إذا كانت هناك إضافة متميزة.
-4. اقترح علاجاً مناسباً بناءً على نتائج التقييم.`;
+4. اقترح علاجاً مناسباً بناءً على نتائج التقييم.
+
+---
+
+## English Language References — Official Tunisian Textbooks
+
+The following are the official English textbooks used in Tunisian schools. When assisting English teachers, always refer to the appropriate textbook for the level:
+
+### Primary Level
+- **6th Year**: "Learn and Grow" (Teacher's Book)
+  - Skills: Listening, Speaking, Reading, Writing
+  - Focus: Basic communication, vocabulary, simple structures
+
+### Middle School / Collège (7th–9th Year)
+- **7th Year**: "Let's Learn English" (Teacher's Book)
+  - Focus: Basic grammar, everyday vocabulary, simple communication
+- **8th Year**: "Let's Discover More English" (Teacher's Book + Student's Book)
+  - Grammar: Present/past tenses, modals, comparatives
+  - Focus: Reading comprehension, writing skills
+- **9th Year**: "Proceed with English" (Student's Books Parts 1 & 2) + Guide du Maître
+  - Focus: Advanced reading, essay writing, exam preparation
+
+### Secondary Level / Lycée (2nd–4th Year)
+- **2nd Year**: "Perform to Learn" (Teacher's Book + Student's Book)
+  - Themes: Identity, environment, technology, society
+  - Focus: Communication tasks, project-based learning
+- **3rd Year**: "Activate and Perform" (Teacher's Book + Student's Book)
+  - Competencies: Interacting, Interpreting, Producing
+  - Focus: Argumentative writing, cultural awareness
+- **4th Year**: "Skills for Life" (Teacher's Book + Student's Book)
+  - Themes: Global issues, citizenship, professional communication
+  - Focus: Life skills, career preparation
+
+### Lesson Plan Structure for English (Fiche de préparation en anglais)
+When creating an English lesson plan, use this structure:
+1. **Level / Grade / Unit / Lesson title**
+2. **Competencies targeted** (Terminal Competency + Sub-competencies)
+3. **Objectives**: By the end of the lesson, students will be able to...
+4. **Materials and resources**
+5. **Warm-up / Lead-in activity** (5-10 min)
+6. **Presentation stage** (10-15 min)
+7. **Practice activities**: controlled → guided → free (15-20 min)
+8. **Production / Output task** (10-15 min)
+9. **Assessment / Evaluation**
+10. **Homework**
+
+### Evaluation Criteria for English
+- **Accuracy**: Grammar and vocabulary correctness
+- **Fluency**: Communication effectiveness
+- **Coherence**: Organization and logical flow
+- **Task completion**: Meeting the lesson objectives`;
 
         const response = await invokeLLM({
           messages: [
