@@ -19,7 +19,20 @@ import {
   Loader2,
   ClipboardCheck,
   FileDown,
+  Share2,
+  Mail,
+  Copy,
+  Link,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 const SUBJECTS = [
@@ -163,6 +176,66 @@ export default function EvaluateFiche() {
   const [level, setLevel] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [result, setResult] = useState<EvaluationResult | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+
+  const shareMutation = trpc.assistant.shareEvaluation.useMutation({
+    onSuccess: (data) => {
+      setShareUrl(data.shareUrl);
+      setShareDialogOpen(true);
+      setEmailSent(false);
+    },
+    onError: (err) => {
+      toast.error("خطأ في إنشاء رابط المشاركة", { description: err.message });
+    },
+  });
+
+  const sendEmailMutation = trpc.assistant.sendEvaluationByEmail.useMutation({
+    onSuccess: () => {
+      setEmailSent(true);
+      setEmailInput("");
+      setRecipientName("");
+      toast.success("تم إرسال التقرير بنجاح");
+    },
+    onError: (err) => {
+      toast.error("خطأ في إرسال البريد", { description: err.message });
+    },
+  });
+
+  const handleShare = () => {
+    if (!result) return;
+    shareMutation.mutate({
+      ...result,
+      fileName: file?.name,
+      subject: subject || undefined,
+      level: level || undefined,
+      pdfUrl: pdfUrl || undefined,
+      origin: window.location.origin,
+    });
+  };
+
+  const handleSendEmail = () => {
+    if (!emailInput || !shareUrl || !result) return;
+    sendEmailMutation.mutate({
+      recipientEmail: emailInput,
+      recipientName: recipientName || undefined,
+      shareUrl,
+      noteGlobale: result.noteGlobale,
+      appreciation: result.appreciation,
+      subject: subject || undefined,
+      level: level || undefined,
+      pdfUrl: pdfUrl || undefined,
+    });
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast.success("تم نسخ الرابط");
+  };
 
   const exportPDFMutation = trpc.assistant.exportEvaluationPDF.useMutation({
     onSuccess: (data) => {
@@ -183,12 +256,27 @@ export default function EvaluateFiche() {
 
   const handleExportPDF = () => {
     if (!result) return;
-    exportPDFMutation.mutate({
-      ...result,
-      fileName: file?.name,
-      subject: subject || undefined,
-      level: level || undefined,
-    });
+    exportPDFMutation.mutate(
+      {
+        ...result,
+        fileName: file?.name,
+        subject: subject || undefined,
+        level: level || undefined,
+      },
+      {
+        onSuccess: (data) => {
+          setPdfUrl(data.url);
+          const a = document.createElement("a");
+          a.href = data.url;
+          a.download = `rapport-evaluation-${Date.now()}.pdf`;
+          a.target = "_blank";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          toast.success("تم تحميل التقرير بنجاح");
+        },
+      }
+    );
   };
 
   const evaluateMutation = trpc.assistant.evaluateFiche.useMutation({
@@ -500,6 +588,93 @@ export default function EvaluateFiche() {
           </div>
         )}
       </div>
+
+      {/* Share Dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-violet-600" />
+              مشاركة تقرير التقييم
+            </DialogTitle>
+            <DialogDescription>
+              شارك هذا التقرير عبر رابط مباشر أو أرسله بالبريد الإلكتروني
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {/* Copy link */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5 text-sm font-medium">
+                <Link className="w-4 h-4" /> رابط المشاركة
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  value={shareUrl}
+                  readOnly
+                  className="text-xs font-mono bg-slate-50"
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={handleCopyLink}
+                  className="shrink-0"
+                  title="نسخ الرابط"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">هذا الرابط متاح للجميع دون الحاجة لتسجيل الدخول</p>
+            </div>
+
+            <div className="border-t pt-4">
+              <Label className="flex items-center gap-1.5 text-sm font-medium mb-3">
+                <Mail className="w-4 h-4" /> إرسال بالبريد الإلكتروني
+              </Label>
+              {emailSent ? (
+                <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
+                  <CheckCircle className="w-5 h-5 shrink-0" />
+                  <p className="text-sm">تم إرسال التقرير بنجاح</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">اسم المستلم (اختياري)</Label>
+                    <Input
+                      placeholder="مثلاً: الأستاذ محمد"
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">عنوان البريد *</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="example@email.com"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSendEmail()}
+                      />
+                      <Button
+                        onClick={handleSendEmail}
+                        disabled={!emailInput || sendEmailMutation.isPending}
+                        className="shrink-0 gap-1.5 bg-violet-600 hover:bg-violet-700"
+                      >
+                        {sendEmailMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <><Mail className="w-4 h-4" /> إرسال</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

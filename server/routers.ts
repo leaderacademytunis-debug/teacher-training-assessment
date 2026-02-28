@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -2615,6 +2615,110 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         const pdfFileName = `evaluation-${Date.now()}.pdf`;
         const { url } = await storagePut(`evaluations/${pdfFileName}`, pdfBuffer, "application/pdf");
         return { url };
+      }),
+
+    shareEvaluation: protectedProcedure
+      .input(z.object({
+        noteGlobale: z.number(),
+        appreciation: z.string(),
+        criteres: z.array(z.object({
+          nom: z.string(),
+          note: z.number(),
+          noteMax: z.number(),
+          commentaire: z.string(),
+          points: z.array(z.string()),
+          ameliorations: z.array(z.string()),
+        })),
+        pointsForts: z.array(z.string()),
+        pointsAmeliorer: z.array(z.string()),
+        recommandations: z.string(),
+        fileName: z.string().optional(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        pdfUrl: z.string().optional(),
+        origin: z.string(), // frontend origin for building share URL
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const token = nanoid(32);
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await database.insert(sharedEvaluations).values({
+          token,
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email,
+          noteGlobale: input.noteGlobale.toString(),
+          appreciation: input.appreciation,
+          evaluationData: {
+            criteres: input.criteres,
+            pointsForts: input.pointsForts,
+            pointsAmeliorer: input.pointsAmeliorer,
+            recommandations: input.recommandations,
+          },
+          fileName: input.fileName,
+          subject: input.subject,
+          level: input.level,
+          pdfUrl: input.pdfUrl,
+        });
+        const shareUrl = `${input.origin}/shared-evaluation/${token}`;
+        return { shareUrl, token };
+      }),
+
+    getSharedEvaluation: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .query(async ({ input }) => {
+        const database = await (await import("./db")).getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [row] = await database
+          .select()
+          .from(sharedEvaluations)
+          .where(eq(sharedEvaluations.token, input.token))
+          .limit(1);
+        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Rapport introuvable ou lien expiré" });
+        return row;
+      }),
+
+    sendEvaluationByEmail: protectedProcedure
+      .input(z.object({
+        recipientEmail: z.string().email(),
+        recipientName: z.string().optional(),
+        shareUrl: z.string(),
+        noteGlobale: z.number(),
+        appreciation: z.string(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        pdfUrl: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { sendEmail } = await import("./emailService");
+        const senderName = ctx.user.name || "مدرب ليدر أكاديمي";
+        const html = `
+          <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8f7ff; padding: 20px; border-radius: 12px;">
+            <div style="background: linear-gradient(135deg, #4c1d95, #7c3aed); padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+              <h1 style="color: white; margin: 0; font-size: 22px;">ليدر أكاديمي</h1>
+              <p style="color: #c4b5fd; margin: 4px 0 0;">تقرير تقييم الفيشة البيداغوجية</p>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 16px;">
+              <p style="color: #374151; margin: 0 0 12px;">السلام عليكم${input.recipientName ? ` ${input.recipientName}،` : "،"}</p>
+              <p style="color: #374151;">يُرسل إليكم <strong>${senderName}</strong> تقرير تقييم الفيشة البيداغوجية التالي:</p>
+              <div style="background: #f5f3ff; border: 2px solid #8b5cf6; border-radius: 8px; padding: 16px; margin: 16px 0; text-align: center;">
+                <p style="color: #4c1d95; font-size: 32px; font-weight: bold; margin: 0;">${input.noteGlobale}/20</p>
+                <p style="color: #7c3aed; margin: 4px 0 0; font-size: 16px;">${input.appreciation}</p>
+                ${input.subject ? `<p style="color: #6b7280; font-size: 13px; margin: 8px 0 0;">المادة: ${input.subject} | المستوى: ${input.level || "غير محدد"}</p>` : ""}
+              </div>
+              <div style="text-align: center; margin: 20px 0;">
+                <a href="${input.shareUrl}" style="background: linear-gradient(135deg, #4c1d95, #7c3aed); color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-size: 15px; display: inline-block;">عرض التقرير الكامل</a>
+              </div>
+              ${input.pdfUrl ? `<p style="text-align: center;"><a href="${input.pdfUrl}" style="color: #7c3aed;">تحميل التقرير PDF</a></p>` : ""}
+            </div>
+            <p style="color: #9ca3af; font-size: 12px; text-align: center;">ليدر أكاديمي — نحو تعليم رقمي متميز | leaderacademy.school</p>
+          </div>
+        `;
+        await sendEmail({
+          to: input.recipientEmail,
+          subject: `تقرير تقييم الفيشة البيداغوجية — ${input.noteGlobale}/20 (${input.appreciation})`,
+          html,
+        });
+        return { success: true };
       }),
 
     exportConversationAsWord: protectedProcedure

@@ -1011,3 +1011,12 @@
 - [x] Backend: procédure tRPC `exportEvaluationPDF` générant un PDF structuré avec logo, scores, critères et recommandations
 - [x] Frontend: bouton "تحميل التقرير PDF" dans la page EvaluateFiche après affichage du résultat
 - [x] Enregistrer checkpoint
+
+## Partage du rapport d'évaluation
+- [x] Schema DB: table `shared_evaluations` (id, token, userId, evaluationData JSON, pdfUrl, createdAt, expiresAt)
+- [x] Backend: procédure `shareEvaluation` → sauvegarde en DB + retourne URL publique unique
+- [x] Backend: procédure publique `getSharedEvaluation` → récupère par token sans auth
+- [x] Backend: procédure `sendEvaluationByEmail` → envoie e-mail avec lien + résumé HTML
+- [x] Frontend: bouton "مشاركة التقرير" + dialogue avec copie du lien et champ e-mail
+- [x] Frontend: page publique `/shared-evaluation/:token` affichant le rapport
+- [x] Enregistrer checkpoint

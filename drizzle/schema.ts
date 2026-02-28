@@ -618,3 +618,43 @@ export const conversations = mysqlTable("conversations", {
 
 export type Conversation = typeof conversations.$inferSelect;
 export type InsertConversation = typeof conversations.$inferInsert;
+
+/**
+ * Shared evaluations table - stores evaluation reports for public sharing
+ */
+export const sharedEvaluations = mysqlTable("shared_evaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  token: varchar("token", { length: 64 }).notNull().unique(), // Unique share token
+  userId: int("userId").notNull(),
+  userName: text("userName"), // Snapshot of user name at share time
+  
+  // Evaluation data snapshot
+  noteGlobale: decimal("noteGlobale", { precision: 4, scale: 2 }).notNull(),
+  appreciation: varchar("appreciation", { length: 100 }).notNull(),
+  evaluationData: json("evaluationData").$type<{
+    criteres: Array<{
+      nom: string;
+      note: number;
+      noteMax: number;
+      commentaire: string;
+      points: string[];
+      ameliorations: string[];
+    }>;
+    pointsForts: string[];
+    pointsAmeliorer: string[];
+    recommandations: string;
+  }>().notNull(),
+  
+  // Optional metadata
+  fileName: varchar("fileName", { length: 255 }),
+  subject: varchar("subject", { length: 100 }),
+  level: varchar("level", { length: 100 }),
+  pdfUrl: text("pdfUrl"), // S3 URL of generated PDF
+  
+  // Timestamps
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"), // Optional expiry
+});
+
+export type SharedEvaluation = typeof sharedEvaluations.$inferSelect;
+export type InsertSharedEvaluation = typeof sharedEvaluations.$inferInsert;
