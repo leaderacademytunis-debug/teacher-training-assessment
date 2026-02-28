@@ -1006,3 +1006,8 @@
 - [x] Frontend: affichage note sur 20 avec jauge visuelle et détail par critère
 - [x] Frontend: bouton "تقييم الفيشة" dans la nav de Home.tsx
 - [x] Enregistrer checkpoint
+
+## Export PDF du rapport d'évaluation
+- [x] Backend: procédure tRPC `exportEvaluationPDF` générant un PDF structuré avec logo, scores, critères et recommandations
+- [x] Frontend: bouton "تحميل التقرير PDF" dans la page EvaluateFiche après affichage du résultat
+- [x] Enregistrer checkpoint

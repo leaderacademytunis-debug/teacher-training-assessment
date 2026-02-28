@@ -18,6 +18,7 @@ import {
   X,
   Loader2,
   ClipboardCheck,
+  FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -162,6 +163,33 @@ export default function EvaluateFiche() {
   const [level, setLevel] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [result, setResult] = useState<EvaluationResult | null>(null);
+
+  const exportPDFMutation = trpc.assistant.exportEvaluationPDF.useMutation({
+    onSuccess: (data) => {
+      // Trigger download
+      const a = document.createElement("a");
+      a.href = data.url;
+      a.download = `rapport-evaluation-${Date.now()}.pdf`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("تم تحميل التقرير بنجاح");
+    },
+    onError: (err) => {
+      toast.error("خطأ في إنشاء التقرير", { description: err.message });
+    },
+  });
+
+  const handleExportPDF = () => {
+    if (!result) return;
+    exportPDFMutation.mutate({
+      ...result,
+      fileName: file?.name,
+      subject: subject || undefined,
+      level: level || undefined,
+    });
+  };
 
   const evaluateMutation = trpc.assistant.evaluateFiche.useMutation({
     onSuccess: (data) => {
@@ -330,8 +358,19 @@ export default function EvaluateFiche() {
               </CardContent>
             </Card>
 
-            {/* New evaluation button */}
-            <div className="flex justify-center">
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <Button
+                onClick={handleExportPDF}
+                disabled={exportPDFMutation.isPending}
+                className="gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700"
+              >
+                {exportPDFMutation.isPending ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> جارٍ إنشاء التقرير...</>
+                ) : (
+                  <><FileDown className="w-4 h-4" /> تحميل التقرير PDF</>
+                )}
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => { setResult(null); setFile(null); }}

@@ -2589,6 +2589,34 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         return { evaluation, extractedTextLength: extractedText.length };
       }),
 
+    exportEvaluationPDF: protectedProcedure
+      .input(z.object({
+        noteGlobale: z.number(),
+        appreciation: z.string(),
+        criteres: z.array(z.object({
+          nom: z.string(),
+          note: z.number(),
+          noteMax: z.number(),
+          commentaire: z.string(),
+          points: z.array(z.string()),
+          ameliorations: z.array(z.string()),
+        })),
+        pointsForts: z.array(z.string()),
+        pointsAmeliorer: z.array(z.string()),
+        recommandations: z.string(),
+        fileName: z.string().optional(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportEvaluationPDF } = await import("./exportEvaluation");
+        const pdfBuffer = await exportEvaluationPDF(input);
+        const { storagePut } = await import("./storage");
+        const pdfFileName = `evaluation-${Date.now()}.pdf`;
+        const { url } = await storagePut(`evaluations/${pdfFileName}`, pdfBuffer, "application/pdf");
+        return { url };
+      }),
+
     exportConversationAsWord: protectedProcedure
       .input(z.object({
         title: z.string(),
