@@ -91,6 +91,7 @@ export default function EduGPTAssistantEnhanced() {
   const [conversationTitle, setConversationTitle] = useState("محادثة جديدة");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [teachingLanguage, setTeachingLanguage] = useState<"arabic" | "french" | "english" | null>(null);
   const [showContextSelector, setShowContextSelector] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -199,6 +200,7 @@ export default function EduGPTAssistantEnhanced() {
     setInput("");
     setSelectedSubject(null);
     setSelectedLevel(null);
+    setTeachingLanguage(null);
   };
 
   // Delete conversation
@@ -343,6 +345,7 @@ export default function EduGPTAssistantEnhanced() {
         messages: newMessages,
         subject: selectedSubject || undefined,
         level: selectedLevel || undefined,
+        teachingLanguage: teachingLanguage || undefined,
       });
     } catch (error) {
       console.error("Error uploading files:", error);
@@ -531,6 +534,10 @@ export default function EduGPTAssistantEnhanced() {
                     <span>📚 {selectedSubject}</span>
                     <span className="text-blue-400">|</span>
                     <span>🎓 {selectedLevel}</span>
+                    {teachingLanguage && (
+                      <><span className="text-blue-400">|</span>
+                      <span>{teachingLanguage === "french" ? "🇫🇷 Français" : teachingLanguage === "english" ? "🇬🇧 English" : "🇹🇳 عربية"}</span></>
+                    )}
                     <span className="text-blue-400 mr-1">• تغيير</span>
                   </button>
                 ) : (
@@ -574,7 +581,7 @@ export default function EduGPTAssistantEnhanced() {
           }}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
               <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">🎓 تحديد سياق التعليم</h2>
-              <p className="text-sm text-gray-500 text-center mb-5">حدد المادة والمستوى لتخصيص إجابات المساعد بدقة</p>
+              <p className="text-sm text-gray-500 text-center mb-5">حدد المادة والمستوى ولغة التدريس لتخصيص إجابات المساعد بدقة</p>
               
               <div className="mb-4">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">📚 المادة الدراسية</label>
@@ -614,13 +621,38 @@ export default function EduGPTAssistantEnhanced() {
                 </div>
               </div>
 
+              {/* لغة التدريس */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">🌐 لغة التدريس (اختياري)</label>
+                <div className="flex gap-2">
+                  {([
+                    { value: "arabic", label: "🇹🇳 عربية", desc: "المواد بالعربية" },
+                    { value: "french", label: "🇫🇷 Français", desc: "Matières en français" },
+                    { value: "english", label: "🇬🇧 English", desc: "English subjects" },
+                  ] as const).map(lang => (
+                    <button
+                      key={lang.value}
+                      onClick={() => setTeachingLanguage(teachingLanguage === lang.value ? null : lang.value)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm border transition-all text-center ${
+                        teachingLanguage === lang.value
+                          ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-purple-400 hover:text-purple-600"
+                      }`}
+                    >
+                      <div className="font-medium">{lang.label}</div>
+                      <div className="text-xs opacity-75 mt-0.5">{lang.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <Button
                 className="w-full bg-blue-600 hover:bg-blue-700"
                 disabled={!selectedSubject || !selectedLevel}
                 onClick={() => setShowContextSelector(false)}
               >
                 {selectedSubject && selectedLevel
-                  ? `تأكيد: ${selectedSubject} — ${selectedLevel}`
+                  ? `تأكيد: ${selectedSubject} — ${selectedLevel}${teachingLanguage ? " — " + (teachingLanguage === "french" ? "Français" : teachingLanguage === "english" ? "English" : "عربية") : ""}`
                   : "يرجى اختيار المادة والمستوى"}
               </Button>
             </div>
@@ -650,22 +682,62 @@ export default function EduGPTAssistantEnhanced() {
               ) : (
                 <>
                   <p className="text-gray-600 mb-2 max-w-md">
-                    جاهز لمساعدتك في <strong>{selectedSubject}</strong> — <strong>{selectedLevel}</strong>
+                    {teachingLanguage === "french" ? "Prêt à vous aider en" : teachingLanguage === "english" ? "Ready to help you with" : "جاهز لمساعدتك في"} <strong>{selectedSubject}</strong> — <strong>{selectedLevel}</strong>
                   </p>
-                  <p className="text-sm text-gray-500 mb-6">الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات والتقييمات وفق البرامج الرسمية.</p>
+                  <p className="text-sm text-gray-500 mb-6">
+                    {teachingLanguage === "french"
+                      ? "Expert pédagogique numérique tunisien. Je vous aide à préparer vos fiches et évaluations selon les programmes officiels."
+                      : teachingLanguage === "english"
+                      ? "Tunisian digital pedagogical expert. I help you prepare lesson plans and assessments according to official programs."
+                      : "الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات والتقييمات وفق البرامج الرسمية."}
+                  </p>
                   <div className="grid grid-cols-2 gap-3 max-w-2xl">
-                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أريد إعداد مذكرة بيداغوجية (Fiche de préparation) وفق البرامج الرسمية التونسية")}>
-                      <p className="text-sm font-medium">إعداد مذكرة بيداغوجية رسمية</p>
-                    </Card>
-                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("ساعدني في بناء تمارين متمايزة (علاجي، دعم، تميّز)")}>
-                      <p className="text-sm font-medium">تمارين متمايزة (بيداغوجيا فارقية)</p>
-                    </Card>
-                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج")}>
-                      <p className="text-sm font-medium">توزيع سنوي/فصلي</p>
-                    </Card>
-                    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("قيّم هذه المذكرة على 20 وفق معايير وزارة التربية")}>
-                      <p className="text-sm font-medium">تقييم بيداغوجي على 20</p>
-                    </Card>
+                    {teachingLanguage === "french" ? (
+                      <>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Je veux préparer une fiche de préparation officielle selon les programmes tunisiens")}>
+                          <p className="text-sm font-medium">Fiche de préparation officielle</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Aide-moi à créer des exercices différenciés (remédiation, soutien, excellence)")}>
+                          <p className="text-sm font-medium">Exercices différenciés (pédagogie différenciée)</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("J'ai besoin d'une répartition annuelle/trimestrielle du programme")}>
+                          <p className="text-sm font-medium">Répartition annuelle/trimestrielle</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Évalue cette fiche sur 20 selon les critères du ministère de l'éducation")}>
+                          <p className="text-sm font-medium">Évaluation pédagogique sur 20</p>
+                        </Card>
+                      </>
+                    ) : teachingLanguage === "english" ? (
+                      <>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("I want to prepare an official lesson plan according to Tunisian programs")}>
+                          <p className="text-sm font-medium">Official Lesson Plan</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Help me create differentiated exercises (remediation, support, excellence)")}>
+                          <p className="text-sm font-medium">Differentiated Exercises</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("I need an annual/term distribution of the program")}>
+                          <p className="text-sm font-medium">Annual/Term Distribution</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Evaluate this lesson plan out of 20 according to Ministry of Education criteria")}>
+                          <p className="text-sm font-medium">Pedagogical Evaluation /20</p>
+                        </Card>
+                      </>
+                    ) : (
+                      <>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أريد إعداد مذكرة بيداغوجية (Fiche de préparation) وفق البرامج الرسمية التونسية")}>
+                          <p className="text-sm font-medium">إعداد مذكرة بيداغوجية رسمية</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("ساعدني في بناء تمارين متمايزة (علاجي، دعم، تميّز)")}>
+                          <p className="text-sm font-medium">تمارين متمايزة (بيداغوجيا فارقية)</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج")}>
+                          <p className="text-sm font-medium">توزيع سنوي/فصلي</p>
+                        </Card>
+                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("قيّم هذه المذكرة على 20 وفق معايير وزارة التربية")}>
+                          <p className="text-sm font-medium">تقييم بيداغوجي على 20</p>
+                        </Card>
+                      </>
+                    )}
                   </div>
                 </>
               )}

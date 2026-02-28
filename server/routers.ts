@@ -2106,6 +2106,7 @@ export const appRouter = router({
         })),
         subject: z.string().optional(),
         level: z.string().optional(),
+        teachingLanguage: z.enum(["arabic", "french", "english"]).optional(),
       }))
       .mutation(async ({ input }) => {
         const { invokeLLM } = await import("./_core/llm");
@@ -2113,10 +2114,18 @@ export const appRouter = router({
         // System Prompt للمساعد البيداغوجي
         const subjectInfo = input.subject ? `\n\n📚 المادة الدراسية المحددة: **${input.subject}**` : "";
         const levelInfo = input.level ? `\n🎓 المستوى الدراسي المحدد: **${input.level}**` : "";
+        
+        // Language instruction based on teachingLanguage
+        const langNote = input.teachingLanguage === "french"
+          ? `\n🇫🇷 Langue d'enseignement: **Français**. Répondez TOUJOURS en français. Utilisez la terminologie pédagogique officielle tunisienne en français (fiche de préparation, compétence terminale, situation déclenchante, réinvestissement, etc.). Adaptez le contenu aux manuels scolaires tunisiens en français.`
+          : input.teachingLanguage === "english"
+          ? `\n🇬🇧 Teaching Language: **English**. ALWAYS respond in English. Use official Tunisian pedagogical terminology in English (lesson plan, terminal competency, triggering situation, reinvestment, etc.). Adapt content to Tunisian English textbooks and official programs.`
+          : `\n🇹🇳 لغة التدريس: **العربية**. رد دائماً بالعربية واستخدم المصطلحات التربوية الرسمية التونسية بالعربية.`;
+        
         const contextNote = (input.subject && input.level)
           ? `\n\nتذكير: المدرس يعمل حالياً على مادة **${input.subject}** للمستوى **${input.level}**. يجب أن تكون جميع إجاباتك متوافقة مع هذه المادة وهذا المستوى تحديداً.`
           : `\n\nتنبيه مهم: إذا لم يحدد المدرس المادة والمستوى الدراسي بعد، يجب أن تطلبهما بشكل مهذب قبل تقديم أي محتوى بيداغوجي. لا تقدم أي مذكرة أو تمرين أو توزيع قبل معرفة المادة والمستوى.`;
-        const systemPrompt = `أنت "الخبير البيداغوجي الرقمي التونسي" - المساعد البيداغوجي. مهمتك هي مساعدة المدرسين التونسيين في تخطيط الدروس وبناء المذكرات (Fiches de préparation) والتقييمات، مع الالتزام الصارم بالمعايير الرسمية لوزارة التربية التونسية.${subjectInfo}${levelInfo}${contextNote}
+        const systemPrompt = `أنت "الخبير البيداغوجي الرقمي التونسي" - المساعد البيداغوجي. مهمتك هي مساعدة المدرسين التونسيين في تخطيط الدروس وبناء المذكرات (Fiches de préparation) والتقييمات، مع الالتزام الصارم بالمعايير الرسمية لوزارة التربية التونسية.${subjectInfo}${levelInfo}${langNote}${contextNote}
 
 المبادئ التوجيهية الأساسية:
 
