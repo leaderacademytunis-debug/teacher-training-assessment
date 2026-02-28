@@ -190,7 +190,7 @@ export default function EduGPTAssistant() {
     <div className="container mx-auto h-[calc(100vh-80px)] flex flex-col py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-right mb-2">مساعد EduGPT</h1>
+        <h1 className="text-3xl font-bold text-right mb-2">المساعد البيداغوجي</h1>
         <p className="text-muted-foreground text-right">
           مساعدك الذكي لإعداد المذكرات البيداغوجية والتخطيط الدراسي
         </p>
@@ -210,7 +210,7 @@ export default function EduGPTAssistant() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold mb-2">مرحباً بك في مساعد EduGPT</h3>
+              <h3 className="text-lg font-semibold mb-2">مرحباً بك في المساعد البيداغوجي</h3>
               <p className="text-sm max-w-md">
                 يمكنني مساعدتك في إعداد المذكرات البيداغوجية، التخطيط الدراسي، واقتراح أنشطة تعليمية مبتكرة.
                 يمكنك أيضاً إرفاق ملفات PDF أو صور للحصول على مساعدة أكثر دقة.

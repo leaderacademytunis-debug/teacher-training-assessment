@@ -77,7 +77,7 @@ export default function Home() {
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <MessageSquare className="w-4 h-4 ml-2" />
-                      مساعد EduGPT
+                      المساعد البيداغوجي
                     </Button>
                   </Link>
                   <Link href="/teacher-tools">

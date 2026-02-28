@@ -104,7 +104,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
           <div className="flex items-center justify-between p-4 border-b bg-blue-600 text-white rounded-t-lg">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
-              <h3 className="font-semibold">مساعد EduGPT</h3>
+              <h3 className="font-semibold">المساعد البيداغوجي</h3>
             </div>
             <div className="flex items-center gap-1">
               <Button

@@ -53,7 +53,7 @@ export async function exportConversationAsWord(data: ConversationExportData): Pr
 
   // Messages
   for (const message of data.messages) {
-    const role = message.role === "user" ? "المستخدم" : "EduGPT";
+    const role = message.role === "user" ? "المستخدم" : "المساعد البيداغوجي";
     const timestamp = new Date(message.timestamp).toLocaleString("ar-TN");
 
     // Message header
@@ -205,7 +205,7 @@ export async function exportConversationAsPDF(data: ConversationExportData): Pro
   `;
 
   for (const message of data.messages) {
-    const role = message.role === "user" ? "المستخدم" : "EduGPT";
+    const role = message.role === "user" ? "المستخدم" : "المساعد البيداغوجي";
     const roleClass = message.role;
     const timestamp = new Date(message.timestamp).toLocaleString("ar-TN");
 

@@ -498,7 +498,7 @@ export default function EduGPTAssistantEnhanced() {
               <div className="bg-blue-100 p-6 rounded-full mb-4">
                 <MessageSquare className="h-12 w-12 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">مرحباً بك في EduGPT</h2>
+              <h2 className="text-2xl font-bold mb-2">مرحباً بك في المساعد البيداغوجي</h2>
               <p className="text-gray-600 mb-6 max-w-md">
                 الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات البيداغوجية وفق البرامج الرسمية لوزارة التربية التونسية.
               </p>
