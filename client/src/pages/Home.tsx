@@ -51,7 +51,7 @@ export default function Home() {
               />
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">ليدر أكاديمي</h1>
-                <p className="text-gray-600 mt-1">تطوير مهارات المعلمين وتقييم مكتسباتهم</p>
+                <p className="text-gray-600 mt-1">نحو تعليم رقمي متميز</p>
               </div>
             </div>
             <div className="flex gap-3 items-center">
@@ -113,10 +113,10 @@ export default function Home() {
       <section className="container py-16">
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
-            برامج تأهيل شاملة للمعلمين
+            ليدر أكاديمي — منصة تأهيل المدرسين
           </h2>
           <p className="text-xl text-gray-600 leading-relaxed">
-            اختر من بين سبع دورات تدريبية متخصصة مصممة لتطوير مهاراتك التعليمية وتعزيز قدراتك المهنية
+            برامج تدريبية متخصصة بالذكاء الاصطناعي لتطوير كفاءات المدرسين وتعزيز التعليم الرقمي في تونس
           </p>
         </div>
       </section>
