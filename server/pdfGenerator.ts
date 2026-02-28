@@ -261,7 +261,13 @@ export async function createPDF(htmlContent: string): Promise<Buffer> {
     await writeFile(htmlPath, htmlContent, "utf-8");
 
     // Convert HTML to PDF using weasyprint
-    await execAsync(`weasyprint ${htmlPath} ${pdfPath}`);
+    // Note: PYTHONHOME, PYTHONPATH, and NUITKA_PYTHONPATH must be deleted to avoid conflicts
+    // between Python 3.11 (where weasyprint is installed) and Python 3.13 (sandbox runtime)
+    const env = { ...process.env };
+    delete env.PYTHONHOME;
+    delete env.PYTHONPATH;
+    delete (env as any).NUITKA_PYTHONPATH;
+    await execAsync(`python3.11 -m weasyprint ${htmlPath} ${pdfPath}`, { env });
 
     // Read PDF file
     const pdfBuffer = await readFile(pdfPath);

@@ -1062,3 +1062,8 @@
 - [x] Traduire la page "Mes cours" (MyCourses.tsx)
 - [x] Traduire le tableau de bord (Dashboard.tsx)
 - [x] Sauvegarder checkpoint
+
+## Bug: Erreur export PDF conversation assistant
+- [ ] Diagnostiquer l'erreur "خطأ في تصدير المحادثة" dans l'assistant
+- [ ] Corriger le bug d'export PDF
+- [ ] Sauvegarder checkpoint
