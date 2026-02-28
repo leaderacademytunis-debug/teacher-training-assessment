@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight } from "lucide-react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -92,7 +93,7 @@ export default function EduGPTAssistantEnhanced() {
   const [conversationTitle, setConversationTitle] = useState("محادثة جديدة");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
-  const { language: globalLanguage } = useLanguage();
+  const { language: globalLanguage, setLanguage } = useLanguage();
   const [teachingLanguage, setTeachingLanguage] = useState<"arabic" | "french" | "english" | null>(() => {
     // Sync with global language on first load
     if (globalLanguage === "fr") return "french";
@@ -560,6 +561,40 @@ export default function EduGPTAssistantEnhanced() {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Language Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-1.5 font-medium">
+                  <Globe className="h-4 w-4" />
+                  <span>
+                    {globalLanguage === "fr" ? "🇫🇷" : globalLanguage === "en" ? "🇬🇧" : "🇹🇳"}
+                  </span>
+                  <span className="hidden md:inline text-xs">
+                    {globalLanguage === "fr" ? "Français" : globalLanguage === "en" ? "English" : "العربية"}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                {[
+                  { code: "ar" as const, label: "العربية", flag: "🇹🇳", teaching: null },
+                  { code: "fr" as const, label: "Français", flag: "🇫🇷", teaching: "french" as const },
+                  { code: "en" as const, label: "English", flag: "🇬🇧", teaching: "english" as const },
+                ].map((lang) => (
+                  <DropdownMenuItem
+                    key={lang.code}
+                    onClick={() => {
+                      setLanguage(lang.code);
+                      setTeachingLanguage(lang.teaching);
+                    }}
+                    className={`gap-2 cursor-pointer ${globalLanguage === lang.code ? "bg-primary/10 font-semibold" : ""}`}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.label}</span>
+                    {globalLanguage === lang.code && <span className="mr-auto text-primary">✓</span>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               size="sm"
               variant="outline"

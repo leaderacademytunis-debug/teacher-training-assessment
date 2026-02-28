@@ -1038,3 +1038,8 @@
 - [x] Ajouter le bouton sélecteur de langue dans la barre de navigation (Home.tsx)
 - [x] Appliquer la langue sélectionnée dans l'assistant pédagogique automatiquement
 - [x] Sauvegarder checkpoint
+
+## Sélecteur de langue dans l'assistant pédagogique
+- [x] Ajouter le bouton sélecteur de langue (🌐) dans la barre du header de l'assistant
+- [x] Synchroniser le changement de langue avec le contexte global et l'état teachingLanguage
+- [x] Sauvegarder checkpoint
