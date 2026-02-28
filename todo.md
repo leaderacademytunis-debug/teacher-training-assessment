@@ -1051,3 +1051,9 @@
 - [x] Traduire la modale de sélection de contexte (matière/niveau/langue)
 - [x] Traduire le placeholder de saisie et les messages d'état
 - [x] Sauvegarder checkpoint
+
+## Traduction de la navigation principale
+- [x] Lire Home.tsx et identifier tous les textes de navigation
+- [x] Ajouter dictionnaire de traductions pour la nav (ar/fr/en)
+- [x] Appliquer les traductions via useLanguage()
+- [x] Sauvegarder checkpoint

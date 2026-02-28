@@ -60,7 +60,7 @@ export default function Home() {
               />
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">ليدر أكاديمي</h1>
-                <p className="text-gray-600 mt-1">نحو تعليم رقمي متميز</p>
+                <p className="text-gray-600 mt-1">{t("نحو تعليم رقمي متميز", "Vers un enseignement numérique d'excellence", "Towards Excellence in Digital Education")}</p>
               </div>
             </div>
             <div className="flex gap-3 items-center">
@@ -94,13 +94,13 @@ export default function Home() {
                     <Link href="/complete-registration">
                       <Button className="bg-orange-500 hover:bg-orange-600 text-white">
                         <UserPlus className="w-4 h-4 ml-2" />
-                        إكمال التسجيل
+                        {t("إكمال التسجيل", "Compléter l'inscription", "Complete Registration")}
                       </Button>
                     </Link>
                   )}
                   {["admin", "trainer", "supervisor"].includes(user.role) && (
                     <Link href="/dashboard">
-                      <Button variant="outline">لوحة التحكم</Button>
+                      <Button variant="outline">{t("لوحة التحكم", "Tableau de bord", "Dashboard")}</Button>
                     </Link>
                   )}
                   <Link href="/assistant">
@@ -109,7 +109,7 @@ export default function Home() {
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       <MessageSquare className="w-4 h-4 ml-2" />
-                      المساعد البيداغوجي
+                      {t("المساعد البيداغوجي", "Assistant Pédagogique", "Pedagogical Assistant")}
                     </Button>
                   </Link>
                   <Link href="/evaluate-fiche">
@@ -118,31 +118,31 @@ export default function Home() {
                       className="bg-violet-600 hover:bg-violet-700"
                     >
                       <ClipboardCheck className="w-4 h-4 ml-2" />
-                      تقييم الفيشة
+                      {t("تقييم الفيشة", "Évaluer la fiche", "Evaluate Lesson Plan")}
                     </Button>
                   </Link>
                   <Link href="/teacher-tools">
-                    <Button variant="outline">أدوات المدرس</Button>
+                    <Button variant="outline">{t("أدوات المدرس", "Outils enseignant", "Teacher Tools")}</Button>
                   </Link>
                   <Link href="/shared-library">
-                    <Button variant="outline">المكتبة المشتركة</Button>
+                    <Button variant="outline">{t("المكتبة المشتركة", "Bibliothèque partagée", "Shared Library")}</Button>
                   </Link>
                   <Link href="/template-library">
-                    <Button variant="outline">القوالب الجاهزة</Button>
+                    <Button variant="outline">{t("القوالب الجاهزة", "Modèles prêts", "Ready Templates")}</Button>
                   </Link>
                   <Link href="/my-courses">
-                    <Button>دوراتي</Button>
+                    <Button>{t("دوراتي", "Mes cours", "My Courses")}</Button>
                   </Link>
                   <Link href="/my-certificates">
-                    <Button variant="outline">شهاداتي</Button>
+                    <Button variant="outline">{t("شهاداتي", "Mes certificats", "My Certificates")}</Button>
                   </Link>
                   <Link href="/verify">
-                    <Button variant="ghost">التحقق من شهادة</Button>
+                    <Button variant="ghost">{t("التحقق من شهادة", "Vérifier un certificat", "Verify Certificate")}</Button>
                   </Link>
                 </>
               ) : (
                 <a href={getLoginUrl()}>
-                  <Button>تسجيل الدخول</Button>
+                  <Button>{t("تسجيل الدخول", "Se connecter", "Sign In")}</Button>
                 </a>
               )}
             </div>
@@ -154,10 +154,10 @@ export default function Home() {
       <section className="container py-16">
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
-            ليدر أكاديمي — منصة تأهيل المدرسين
+            {t("ليدر أكاديمي — منصة تأهيل المدرسين", "Leader Academy — Plateforme de formation des enseignants", "Leader Academy — Teacher Training Platform")}
           </h2>
           <p className="text-xl text-gray-600 leading-relaxed">
-            برامج تدريبية متخصصة بالذكاء الاصطناعي لتطوير كفاءات المدرسين وتعزيز التعليم الرقمي في تونس
+            {t("برامج تدريبية متخصصة بالذكاء الاصطناعي لتطوير كفاءات المدرسين وتعزيز التعليم الرقمي في تونس", "Programmes de formation spécialisés en IA pour développer les compétences des enseignants et renforcer l'éducation numérique en Tunisie", "AI-powered specialized training programs to develop teachers' skills and enhance digital education in Tunisia")}
           </p>
         </div>
       </section>
@@ -180,14 +180,14 @@ export default function Home() {
                   </div>
                   <CardTitle className="text-xl">{course.titleAr}</CardTitle>
                   <CardDescription className="text-base leading-relaxed">
-                    {course.descriptionAr || "دورة تدريبية متخصصة لتطوير مهارات المعلمين"}
+                    {course.descriptionAr || t("دورة تدريبية متخصصة لتطوير مهارات المعلمين", "Formation spécialisée pour développer les compétences des enseignants", "Specialized training to develop teachers' skills")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between mb-4">
                     {course.duration && (
                       <span className="text-sm text-gray-600">
-                        المدة: {course.duration} ساعة
+                        {t("المدة:", "Durée:", "Duration:")} {course.duration} {t("ساعة", "h", "h")}
                       </span>
                     )}
                   </div>
@@ -195,20 +195,20 @@ export default function Home() {
                     isEnrolled ? (
                       <Link href={`/courses/${course.id}`}>
                         <Button className="w-full" variant="outline">
-                          متابعة الدورة
+                          {t("متابعة الدورة", "Continuer la formation", "Continue Course")}
                         </Button>
                       </Link>
                     ) : (
                       <Link href={`/courses/${course.id}`}>
                         <Button className="w-full">
-                          التسجيل في الدورة
+                          {t("التسجيل في الدورة", "S'inscrire à la formation", "Enroll in Course")}
                         </Button>
                       </Link>
                     )
                   ) : (
                     <a href={getLoginUrl()}>
                       <Button className="w-full">
-                        سجل للالتحاق بالدورة
+                        {t("سجل للالتحاق بالدورة", "Connectez-vous pour vous inscrire", "Sign in to Enroll")}
                       </Button>
                     </a>
                   )}
@@ -220,7 +220,7 @@ export default function Home() {
 
         {(!courses || courses.length === 0) && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">لا توجد دورات متاحة حالياً</p>
+            <p className="text-gray-500 text-lg">{t("لا توجد دورات متاحة حالياً", "Aucune formation disponible actuellement", "No courses available currently")}</p>
           </div>
         )}
       </section>
@@ -228,28 +228,28 @@ export default function Home() {
       {/* Features Section */}
       <section className="bg-white py-16 border-t">
         <div className="container">
-          <h3 className="text-3xl font-bold text-center mb-12">لماذا تختار منصتنا؟</h3>
+          <h3 className="text-3xl font-bold text-center mb-12">{t("لماذا تختار منصتنا؟", "Pourquoi choisir notre plateforme ?", "Why Choose Our Platform?")}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <GraduationCap className="w-8 h-8 text-blue-600" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">محتوى تعليمي متميز</h4>
-              <p className="text-gray-600">دورات مصممة بعناية من قبل خبراء التعليم</p>
+              <h4 className="text-xl font-semibold mb-2">{t("محتوى تعليمي متميز", "Contenu pédagogique de qualité", "Quality Educational Content")}</h4>
+              <p className="text-gray-600">{t("دورات مصممة بعناية من قبل خبراء التعليم", "Formations conçues par des experts en éducation", "Courses designed by education experts")}</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Award className="w-8 h-8 text-green-600" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">تقييم فوري</h4>
-              <p className="text-gray-600">اختبارات تفاعلية مع نتائج فورية</p>
+              <h4 className="text-xl font-semibold mb-2">{t("تقييم فوري", "Évaluation instantanée", "Instant Assessment")}</h4>
+              <p className="text-gray-600">{t("اختبارات تفاعلية مع نتائج فورية", "Tests interactifs avec résultats immédiats", "Interactive tests with instant results")}</p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-purple-600" />
               </div>
-              <h4 className="text-xl font-semibold mb-2">متابعة مستمرة</h4>
-              <p className="text-gray-600">تقارير مفصلة لتتبع تقدمك</p>
+              <h4 className="text-xl font-semibold mb-2">{t("متابعة مستمرة", "Suivi continu", "Continuous Follow-up")}</h4>
+              <p className="text-gray-600">{t("تقارير مفصلة لتتبع تقدمك", "Rapports détaillés pour suivre votre progression", "Detailed reports to track your progress")}</p>
             </div>
           </div>
         </div>
@@ -259,7 +259,7 @@ export default function Home() {
       <footer className="bg-gray-900 text-white py-8">
         <div className="container text-center">
           <p className="text-gray-400">
-            © 2026 ليدر أكاديمي. جميع الحقوق محفوظة.
+            {t("© 2026 ليدر أكاديمي. جميع الحقوق محفوظة.", "© 2026 Leader Academy. Tous droits réservés.", "© 2026 Leader Academy. All rights reserved.")}
           </p>
         </div>
       </footer>
