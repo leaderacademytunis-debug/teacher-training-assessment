@@ -1032,3 +1032,9 @@
 - [x] تخصيص الاقتراحات السريعة حسب لغة التدريس
 - [x] تحديث الباكند لإرسال لغة التدريس مع كل رسالة
 - [ ] حفظ نقطة تفتيش
+
+## Bouton de sélection de langue dans la navigation
+- [x] Créer un contexte global de langue (LanguageContext) avec localStorage
+- [x] Ajouter le bouton sélecteur de langue dans la barre de navigation (Home.tsx)
+- [x] Appliquer la langue sélectionnée dans l'assistant pédagogique automatiquement
+- [x] Sauvegarder checkpoint

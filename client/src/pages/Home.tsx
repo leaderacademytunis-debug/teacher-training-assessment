@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, GraduationCap, Users, Award, Loader2, UserPlus, MessageSquare, ClipboardCheck } from "lucide-react";
+import { BookOpen, GraduationCap, Users, Award, Loader2, UserPlus, MessageSquare, ClipboardCheck, Globe } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link } from "wouter";
 import { useState } from "react";
 import { ChatAssistant } from "@/components/ChatAssistant";
+import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const courseIcons: Record<string, typeof BookOpen> = {
   primary_teachers: GraduationCap,
@@ -19,8 +21,15 @@ const courseIcons: Record<string, typeof BookOpen> = {
   digital_teacher_ai: Award,
 };
 
+const LANGUAGES: { code: AppLanguage; label: string; flag: string }[] = [
+  { code: "ar", label: "العربية", flag: "🇹🇳" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+];
+
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const { data: courses, isLoading } = trpc.courses.list.useQuery();
   const { data: enrollments } = trpc.enrollments.myEnrollments.useQuery(undefined, {
@@ -55,6 +64,29 @@ export default function Home() {
               </div>
             </div>
             <div className="flex gap-3 items-center">
+              {/* Language Selector */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 font-medium">
+                    <Globe className="w-4 h-4" />
+                    <span>{LANGUAGES.find(l => l.code === language)?.flag}</span>
+                    <span className="hidden sm:inline">{LANGUAGES.find(l => l.code === language)?.label}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  {LANGUAGES.map((lang) => (
+                    <DropdownMenuItem
+                      key={lang.code}
+                      onClick={() => setLanguage(lang.code)}
+                      className={`gap-2 cursor-pointer ${language === lang.code ? "bg-primary/10 font-semibold" : ""}`}
+                    >
+                      <span>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                      {language === lang.code && <span className="mr-auto text-primary">✓</span>}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               {user ? (
                 <>
                   <NotificationBell />

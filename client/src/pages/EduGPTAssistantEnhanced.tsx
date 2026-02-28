@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Message {
   role: "user" | "assistant";
@@ -91,7 +92,13 @@ export default function EduGPTAssistantEnhanced() {
   const [conversationTitle, setConversationTitle] = useState("محادثة جديدة");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
-  const [teachingLanguage, setTeachingLanguage] = useState<"arabic" | "french" | "english" | null>(null);
+  const { language: globalLanguage } = useLanguage();
+  const [teachingLanguage, setTeachingLanguage] = useState<"arabic" | "french" | "english" | null>(() => {
+    // Sync with global language on first load
+    if (globalLanguage === "fr") return "french";
+    if (globalLanguage === "en") return "english";
+    return null;
+  });
   const [showContextSelector, setShowContextSelector] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
