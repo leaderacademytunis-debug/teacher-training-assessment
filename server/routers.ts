@@ -956,6 +956,15 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    delete: adminProcedure
+      .input(z.object({
+        userId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.deleteRegistration(input.userId);
+        return { success: true };
+      }),
+
     exportToExcel: adminProcedure
       .input(z.object({
         filter: z.enum(["all", "pending", "approved", "rejected"]).optional(),

@@ -956,3 +956,10 @@
 - [x] Télécharger le guide PDF vers S3
 - [x] Ajouter le guide à la table referenceDocuments
 - [ ] Créer le checkpoint final
+
+## Bug Fix / Amélioration: Bouton de suppression dans la gestion des inscriptions
+- [x] Localiser la page de gestion des inscriptions
+- [x] Ajouter une procédure tRPC deleteRegistration
+- [x] Ajouter le bouton Supprimer avec dialog de confirmation
+- [x] Tester la suppression
+- [ ] Créer le checkpoint final

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { trpc } from "@/lib/trpc";
 import { 
   Loader2, CheckCircle, XCircle, Eye, Filter, 
-  User, Phone, Mail, CreditCard, FileText, Download 
+  User, Phone, Mail, CreditCard, FileText, Download, Trash2
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -34,6 +35,8 @@ export default function RegistrationsManagement() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
 
   const { data: registrations, isLoading, refetch } = trpc.registrations.list.useQuery(
     { filter },
@@ -90,8 +93,31 @@ export default function RegistrationsManagement() {
     },
   });
 
+  const deleteMutation = trpc.registrations.delete.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف التسجيل بنجاح!");
+      refetch();
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+    },
+    onError: (error) => {
+      toast.error("حدث خطأ: " + error.message);
+    },
+  });
+
   const handleExport = () => {
     exportMutation.mutate({ filter });
+  };
+
+  const handleDeleteClick = (registration: any) => {
+    setUserToDelete(registration);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (userToDelete) {
+      deleteMutation.mutate({ userId: userToDelete.id });
+    }
   };
 
   if (authLoading || isLoading) {
@@ -252,6 +278,15 @@ export default function RegistrationsManagement() {
                               <Eye className="w-4 h-4 ml-1" />
                               التفاصيل
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                              onClick={() => handleDeleteClick(registration)}
+                            >
+                              <Trash2 className="w-4 h-4 ml-1" />
+                              حذف
+                            </Button>
                             {registration.registrationStatus === "pending" && (
                               <>
                                 <Button
@@ -389,6 +424,51 @@ export default function RegistrationsManagement() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <Trash2 className="w-5 h-5" />
+              تأكيد الحذف
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              هل أنت متأكد من حذف تسجيل هذا المشارك;
+            </DialogDescription>
+          </DialogHeader>
+          {userToDelete && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 my-2">
+              <p className="font-semibold text-gray-900">
+                {userToDelete.firstNameAr} {userToDelete.lastNameAr}
+              </p>
+              <p className="text-sm text-gray-600" dir="ltr">{userToDelete.email}</p>
+              <p className="text-xs text-red-600 mt-2">⚠️ هذا الإجراء لا يمكن التراجع عنه</p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setShowDeleteDialog(false); setUserToDelete(null); }}
+              disabled={deleteMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 ml-2" />
+              )}
+              تأكيد الحذف
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -857,6 +857,16 @@ export async function rejectRegistration(userId: number, rejectedBy: number, rea
   });
 }
 
+export async function deleteRegistration(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user || user.length === 0) throw new Error("User not found");
+
+  await db.delete(users).where(eq(users.id, userId));
+}
+
 // ============================================
 // Pedagogical Tools - المذكرات البيداغوجية
 // ============================================
