@@ -2457,6 +2457,138 @@ export const appRouter = router({
         return { url };
       }),
     
+    evaluateFiche: protectedProcedure
+      .input(z.object({
+        fileBase64: z.string(),
+        fileName: z.string(),
+        mimeType: z.string(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        // Extract text from file
+        const buffer = Buffer.from(input.fileBase64, "base64");
+        let extractedText = "";
+
+        if (input.mimeType === "application/pdf" || input.fileName.endsWith(".pdf")) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pdfParseModule = await import("pdf-parse") as any;
+          const pdfParse = pdfParseModule.default || pdfParseModule;
+          const data = await pdfParse(buffer);
+          extractedText = data.text;
+        } else if (
+          input.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+          input.fileName.endsWith(".docx")
+        ) {
+          const mammoth = await import("mammoth");
+          const result = await mammoth.extractRawText({ buffer });
+          extractedText = result.value;
+        } else if (input.mimeType === "application/msword" || input.fileName.endsWith(".doc")) {
+          // Try mammoth for .doc as well
+          try {
+            const mammoth = await import("mammoth");
+            const result = await mammoth.extractRawText({ buffer });
+            extractedText = result.value;
+          } catch {
+            extractedText = buffer.toString("utf-8");
+          }
+        } else {
+          extractedText = buffer.toString("utf-8");
+        }
+
+        if (!extractedText || extractedText.trim().length < 50) {
+          throw new Error("Impossible d'extraire le texte du fichier. Veuillez vérifier le format.");
+        }
+
+        const subjectInfo = input.subject ? `Matière: ${input.subject}` : "";
+        const levelInfo = input.level ? `Niveau: ${input.level}` : "";
+        const contextInfo = [subjectInfo, levelInfo].filter(Boolean).join(" | ");
+
+        const evaluationPrompt = `
+Tu es un inspecteur pédagogique expert du système éducatif tunisien (enseignement primaire).
+Évalue la fiche pédagogique suivante selon la grille officielle d'inspection pédagogique tunisienne.
+${contextInfo ? `Contexte: ${contextInfo}` : ""}
+
+FICHE À ÉVALUER:
+${extractedText.substring(0, 6000)}
+
+Fournis une évaluation STRUCTURÉE et DÉTAILLÉE en JSON avec exactement ce schéma:
+{
+  "noteGlobale": <nombre entre 0 et 20>,
+  "appreciation": "<Très Bien | Bien | Assez Bien | Passable | Insuffisant>",
+  "criteres": [
+    {
+      "nom": "<nom du critère>",
+      "note": <note sur 4>,
+      "noteMax": 4,
+      "commentaire": "<commentaire détaillé>",
+      "points": ["<point fort 1>", "<point fort 2>"],
+      "ameliorations": ["<amélioration 1>", "<amélioration 2>"]
+    }
+  ],
+  "pointsForts": ["<point fort global 1>", "<point fort global 2>", "<point fort global 3>"],
+  "pointsAmeliorer": ["<point à améliorer 1>", "<point à améliorer 2>", "<point à améliorer 3>"],
+  "recommandations": "<recommandations générales détaillées de l'inspecteur>"
+}
+
+Les critères d'évaluation OBLIGATOIRES sont:
+1. Préparation de la séance (6 items: discipline/thème/titre/séance/matériel/tableau des habiletés) - sur 4
+2. Démarche pédagogique - Phase de présentation (pré-requis/rappel, situation d'apprentissage, 3 composantes) - sur 4
+3. Démarche pédagogique - Phase de développement (relation situation-développement, matériel adapté, consignes claires) - sur 4
+4. Phase d'évaluation (activités d'évaluation, remédiation aux erreurs) - sur 4
+5. Maîtrise des contenus et langue d'enseignement (vocabulaire adapté, informations justes, 3 phases didactiques) - sur 4
+
+Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bienveillant comme un vrai inspecteur tunisien.
+`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Tu es un inspecteur pédagogique expert du système éducatif tunisien. Tu fournis des évaluations précises et constructives en JSON valide uniquement." },
+            { role: "user", content: evaluationPrompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "fiche_evaluation",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  noteGlobale: { type: "number" },
+                  appreciation: { type: "string" },
+                  criteres: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        nom: { type: "string" },
+                        note: { type: "number" },
+                        noteMax: { type: "number" },
+                        commentaire: { type: "string" },
+                        points: { type: "array", items: { type: "string" } },
+                        ameliorations: { type: "array", items: { type: "string" } },
+                      },
+                      required: ["nom", "note", "noteMax", "commentaire", "points", "ameliorations"],
+                      additionalProperties: false,
+                    },
+                  },
+                  pointsForts: { type: "array", items: { type: "string" } },
+                  pointsAmeliorer: { type: "array", items: { type: "string" } },
+                  recommandations: { type: "string" },
+                },
+                required: ["noteGlobale", "appreciation", "criteres", "pointsForts", "pointsAmeliorer", "recommandations"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices[0].message.content;
+        const evaluation = typeof content === "string" ? JSON.parse(content) : content;
+        return { evaluation, extractedTextLength: extractedText.length };
+      }),
+
     exportConversationAsWord: protectedProcedure
       .input(z.object({
         title: z.string(),

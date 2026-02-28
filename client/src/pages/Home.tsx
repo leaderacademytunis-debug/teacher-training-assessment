@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, GraduationCap, Users, Award, Loader2, UserPlus, MessageSquare } from "lucide-react";
+import { BookOpen, GraduationCap, Users, Award, Loader2, UserPlus, MessageSquare, ClipboardCheck } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -78,6 +78,15 @@ export default function Home() {
                     >
                       <MessageSquare className="w-4 h-4 ml-2" />
                       المساعد البيداغوجي
+                    </Button>
+                  </Link>
+                  <Link href="/evaluate-fiche">
+                    <Button 
+                      variant="default"
+                      className="bg-violet-600 hover:bg-violet-700"
+                    >
+                      <ClipboardCheck className="w-4 h-4 ml-2" />
+                      تقييم الفيشة
                     </Button>
                   </Link>
                   <Link href="/teacher-tools">

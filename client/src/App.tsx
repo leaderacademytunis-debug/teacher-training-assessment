@@ -23,6 +23,7 @@ import SharedLibrary from "@/pages/SharedLibrary";
 import ReferenceLibrary from "@/pages/ReferenceLibrary";
 import TemplateLibrary from "@/pages/TemplateLibrary";
 import EduGPTAssistantEnhanced from "@/pages/EduGPTAssistantEnhanced";
+import EvaluateFiche from "@/pages/EvaluateFiche";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
 
 function Router() {
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/reference-library" component={ReferenceLibrary} />
       <Route path="/template-library" component={TemplateLibrary} />
       <Route path="/assistant" component={EduGPTAssistantEnhanced} />
+      <Route path="/evaluate-fiche" component={EvaluateFiche} />
       {/* <Route path="/infographic-generator" component={InfographicGenerator} /> */}
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

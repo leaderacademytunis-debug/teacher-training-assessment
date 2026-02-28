@@ -998,3 +998,11 @@
 - [x] إضافة شبكة التقييم كمرجع سادس في system prompt
 - [x] تحديث تعليمات التقييم في system prompt
 - [x] حفظ نقطة تفتيش
+
+## Évaluation instantanée de fiche pédagogique
+- [x] Backend: procédure tRPC `evaluateFiche` acceptant texte extrait + matière + niveau
+- [x] Backend: extraction texte côté serveur (pdf-parse, mammoth pour docx)
+- [x] Frontend: page EvaluateFiche.tsx avec zone upload, sélecteur matière/niveau, résultat structuré
+- [x] Frontend: affichage note sur 20 avec jauge visuelle et détail par critère
+- [x] Frontend: bouton "تقييم الفيشة" dans la nav de Home.tsx
+- [x] Enregistrer checkpoint
