@@ -49,105 +49,139 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container py-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <img 
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png" 
-                alt="Leader Academy Logo" 
-                className="h-16 w-auto"
-              />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">ليدر أكاديمي</h1>
-                <p className="text-gray-600 mt-1">{t("نحو تعليم رقمي متميز", "Vers un enseignement numérique d'excellence", "Towards Excellence in Digital Education")}</p>
+      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+        {/* Top bar: Logo centered + utility actions */}
+        <div className="border-b border-gray-100">
+          <div className="container py-3">
+            <div className="flex items-center justify-between gap-4">
+              {/* Left: Language + Notifications */}
+              <div className="flex items-center gap-2 min-w-[160px]">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 font-medium h-8 px-2.5">
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>{LANGUAGES.find(l => l.code === language)?.flag}</span>
+                      <span className="hidden md:inline text-xs">{LANGUAGES.find(l => l.code === language)?.label}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    {LANGUAGES.map((lang) => (
+                      <DropdownMenuItem
+                        key={lang.code}
+                        onClick={() => setLanguage(lang.code)}
+                        className={`gap-2 cursor-pointer ${language === lang.code ? "bg-primary/10 font-semibold" : ""}`}
+                      >
+                        <span>{lang.flag}</span>
+                        <span>{lang.label}</span>
+                        {language === lang.code && <span className="mr-auto text-primary">✓</span>}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {user && <NotificationBell />}
               </div>
-            </div>
-            <div className="flex gap-3 items-center">
-              {/* Language Selector */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 font-medium">
-                    <Globe className="w-4 h-4" />
-                    <span>{LANGUAGES.find(l => l.code === language)?.flag}</span>
-                    <span className="hidden sm:inline">{LANGUAGES.find(l => l.code === language)?.label}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
-                  {LANGUAGES.map((lang) => (
-                    <DropdownMenuItem
-                      key={lang.code}
-                      onClick={() => setLanguage(lang.code)}
-                      className={`gap-2 cursor-pointer ${language === lang.code ? "bg-primary/10 font-semibold" : ""}`}
-                    >
-                      <span>{lang.flag}</span>
-                      <span>{lang.label}</span>
-                      {language === lang.code && <span className="mr-auto text-primary">✓</span>}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {user ? (
-                <>
-                  <NotificationBell />
-                  {!user.registrationCompleted && (
-                    <Link href="/complete-registration">
-                      <Button className="bg-orange-500 hover:bg-orange-600 text-white">
-                        <UserPlus className="w-4 h-4 ml-2" />
-                        {t("إكمال التسجيل", "Compléter l'inscription", "Complete Registration")}
-                      </Button>
+
+              {/* Center: Logo */}
+              <Link href="/">
+                <div className="flex items-center gap-3 cursor-pointer">
+                  <img 
+                    src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png" 
+                    alt="Leader Academy Logo" 
+                    className="h-12 w-auto"
+                  />
+                  <div className="text-center">
+                    <h1 className="text-xl font-bold text-gray-900 leading-tight">ليدر أكاديمي</h1>
+                    <p className="text-xs text-gray-500">{t("نحو تعليم رقمي متميز", "Vers un enseignement numérique d'excellence", "Towards Excellence in Digital Education")}</p>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Right: Auth actions */}
+              <div className="flex items-center gap-2 min-w-[160px] justify-end">
+                {user ? (
+                  <>
+                    {!user.registrationCompleted && (
+                      <Link href="/complete-registration">
+                        <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white h-8 px-3 text-xs">
+                          <UserPlus className="w-3.5 h-3.5 ml-1" />
+                          {t("إكمال التسجيل", "Inscription", "Complete")}
+                        </Button>
+                      </Link>
+                    )}
+                    <Link href="/my-courses">
+                      <Button size="sm" variant="outline" className="h-8 px-3 text-xs">{t("دوراتي", "Mes cours", "My Courses")}</Button>
                     </Link>
-                  )}
-                  {["admin", "trainer", "supervisor"].includes(user.role) && (
-                    <Link href="/dashboard">
-                      <Button variant="outline">{t("لوحة التحكم", "Tableau de bord", "Dashboard")}</Button>
+                    <Link href="/my-certificates">
+                      <Button size="sm" variant="ghost" className="h-8 px-3 text-xs">{t("شهاداتي", "Certificats", "Certificates")}</Button>
                     </Link>
-                  )}
-                  <Link href="/assistant">
-                    <Button 
-                      variant="default" 
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      <MessageSquare className="w-4 h-4 ml-2" />
-                      {t("المساعد البيداغوجي", "Assistant Pédagogique", "Pedagogical Assistant")}
-                    </Button>
-                  </Link>
-                  <Link href="/evaluate-fiche">
-                    <Button 
-                      variant="default"
-                      className="bg-violet-600 hover:bg-violet-700"
-                    >
-                      <ClipboardCheck className="w-4 h-4 ml-2" />
-                      {t("تقييم الفيشة", "Évaluer la fiche", "Evaluate Lesson Plan")}
-                    </Button>
-                  </Link>
-                  <Link href="/teacher-tools">
-                    <Button variant="outline">{t("أدوات المدرس", "Outils enseignant", "Teacher Tools")}</Button>
-                  </Link>
-                  <Link href="/shared-library">
-                    <Button variant="outline">{t("المكتبة المشتركة", "Bibliothèque partagée", "Shared Library")}</Button>
-                  </Link>
-                  <Link href="/template-library">
-                    <Button variant="outline">{t("القوالب الجاهزة", "Modèles prêts", "Ready Templates")}</Button>
-                  </Link>
-                  <Link href="/my-courses">
-                    <Button>{t("دوراتي", "Mes cours", "My Courses")}</Button>
-                  </Link>
-                  <Link href="/my-certificates">
-                    <Button variant="outline">{t("شهاداتي", "Mes certificats", "My Certificates")}</Button>
-                  </Link>
-                  <Link href="/verify">
-                    <Button variant="ghost">{t("التحقق من شهادة", "Vérifier un certificat", "Verify Certificate")}</Button>
-                  </Link>
-                </>
-              ) : (
-                <a href={getLoginUrl()}>
-                  <Button>{t("تسجيل الدخول", "Se connecter", "Sign In")}</Button>
-                </a>
-              )}
+                  </>
+                ) : (
+                  <a href={getLoginUrl()}>
+                    <Button size="sm">{t("تسجيل الدخول", "Se connecter", "Sign In")}</Button>
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Bottom bar: Main navigation */}
+        {user && (
+          <div className="bg-gray-50 border-t border-gray-100">
+            <div className="container">
+              <nav className="flex items-center gap-0.5 py-1 overflow-x-auto scrollbar-hide">
+                <Link href="/template-library">
+                  <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
+                    {t("القوالب الجاهزة", "Modèles prêts", "Ready Templates")}
+                  </Button>
+                </Link>
+                <Link href="/shared-library">
+                  <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
+                    {t("المكتبة المشتركة", "Bibliothèque partagée", "Shared Library")}
+                  </Button>
+                </Link>
+                <Link href="/teacher-tools">
+                  <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
+                    {t("أدوات المدرس", "Outils enseignant", "Teacher Tools")}
+                  </Button>
+                </Link>
+                <Link href="/verify">
+                  <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
+                    {t("التحقق من شهادة", "Vérifier", "Verify Certificate")}
+                  </Button>
+                </Link>
+                {["admin", "trainer", "supervisor"].includes(user.role) && (
+                  <Link href="/dashboard">
+                    <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
+                      {t("لوحة التحكم", "Tableau de bord", "Dashboard")}
+                    </Button>
+                  </Link>
+                )}
+                {/* Spacer */}
+                <div className="flex-1" />
+                {/* Primary CTAs */}
+                <Link href="/evaluate-fiche">
+                  <Button 
+                    size="sm"
+                    className="bg-violet-600 hover:bg-violet-700 h-8 px-3 text-xs font-medium whitespace-nowrap"
+                  >
+                    <ClipboardCheck className="w-3.5 h-3.5 ml-1" />
+                    {t("تقييم الفيشة", "Évaluer la fiche", "Evaluate Lesson Plan")}
+                  </Button>
+                </Link>
+                <Link href="/assistant">
+                  <Button 
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 h-8 px-3 text-xs font-medium whitespace-nowrap"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 ml-1" />
+                    {t("المساعد البيداغوجي", "Assistant Pédagogique", "Pedagogical Assistant")}
+                  </Button>
+                </Link>
+              </nav>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
