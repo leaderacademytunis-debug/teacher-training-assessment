@@ -1043,3 +1043,11 @@
 - [x] Ajouter le bouton sélecteur de langue (🌐) dans la barre du header de l'assistant
 - [x] Synchroniser le changement de langue avec le contexte global et l'état teachingLanguage
 - [x] Sauvegarder checkpoint
+
+## Traduction complète de l'interface de l'assistant
+- [x] Créer le dictionnaire de traductions (ar/fr/en) pour tous les textes de l'assistant
+- [x] Traduire le header (titre, sous-titre, badges, boutons)
+- [x] Traduire les suggestions rapides selon la langue
+- [x] Traduire la modale de sélection de contexte (matière/niveau/langue)
+- [x] Traduire le placeholder de saisie et les messages d'état
+- [x] Sauvegarder checkpoint

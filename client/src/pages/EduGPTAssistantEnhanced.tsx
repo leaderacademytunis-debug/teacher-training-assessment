@@ -12,6 +12,101 @@ import { Streamdown } from "streamdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// ===== TRANSLATIONS =====
+const UI = {
+  ar: {
+    sidebarTitle: "المحادثات السابقة",
+    newBtn: "جديد",
+    searchPlaceholder: "ابحث في المحادثات...",
+    noConversations: "لا توجد محادثات سابقة",
+    newConversation: "محادثة جديدة",
+    backToHome: "العودة إلى الصفحة الرئيسية",
+    changeContext: "تغيير",
+    setContext: "⚠️ حدد المادة والمستوى",
+    modalTitle: "🎓 تحديد سياق التعليم",
+    modalSubtitle: "حدد المادة والمستوى ولغة التدريس لتخصيص إجابات المساعد بدقة",
+    subjectLabel: "📚 المادة الدراسية",
+    levelLabel: "🎓 المستوى الدراسي",
+    langLabel: "🌐 لغة التدريس (اختياري)",
+    confirmBtn: (s: string, l: string, lang?: string | null) =>
+      `تأكيد: ${s} — ${l}${lang ? " — " + lang : ""}`,
+    selectFirst: "يرجى اختيار المادة والمستوى",
+    welcomeTitle: "مرحباً بك في المساعد البيداغوجي",
+    welcomeNoContext: "لبدء المحادثة، يرجى تحديد المادة الدراسية والمستوى أولاً حتى يتمكن المساعد من تقديم إجابات دقيقة ومتوافقة مع البرامج الرسمية التونسية.",
+    selectContextBtn: "📚 حدد المادة والمستوى الدراسي",
+    readyMsg: (s: string, l: string) => `جاهز لمساعدتك في`,
+    expertDesc: "الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات والتقييمات وفق البرامج الرسمية.",
+    placeholder: "اكتب رسالتك هنا... (أو أرفق ملف PDF/صورة)",
+    suggestions: [
+      { label: "إعداد مذكرة بيداغوجية رسمية", prompt: "أريد إعداد مذكرة بيداغوجية (Fiche de préparation) وفق البرامج الرسمية التونسية" },
+      { label: "تمارين متمايزة (بيداغوجيا فارقية)", prompt: "ساعدني في بناء تمارين متمايزة (علاجي، دعم، تميّز)" },
+      { label: "توزيع سنوي/فصلي", prompt: "أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج" },
+      { label: "تقييم بيداغوجي على 20", prompt: "قيّم هذه المذكرة على 20 وفق معايير وزارة التربية" },
+    ],
+  },
+  fr: {
+    sidebarTitle: "Conversations",
+    newBtn: "Nouveau",
+    searchPlaceholder: "Rechercher...",
+    noConversations: "Aucune conversation",
+    newConversation: "Nouvelle conversation",
+    backToHome: "Retour à l'accueil",
+    changeContext: "Modifier",
+    setContext: "⚠️ Définir matière et niveau",
+    modalTitle: "🎓 Définir le contexte",
+    modalSubtitle: "Sélectionnez la matière, le niveau et la langue pour personnaliser les réponses",
+    subjectLabel: "📚 Matière",
+    levelLabel: "🎓 Niveau scolaire",
+    langLabel: "🌐 Langue d'enseignement (optionnel)",
+    confirmBtn: (s: string, l: string, lang?: string | null) =>
+      `Confirmer : ${s} — ${l}${lang ? " — " + lang : ""}`,
+    selectFirst: "Veuillez sélectionner la matière et le niveau",
+    welcomeTitle: "Bienvenue dans l'assistant pédagogique",
+    welcomeNoContext: "Pour commencer, veuillez sélectionner la matière et le niveau afin que l'assistant puisse vous fournir des réponses précises conformément aux programmes officiels tunisiens.",
+    selectContextBtn: "📚 Définir la matière et le niveau",
+    readyMsg: (s: string, l: string) => `Prêt à vous aider en`,
+    expertDesc: "Expert pédagogique numérique tunisien. Je vous aide à préparer vos fiches et évaluations selon les programmes officiels.",
+    placeholder: "Tapez votre message... (ou joignez un fichier PDF/image)",
+    suggestions: [
+      { label: "Fiche de préparation officielle", prompt: "Je veux préparer une fiche de préparation officielle selon les programmes tunisiens" },
+      { label: "Exercices différenciés", prompt: "Aide-moi à créer des exercices différenciés (remédiation, soutien, excellence)" },
+      { label: "Répartition annuelle/trimestrielle", prompt: "J'ai besoin d'une répartition annuelle/trimestrielle du programme" },
+      { label: "Évaluation pédagogique sur 20", prompt: "Évalue cette fiche sur 20 selon les critères du ministère de l'éducation" },
+    ],
+  },
+  en: {
+    sidebarTitle: "Conversations",
+    newBtn: "New",
+    searchPlaceholder: "Search conversations...",
+    noConversations: "No conversations yet",
+    newConversation: "New conversation",
+    backToHome: "Back to Home",
+    changeContext: "Change",
+    setContext: "⚠️ Set subject & level",
+    modalTitle: "🎓 Set Teaching Context",
+    modalSubtitle: "Select subject, level and language to personalize the assistant's responses",
+    subjectLabel: "📚 Subject",
+    levelLabel: "🎓 Grade level",
+    langLabel: "🌐 Teaching language (optional)",
+    confirmBtn: (s: string, l: string, lang?: string | null) =>
+      `Confirm: ${s} — ${l}${lang ? " — " + lang : ""}`,
+    selectFirst: "Please select subject and level",
+    welcomeTitle: "Welcome to the Pedagogical Assistant",
+    welcomeNoContext: "To start, please select the subject and grade level so the assistant can provide accurate answers aligned with official Tunisian programs.",
+    selectContextBtn: "📚 Select subject & grade level",
+    readyMsg: (s: string, l: string) => `Ready to help you with`,
+    expertDesc: "Tunisian digital pedagogical expert. I help you prepare lesson plans and assessments according to official programs.",
+    placeholder: "Type your message... (or attach a PDF/image file)",
+    suggestions: [
+      { label: "Official Lesson Plan", prompt: "I want to prepare an official lesson plan according to Tunisian programs" },
+      { label: "Differentiated Exercises", prompt: "Help me create differentiated exercises (remediation, support, excellence)" },
+      { label: "Annual/Term Distribution", prompt: "I need an annual/term distribution of the program" },
+      { label: "Pedagogical Evaluation /20", prompt: "Evaluate this lesson plan out of 20 according to Ministry of Education criteria" },
+    ],
+  },
+} as const;
+// ===== END TRANSLATIONS =====
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -94,6 +189,7 @@ export default function EduGPTAssistantEnhanced() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const { language: globalLanguage, setLanguage } = useLanguage();
+  const t = UI[globalLanguage as keyof typeof UI] ?? UI.ar;
   const [teachingLanguage, setTeachingLanguage] = useState<"arabic" | "french" | "english" | null>(() => {
     // Sync with global language on first load
     if (globalLanguage === "fr") return "french";
@@ -445,7 +541,7 @@ export default function EduGPTAssistantEnhanced() {
       <div className={`${sidebarOpen ? "w-80" : "w-0"} transition-all duration-300 border-l border-gray-200 bg-white flex flex-col overflow-hidden`}>
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-lg">المحادثات السابقة</h2>
+            <h2 className="font-bold text-lg">{t.sidebarTitle}</h2>
             <Button
               size="sm"
               variant="default"
@@ -453,13 +549,13 @@ export default function EduGPTAssistantEnhanced() {
               onClick={startNewConversation}
             >
               <Plus className="h-4 w-4 ml-1" />
-              جديد
+              {t.newBtn}
             </Button>
           </div>
           <div className="relative">
             <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="ابحث في المحادثات..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pr-10"
@@ -503,7 +599,7 @@ export default function EduGPTAssistantEnhanced() {
             {conversations.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">لا توجد محادثات سابقة</p>
+                <p className="text-sm">{t.noConversations}</p>
               </div>
             )}
           </div>
@@ -546,14 +642,14 @@ export default function EduGPTAssistantEnhanced() {
                       <><span className="text-blue-400">|</span>
                       <span>{teachingLanguage === "french" ? "🇫🇷 Français" : teachingLanguage === "english" ? "🇬🇧 English" : "🇹🇳 عربية"}</span></>
                     )}
-                    <span className="text-blue-400 mr-1">• تغيير</span>
+                    <span className="text-blue-400 mr-1">• {t.changeContext}</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowContextSelector(true)}
                     className="flex items-center gap-1 text-xs bg-orange-50 text-orange-600 border border-orange-200 rounded-full px-2 py-0.5 hover:bg-orange-100 transition-colors animate-pulse"
                   >
-                    <span>⚠️ حدد المادة والمستوى</span>
+                    <span>{t.setContext}</span>
                   </button>
                 )}
               </div>
@@ -622,11 +718,11 @@ export default function EduGPTAssistantEnhanced() {
             if (selectedSubject && selectedLevel) setShowContextSelector(false);
           }}>
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
-              <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">🎓 تحديد سياق التعليم</h2>
-              <p className="text-sm text-gray-500 text-center mb-5">حدد المادة والمستوى ولغة التدريس لتخصيص إجابات المساعد بدقة</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-1 text-center">{t.modalTitle}</h2>
+              <p className="text-sm text-gray-500 text-center mb-5">{t.modalSubtitle}</p>
               
               <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">📚 المادة الدراسية</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t.subjectLabel}</label>
                 <div className="flex flex-wrap gap-2">
                   {SUBJECTS.map(s => (
                     <button
@@ -645,7 +741,7 @@ export default function EduGPTAssistantEnhanced() {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">🎓 المستوى الدراسي</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t.levelLabel}</label>
                 <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                   {LEVELS.map(l => (
                     <button
@@ -665,7 +761,7 @@ export default function EduGPTAssistantEnhanced() {
 
               {/* لغة التدريس */}
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">🌐 لغة التدريس (اختياري)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t.langLabel}</label>
                 <div className="flex gap-2">
                   {([
                     { value: "arabic", label: "🇹🇳 عربية", desc: "المواد بالعربية" },
@@ -694,8 +790,8 @@ export default function EduGPTAssistantEnhanced() {
                 onClick={() => setShowContextSelector(false)}
               >
                 {selectedSubject && selectedLevel
-                  ? `تأكيد: ${selectedSubject} — ${selectedLevel}${teachingLanguage ? " — " + (teachingLanguage === "french" ? "Français" : teachingLanguage === "english" ? "English" : "عربية") : ""}`
-                  : "يرجى اختيار المادة والمستوى"}
+                  ? t.confirmBtn(selectedSubject, selectedLevel, teachingLanguage === "french" ? "Français" : teachingLanguage === "english" ? "English" : teachingLanguage === "arabic" ? "عربية" : null)
+                  : t.selectFirst}
               </Button>
             </div>
           </div>
@@ -708,78 +804,33 @@ export default function EduGPTAssistantEnhanced() {
               <div className="bg-blue-100 p-6 rounded-full mb-4">
                 <MessageSquare className="h-12 w-12 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">مرحباً بك في المساعد البيداغوجي</h2>
+              <h2 className="text-2xl font-bold mb-2">{t.welcomeTitle}</h2>
               {!selectedSubject || !selectedLevel ? (
                 <>
                   <p className="text-gray-600 mb-4 max-w-md">
-                    لبدء المحادثة، يرجى تحديد المادة الدراسية والمستوى أولاً حتى يتمكن المساعد من تقديم إجابات دقيقة ومتوافقة مع البرامج الرسمية التونسية.
+                    {t.welcomeNoContext}
                   </p>
                   <Button
                     onClick={() => setShowContextSelector(true)}
                     className="bg-blue-600 hover:bg-blue-700 mb-6 gap-2"
                   >
-                    📚 حدد المادة والمستوى الدراسي
+                    {t.selectContextBtn}
                   </Button>
                 </>
               ) : (
                 <>
                   <p className="text-gray-600 mb-2 max-w-md">
-                    {teachingLanguage === "french" ? "Prêt à vous aider en" : teachingLanguage === "english" ? "Ready to help you with" : "جاهز لمساعدتك في"} <strong>{selectedSubject}</strong> — <strong>{selectedLevel}</strong>
+                    {t.readyMsg(selectedSubject!, selectedLevel!)} <strong>{selectedSubject}</strong> — <strong>{selectedLevel}</strong>
                   </p>
                   <p className="text-sm text-gray-500 mb-6">
-                    {teachingLanguage === "french"
-                      ? "Expert pédagogique numérique tunisien. Je vous aide à préparer vos fiches et évaluations selon les programmes officiels."
-                      : teachingLanguage === "english"
-                      ? "Tunisian digital pedagogical expert. I help you prepare lesson plans and assessments according to official programs."
-                      : "الخبير البيداغوجي الرقمي التونسي. أساعدك في إعداد المذكرات والتقييمات وفق البرامج الرسمية."}
+                    {t.expertDesc}
                   </p>
                   <div className="grid grid-cols-2 gap-3 max-w-2xl">
-                    {teachingLanguage === "french" ? (
-                      <>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Je veux préparer une fiche de préparation officielle selon les programmes tunisiens")}>
-                          <p className="text-sm font-medium">Fiche de préparation officielle</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Aide-moi à créer des exercices différenciés (remédiation, soutien, excellence)")}>
-                          <p className="text-sm font-medium">Exercices différenciés (pédagogie différenciée)</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("J'ai besoin d'une répartition annuelle/trimestrielle du programme")}>
-                          <p className="text-sm font-medium">Répartition annuelle/trimestrielle</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Évalue cette fiche sur 20 selon les critères du ministère de l'éducation")}>
-                          <p className="text-sm font-medium">Évaluation pédagogique sur 20</p>
-                        </Card>
-                      </>
-                    ) : teachingLanguage === "english" ? (
-                      <>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("I want to prepare an official lesson plan according to Tunisian programs")}>
-                          <p className="text-sm font-medium">Official Lesson Plan</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Help me create differentiated exercises (remediation, support, excellence)")}>
-                          <p className="text-sm font-medium">Differentiated Exercises</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("I need an annual/term distribution of the program")}>
-                          <p className="text-sm font-medium">Annual/Term Distribution</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("Evaluate this lesson plan out of 20 according to Ministry of Education criteria")}>
-                          <p className="text-sm font-medium">Pedagogical Evaluation /20</p>
-                        </Card>
-                      </>
-                    ) : (
-                      <>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أريد إعداد مذكرة بيداغوجية (Fiche de préparation) وفق البرامج الرسمية التونسية")}>
-                          <p className="text-sm font-medium">إعداد مذكرة بيداغوجية رسمية</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("ساعدني في بناء تمارين متمايزة (علاجي، دعم، تميّز)")}>
-                          <p className="text-sm font-medium">تمارين متمايزة (بيداغوجيا فارقية)</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج")}>
-                          <p className="text-sm font-medium">توزيع سنوي/فصلي</p>
-                        </Card>
-                        <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput("قيّم هذه المذكرة على 20 وفق معايير وزارة التربية")}>
-                          <p className="text-sm font-medium">تقييم بيداغوجي على 20</p>
-                        </Card>
-                      </>
-                    )}
+                    {t.suggestions.map((s, i) => (
+                      <Card key={i} className="p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setInput(s.prompt)}>
+                        <p className="text-sm font-medium">{s.label}</p>
+                      </Card>
+                    ))}
                   </div>
                 </>
               )}
@@ -882,7 +933,7 @@ export default function EduGPTAssistantEnhanced() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="اكتب رسالتك هنا... (أو أرفق ملف PDF/صورة)"
+              placeholder={t.placeholder}
               className="flex-1 min-h-[60px] max-h-[200px] resize-none"
               disabled={isLoading}
             />
