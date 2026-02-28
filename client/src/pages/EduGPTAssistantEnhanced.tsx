@@ -140,7 +140,7 @@ interface Conversation {
 const SUBJECTS = [
   "اللغة العربية",
   "اللغة الفرنسية",
-  "اللغة الإنجليزية",
+  "اللغة الإنجليزية / English",
   "الرياضيات",
   "العلوم",
   "التربية الإسلامية",
@@ -156,6 +156,13 @@ const SUBJECTS = [
   "التربية البدنية",
   "أخرى",
 ];
+
+// Map subjects to their teaching language for auto-detection
+const SUBJECT_LANGUAGE_MAP: Record<string, "arabic" | "french" | "english"> = {
+  "اللغة العربية": "arabic",
+  "اللغة الفرنسية": "french",
+  "اللغة الإنجليزية / English": "english",
+};
 
 const LEVELS = [
   // ابتدائي
@@ -727,7 +734,13 @@ export default function EduGPTAssistantEnhanced() {
                   {SUBJECTS.map(s => (
                     <button
                       key={s}
-                      onClick={() => setSelectedSubject(s)}
+                      onClick={() => {
+                        setSelectedSubject(s);
+                        // Auto-detect teaching language from subject
+                        if (SUBJECT_LANGUAGE_MAP[s]) {
+                          setTeachingLanguage(SUBJECT_LANGUAGE_MAP[s]);
+                        }
+                      }}
                       className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
                         selectedSubject === s
                           ? "bg-blue-600 text-white border-blue-600 shadow-sm"

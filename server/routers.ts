@@ -1227,10 +1227,12 @@ export const appRouter = router({
         const language = input.language || detectLanguage(input.subject);
 
         // Get relevant reference documents filtered by language
+        // For English subject, search by language only (subject stored as 'English' in DB)
+        const isEnglishSubject = language === 'english';
         const references = await db.getReferenceDocuments({
           educationLevel: input.educationLevel,
           grade: input.grade,
-          subject: input.subject,
+          subject: isEnglishSubject ? undefined : input.subject, // Don't filter by subject for English
           language: language, // Filter by detected/selected language
         });
 
