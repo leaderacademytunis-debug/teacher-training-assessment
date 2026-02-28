@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare } from "lucide-react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -40,6 +41,7 @@ interface Conversation {
 }
 
 export default function EduGPTAssistantEnhanced() {
+  const [, navigate] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -456,6 +458,15 @@ export default function EduGPTAssistantEnhanced() {
         {/* Header */}
         <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => navigate("/")}
+              title="العودة إلى الصفحة الرئيسية"
+              className="text-gray-600 hover:text-blue-600"
+            >
+              <ArrowRight className="h-5 w-5" />
+            </Button>
             <Button
               size="sm"
               variant="ghost"
