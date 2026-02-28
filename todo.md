@@ -1020,3 +1020,7 @@
 - [x] Frontend: bouton "مشاركة التقرير" + dialogue avec copie du lien et champ e-mail
 - [x] Frontend: page publique `/shared-evaluation/:token` affichant le rapport
 - [x] Enregistrer checkpoint
+
+## تصحيح المصطلح: مفتش → متفقد
+- [x] استبدال "مفتش" بـ"متفقد" في جميع ملفات المشروع (EvaluateFiche.tsx، SharedEvaluationView.tsx، exportEvaluation.ts، routers.ts)
+- [x] حفظ نقطة تفتيش

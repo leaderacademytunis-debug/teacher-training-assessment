@@ -438,7 +438,7 @@ export default function EvaluateFiche() {
             <Card className="border-violet-200 bg-violet-50">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-violet-800 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4" /> توصيات المفتش
+                  <Lightbulb className="w-4 h-4" /> توصيات المتفقد
                 </CardTitle>
               </CardHeader>
               <CardContent>
