@@ -2418,10 +2418,52 @@ When creating an English lesson plan, use this structure:
 - **Coherence**: Organization and logical flow
 - **Task completion**: Meeting the lesson objectives`;
 
+        // Build LLM messages with proper attachment handling
+        const llmMessages = input.messages.map(m => {
+          if (!m.attachments || m.attachments.length === 0) {
+            return { role: m.role as "user" | "assistant", content: m.content };
+          }
+          // Build multipart content array for messages with attachments
+          type ContentPart = 
+            | { type: "text"; text: string }
+            | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }
+            | { type: "file_url"; file_url: { url: string; mime_type: "application/pdf" | "audio/mpeg" | "audio/wav" | "audio/mp4" | "video/mp4" } };
+          const contentParts: ContentPart[] = [];
+          // Add text content first
+          if (m.content) {
+            contentParts.push({ type: "text", text: m.content });
+          }
+          // Add each attachment with proper type
+          for (const att of m.attachments) {
+            if (!att.url) continue;
+            const mime = att.type || "";
+            if (mime.startsWith("image/")) {
+              // Images: send as image_url for vision
+              contentParts.push({
+                type: "image_url",
+                image_url: { url: att.url, detail: "high" },
+              });
+            } else if (mime === "application/pdf") {
+              // PDFs: send as file_url
+              contentParts.push({
+                type: "file_url",
+                file_url: { url: att.url, mime_type: "application/pdf" },
+              });
+            } else {
+              // Other documents: mention as text note
+              contentParts.push({
+                type: "text",
+                text: `[\u0645\u0644\u0641 \u0645\u0631\u0641\u0642: ${att.name} (${mime || "\u0648\u062b\u064a\u0642\u0629"}) - \u064a\u0631\u062c\u0649 \u062a\u062d\u0644\u064a\u0644 \u0645\u062d\u062a\u0648\u0627\u0647 \u0648\u0627\u0644\u0631\u062f \u0628\u0646\u0627\u0621\u064b \u0639\u0644\u064a\u0647]`,
+              });
+            }
+          }
+          return { role: m.role as "user" | "assistant", content: contentParts };
+        });
+
         const response = await invokeLLM({
           messages: [
             { role: "system", content: systemPrompt },
-            ...input.messages.map(m => ({ role: m.role, content: m.content })),
+            ...llmMessages,
           ],
         });
 
