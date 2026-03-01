@@ -1236,16 +1236,62 @@ export const appRouter = router({
           language: language, // Filter by detected/selected language
         });
 
+        // Build reference context with actual extracted content from teacher guides
+        const buildReferenceContext = (lang: "arabic" | "french" | "english") => {
+          if (references.length === 0) {
+            return lang === "french"
+              ? "Aucune référence officielle disponible pour ce niveau et cette matière. Proposez un contenu pédagogique général adapté au niveau scolaire."
+              : lang === "english"
+              ? "No official references available for this level and subject. Propose general pedagogical content suitable for the educational level."
+              : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة. اقترح محتوى بيداغوجي عام مناسب للمستوى التعليمي.";
+          }
+          // Separate references with and without extracted content
+          const refsWithContent = references.filter(r => r.extractedContent && r.extractedContent.length > 100);
+          const refsWithoutContent = references.filter(r => !r.extractedContent || r.extractedContent.length <= 100);
+          let context = "";
+          if (lang === "french") {
+            context = `Références officielles disponibles:\n${refsWithoutContent.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? "Guide de l'enseignant" : r.documentType === 'official_program' ? 'Programme officiel' : 'Référence'})`).join('\n')}`;
+            if (refsWithContent.length > 0) {
+              context += `\n\n=== CONTENU EXTRAIT DES GUIDES OFFICIELS ===\n`;
+              for (const ref of refsWithContent.slice(0, 3)) {
+                const excerpt = ref.extractedContent!.substring(0, 3000);
+                context += `\n--- ${ref.documentTitle} ---\n${excerpt}\n[... contenu tronqué ...]\n`;
+              }
+              context += `\nNote: Basez vos suggestions sur ce contenu officiel extrait. Citez des activités et exemples réels du guide.`;
+            } else {
+              context += `\n\nNote: Utilisez ces références comme base pour vos suggestions.`;
+            }
+          } else if (lang === "english") {
+            context = `Available official references:\n${refsWithoutContent.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? "Teacher's Guide" : r.documentType === 'official_program' ? 'Official Program' : 'Reference'})`).join('\n')}`;
+            if (refsWithContent.length > 0) {
+              context += `\n\n=== EXTRACTED CONTENT FROM OFFICIAL TEACHER GUIDES ===\n`;
+              for (const ref of refsWithContent.slice(0, 3)) {
+                const excerpt = ref.extractedContent!.substring(0, 3000);
+                context += `\n--- ${ref.documentTitle} ---\n${excerpt}\n[... content truncated ...]\n`;
+              }
+              context += `\nNote: Base your suggestions on this official extracted content. Cite real activities and examples from the guide.`;
+            } else {
+              context += `\n\nNote: Use these references as a basis for your suggestions.`;
+            }
+          } else {
+            context = `المراجع الرسمية المتاحة:\n${refsWithoutContent.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'دليل المعلم' : r.documentType === 'official_program' ? 'برنامج رسمي' : 'مرجع'})`).join('\n')}`;
+            if (refsWithContent.length > 0) {
+              context += `\n\n=== محتوى مستخرج من أدلة المعلمين الرسمية ===\n`;
+              for (const ref of refsWithContent.slice(0, 3)) {
+                const excerpt = ref.extractedContent!.substring(0, 3000);
+                context += `\n--- ${ref.documentTitle} ---\n${excerpt}\n[... المحتوى مقتطع ...]\n`;
+              }
+              context += `\nملاحظة: استند إلى هذا المحتوى الرسمي المستخرج في اقتراحاتك. استشهد بأنشطة وأمثلة حقيقية من الدليل.`;
+            } else {
+              context += `\n\nملاحظة: استخدم هذه المراجع كأساس لاقتراحاتك.`;
+            }
+          }
+          return context;
+        };
         const referenceContextByLang = {
-          french: references.length > 0
-            ? `Références officielles disponibles (à respecter):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'Guide de l\'enseignant' : r.documentType === 'official_program' ? 'Programme officiel' : 'Référence'})`).join('\n')}\n\nNote: Utilisez ces références comme base pour vos suggestions et assurez-vous que le contenu est conforme aux programmes officiels tunisiens.`
-            : "Aucune référence officielle disponible pour ce niveau et cette matière. Proposez un contenu pédagogique général adapté au niveau scolaire.",
-          english: references.length > 0
-            ? `Available official references (to be followed):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'Teacher\'s Guide' : r.documentType === 'official_program' ? 'Official Program' : 'Reference'})`).join('\n')}\n\nNote: Use these references as a basis for your suggestions and ensure the content complies with Tunisian official programs.`
-            : "No official references available for this level and subject. Propose general pedagogical content suitable for the educational level.",
-          arabic: references.length > 0
-            ? `المراجع الرسمية المتاحة (يجب الالتزام بها):\n${references.map(r => `- ${r.documentTitle} (${r.documentType === 'teacher_guide' ? 'دليل المعلم' : r.documentType === 'official_program' ? 'برنامج رسمي' : 'مرجع'})`).join('\n')}\n\nملاحظة: استخدم هذه المراجع كأساس لاقتراحاتك وتأكد من مطابقة المحتوى للبرامج الرسمية التونسية.`
-            : "لا توجد مراجع رسمية متاحة لهذا المستوى والمادة. اقترح محتوى بيداغوجي عام مناسب للمستوى التعليمي.",
+          french: buildReferenceContext("french"),
+          english: buildReferenceContext("english"),
+          arabic: buildReferenceContext("arabic"),
         };
 
         const referenceContext = referenceContextByLang[language];
@@ -2119,6 +2165,22 @@ export const appRouter = router({
           .where(eq(referenceDocuments.id, input.referenceId));
 
         return { success: true, contentLength: content.length };
+      }),
+
+    // Bulk update extracted content (used by import scripts)
+    updateContent: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        extractedContent: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        await database
+          .update(referenceDocuments)
+          .set({ extractedContent: input.extractedContent })
+          .where(eq(referenceDocuments.id, input.id));
+        return { success: true, id: input.id };
       }),
   }),
 

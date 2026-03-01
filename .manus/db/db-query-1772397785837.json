@@ -1,0 +1,16 @@
+{
+  "query": "\nSELECT \n  COUNT(*) as total_books,\n  SUM(CASE WHEN documentType = 'teacher_guide' THEN 1 ELSE 0 END) as teacher_guides,\n  SUM(CASE WHEN extractedContent IS NOT NULL AND LENGTH(extractedContent) > 100 THEN 1 ELSE 0 END) as has_content,\n  SUM(CASE WHEN extractedContent IS NULL OR LENGTH(extractedContent) < 100 THEN 1 ELSE 0 END) as needs_content\nFROM referenceDocuments;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute \nSELECT \n  COUNT(*) as total_books,\n  SUM(CASE WHEN documentType = 'teacher_guide' THEN 1 ELSE 0 END) as teacher_guides,\n  SUM(CASE WHEN extractedContent IS NOT NULL AND LENGTH(extractedContent) > 100 THEN 1 ELSE 0 END) as has_content,\n  SUM(CASE WHEN extractedContent IS NULL OR LENGTH(extractedContent) < 100 THEN 1 ELSE 0 END) as needs_content\nFROM referenceDocuments;\n",
+  "rows": [
+    {
+      "total_books": "397",
+      "teacher_guides": "121",
+      "has_content": "8",
+      "needs_content": "389"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_books\tteacher_guides\thas_content\tneeds_content\n397\t121\t8\t389\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}
