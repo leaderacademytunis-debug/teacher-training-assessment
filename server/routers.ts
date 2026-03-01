@@ -1208,7 +1208,7 @@ export const appRouter = router({
         lessonTitle: z.string(),
         language: z.enum(["arabic", "french", "english"]).optional(), // Optional language override
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { invokeLLM } = await import("./_core/llm");
         
         // Detect language from subject
@@ -1308,9 +1308,39 @@ export const appRouter = router({
           }
         }
 
+         // Auto-save to history
+        let savedId: number | undefined;
+        try {
+          const saved = await db.createAiSuggestion({
+            userId: ctx.user.id,
+            schoolYear: input.schoolYear,
+            educationLevel: input.educationLevel,
+            grade: input.grade,
+            subject: input.subject,
+            lessonTitle: input.lessonTitle,
+            lessonObjectives: parsedContent.objectives || undefined,
+            introduction: parsedContent.introduction || undefined,
+            mainActivities: undefined,
+            conclusion: parsedContent.conclusion || undefined,
+            evaluation: parsedContent.evaluation || undefined,
+            materials: parsedContent.materials || undefined,
+            rawSuggestion: suggestion,
+            usedReferences: references.map(r => ({
+              title: r.documentTitle,
+              type: r.documentType,
+              url: r.documentUrl,
+            })),
+          });
+          savedId = saved.id;
+        } catch (e) {
+          // Non-blocking: history save failure should not break generation
+          console.error("Failed to auto-save AI suggestion to history:", e);
+        }
+
         return {
           suggestion,
           parsedContent,
+          savedId,
           usedReferences: references.map(r => ({
             title: r.documentTitle,
             type: r.documentType,
@@ -1318,7 +1348,6 @@ export const appRouter = router({
           })),
         };
       }),
-
     exportAiSuggestionToWord: protectedProcedure
       .input(z.object({
         schoolYear: z.string(),

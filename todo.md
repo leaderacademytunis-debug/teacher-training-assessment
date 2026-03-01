@@ -1085,3 +1085,12 @@
 
 ## تحسين المساعد البيداغوجي
 - [x] إضافة تحقق ذكي من التناسق بين عنوان الدرس والمستوى الدراسي (مثلاً: "حرف الطاء" مع السنة السادسة)
+
+## Historique des leçons générées
+- [ ] Vérifier/créer la table aiSuggestions en base de données avec userId
+- [ ] Créer les procédures tRPC: list, getById, delete pour l'historique
+- [ ] Créer la page LessonHistory.tsx avec liste, détail, réutilisation et suppression
+- [ ] Intégrer le lien vers l'historique dans la navigation (TeacherTools + Home)
+
+## تصحيح المستويات الدراسية
+- [x] تصحيح قائمة المستويات الدراسية في جميع الصفحات: ابتدائي (1-6)، إعدادي (7-9)، ثانوي (1-4)

@@ -145,6 +145,11 @@ export default function Home() {
                     {t("أدوات المدرس", "Outils enseignant", "Teacher Tools")}
                   </Button>
                 </Link>
+                <Link href="/lesson-history">
+                  <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
+                    {t("سجل الدروس", "Historique", "Lesson History")}
+                  </Button>
+                </Link>
                 <Link href="/verify">
                   <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
                     {t("التحقق من شهادة", "Vérifier", "Verify Certificate")}

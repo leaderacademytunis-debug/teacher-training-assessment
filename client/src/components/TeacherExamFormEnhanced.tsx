@@ -201,9 +201,9 @@ export function TeacherExamFormEnhanced({ onClose, onSuccess }: TeacherExamFormE
                     )}
                     {formData.educationLevel === "middle" && (
                       <>
-                        <SelectItem value="السنة السابعة أساسي">السنة السابعة أساسي</SelectItem>
-                        <SelectItem value="السنة الثامنة أساسي">السنة الثامنة أساسي</SelectItem>
-                        <SelectItem value="السنة التاسعة أساسي">السنة التاسعة أساسي</SelectItem>
+                        <SelectItem value="السنة السابعة إعدادي">السنة السابعة إعدادي</SelectItem>
+                        <SelectItem value="السنة الثامنة إعدادي">السنة الثامنة إعدادي</SelectItem>
+                        <SelectItem value="السنة التاسعة إعدادي">السنة التاسعة إعدادي</SelectItem>
                       </>
                     )}
                     {formData.educationLevel === "secondary" && (
