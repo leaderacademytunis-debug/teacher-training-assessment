@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import SelfEvaluationTemplate from "@/components/SelfEvaluationTemplate";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 const SUBJECTS = [
@@ -366,7 +368,20 @@ export default function EvaluateFiche() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {/* Mode tabs */}
+        <Tabs defaultValue="ai" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="ai" className="gap-2">
+              <ClipboardCheck className="w-4 h-4" />
+              تقييم بالذكاء الاصطناعي
+            </TabsTrigger>
+            <TabsTrigger value="self" className="gap-2">
+              <Star className="w-4 h-4" />
+              تقييم ذاتي تفاعلي
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="ai">
         {/* Result section */}
         {result && (
           <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -594,8 +609,13 @@ export default function EvaluateFiche() {
             </Button>
           </div>
         )}
-      </div>
+          </TabsContent>
 
+          <TabsContent value="self">
+            <SelfEvaluationTemplate />
+          </TabsContent>
+        </Tabs>
+      </div>
       {/* Share Dialog */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="max-w-md" dir="rtl">
