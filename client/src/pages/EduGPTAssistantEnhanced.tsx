@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
@@ -204,7 +204,48 @@ export default function EduGPTAssistantEnhanced() {
     return null;
   });
   const [showContextSelector, setShowContextSelector] = useState(false);
-  
+  const [templateLoaded, setTemplateLoaded] = useState(false);
+
+  // Read templateId from URL query params
+  const templateId = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("templateId");
+    return id ? parseInt(id, 10) : null;
+  }, []);
+
+  // Fetch template data if templateId is present in URL
+  const { data: templateData } = trpc.templates.getById.useQuery(
+    { id: templateId! },
+    { enabled: !!templateId && !templateLoaded }
+  );
+
+  // Auto-fill context and input from template
+  useEffect(() => {
+    if (!templateData || templateLoaded) return;
+    setTemplateLoaded(true);
+    if (templateData.subject) setSelectedSubject(templateData.subject);
+    if (templateData.grade) setSelectedLevel(templateData.grade);
+    if (templateData.language === "french") setTeachingLanguage("french");
+    else if (templateData.language === "english") setTeachingLanguage("english");
+    else setTeachingLanguage("arabic");
+    // Build prompt from template fields
+    const parts: string[] = [
+      `أريد إعداد مذكرة بيداغوجية رسمية بناءً على القالب: "${templateData.templateName}"`,
+    ];
+    if (templateData.subject) parts.push(`المادة: ${templateData.subject}`);
+    if (templateData.grade) parts.push(`المستوى: ${templateData.grade}`);
+    if (templateData.duration) parts.push(`المدة: ${templateData.duration} دقيقة`);
+    if (templateData.lessonObjectives) parts.push(`الأهداف التعلمية: ${templateData.lessonObjectives}`);
+    if (templateData.introduction) parts.push(`التمهيد: ${templateData.introduction}`);
+    if (templateData.evaluation) parts.push(`التقييم: ${templateData.evaluation}`);
+    setInput(parts.join("\n"));
+    // Remove templateId from URL without reload
+    const url = new URL(window.location.href);
+    url.searchParams.delete("templateId");
+    window.history.replaceState({}, "", url.toString());
+    toast.success(`تم تحميل القالب: ${templateData.templateName}`);
+  }, [templateData, templateLoaded]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

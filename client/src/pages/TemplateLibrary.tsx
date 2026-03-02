@@ -23,7 +23,7 @@ export default function TemplateLibrary() {
 
   const handleUseTemplate = (templateId: number) => {
     incrementUsage.mutate({ id: templateId });
-    setLocation(`/pedagogical-notes/create?templateId=${templateId}`);
+    setLocation(`/assistant?templateId=${templateId}`);
   };
 
   const getLevelBadgeColor = (level: string) => {
