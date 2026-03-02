@@ -239,53 +239,38 @@ function processArabicText(text: string): string {
 }
 
 /**
- * Generate PDF from HTML content using weasyprint
+ * Generate PDF from HTML content using puppeteer-core with system Chromium
+ * This replaces weasyprint to avoid Python version conflicts in the sandbox runtime
  * @param htmlContent - HTML content to convert to PDF
  * @returns Buffer containing the PDF
  */
 export async function createPDF(htmlContent: string): Promise<Buffer> {
-  const { exec } = await import("child_process");
-  const { promisify } = await import("util");
-  const { writeFile, unlink, readFile } = await import("fs/promises");
-  const { join } = await import("path");
-  const { tmpdir } = await import("os");
-  const { randomBytes } = await import("crypto");
-
-  const execAsync = promisify(exec);
-  const tempId = randomBytes(16).toString("hex");
-  const htmlPath = join(tmpdir(), `${tempId}.html`);
-  const pdfPath = join(tmpdir(), `${tempId}.pdf`);
-
+  const puppeteer = await import("puppeteer-core");
+  let browser;
   try {
-    // Write HTML to temp file
-    await writeFile(htmlPath, htmlContent, "utf-8");
-
-    // Convert HTML to PDF using weasyprint
-    // Note: PYTHONHOME, PYTHONPATH, and NUITKA_PYTHONPATH must be deleted to avoid conflicts
-    // between Python 3.11 (where weasyprint is installed) and Python 3.13 (sandbox runtime)
-    const env = { ...process.env };
-    delete env.PYTHONHOME;
-    delete env.PYTHONPATH;
-    delete (env as any).NUITKA_PYTHONPATH;
-    await execAsync(`python3.11 -m weasyprint ${htmlPath} ${pdfPath}`, { env });
-
-    // Read PDF file
-    const pdfBuffer = await readFile(pdfPath);
-
-    // Cleanup temp files
-    await Promise.all([
-      unlink(htmlPath).catch(() => {}),
-      unlink(pdfPath).catch(() => {}),
-    ]);
-
-    return pdfBuffer;
+    browser = await puppeteer.launch({
+      executablePath: "/usr/bin/chromium-browser",
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--font-render-hinting=none",
+      ],
+    });
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" },
+    });
+    return Buffer.from(pdfBuffer);
   } catch (error) {
-    // Cleanup on error
-    await Promise.all([
-      unlink(htmlPath).catch(() => {}),
-      unlink(pdfPath).catch(() => {}),
-    ]);
     throw new Error(`Failed to generate PDF: ${error}`);
+  } finally {
+    if (browser) await browser.close();
   }
 }
 

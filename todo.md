@@ -1136,3 +1136,6 @@
 - [x] Créer des modèles pour les matières scientifiques (Sciences, Éveil scientifique, SVT, Physique-Chimie) — 6 modèles
 - [x] Créer des modèles pour la langue française (expression écrite, grammaire, compréhension) — 3 modèles
 - [x] Vérifier l'affichage des nouveaux modèles dans la bibliothèque (16 groupes, 12 nouveaux modèles)
+
+## إصلاح أخطاء (مارس 2026 - دورة 2)
+- [x] إصلاح خطأ "خطأ في تصدير المحادثة" — استبدال weasyprint (Python 3.13 تعارض) بـ puppeteer-core (Node.js) — تصدير PDF يعمل بنجاح في 7.7 ثانية
