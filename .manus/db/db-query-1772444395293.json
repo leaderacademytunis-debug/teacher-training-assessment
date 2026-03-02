@@ -1,0 +1,26 @@
+{
+  "query": "SELECT * FROM templates LIMIT 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT * FROM templates LIMIT 2;",
+  "rows": [],
+  "messages": [
+    "1\t1\tدرس قراءة - السنة الأولى ابتدائي\tقالب جاهز لدرس قراءة في السنة الأولى ابتدائي\tprimary\tالسنة الأولى ابتدائي\tاللغة العربية\tarabic\t45\t- تعرف الحروف الهجائية",
+    "- قراءة كلمات بسيطة",
+    "- فهم معنى الكلمات المقروءة\t- بطاقات الحروف",
+    "- الكتاب المدرسي",
+    "- السبورة والطباشير الملونة",
+    "- صور توضيحية\tمراجعة الحروف المدروسة سابقاً من خلال لعبة تفاعلية. عرض الحرف الجديد بطريقة جذابة باستخدام صور وأمثلة من بيئة التلميذ.\t[{\"description\": \"عرض الحرف الجديد بأشكاله المختلفة (أول، وسط، آخر الكلمة). التدريب على نطقه الصحيح.\", \"duration\": 15, \"title\": \"التعرف على الحرف\"}, {\"description\": \"قراءة كلمات تحتوي على الحرف الجديد. شرح معاني الكلمات باستخدام الصور.\", \"duration\": 20, \"title\": \"القراءة والفهم\"}, {\"description\": \"تمارين كتابية وشفوية على الحرف. ألعاب تعليمية تفاعلية.\", \"duration\": 10, \"title\": \"التطبيق\"}]\tمراجعة سريعة للحرف المدروس. تقييم فهم التلاميذ من خلال أسئلة شفوية.\t- ملاحظة مشاركة التلاميذ",
+    "- تقييم القراءة الشفوية",
+    "- تصحيح التمارين الكتابية\t1\t0\t2026-02-25 11:50:24\t2026-02-25 11:50:24",
+    "2\t1\tLeçon de lecture - 4ème année primaire\tModèle prêt pour une leçon de lecture en français\tprimary\t4ème année primaire\tFrançais\tfrench\t45\t- Lire et comprendre un texte narratif",
+    "- Identifier les personnages et les actions",
+    "- Enrichir le vocabulaire\t- Manuel scolaire",
+    "- Tableau et marqueurs",
+    "- Images illustratives",
+    "- Fiches d'exercices\tRappel de la leçon précédente. Présentation du thème du texte à travers des images. Motivation des élèves par des questions d'anticipation.\t[{\"description\": \"L'enseignant lit le texte à haute voix avec expression. Les élèves suivent sur leurs livres.\", \"duration\": 10, \"title\": \"Lecture magistrale\"}, {\"description\": \"Les élèves lisent silencieusement puis à haute voix. Questions de compréhension sur le texte.\", \"duration\": 20, \"title\": \"Lecture individuelle et compréhension\"}, {\"description\": \"Explication des mots difficiles. Utilisation dans des phrases. Exercices d'application.\", \"duration\": 15, \"title\": \"Exploitation du vocabulaire\"}]\tRésumé du texte par les élèves. Synthèse des points importants.\t- Observation de la participation",
+    "- Évaluation de la lecture à haute voix",
+    "- Correction des exercices\t1\t1\t2026-02-25 11:50:24\t2026-02-25 12:36:57"
+  ],
+  "stdout": "id\tcreatedBy\ttemplateName\tdescription\teducationLevel\tgrade\tsubject\tlanguage\tduration\tlessonObjectives\tmaterials\tintroduction\tmainActivities\tconclusion\tevaluation\tisPublic\tusageCount\tcreatedAt\tupdatedAt\n1\t1\tدرس قراءة - السنة الأولى ابتدائي\tقالب جاهز لدرس قراءة في السنة الأولى ابتدائي\tprimary\tالسنة الأولى ابتدائي\tاللغة العربية\tarabic\t45\t- تعرف الحروف الهجائية\n- قراءة كلمات بسيطة\n- فهم معنى الكلمات المقروءة\t- بطاقات الحروف\n- الكتاب المدرسي\n- السبورة والطباشير الملونة\n- صور توضيحية\tمراجعة الحروف المدروسة سابقاً من خلال لعبة تفاعلية. عرض الحرف الجديد بطريقة جذابة باستخدام صور وأمثلة من بيئة التلميذ.\t[{\"description\": \"عرض الحرف الجديد بأشكاله المختلفة (أول، وسط، آخر الكلمة). التدريب على نطقه الصحيح.\", \"duration\": 15, \"title\": \"التعرف على الحرف\"}, {\"description\": \"قراءة كلمات تحتوي على الحرف الجديد. شرح معاني الكلمات باستخدام الصور.\", \"duration\": 20, \"title\": \"القراءة والفهم\"}, {\"description\": \"تمارين كتابية وشفوية على الحرف. ألعاب تعليمية تفاعلية.\", \"duration\": 10, \"title\": \"التطبيق\"}]\tمراجعة سريعة للحرف المدروس. تقييم فهم التلاميذ من خلال أسئلة شفوية.\t- ملاحظة مشاركة التلاميذ\n- تقييم القراءة الشفوية\n- تصحيح التمارين الكتابية\t1\t0\t2026-02-25 11:50:24\t2026-02-25 11:50:24\n2\t1\tLeçon de lecture - 4ème année primaire\tModèle prêt pour une leçon de lecture en français\tprimary\t4ème année primaire\tFrançais\tfrench\t45\t- Lire et comprendre un texte narratif\n- Identifier les personnages et les actions\n- Enrichir le vocabulaire\t- Manuel scolaire\n- Tableau et marqueurs\n- Images illustratives\n- Fiches d'exercices\tRappel de la leçon précédente. Présentation du thème du texte à travers des images. Motivation des élèves par des questions d'anticipation.\t[{\"description\": \"L'enseignant lit le texte à haute voix avec expression. Les élèves suivent sur leurs livres.\", \"duration\": 10, \"title\": \"Lecture magistrale\"}, {\"description\": \"Les élèves lisent silencieusement puis à haute voix. Questions de compréhension sur le texte.\", \"duration\": 20, \"title\": \"Lecture individuelle et compréhension\"}, {\"description\": \"Explication des mots difficiles. Utilisation dans des phrases. Exercices d'application.\", \"duration\": 15, \"title\": \"Exploitation du vocabulaire\"}]\tRésumé du texte par les élèves. Synthèse des points importants.\t- Observation de la participation\n- Évaluation de la lecture à haute voix\n- Correction des exercices\t1\t1\t2026-02-25 11:50:24\t2026-02-25 12:36:57\n",
+  "stderr": "",
+  "execution_time_ms": 365
+}

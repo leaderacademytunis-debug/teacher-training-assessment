@@ -1,0 +1,210 @@
+{
+  "query": "SELECT id, templateName, subject, grade, educationLevel, language, duration, usageCount FROM templates ORDER BY id LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, templateName, subject, grade, educationLevel, language, duration, usageCount FROM templates ORDER BY id LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "templateName": "درس قراءة - السنة الأولى ابتدائي",
+      "subject": "اللغة العربية",
+      "grade": "السنة الأولى ابتدائي",
+      "educationLevel": "primary",
+      "language": "arabic",
+      "duration": "45",
+      "usageCount": "0"
+    },
+    {
+      "id": "2",
+      "templateName": "Leçon de lecture - 4ème année primaire",
+      "subject": "Français",
+      "grade": "4ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "45",
+      "usageCount": "1"
+    },
+    {
+      "id": "3",
+      "templateName": "درس رياضيات - العمليات الحسابية",
+      "subject": "الرياضيات",
+      "grade": "السنة الثالثة ابتدائي",
+      "educationLevel": "primary",
+      "language": "arabic",
+      "duration": "45",
+      "usageCount": "1"
+    },
+    {
+      "id": "4",
+      "templateName": "درس علوم - الإعدادي",
+      "subject": "علوم الحياة والأرض",
+      "grade": "السنة السابعة أساسي",
+      "educationLevel": "middle",
+      "language": "arabic",
+      "duration": "55",
+      "usageCount": "1"
+    },
+    {
+      "id": "5",
+      "templateName": "درس تاريخ - الثانوي",
+      "subject": "التاريخ",
+      "grade": "السنة الأولى ثانوي",
+      "educationLevel": "secondary",
+      "language": "arabic",
+      "duration": "55",
+      "usageCount": "1"
+    },
+    {
+      "id": "6",
+      "templateName": "English Lesson - Reading Comprehension",
+      "subject": "English",
+      "grade": "8th grade",
+      "educationLevel": "middle",
+      "language": "english",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "7",
+      "templateName": "Module 1: Travailler pour s'épanouir - Leçon de lecture",
+      "subject": "Français",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "8",
+      "templateName": "Module 2: Communiquer avec les autres - Leçon de lecture",
+      "subject": "Français",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "9",
+      "templateName": "Module 3: Accepter les autres - Leçon de lecture",
+      "subject": "Français",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "10",
+      "templateName": "Module 5: Sauver la nature - Leçon de lecture",
+      "subject": "Français",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "11",
+      "templateName": "Grammaire 6ème année - Les déterminants",
+      "subject": "Français - Grammaire",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "45",
+      "usageCount": "0"
+    },
+    {
+      "id": "12",
+      "templateName": "Conjugaison 6ème année - Passé composé",
+      "subject": "Français - Conjugaison",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "45",
+      "usageCount": "0"
+    },
+    {
+      "id": "13",
+      "templateName": "Expression écrite 6ème année - Raconter un événement",
+      "subject": "Français - Expression écrite",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "14",
+      "templateName": "Orthographe 6ème année - Les homophones",
+      "subject": "Français - Orthographe",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "45",
+      "usageCount": "0"
+    },
+    {
+      "id": "15",
+      "templateName": "Lecture compréhension 6ème année - Texte narratif",
+      "subject": "Français - Lecture",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "16",
+      "templateName": "Poésie 6ème année - Récitation et appréciation",
+      "subject": "Français - Poésie",
+      "grade": "6ème année primaire",
+      "educationLevel": "primary",
+      "language": "french",
+      "duration": "45",
+      "usageCount": "0"
+    },
+    {
+      "id": "30001",
+      "templateName": "Learn and Grow - Vocabulary Lesson (6th Year Primary)",
+      "subject": "English",
+      "grade": "السنة السادسة ابتدائي",
+      "educationLevel": "primary",
+      "language": "english",
+      "duration": "45",
+      "usageCount": "3"
+    },
+    {
+      "id": "30002",
+      "templateName": "Let's Learn English - Reading Comprehension (7th Year)",
+      "subject": "English",
+      "grade": "السنة السابعة أساسي",
+      "educationLevel": "middle",
+      "language": "english",
+      "duration": "55",
+      "usageCount": "1"
+    },
+    {
+      "id": "30003",
+      "templateName": "Let's Discover More English - Writing Lesson (8th Year)",
+      "subject": "English",
+      "grade": "السنة الثامنة أساسي",
+      "educationLevel": "middle",
+      "language": "english",
+      "duration": "55",
+      "usageCount": "0"
+    },
+    {
+      "id": "30004",
+      "templateName": "Proceed with English - Oral Production Lesson (9th Year)",
+      "subject": "English",
+      "grade": "السنة التاسعة أساسي",
+      "educationLevel": "middle",
+      "language": "english",
+      "duration": "55",
+      "usageCount": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttemplateName\tsubject\tgrade\teducationLevel\tlanguage\tduration\tusageCount\n1\tدرس قراءة - السنة الأولى ابتدائي\tاللغة العربية\tالسنة الأولى ابتدائي\tprimary\tarabic\t45\t0\n2\tLeçon de lecture - 4ème année primaire\tFrançais\t4ème année primaire\tprimary\tfrench\t45\t1\n3\tدرس رياضيات - العمليات الحسابية\tالرياضيات\tالسنة الثالثة ابتدائي\tprimary\tarabic\t45\t1\n4\tدرس علوم - الإعدادي\tعلوم الحياة والأرض\tالسنة السابعة أساسي\tmiddle\tarabic\t55\t1\n5\tدرس تاريخ - الثانوي\tالتاريخ\tالسنة الأولى ثانوي\tsecondary\tarabic\t55\t1\n6\tEnglish Lesson - Reading Comprehension\tEnglish\t8th grade\tmiddle\tenglish\t55\t0\n7\tModule 1: Travailler pour s'épanouir - Leçon de lecture\tFrançais\t6ème année primaire\tprimary\tfrench\t55\t0\n8\tModule 2: Communiquer avec les autres - Leçon de lecture\tFrançais\t6ème année primaire\tprimary\tfrench\t55\t0\n9\tModule 3: Accepter les autres - Leçon de lecture\tFrançais\t6ème année primaire\tprimary\tfrench\t55\t0\n10\tModule 5: Sauver la nature - Leçon de lecture\tFrançais\t6ème année primaire\tprimary\tfrench\t55\t0\n11\tGrammaire 6ème année - Les déterminants\tFrançais - Grammaire\t6ème année primaire\tprimary\tfrench\t45\t0\n12\tConjugaison 6ème année - Passé composé\tFrançais - Conjugaison\t6ème année primaire\tprimary\tfrench\t45\t0\n13\tExpression écrite 6ème année - Raconter un événement\tFrançais - Expression écrite\t6ème année primaire\tprimary\tfrench\t55\t0\n14\tOrthographe 6ème année - Les homophones\tFrançais - Orthographe\t6ème année primaire\tprimary\tfrench\t45\t0\n15\tLecture compréhension 6ème année - Texte narratif\tFrançais - Lecture\t6ème année primaire\tprimary\tfrench\t55\t0\n16\tPoésie 6ème année - Récitation et appréciation\tFrançais - Poésie\t6ème année primaire\tprimary\tfrench\t45\t0\n30001\tLearn and Grow - Vocabulary Lesson (6th Year Primary)\tEnglish\tالسنة السادسة ابتدائي\tprimary\tenglish\t45\t3\n30002\tLet's Learn English - Reading Comprehension (7th Year)\tEnglish\tالسنة السابعة أساسي\tmiddle\tenglish\t55\t1\n30003\tLet's Discover More English - Writing Lesson (8th Year)\tEnglish\tالسنة الثامنة أساسي\tmiddle\tenglish\t55\t0\n30004\tProceed with English - Oral Production Lesson (9th Year)\tEnglish\tالسنة التاسعة أساسي\tmiddle\tenglish\t55\t0\n",
+  "stderr": "",
+  "execution_time_ms": 435
+}

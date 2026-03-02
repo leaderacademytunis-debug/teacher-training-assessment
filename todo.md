@@ -1131,3 +1131,8 @@
 
 ## إصلاح الأخطاء (مارس 2026)
 - [x] إصلاح خطأ 404 عند الضغط على القوالب الجاهزة — توجيه إلى /assistant?templateId=X وتحميل بيانات القالب تلقائياً
+
+## Enrichissement de la bibliothèque de modèles (Mars 2026)
+- [x] Créer des modèles pour les matières scientifiques (Sciences, Éveil scientifique, SVT, Physique-Chimie) — 6 modèles
+- [x] Créer des modèles pour la langue française (expression écrite, grammaire, compréhension) — 3 modèles
+- [x] Vérifier l'affichage des nouveaux modèles dans la bibliothèque (16 groupes, 12 nouveaux modèles)

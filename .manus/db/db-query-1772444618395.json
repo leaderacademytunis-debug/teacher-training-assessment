@@ -1,0 +1,90 @@
+{
+  "query": "SELECT subject, language, COUNT(*) as count FROM templates GROUP BY subject, language ORDER BY subject, language;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT subject, language, COUNT(*) as count FROM templates GROUP BY subject, language ORDER BY subject, language;",
+  "rows": [
+    {
+      "subject": "English",
+      "language": "english",
+      "count": "8"
+    },
+    {
+      "subject": "Éveil scientifique",
+      "language": "french",
+      "count": "2"
+    },
+    {
+      "subject": "Français",
+      "language": "french",
+      "count": "8"
+    },
+    {
+      "subject": "Français - Conjugaison",
+      "language": "french",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Expression écrite",
+      "language": "french",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Grammaire",
+      "language": "french",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Lecture",
+      "language": "french",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Orthographe",
+      "language": "french",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Poésie",
+      "language": "french",
+      "count": "1"
+    },
+    {
+      "subject": "Mathématiques",
+      "language": "french",
+      "count": "4"
+    },
+    {
+      "subject": "Physique-Chimie",
+      "language": "french",
+      "count": "1"
+    },
+    {
+      "subject": "Sciences de la vie et de la terre",
+      "language": "french",
+      "count": "2"
+    },
+    {
+      "subject": "التاريخ",
+      "language": "arabic",
+      "count": "1"
+    },
+    {
+      "subject": "الرياضيات",
+      "language": "arabic",
+      "count": "1"
+    },
+    {
+      "subject": "اللغة العربية",
+      "language": "arabic",
+      "count": "1"
+    },
+    {
+      "subject": "علوم الحياة والأرض",
+      "language": "arabic",
+      "count": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "subject\tlanguage\tcount\nEnglish\tenglish\t8\nÉveil scientifique\tfrench\t2\nFrançais\tfrench\t8\nFrançais - Conjugaison\tfrench\t1\nFrançais - Expression écrite\tfrench\t1\nFrançais - Grammaire\tfrench\t1\nFrançais - Lecture\tfrench\t1\nFrançais - Orthographe\tfrench\t1\nFrançais - Poésie\tfrench\t1\nMathématiques\tfrench\t4\nPhysique-Chimie\tfrench\t1\nSciences de la vie et de la terre\tfrench\t2\nالتاريخ\tarabic\t1\nالرياضيات\tarabic\t1\nاللغة العربية\tarabic\t1\nعلوم الحياة والأرض\tarabic\t1\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

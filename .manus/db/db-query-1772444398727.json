@@ -1,0 +1,94 @@
+{
+  "query": "SELECT subject, language, educationLevel, COUNT(*) as count FROM templates GROUP BY subject, language, educationLevel ORDER BY subject;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT subject, language, educationLevel, COUNT(*) as count FROM templates GROUP BY subject, language, educationLevel ORDER BY subject;",
+  "rows": [
+    {
+      "subject": "English",
+      "language": "english",
+      "educationLevel": "middle",
+      "count": "4"
+    },
+    {
+      "subject": "English",
+      "language": "english",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "English",
+      "language": "english",
+      "educationLevel": "secondary",
+      "count": "3"
+    },
+    {
+      "subject": "Français",
+      "language": "french",
+      "educationLevel": "primary",
+      "count": "5"
+    },
+    {
+      "subject": "Français - Conjugaison",
+      "language": "french",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Expression écrite",
+      "language": "french",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Grammaire",
+      "language": "french",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Lecture",
+      "language": "french",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Orthographe",
+      "language": "french",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "Français - Poésie",
+      "language": "french",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "التاريخ",
+      "language": "arabic",
+      "educationLevel": "secondary",
+      "count": "1"
+    },
+    {
+      "subject": "الرياضيات",
+      "language": "arabic",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "اللغة العربية",
+      "language": "arabic",
+      "educationLevel": "primary",
+      "count": "1"
+    },
+    {
+      "subject": "علوم الحياة والأرض",
+      "language": "arabic",
+      "educationLevel": "middle",
+      "count": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "subject\tlanguage\teducationLevel\tcount\nEnglish\tenglish\tmiddle\t4\nEnglish\tenglish\tprimary\t1\nEnglish\tenglish\tsecondary\t3\nFrançais\tfrench\tprimary\t5\nFrançais - Conjugaison\tfrench\tprimary\t1\nFrançais - Expression écrite\tfrench\tprimary\t1\nFrançais - Grammaire\tfrench\tprimary\t1\nFrançais - Lecture\tfrench\tprimary\t1\nFrançais - Orthographe\tfrench\tprimary\t1\nFrançais - Poésie\tfrench\tprimary\t1\nالتاريخ\tarabic\tsecondary\t1\nالرياضيات\tarabic\tprimary\t1\nاللغة العربية\tarabic\tprimary\t1\nعلوم الحياة والأرض\tarabic\tmiddle\t1\n",
+  "stderr": "",
+  "execution_time_ms": 384
+}
