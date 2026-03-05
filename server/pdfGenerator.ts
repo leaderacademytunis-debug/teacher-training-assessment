@@ -244,12 +244,32 @@ function processArabicText(text: string): string {
  * @param htmlContent - HTML content to convert to PDF
  * @returns Buffer containing the PDF
  */
+/**
+ * Find the Chromium executable path, trying multiple known locations.
+ */
+function findChromiumExecutable(): string {
+  const { existsSync } = require("fs");
+  const candidates = [
+    "/usr/lib/chromium-browser/chromium-browser", // Ubuntu sandbox (real binary)
+    "/usr/bin/chromium",
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    process.env.CHROMIUM_PATH,
+  ].filter(Boolean) as string[];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  // Fallback — will throw a clear error
+  return "/usr/bin/chromium-browser";
+}
+
 export async function createPDF(htmlContent: string): Promise<Buffer> {
   const puppeteer = await import("puppeteer-core");
   let browser;
   try {
+    const executablePath = findChromiumExecutable();
     browser = await puppeteer.launch({
-      executablePath: "/usr/bin/chromium-browser",
+      executablePath,
       headless: true,
       args: [
         "--no-sandbox",

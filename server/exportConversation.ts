@@ -1,5 +1,36 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, ShadingType, Table, TableRow, TableCell, WidthType, ImageRun } from "docx";
+import PDFDocument from "pdfkit";
+import path from "path";
+import { fileURLToPath } from "url";
 import { createPDF } from "./pdfGenerator";
+
+const __filename_exp = fileURLToPath(import.meta.url);
+const __dirname_exp = path.dirname(__filename_exp);
+
+// Arabic text processing for pdfkit
+function processArabicForPdf(text: string): string {
+  try {
+    const reshaper = require("arabic-reshaper");
+    const bidiLib = require("bidi-js");
+    const reshaped = reshaper.convertArabic(text);
+    const bidiObj = bidiLib(reshaped);
+    const levels = bidiObj.getEmbeddingLevels(reshaped);
+    return bidiObj.getReorderedString(reshaped, levels);
+  } catch {
+    return text;
+  }
+}
+
+// Create PDF buffer from PDFDocument
+function createPdfBuffer(doc: PDFKit.PDFDocument): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const buffers: Buffer[] = [];
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
+    doc.end();
+  });
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -301,7 +332,225 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
     </html>
   `;
 
-  return await createPDF(htmlContent);
+  return await createPdfFromMarkdown(lessonContent, data);
+}
+
+/**
+ * Generate PDF from Markdown content using pdfkit (no Chromium required).
+ * Supports Arabic RTL, tables, headings, bold, lists.
+ */
+async function downloadFontBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const https = require("https");
+    https.get(url, (res: any) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (c: Buffer) => chunks.push(c));
+      res.on("end", () => resolve(Buffer.concat(chunks)));
+      res.on("error", reject);
+    }).on("error", reject);
+  });
+}
+
+async function createPdfFromMarkdown(markdown: string, data: ConversationExportData): Promise<Buffer> {
+  const isRTL = data.language !== "fr" && data.language !== "en";
+  const { existsSync } = require("fs");
+  const fontPath = path.join(__dirname_exp, "fonts", "Amiri-Regular.ttf");
+  const fontBoldPath = path.join(__dirname_exp, "fonts", "Amiri-Bold.ttf");
+  const FONT_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/Amiri-Regular_cfc49f25.ttf";
+  const FONT_BOLD_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/Amiri-Bold_0cd66c9b.ttf";
+
+  // Load font: prefer local file, fallback to CDN
+  let fontSource: string | Buffer = fontPath;
+  let fontBoldSource: string | Buffer = fontBoldPath;
+  if (!existsSync(fontPath)) {
+    try { fontSource = await downloadFontBuffer(FONT_CDN); } catch { /* use default */ }
+  }
+  if (!existsSync(fontBoldPath)) {
+    try { fontBoldSource = await downloadFontBuffer(FONT_BOLD_CDN); } catch { fontBoldSource = fontSource; }
+  }
+
+  const doc = new PDFDocument({ size: "A4", margin: 40, info: { Title: data.title } });
+  doc.registerFont("Arabic", fontSource as any);
+  doc.registerFont("ArabicBold", fontBoldSource as any);
+
+  const pageW = doc.page.width - 80; // usable width
+  const ar = (t: string) => isRTL ? processArabicForPdf(t) : t;
+  const font = isRTL ? "Arabic" : "Helvetica";
+  const fontBold = isRTL ? "ArabicBold" : "Helvetica-Bold";
+  const align = isRTL ? "right" : "left";
+
+  // ── Header ──
+  const institutionLabel = isRTL ? "ليدر أكاديمي — منصة تأهيل المدرسين" : "Leader Academy — Plateforme de Formation";
+  const displayDate = data.exportDate
+    ? new Date(data.exportDate).toLocaleDateString(isRTL ? "ar-TN" : "fr-TN")
+    : data.createdAt.toLocaleDateString(isRTL ? "ar-TN" : "fr-TN");
+
+  // Logo (if provided, download and embed)
+  if (data.schoolLogoUrl) {
+    try {
+      const https = require("https");
+      const http = require("http");
+      const logoBuffer: Buffer = await new Promise((resolve, reject) => {
+        const client = data.schoolLogoUrl!.startsWith("https") ? https : http;
+        client.get(data.schoolLogoUrl!, (res: any) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (c: Buffer) => chunks.push(c));
+          res.on("end", () => resolve(Buffer.concat(chunks)));
+          res.on("error", reject);
+        }).on("error", reject);
+      });
+      doc.image(logoBuffer, 40, 40, { height: 50, fit: [80, 50] });
+    } catch { /* skip logo on error */ }
+  }
+
+  // Institution name top-right
+  doc.font(fontBold).fontSize(10).fillColor("#1e3a5f")
+    .text(ar(institutionLabel), 40, 45, { width: pageW, align: "right" });
+
+  // Meta info
+  let metaY = 60;
+  const metaLines: string[] = [];
+  if (data.schoolName) metaLines.push(ar((isRTL ? "المؤسسة: " : "École: ") + data.schoolName));
+  if (data.teacherName) metaLines.push(ar((isRTL ? "المعلم: " : "Enseignant(e): ") + data.teacherName));
+  if (data.subject) metaLines.push(ar((isRTL ? "المادة: " : "Matière: ") + data.subject));
+  if (data.level) metaLines.push(ar((isRTL ? "المستوى: " : "Niveau: ") + data.level));
+  metaLines.push(ar((isRTL ? "التاريخ: " : "Date: ") + displayDate));
+
+  doc.font(font).fontSize(9).fillColor("#555555");
+  for (const line of metaLines) {
+    doc.text(line, 40, metaY, { width: pageW, align: "right" });
+    metaY += 13;
+  }
+
+  // Divider
+  const divY = Math.max(metaY + 4, 95);
+  doc.moveTo(40, divY).lineTo(40 + pageW, divY).lineWidth(2).strokeColor("#1e3a5f").stroke();
+
+  // Title
+  doc.moveDown(0.5);
+  doc.font(fontBold).fontSize(16).fillColor("#1e3a5f")
+    .text(ar(data.title), 40, divY + 14, { width: pageW, align: "center" });
+  doc.moveDown(0.8);
+
+  // ── Body: parse Markdown ──
+  const lines = markdown.split("\n");
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Table detection
+    if (line.trim().startsWith("|") && i + 1 < lines.length && lines[i + 1].trim().match(/^\|[-|: ]+\|/)) {
+      // Collect all table rows
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      // Remove separator row
+      const rows = tableLines.filter(r => !r.trim().match(/^\|[-|: ]+\|$/));
+      if (rows.length > 0) {
+        const parsedRows = rows.map(r =>
+          r.split("|").slice(1, -1).map(c => c.trim())
+        );
+        const colCount = Math.max(...parsedRows.map(r => r.length));
+        const colW = pageW / colCount;
+        const rowH = 22;
+        let startX = 40;
+        let startY = doc.y;
+
+        // Check page space
+        if (startY + rowH * parsedRows.length > doc.page.height - 60) {
+          doc.addPage();
+          startY = 40;
+        }
+
+        parsedRows.forEach((row, ri) => {
+          const isHeader = ri === 0;
+          const bgColor = isHeader ? "#1e3a5f" : ri % 2 === 0 ? "#f8fafc" : "#ffffff";
+          const textColor = isHeader ? "#ffffff" : "#1a1a2e";
+
+          // Draw cells
+          row.forEach((cell, ci) => {
+            const cellX = startX + ci * colW;
+            const cellY = startY + ri * rowH;
+
+            // Background
+            doc.rect(cellX, cellY, colW, rowH).fill(bgColor).stroke();
+
+            // Text
+            const cellText = ar(cell.replace(/\*\*/g, ""));
+            doc.font(isHeader ? fontBold : font)
+              .fontSize(9)
+              .fillColor(textColor)
+              .text(cellText, cellX + 4, cellY + 6, { width: colW - 8, align: "center", lineBreak: false });
+          });
+        });
+
+        doc.y = startY + parsedRows.length * rowH + 8;
+        doc.x = 40;
+      }
+      continue;
+    }
+
+    // Headings
+    if (line.startsWith("### ")) {
+      doc.moveDown(0.4);
+      doc.font(fontBold).fontSize(12).fillColor("#1e6091")
+        .text(ar(line.slice(4).replace(/\*\*/g, "")), { align });
+      doc.moveDown(0.2);
+    } else if (line.startsWith("## ")) {
+      doc.moveDown(0.5);
+      doc.font(fontBold).fontSize(13).fillColor("#1e4d8c")
+        .text(ar(line.slice(3).replace(/\*\*/g, "")), { align });
+      doc.moveDown(0.2);
+    } else if (line.startsWith("# ")) {
+      doc.moveDown(0.6);
+      doc.font(fontBold).fontSize(15).fillColor("#1e3a5f")
+        .text(ar(line.slice(2).replace(/\*\*/g, "")), { align });
+      doc.moveDown(0.3);
+    } else if (line.match(/^[-*] /)) {
+      // List item
+      const bullet = isRTL ? "• " : "• ";
+      const content = ar(line.slice(2).replace(/\*\*/g, ""));
+      doc.font(font).fontSize(11).fillColor("#1a1a2e")
+        .text(bullet + content, { align, indent: 10 });
+    } else if (line.match(/^\d+\. /)) {
+      // Numbered list
+      const content = ar(line.replace(/^\d+\. /, "").replace(/\*\*/g, ""));
+      doc.font(font).fontSize(11).fillColor("#1a1a2e")
+        .text(line.match(/^(\d+\.)/)?.[1] + " " + content, { align });
+    } else if (line.trim() === "---" || line.trim() === "***") {
+      doc.moveDown(0.3);
+      doc.moveTo(40, doc.y).lineTo(40 + pageW, doc.y).lineWidth(0.5).strokeColor("#d1d5db").stroke();
+      doc.moveDown(0.3);
+    } else if (line.trim() === "") {
+      doc.moveDown(0.3);
+    } else {
+      // Paragraph — handle inline bold
+      const parts = line.split(/(\*\*[^*]+\*\*)/g);
+      let x = doc.x;
+      const y = doc.y;
+      let lineText = "";
+      for (const part of parts) {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          lineText += part.slice(2, -2);
+        } else {
+          lineText += part;
+        }
+      }
+      doc.font(font).fontSize(11).fillColor("#1a1a2e")
+        .text(ar(lineText), { align });
+    }
+
+    i++;
+  }
+
+  // ── Footer ──
+  doc.font(font).fontSize(8).fillColor("#9ca3af")
+    .text(ar(institutionLabel + " | leaderacademy.school"), 40, doc.page.height - 40, { width: pageW, align: "center" });
+
+  return createPdfBuffer(doc);
 }
 
 /**
