@@ -586,6 +586,7 @@ export default function EduGPTAssistantEnhanced() {
       schoolName: meta.schoolName || undefined,
       teacherName: meta.teacherName || undefined,
       exportDate: meta.exportDate || undefined,
+      schoolLogoUrl: meta.schoolLogoUrl || undefined,
     };
     if (exportModalFormat === "pdf") {
       await exportCleanPDFMutation.mutateAsync(payload);

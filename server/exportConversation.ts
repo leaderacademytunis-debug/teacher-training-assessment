@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, ShadingType, Table, TableRow, TableCell, WidthType } from "docx";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, ShadingType, Table, TableRow, TableCell, WidthType, ImageRun } from "docx";
 import { createPDF } from "./pdfGenerator";
 
 interface Message {
@@ -23,6 +23,7 @@ interface ConversationExportData {
   schoolName?: string;
   teacherName?: string;
   exportDate?: string;
+  schoolLogoUrl?: string;
 }
 
 /**
@@ -185,10 +186,22 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
         .header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
           border-bottom: 3px solid #1e3a5f;
           padding-bottom: 18px;
           margin-bottom: 28px;
+          gap: 12px;
+        }
+        .header-left {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .school-logo {
+          height: 64px;
+          width: auto;
+          max-width: 120px;
+          object-fit: contain;
         }
         .header-institution {
           font-size: 11px;
@@ -262,7 +275,10 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
     </head>
     <body>
       <div class="header">
-        <div class="header-institution">${institutionLabel}</div>
+        <div class="header-left">
+          ${data.schoolLogoUrl ? `<img src="${data.schoolLogoUrl}" alt="school logo" class="school-logo" />` : ""}
+          <div class="header-institution">${institutionLabel}</div>
+        </div>
         <div class="header-meta">
           ${data.schoolName ? `<span>${schoolLabel}: <strong>${data.schoolName}</strong></span>` : ""}
           ${data.teacherName ? `<span>${teacherLabel}: <strong>${data.teacherName}</strong></span>` : ""}
@@ -361,6 +377,39 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
 
   // We build a mixed array of Paragraph | Table
   const children: (Paragraph | Table)[] = [];
+
+  // ── School logo (if provided) ──
+  if (data.schoolLogoUrl) {
+    try {
+      const logoResponse = await fetch(data.schoolLogoUrl);
+      if (logoResponse.ok) {
+        const logoBuffer = Buffer.from(await logoResponse.arrayBuffer());
+        const contentType = logoResponse.headers.get("content-type") || "image/png";
+        const imageType = contentType.includes("jpeg") || contentType.includes("jpg")
+          ? "jpg"
+          : contentType.includes("gif")
+          ? "gif"
+          : contentType.includes("bmp")
+          ? "bmp"
+          : "png";
+        children.push(
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: logoBuffer,
+                transformation: { width: 80, height: 80 },
+                type: imageType as any,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 80 },
+          })
+        );
+      }
+    } catch {
+      // Logo fetch failed — skip silently
+    }
+  }
 
   // ── Institution header ──
   children.push(

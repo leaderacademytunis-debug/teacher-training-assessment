@@ -3037,6 +3037,7 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         schoolName: z.string().optional(),
         teacherName: z.string().optional(),
         exportDate: z.string().optional(),
+        schoolLogoUrl: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const { exportCleanNotePDF } = await import("./exportConversation");
@@ -3050,6 +3051,7 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
           schoolName: input.schoolName,
           teacherName: input.teacherName,
           exportDate: input.exportDate,
+          schoolLogoUrl: input.schoolLogoUrl,
         });
         const { storagePut } = await import("./storage");
         const fileName = `clean-note-${Date.now()}.pdf`;
@@ -3078,6 +3080,7 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         schoolName: z.string().optional(),
         teacherName: z.string().optional(),
         exportDate: z.string().optional(),
+        schoolLogoUrl: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const { exportCleanNoteWord } = await import("./exportConversation");
@@ -3091,6 +3094,7 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
           schoolName: input.schoolName,
           teacherName: input.teacherName,
           exportDate: input.exportDate,
+          schoolLogoUrl: input.schoolLogoUrl,
         });
         const { storagePut } = await import("./storage");
         const fileName = `clean-note-${Date.now()}.docx`;
