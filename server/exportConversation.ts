@@ -2,6 +2,11 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Bord
 import PDFDocument from "pdfkit";
 import path from "path";
 import { fileURLToPath } from "url";
+import { existsSync } from "fs";
+import https from "https";
+import http from "http";
+import reshaper from "arabic-reshaper";
+import bidiLib from "bidi-js";
 import { createPDF } from "./pdfGenerator";
 
 const __filename_exp = fileURLToPath(import.meta.url);
@@ -10,10 +15,8 @@ const __dirname_exp = path.dirname(__filename_exp);
 // Arabic text processing for pdfkit
 function processArabicForPdf(text: string): string {
   try {
-    const reshaper = require("arabic-reshaper");
-    const bidiLib = require("bidi-js");
-    const reshaped = reshaper.convertArabic(text);
-    const bidiObj = bidiLib(reshaped);
+    const reshaped = (reshaper as any).convertArabic(text);
+    const bidiObj = (bidiLib as any)(reshaped);
     const levels = bidiObj.getEmbeddingLevels(reshaped);
     return bidiObj.getReorderedString(reshaped, levels);
   } catch {
@@ -341,7 +344,6 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
  */
 async function downloadFontBuffer(url: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const https = require("https");
     https.get(url, (res: any) => {
       const chunks: Buffer[] = [];
       res.on("data", (c: Buffer) => chunks.push(c));
@@ -353,7 +355,6 @@ async function downloadFontBuffer(url: string): Promise<Buffer> {
 
 async function createPdfFromMarkdown(markdown: string, data: ConversationExportData): Promise<Buffer> {
   const isRTL = data.language !== "fr" && data.language !== "en";
-  const { existsSync } = require("fs");
   const fontPath = path.join(__dirname_exp, "fonts", "Amiri-Regular.ttf");
   const fontBoldPath = path.join(__dirname_exp, "fonts", "Amiri-Bold.ttf");
   const FONT_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/Amiri-Regular_cfc49f25.ttf";
@@ -388,8 +389,6 @@ async function createPdfFromMarkdown(markdown: string, data: ConversationExportD
   // Logo (if provided, download and embed)
   if (data.schoolLogoUrl) {
     try {
-      const https = require("https");
-      const http = require("http");
       const logoBuffer: Buffer = await new Promise((resolve, reject) => {
         const client = data.schoolLogoUrl!.startsWith("https") ? https : http;
         client.get(data.schoolLogoUrl!, (res: any) => {

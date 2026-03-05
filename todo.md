@@ -1179,3 +1179,8 @@
 - [x] رفع خطوط Amiri إلى CDN لضمان توفرها في الإنتاج
 - [x] اختبار التصدير بنجاح (14 KB PDF)
 - [ ] حفظ نقطة تفتيش
+
+## إصلاح Dynamic require في الإنتاج
+- [ ] استبدال require("fs") و require("arabic-reshaper") و require("bidi-js") بـ import ثابت في exportConversation.ts
+- [ ] اختبار التصدير بعد الإصلاح
+- [ ] حفظ نقطة تفتيش
