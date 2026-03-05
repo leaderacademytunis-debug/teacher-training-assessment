@@ -3015,6 +3015,76 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         
         return { url };
       }),
+
+    exportCleanNotePDF: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string(),
+          })).optional(),
+          timestamp: z.number(),
+        })),
+        createdAt: z.string(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        language: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportCleanNotePDF } = await import("./exportConversation");
+        const pdfBuffer = await exportCleanNotePDF({
+          title: input.title,
+          messages: input.messages,
+          createdAt: new Date(input.createdAt),
+          subject: input.subject,
+          level: input.level,
+          language: input.language,
+        });
+        const { storagePut } = await import("./storage");
+        const fileName = `clean-note-${Date.now()}.pdf`;
+        const { url } = await storagePut(`conversations/${fileName}`, pdfBuffer, "application/pdf");
+        return { url };
+      }),
+
+    exportCleanNoteWord: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string(),
+          })).optional(),
+          timestamp: z.number(),
+        })),
+        createdAt: z.string(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        language: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportCleanNoteWord } = await import("./exportConversation");
+        const wordBuffer = await exportCleanNoteWord({
+          title: input.title,
+          messages: input.messages,
+          createdAt: new Date(input.createdAt),
+          subject: input.subject,
+          level: input.level,
+          language: input.language,
+        });
+        const { storagePut } = await import("./storage");
+        const fileName = `clean-note-${Date.now()}.docx`;
+        const { url } = await storagePut(`conversations/${fileName}`, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        return { url };
+      }),
   }),
 
   templates: router({

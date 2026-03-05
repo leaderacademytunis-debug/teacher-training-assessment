@@ -535,6 +535,54 @@ export default function EduGPTAssistantEnhanced() {
     },
   });
 
+  const exportCleanPDFMutation = trpc.assistant.exportCleanNotePDF.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+      toast.success("تم تصدير المذكرة النظيفة بنجاح ✔️");
+    },
+    onError: () => {
+      toast.error("خطأ في تصدير المذكرة");
+    },
+  });
+
+  const exportCleanWordMutation = trpc.assistant.exportCleanNoteWord.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+      toast.success("تم تصدير المذكرة النظيفة بنجاح ✔️");
+    },
+    onError: () => {
+      toast.error("خطأ في تصدير المذكرة");
+    },
+  });
+
+  const hasAssistantMessage = messages.some((m) => m.role === "assistant");
+
+  const exportCleanAsPDF = async () => {
+    if (!hasAssistantMessage) return;
+    toast.info("جاري إنشاء المذكرة النظيفة...");
+    await exportCleanPDFMutation.mutateAsync({
+      title: conversationTitle,
+      messages,
+      createdAt: new Date().toISOString(),
+      subject: selectedSubject || undefined,
+      level: selectedLevel || undefined,
+      language: teachingLanguage || undefined,
+    });
+  };
+
+  const exportCleanAsWord = async () => {
+    if (!hasAssistantMessage) return;
+    toast.info("جاري إنشاء المذكرة النظيفة...");
+    await exportCleanWordMutation.mutateAsync({
+      title: conversationTitle,
+      messages,
+      createdAt: new Date().toISOString(),
+      subject: selectedSubject || undefined,
+      level: selectedLevel || undefined,
+      language: teachingLanguage || undefined,
+    });
+  };
+
   // Export conversation as PDF
   const exportAsPDF = async () => {
     if (messages.length === 0) return;
@@ -758,6 +806,40 @@ export default function EduGPTAssistantEnhanced() {
               Word
             </Button>
           </div>
+          {/* Clean Note Export Buttons */}
+          {hasAssistantMessage && (
+            <div className="flex items-center gap-1 border-t pt-2 mt-1">
+              <span className="text-xs text-gray-500 ml-2">مذكرة نظيفة:</span>
+              <Button
+                size="sm"
+                variant="default"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 h-7"
+                onClick={exportCleanAsPDF}
+                disabled={exportCleanPDFMutation.isPending}
+              >
+                {exportCleanPDFMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                ) : (
+                  <Download className="h-3 w-3 ml-1" />
+                )}
+                PDF ✨
+              </Button>
+              <Button
+                size="sm"
+                variant="default"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 h-7"
+                onClick={exportCleanAsWord}
+                disabled={exportCleanWordMutation.isPending}
+              >
+                {exportCleanWordMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                ) : (
+                  <Download className="h-3 w-3 ml-1" />
+                )}
+                Word ✨
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Context Selector Modal */}
