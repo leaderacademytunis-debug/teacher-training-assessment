@@ -20,6 +20,9 @@ interface ConversationExportData {
   subject?: string;
   level?: string;
   language?: string;
+  schoolName?: string;
+  teacherName?: string;
+  exportDate?: string;
 }
 
 /**
@@ -150,6 +153,13 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
   const dateLabel = isRTL ? "تاريخ الإعداد" : "Date de préparation";
   const subjectLabel = isRTL ? "المادة" : "Matière";
   const levelLabel = isRTL ? "المستوى" : "Niveau";
+  const schoolLabel = isRTL ? "المؤسسة" : "École";
+  const teacherLabel = isRTL ? "المعلم" : "Enseignant(e)";
+
+  // Resolve display date: prefer exportDate field, fallback to createdAt
+  const displayDate = data.exportDate
+    ? new Date(data.exportDate).toLocaleDateString(isRTL ? "ar-TN" : "fr-TN")
+    : data.createdAt.toLocaleDateString(isRTL ? "ar-TN" : "fr-TN");
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -254,9 +264,11 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
       <div class="header">
         <div class="header-institution">${institutionLabel}</div>
         <div class="header-meta">
+          ${data.schoolName ? `<span>${schoolLabel}: <strong>${data.schoolName}</strong></span>` : ""}
+          ${data.teacherName ? `<span>${teacherLabel}: <strong>${data.teacherName}</strong></span>` : ""}
           ${data.subject ? `<span>${subjectLabel}: <strong>${data.subject}</strong></span>` : ""}
           ${data.level ? `<span>${levelLabel}: <strong>${data.level}</strong></span>` : ""}
-          <span>${dateLabel}: ${data.createdAt.toLocaleDateString(isRTL ? "ar-TN" : "fr-TN")}</span>
+          <span>${dateLabel}: ${displayDate}</span>
         </div>
       </div>
 
@@ -368,9 +380,14 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
 
   // ── Subject / Level / Date meta ──
   const metaParts: string[] = [];
+  if (data.schoolName) metaParts.push(`${isRTL ? "المؤسسة" : "École"}: ${data.schoolName}`);
+  if (data.teacherName) metaParts.push(`${isRTL ? "المعلم" : "Enseignant(e)"}: ${data.teacherName}`);
   if (data.subject) metaParts.push(`${isRTL ? "المادة" : "Matière"}: ${data.subject}`);
   if (data.level) metaParts.push(`${isRTL ? "المستوى" : "Niveau"}: ${data.level}`);
-  metaParts.push(`${isRTL ? "التاريخ" : "Date"}: ${data.createdAt.toLocaleDateString(isRTL ? "ar-TN" : "fr-TN")}`);
+  const displayDateWord = data.exportDate
+    ? new Date(data.exportDate).toLocaleDateString(isRTL ? "ar-TN" : "fr-TN")
+    : data.createdAt.toLocaleDateString(isRTL ? "ar-TN" : "fr-TN");
+  metaParts.push(`${isRTL ? "تاريخ الإعداد" : "Date"}: ${displayDateWord}`);
 
   children.push(
     new Paragraph({

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ExportMetadataModal, type ExportMetadata } from "@/components/ExportMetadataModal";
 
 // ===== TRANSLATIONS =====
 const UI = {
@@ -205,6 +206,10 @@ export default function EduGPTAssistantEnhanced() {
   });
   const [showContextSelector, setShowContextSelector] = useState(false);
   const [templateLoaded, setTemplateLoaded] = useState(false);
+
+  // Export metadata modal state
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportModalFormat, setExportModalFormat] = useState<"pdf" | "word">("pdf");
 
   // Read templateId from URL query params
   const templateId = useMemo(() => {
@@ -557,30 +562,37 @@ export default function EduGPTAssistantEnhanced() {
 
   const hasAssistantMessage = messages.some((m) => m.role === "assistant");
 
-  const exportCleanAsPDF = async () => {
+  const exportCleanAsPDF = () => {
     if (!hasAssistantMessage) return;
-    toast.info("جاري إنشاء المذكرة النظيفة...");
-    await exportCleanPDFMutation.mutateAsync({
-      title: conversationTitle,
-      messages,
-      createdAt: new Date().toISOString(),
-      subject: selectedSubject || undefined,
-      level: selectedLevel || undefined,
-      language: teachingLanguage || undefined,
-    });
+    setExportModalFormat("pdf");
+    setExportModalOpen(true);
   };
 
-  const exportCleanAsWord = async () => {
+  const exportCleanAsWord = () => {
     if (!hasAssistantMessage) return;
+    setExportModalFormat("word");
+    setExportModalOpen(true);
+  };
+
+  const handleExportConfirm = async (meta: ExportMetadata) => {
     toast.info("جاري إنشاء المذكرة النظيفة...");
-    await exportCleanWordMutation.mutateAsync({
+    const payload = {
       title: conversationTitle,
       messages,
       createdAt: new Date().toISOString(),
       subject: selectedSubject || undefined,
       level: selectedLevel || undefined,
       language: teachingLanguage || undefined,
-    });
+      schoolName: meta.schoolName || undefined,
+      teacherName: meta.teacherName || undefined,
+      exportDate: meta.exportDate || undefined,
+    };
+    if (exportModalFormat === "pdf") {
+      await exportCleanPDFMutation.mutateAsync(payload);
+    } else {
+      await exportCleanWordMutation.mutateAsync(payload);
+    }
+    setExportModalOpen(false);
   };
 
   // Export conversation as PDF
@@ -632,6 +644,7 @@ export default function EduGPTAssistantEnhanced() {
   };
 
   return (
+    <>
     <div className="h-screen flex bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? "w-80" : "w-0"} transition-all duration-300 border-l border-gray-200 bg-white flex flex-col overflow-hidden`}>
@@ -1089,5 +1102,17 @@ export default function EduGPTAssistantEnhanced() {
         </div>
       </div>
     </div>
+
+    {/* Export Metadata Modal */}
+    <ExportMetadataModal
+      open={exportModalOpen}
+      onOpenChange={setExportModalOpen}
+      format={exportModalFormat}
+      onConfirm={handleExportConfirm}
+      isLoading={exportCleanPDFMutation.isPending || exportCleanWordMutation.isPending}
+      subject={selectedSubject}
+      level={selectedLevel}
+    />
+    </>
   );
 }
