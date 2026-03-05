@@ -545,18 +545,19 @@ export default function EduGPTAssistantEnhanced() {
       window.open(data.url, "_blank");
       toast.success("تم تصدير المذكرة النظيفة بنجاح ✔️");
     },
-    onError: () => {
-      toast.error("خطأ في تصدير المذكرة");
+    onError: (err) => {
+      console.error("PDF export error:", err);
+      toast.error("خطأ في تصدير PDF: " + (err?.message || "خطأ غير معروف"));
     },
   });
-
   const exportCleanWordMutation = trpc.assistant.exportCleanNoteWord.useMutation({
     onSuccess: (data) => {
       window.open(data.url, "_blank");
       toast.success("تم تصدير المذكرة النظيفة بنجاح ✔️");
     },
-    onError: () => {
-      toast.error("خطأ في تصدير المذكرة");
+    onError: (err) => {
+      console.error("Word export error:", err);
+      toast.error("خطأ في تصدير Word: " + (err?.message || "خطأ غير معروف"));
     },
   });
 
