@@ -5,18 +5,25 @@ import { fileURLToPath } from "url";
 import { existsSync } from "fs";
 import https from "https";
 import http from "http";
-import reshaper from "arabic-reshaper";
-import bidiLib from "bidi-js";
+import reshaperModule from "arabic-reshaper";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import bidiModule from "bidi-js/dist/bidi.mjs";
 import { createPDF } from "./pdfGenerator";
 
 const __filename_exp = fileURLToPath(import.meta.url);
 const __dirname_exp = path.dirname(__filename_exp);
 
 // Arabic text processing for pdfkit
+// arabic-reshaper ESM exports { default: { convertArabic } }
+// bidi-js ESM exports { default: fn(text) => { getEmbeddingLevels, getReorderedString } }
+const reshaper = (reshaperModule as any).default ?? reshaperModule;
+const bidiLib = (bidiModule as any).default ?? bidiModule;
+
 function processArabicForPdf(text: string): string {
   try {
-    const reshaped = (reshaper as any).convertArabic(text);
-    const bidiObj = (bidiLib as any)(reshaped);
+    const reshaped = reshaper.convertArabic(text);
+    const bidiObj = bidiLib(reshaped);
     const levels = bidiObj.getEmbeddingLevels(reshaped);
     return bidiObj.getReorderedString(reshaped, levels);
   } catch {
@@ -335,7 +342,7 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
     </html>
   `;
 
-  return await createPdfFromMarkdown(lessonContent, data);
+  return await createPDF(htmlContent);
 }
 
 /**

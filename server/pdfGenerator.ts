@@ -248,7 +248,7 @@ function processArabicText(text: string): string {
  * Find the Chromium executable path, trying multiple known locations.
  */
 function findChromiumExecutable(): string {
-  const { existsSync } = require("fs");
+  const { existsSync } = require("node:fs");
   const candidates = [
     "/usr/lib/chromium-browser/chromium-browser", // Ubuntu sandbox (real binary)
     "/usr/bin/chromium",
