@@ -277,18 +277,81 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
 }
 
 /**
+ * Parse a Markdown line with bold/italic into TextRun[]
+ */
+function parseInlineMarkdown(text: string, baseSize = 24): TextRun[] {
+  const runs: TextRun[] = [];
+  // Split on **bold** patterns
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  for (const part of parts) {
+    if (/^\*\*(.+)\*\*$/.test(part)) {
+      runs.push(new TextRun({ text: part.replace(/\*\*/g, ""), bold: true, size: baseSize }));
+    } else if (part !== "") {
+      runs.push(new TextRun({ text: part, size: baseSize }));
+    }
+  }
+  return runs.length > 0 ? runs : [new TextRun({ text: "", size: baseSize })];
+}
+
+/**
+ * Parse a Markdown table block into a DOCX Table object.
+ * tableLines: array of raw Markdown table rows (including separator)
+ */
+function buildDocxTable(tableLines: string[], isRTL: boolean): Table {
+  const alignment = isRTL ? AlignmentType.RIGHT : AlignmentType.LEFT;
+  // Filter out separator rows (---|---|---)
+  const dataRows = tableLines.filter((row) => !/^\|[\s\-|:]+\|$/.test(row.trim()));
+
+  const rows = dataRows.map((row, rowIndex) => {
+    const cells = row
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((c) => c.trim());
+
+    const isHeader = rowIndex === 0;
+
+    return new TableRow({
+      children: cells.map((cellText) =>
+        new TableCell({
+          children: [
+            new Paragraph({
+              children: parseInlineMarkdown(cellText, isHeader ? 22 : 22),
+              alignment,
+              spacing: { before: 60, after: 60 },
+            }),
+          ],
+          shading: isHeader
+            ? { type: ShadingType.SOLID, color: "1e3a5f", fill: "1e3a5f" }
+            : { type: ShadingType.CLEAR, color: "auto", fill: rowIndex % 2 === 0 ? "f8fafc" : "ffffff" },
+          margins: { top: 80, bottom: 80, left: 120, right: 120 },
+        })
+      ),
+    });
+  });
+
+  return new Table({
+    rows,
+    width: { size: 100, type: WidthType.PERCENTAGE },
+  });
+}
+
+/**
  * Export the clean lesson plan (last assistant message only) as Word DOCX.
  * Produces a professional, print-ready document without chat messages.
+ * Supports: headings, bold, bullet lists, numbered lists, horizontal rules, and TABLES.
  */
 export async function exportCleanNoteWord(data: ConversationExportData): Promise<Buffer> {
   const lessonContent = extractLastLessonPlan(data.messages);
   const isRTL = data.language !== "fr" && data.language !== "en";
   const alignment = isRTL ? AlignmentType.RIGHT : AlignmentType.LEFT;
 
-  const paragraphs: Paragraph[] = [];
+  // We build a mixed array of Paragraph | Table
+  const children: (Paragraph | Table)[] = [];
 
-  // Institution header
-  paragraphs.push(
+  // ── Institution header ──
+  children.push(
     new Paragraph({
       children: [
         new TextRun({
@@ -303,13 +366,13 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
     })
   );
 
-  // Subject / Level / Date meta
+  // ── Subject / Level / Date meta ──
   const metaParts: string[] = [];
   if (data.subject) metaParts.push(`${isRTL ? "المادة" : "Matière"}: ${data.subject}`);
   if (data.level) metaParts.push(`${isRTL ? "المستوى" : "Niveau"}: ${data.level}`);
   metaParts.push(`${isRTL ? "التاريخ" : "Date"}: ${data.createdAt.toLocaleDateString(isRTL ? "ar-TN" : "fr-TN")}`);
 
-  paragraphs.push(
+  children.push(
     new Paragraph({
       children: [
         new TextRun({
@@ -326,8 +389,8 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
     })
   );
 
-  // Document title
-  paragraphs.push(
+  // ── Document title ──
+  children.push(
     new Paragraph({
       text: data.title,
       heading: HeadingLevel.HEADING_1,
@@ -336,11 +399,31 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
     })
   );
 
-  // Parse markdown content into paragraphs
+  // ── Parse Markdown content with TABLE support ──
   const lines = lessonContent.split("\n");
+  let tableBuffer: string[] = [];
+
+  const flushTable = () => {
+    if (tableBuffer.length > 0) {
+      children.push(buildDocxTable(tableBuffer, isRTL));
+      // Add spacing after table
+      children.push(new Paragraph({ text: "", spacing: { after: 120 } }));
+      tableBuffer = [];
+    }
+  };
+
   for (const line of lines) {
+    // ── Table row detection ──
+    if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
+      tableBuffer.push(line);
+      continue;
+    } else if (tableBuffer.length > 0) {
+      flushTable();
+    }
+
+    // ── Headings ──
     if (/^### (.+)/.test(line)) {
-      paragraphs.push(
+      children.push(
         new Paragraph({
           text: line.replace(/^### /, "").replace(/\*\*/g, ""),
           heading: HeadingLevel.HEADING_3,
@@ -349,7 +432,7 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
         })
       );
     } else if (/^## (.+)/.test(line)) {
-      paragraphs.push(
+      children.push(
         new Paragraph({
           text: line.replace(/^## /, "").replace(/\*\*/g, ""),
           heading: HeadingLevel.HEADING_2,
@@ -358,7 +441,7 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
         })
       );
     } else if (/^# (.+)/.test(line)) {
-      paragraphs.push(
+      children.push(
         new Paragraph({
           text: line.replace(/^# /, "").replace(/\*\*/g, ""),
           heading: HeadingLevel.HEADING_1,
@@ -366,49 +449,50 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
           spacing: { before: 320, after: 160 },
         })
       );
-    } else if (/^---+$/.test(line.trim())) {
-      paragraphs.push(
+    }
+    // ── Horizontal rule ──
+    else if (/^---+$/.test(line.trim())) {
+      children.push(
         new Paragraph({
           text: "",
           border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "d1d5db" } },
           spacing: { before: 200, after: 200 },
         })
       );
-    } else if (/^[-*] (.+)/.test(line)) {
+    }
+    // ── Bullet list ──
+    else if (/^[-*] (.+)/.test(line)) {
       const itemText = line.replace(/^[-*] /, "");
-      // Bold detection
-      const runs: TextRun[] = [];
-      const parts = itemText.split(/(\*\*[^*]+\*\*)/g);
-      for (const part of parts) {
-        if (/^\*\*(.+)\*\*$/.test(part)) {
-          runs.push(new TextRun({ text: part.replace(/\*\*/g, ""), bold: true, size: 24 }));
-        } else {
-          runs.push(new TextRun({ text: part, size: 24 }));
-        }
-      }
-      paragraphs.push(
+      children.push(
         new Paragraph({
-          children: runs,
+          children: parseInlineMarkdown(itemText),
           bullet: { level: 0 },
           alignment,
           spacing: { after: 80 },
         })
       );
-    } else if (line.trim() === "" || /^---+$/.test(line.trim())) {
-      paragraphs.push(new Paragraph({ text: "", spacing: { after: 100 } }));
-    } else {
-      // Normal line — detect bold segments
-      const runs: TextRun[] = [];
-      const parts = line.split(/(\*\*[^*]+\*\*)/g);
-      for (const part of parts) {
-        if (/^\*\*(.+)\*\*$/.test(part)) {
-          runs.push(new TextRun({ text: part.replace(/\*\*/g, ""), bold: true, size: 24 }));
-        } else if (part !== "") {
-          runs.push(new TextRun({ text: part, size: 24 }));
-        }
-      }
-      if (runs.length > 0) {
-        paragraphs.push(
+    }
+    // ── Numbered list ──
+    else if (/^\d+\.\s(.+)/.test(line)) {
+      const itemText = line.replace(/^\d+\.\s/, "");
+      children.push(
+        new Paragraph({
+          children: parseInlineMarkdown(itemText),
+          numbering: { reference: "default-numbering", level: 0 },
+          alignment,
+          spacing: { after: 80 },
+        })
+      );
+    }
+    // ── Empty line ──
+    else if (line.trim() === "") {
+      children.push(new Paragraph({ text: "", spacing: { after: 80 } }));
+    }
+    // ── Normal paragraph ──
+    else {
+      const runs = parseInlineMarkdown(line);
+      if (line.trim() !== "") {
+        children.push(
           new Paragraph({
             children: runs,
             alignment,
@@ -419,8 +503,11 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
     }
   }
 
-  // Footer
-  paragraphs.push(
+  // Flush any remaining table
+  flushTable();
+
+  // ── Footer ──
+  children.push(
     new Paragraph({
       children: [
         new TextRun({
@@ -437,10 +524,25 @@ export async function exportCleanNoteWord(data: ConversationExportData): Promise
   );
 
   const doc = new Document({
+    numbering: {
+      config: [
+        {
+          reference: "default-numbering",
+          levels: [
+            {
+              level: 0,
+              format: "decimal",
+              text: "%1.",
+              alignment: AlignmentType.LEFT,
+            },
+          ],
+        },
+      ],
+    },
     sections: [
       {
         properties: {},
-        children: paragraphs,
+        children,
       },
     ],
   });
