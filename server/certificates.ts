@@ -181,7 +181,11 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   // Draw decorative borders with category-specific colors
   const margin = 15;
   const innerMargin = 30;
-  const borderColors = getBorderColorForCategory(data.courseType);
+  // Check if this is the comprehensive certificate (use gold borders)
+  const isComprehensiveCert = data.courseName.includes('أصحاب الشهادات العليا') || data.courseType === 'comprehensive';
+  const borderColors = isComprehensiveCert
+    ? { outer: rgb(0.6, 0.45, 0.05), inner: rgb(0.8, 0.65, 0.2) }
+    : getBorderColorForCategory(data.courseType);
   
   // Outer border (darker color)
   page.drawRectangle({
@@ -227,7 +231,13 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   const gray = rgb(0.33, 0.33, 0.33);
   const lightGray = rgb(0.4, 0.4, 0.4);
   
-  if (content.language === 'ar') {
+  // Check if this is the comprehensive (master) certificate
+  const isComprehensive = data.courseName.includes('أصحاب الشهادات العليا') || data.courseType === 'comprehensive';
+
+  if (isComprehensive) {
+    // Comprehensive certificate with gold borders and 4 signatures
+    await drawComprehensiveCertificate(page, mainFont, content, data, width, height, pdfDoc, stampBytes);
+  } else if (content.language === 'ar') {
     // Arabic certificate layout
     await drawArabicCertificate(page, mainFont, content, data, width, height, gray, lightGray, black, pdfDoc, stampBytes);
   } else if (content.language === 'fr') {
@@ -750,4 +760,191 @@ async function drawFrenchCertificate(
     font: latinFont,
     color: gray,
   });
+}
+
+/**
+ * Draw comprehensive (master) certificate - awarded to those who completed all courses
+ * Golden/royal design with 4 signatures
+ */
+async function drawComprehensiveCertificate(
+  page: any,
+  font: any,
+  content: CertificateContent,
+  data: CertificateData,
+  width: number,
+  height: number,
+  pdfDoc: any,
+  stampBytes: Buffer | null
+) {
+  const gold = rgb(0.6, 0.45, 0.05);
+  const darkGold = rgb(0.45, 0.3, 0.0);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.33, 0.33, 0.33);
+  const lightGray = rgb(0.5, 0.5, 0.5);
+
+  // Right header - Government info
+  const headerText1 = processArabicText('الجمهورية التونسية');
+  const headerWidth1 = font.widthOfTextAtSize(headerText1, 8);
+  page.drawText(headerText1, { x: width - 70 - headerWidth1, y: height - 120, size: 8, font, color: gray });
+
+  const headerText2 = processArabicText('وزارة التشغيل والتكوين المهني');
+  const headerWidth2 = font.widthOfTextAtSize(headerText2, 8);
+  page.drawText(headerText2, { x: width - 70 - headerWidth2, y: height - 133, size: 8, font, color: gray });
+
+  const headerText3 = processArabicText('ليدر أكاديمي');
+  const headerWidth3 = font.widthOfTextAtSize(headerText3, 8);
+  page.drawText(headerText3, { x: width - 70 - headerWidth3, y: height - 146, size: 8, font, color: gray });
+
+  const headerText4 = processArabicText('تسجيل عدد 61-903-16');
+  const headerWidth4 = font.widthOfTextAtSize(headerText4, 7);
+  page.drawText(headerText4, { x: width - 70 - headerWidth4, y: height - 159, size: 7, font, color: lightGray });
+
+  // Main title "شهادة" in gold
+  const titleText = processArabicText('شهادة');
+  const titleWidth = font.widthOfTextAtSize(titleText, 56);
+  page.drawText(titleText, { x: (width - titleWidth) / 2, y: height - 115, size: 56, font, color: gold });
+
+  // Subtitle
+  const subtitleText = processArabicText('أُسندت هذه الشهادة إلى السيد/ة:');
+  const subtitleWidth = font.widthOfTextAtSize(subtitleText, 14);
+  page.drawText(subtitleText, { x: (width - subtitleWidth) / 2, y: height - 180, size: 14, font, color: gray });
+
+  // Participant name
+  const participantNameAr = processArabicText(data.participantName);
+  const nameWidth = font.widthOfTextAtSize(participantNameAr, 28);
+  page.drawText(participantNameAr, { x: (width - nameWidth) / 2, y: height - 235, size: 28, font, color: black });
+
+  // ID card number
+  if (data.idCardNumber) {
+    const arabicPart = processArabicText('صاحب/ة بطاقة تعريف وطنية رقم');
+    const numberPart = data.idCardNumber;
+    const arabicWidth = font.widthOfTextAtSize(arabicPart, 12);
+    const numberWidth = font.widthOfTextAtSize(numberPart, 12);
+    const spaceWidth = 5;
+    const fullWidth = arabicWidth + spaceWidth + numberWidth;
+    const startX = (width - fullWidth) / 2;
+    page.drawText(numberPart, { x: startX, y: height - 255, size: 12, font, color: gray });
+    page.drawText(arabicPart, { x: startX + numberWidth + spaceWidth, y: height - 255, size: 12, font, color: gray });
+  }
+
+  // Main text
+  const mainText = processArabicText(content.mainText);
+  const mainTextWidth = font.widthOfTextAtSize(mainText, 13);
+  const mainTextY = data.idCardNumber ? height - 280 : height - 265;
+  page.drawText(mainText, { x: (width - mainTextWidth) / 2, y: mainTextY, size: 13, font, color: gray });
+
+  // Gold decorative line
+  const underlineY = data.idCardNumber ? height - 295 : height - 280;
+  page.drawLine({ start: { x: 150, y: underlineY }, end: { x: width - 150, y: underlineY }, thickness: 2, color: gold });
+  page.drawLine({ start: { x: 160, y: underlineY - 4 }, end: { x: width - 160, y: underlineY - 4 }, thickness: 0.5, color: darkGold });
+
+  // Axes header
+  const axesHeaderText = processArabicText('والتي تناولت المحاور التالية :');
+  const axesHeaderWidth = font.widthOfTextAtSize(axesHeaderText, 12);
+  const axesHeaderY = data.idCardNumber ? height - 315 : height - 300;
+  page.drawText(axesHeaderText, { x: width - 150 - axesHeaderWidth, y: axesHeaderY, size: 12, font, color: darkGold });
+
+  // Draw axes
+  let yPosition = data.idCardNumber ? height - 335 : height - 320;
+  for (const axis of content.axes) {
+    const axisText = processArabicText(`• ${axis}`);
+    const axisWidth = font.widthOfTextAtSize(axisText, 11);
+    if (axisWidth > width - 200) {
+      const words = axis.split(' ');
+      let currentLine = '';
+      const lines: string[] = [];
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = font.widthOfTextAtSize(processArabicText(`• ${testLine}`), 11);
+        if (testWidth > width - 200 && currentLine) { lines.push(currentLine); currentLine = word; }
+        else { currentLine = testLine; }
+      }
+      if (currentLine) lines.push(currentLine);
+      for (const line of lines) {
+        const lineText = processArabicText(`• ${line}`);
+        const lineWidth = font.widthOfTextAtSize(lineText, 11);
+        page.drawText(lineText, { x: width - 150 - lineWidth, y: yPosition, size: 11, font, color: gray });
+        yPosition -= 15;
+      }
+    } else {
+      page.drawText(axisText, { x: width - 150 - axisWidth, y: yPosition, size: 11, font, color: gray });
+      yPosition -= 15;
+    }
+  }
+
+  // 4 signatures at the bottom
+  // Sig 1 (far right): د. كمال الحجام
+  const sig1Name = processArabicText('د. كمال الحجام');
+  const sig1NameW = font.widthOfTextAtSize(sig1Name, 12);
+  page.drawText(sig1Name, { x: width - 100 - sig1NameW, y: 145, size: 12, font, color: black });
+  const sig1Sub = processArabicText('دكتوراه في علوم التربية');
+  const sig1SubW = font.widthOfTextAtSize(sig1Sub, 9);
+  page.drawText(sig1Sub, { x: width - 100 - sig1SubW, y: 130, size: 9, font, color: gray });
+
+  // Sig 2: أ. علي سعدالله (director)
+  const sig2Name = processArabicText('أ. علي سعدالله');
+  const sig2NameW = font.widthOfTextAtSize(sig2Name, 12);
+  const sig2X = width * 0.55;
+  page.drawText(sig2Name, { x: sig2X - sig2NameW, y: 145, size: 12, font, color: black });
+  const sig2Sub = processArabicText('مدير الأكاديمية');
+  const sig2SubW = font.widthOfTextAtSize(sig2Sub, 9);
+  page.drawText(sig2Sub, { x: sig2X - sig2SubW, y: 130, size: 9, font, color: gray });
+
+  // Sig 3: أ. سامي الجازي
+  const sig3Name = processArabicText('أ. سامي الجازي');
+  const sig3NameW = font.widthOfTextAtSize(sig3Name, 12);
+  const sig3X = width * 0.38;
+  page.drawText(sig3Name, { x: sig3X - sig3NameW, y: 145, size: 12, font, color: black });
+  const sig3Sub = processArabicText('متفقد عام مميز للتربية');
+  const sig3SubW = font.widthOfTextAtSize(sig3Sub, 9);
+  page.drawText(sig3Sub, { x: sig3X - sig3SubW, y: 130, size: 9, font, color: gray });
+
+  // Sig 4 (far left): أ. حفيظ البدوي
+  const sig4Name = processArabicText('أ. حفيظ البدوي');
+  const sig4NameW = font.widthOfTextAtSize(sig4Name, 12);
+  const sig4X = width * 0.2;
+  page.drawText(sig4Name, { x: sig4X - sig4NameW, y: 145, size: 12, font, color: black });
+  const sig4Sub = processArabicText('متفقد عام للتربية');
+  const sig4SubW = font.widthOfTextAtSize(sig4Sub, 9);
+  page.drawText(sig4Sub, { x: sig4X - sig4SubW, y: 130, size: 9, font, color: gray });
+
+  // Stamp under director's signature
+  if (stampBytes) {
+    try {
+      const stampImage = await pdfDoc.embedPng(stampBytes);
+      const stampSize = 90;
+      const sigCenterX = sig2X - sig2NameW / 2;
+      page.drawImage(stampImage, {
+        x: sigCenterX - stampSize / 2,
+        y: 30,
+        width: stampSize,
+        height: stampSize * (stampImage.height / stampImage.width)
+      });
+    } catch (error) { console.error('Failed to embed stamp:', error); }
+  }
+
+  // Batch info at bottom center
+  if (data.batchNumber) {
+    const batchText = processArabicText(`الدفعة رقم ${data.batchNumber} من البرنامج التكويني لتأهيل المدرسين`);
+    const batchWidth = font.widthOfTextAtSize(batchText, 9);
+    page.drawText(batchText, { x: (width - batchWidth) / 2, y: 50, size: 9, font, color: lightGray });
+  }
+
+  // Date in bottom left
+  const issueDate = data.completionDate;
+  const arabicMonths = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const day = issueDate.getDate().toString();
+  const month = processArabicText(arabicMonths[issueDate.getMonth()]);
+  const year = issueDate.getFullYear().toString();
+  const dayW = font.widthOfTextAtSize(day, 10);
+  const monthW = font.widthOfTextAtSize(month, 10);
+  const yearW = font.widthOfTextAtSize(year, 10);
+  const sp = 3;
+  let cx = 50 + dayW + sp + monthW + sp + yearW;
+  cx -= dayW;
+  page.drawText(day, { x: cx, y: 50, size: 10, font, color: gray });
+  cx -= sp + monthW;
+  page.drawText(month, { x: cx, y: 50, size: 10, font, color: gray });
+  cx -= sp + yearW;
+  page.drawText(year, { x: cx, y: 50, size: 10, font, color: gray });
 }
