@@ -184,6 +184,17 @@ const LEVELS = [
   "السنة الرابعة ثانوي",
 ];
 
+// ===== PREDEFINED TAGS =====
+const PREDEFINED_TAGS = [
+  { label: "📝 مذكرة", value: "مذكرة", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  { label: "✅ تقييم", value: "تقييم", color: "bg-green-100 text-green-700 border-green-200" },
+  { label: "📅 توزيع سنوي", value: "توزيع سنوي", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  { label: "✏️ تمارين", value: "تمارين", color: "bg-orange-100 text-orange-700 border-orange-200" },
+  { label: "🔄 مراجعة", value: "مراجعة", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+  { label: "📊 تقرير", value: "تقرير", color: "bg-pink-100 text-pink-700 border-pink-200" },
+  { label: "💡 أخرى", value: "أخرى", color: "bg-gray-100 text-gray-700 border-gray-200" },
+];
+
 export default function EduGPTAssistantEnhanced() {
   const [, navigate] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -215,6 +226,9 @@ export default function EduGPTAssistantEnhanced() {
   const [editingConvId, setEditingConvId] = useState<number | null>(null);
   const [editingConvTitle, setEditingConvTitle] = useState("");
   const renameInputRef = useRef<HTMLInputElement>(null);
+  // Tags state
+  const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [tagMenuConvId, setTagMenuConvId] = useState<number | null>(null);
   const [showContextSelector, setShowContextSelector] = useState(false);
   const [templateLoaded, setTemplateLoaded] = useState(false);
 
@@ -269,6 +283,7 @@ export default function EduGPTAssistantEnhanced() {
   // tRPC queries and mutations
   const { data: conversations = [], refetch: refetchConversations } = trpc.assistant.getConversations.useQuery({
     searchQuery: searchQuery || undefined,
+    filterTag: filterTag || undefined,
   });
 
   const sendMessage = trpc.assistant.chat.useMutation({
@@ -317,6 +332,11 @@ export default function EduGPTAssistantEnhanced() {
   const togglePinMutation = trpc.assistant.togglePinConversation.useMutation({
     onSuccess: () => refetchConversations(),
     onError: () => toast.error("خطأ في تثبيت المحادثة"),
+  });
+
+  const updateTagsMutation = trpc.assistant.updateConversationTags.useMutation({
+    onSuccess: () => { refetchConversations(); setTagMenuConvId(null); },
+    onError: () => toast.error("خطأ في تحديث الوسوم"),
   });
 
   // State for loading a specific conversation
@@ -750,6 +770,32 @@ export default function EduGPTAssistantEnhanced() {
               className="pr-10"
             />
           </div>
+          {/* Tag filter chips */}
+          <div className="mt-3 flex flex-wrap gap-1">
+            <button
+              onClick={() => setFilterTag(null)}
+              className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                filterTag === null
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+              }`}
+            >
+              الكل
+            </button>
+            {PREDEFINED_TAGS.map((tag) => (
+              <button
+                key={tag.value}
+                onClick={() => setFilterTag(filterTag === tag.value ? null : tag.value)}
+                className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                  filterTag === tag.value
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : `${tag.color} hover:opacity-80`
+                }`}
+              >
+                {tag.label}
+              </button>
+            ))}
+          </div>
         </div>
         
         <ScrollArea className="flex-1">
@@ -808,9 +854,61 @@ export default function EduGPTAssistantEnhanced() {
                               >{conv.title}</h3>
                             )}
                           </div>
+                          {/* Tags badges */}
+                          {Array.isArray(conv.tags) && conv.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(conv.tags as string[]).map((tag) => {
+                                const tagDef = PREDEFINED_TAGS.find((t) => t.value === tag);
+                                return (
+                                  <span key={tag} className={`text-xs px-1.5 py-0.5 rounded-full border ${tagDef?.color ?? "bg-gray-100 text-gray-600 border-gray-200"}`}>
+                                    {tag}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                           <p className="text-xs text-gray-500 mt-1">{formatDate(conv.lastMessageAt)}</p>
                         </div>
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Tag menu button */}
+                          <div className="relative">
+                            <Button
+                              size="sm" variant="ghost" className="h-7 w-7 p-0"
+                              onClick={(e) => { e.stopPropagation(); setTagMenuConvId(tagMenuConvId === conv.id ? null : conv.id); }}
+                              title="إضافة وسم"
+                            >
+                              <span className="text-xs font-bold text-gray-500">#</span>
+                            </Button>
+                            {tagMenuConvId === conv.id && (
+                              <div
+                                className="absolute left-0 top-8 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-40"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <p className="text-xs font-semibold text-gray-500 mb-1.5 px-1">اختر وسماً</p>
+                                {PREDEFINED_TAGS.map((tag) => {
+                                  const currentTags: string[] = Array.isArray(conv.tags) ? (conv.tags as string[]) : [];
+                                  const isSelected = currentTags.includes(tag.value);
+                                  return (
+                                    <button
+                                      key={tag.value}
+                                      className={`w-full text-right text-xs px-2 py-1 rounded flex items-center justify-between gap-1 hover:bg-gray-50 ${
+                                        isSelected ? "font-semibold" : ""
+                                      }`}
+                                      onClick={() => {
+                                        const newTags = isSelected
+                                          ? currentTags.filter((t) => t !== tag.value)
+                                          : [...currentTags, tag.value];
+                                        updateTagsMutation.mutate({ id: conv.id, tags: newTags });
+                                      }}
+                                    >
+                                      <span>{tag.label}</span>
+                                      {isSelected && <Check className="h-3 w-3 text-blue-600 flex-shrink-0" />}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                           <Button
                             size="sm" variant="ghost" className="h-7 w-7 p-0"
                             onClick={(e) => { e.stopPropagation(); togglePinMutation.mutate({ id: conv.id, isPinned: !conv.isPinned }); }}

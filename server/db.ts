@@ -1241,7 +1241,7 @@ export async function updateConversation(id: number, userId: number, data: {
   return result;
 }
 
-export async function getUserConversations(userId: number, searchQuery?: string): Promise<Conversation[]> {
+export async function getUserConversations(userId: number, searchQuery?: string, filterTag?: string): Promise<Conversation[]> {
   const db = await getDb();
   if (!db) return [];
 
@@ -1250,6 +1250,11 @@ export async function getUserConversations(userId: number, searchQuery?: string)
   // If search query is provided, filter by title OR message content
   if (searchQuery) {
     conditions.push(sql`(${conversations.title} LIKE ${`%${searchQuery}%`} OR JSON_SEARCH(${conversations.messages}, 'one', ${`%${searchQuery}%`}) IS NOT NULL)`);
+  }
+
+  // If filterTag is provided, filter conversations that contain this tag in their JSON array
+  if (filterTag) {
+    conditions.push(sql`JSON_SEARCH(${conversations.tags}, 'one', ${filterTag}) IS NOT NULL`);
   }
   
   // Pinned conversations first, then by lastMessageAt
@@ -1287,6 +1292,15 @@ export async function deleteConversation(id: number, userId: number): Promise<bo
   const result = await db.delete(conversations)
     .where(sql`${conversations.id} = ${id} AND ${conversations.userId} = ${userId}`);
   
+  return true;
+}
+
+export async function updateConversationTags(id: number, userId: number, tags: string[]): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(conversations)
+    .set({ tags })
+    .where(sql`${conversations.id} = ${id} AND ${conversations.userId} = ${userId}`);
   return true;
 }
 

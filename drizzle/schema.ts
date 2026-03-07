@@ -613,6 +613,9 @@ export const conversations = mysqlTable("conversations", {
   // Pin feature
   isPinned: boolean("isPinned").default(false).notNull(),
   
+  // Tags (وسوم) - stored as JSON string, nullable
+  tags: json("tags").$type<string[]>(),
+  
   // Timestamps
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

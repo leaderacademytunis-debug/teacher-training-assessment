@@ -1365,4 +1365,13 @@
 - [x] تصدير المحادثة كـ Word (endpoint جديد exportConversationAsWord + زر)
 - [x] بحث في محتوى الرسائل (تحديث getUserConversations بـ JSON_SEARCH)
 - [x] تثبيت المحادثة في الأعلى (isPinned في DB + togglePinConversation + أيقونة Pin/PinOff)
+- [x] حفظ نقطة التفتيش (5e3c2cad)
+
+## نظام الوسوم (Tags) للمحادثات (جلسة 5)
+- [x] إضافة عمود tags (JSON array) في جدول conversations بقاعدة البيانات
+- [x] إضافة endpoints tRPC: updateConversationTags
+- [x] تحديث getUserConversations لدعم الفلترة بالوسوم (JSON_SEARCH)
+- [x] واجهة إضافة/حذف الوسوم (زر # مع قائمة منسدلة)
+- [x] وسوم مُعرَّفة مسبقاً: مذكرة، تقييم، توزيع سنوي، تمارين، مراجعة، تقرير، أخرى
+- [x] شريط فلترة بالوسوم في الشريط الجانبي + شارات الوسوم على كل محادثة
 - [ ] حفظ نقطة التفتيش

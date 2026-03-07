@@ -3435,9 +3435,10 @@ When creating an English lesson plan, use this structure:
     getConversations: protectedProcedure
       .input(z.object({
         searchQuery: z.string().optional(),
+        filterTag: z.string().optional(),
       }))
       .query(async ({ input, ctx }) => {
-        return await db.getUserConversations(ctx.user.id, input.searchQuery);
+        return await db.getUserConversations(ctx.user.id, input.searchQuery, input.filterTag);
       }),
     
     getConversation: protectedProcedure
@@ -3520,6 +3521,12 @@ When creating an English lesson plan, use this structure:
       .input(z.object({ id: z.number(), isPinned: z.boolean() }))
       .mutation(async ({ input, ctx }) => {
         return await db.togglePinConversation(input.id, ctx.user.id, input.isPinned);
+      }),
+
+    updateConversationTags: protectedProcedure
+      .input(z.object({ id: z.number(), tags: z.array(z.string()) }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.updateConversationTags(input.id, ctx.user.id, input.tags);
       }),
     
     evaluateFiche: protectedProcedure

@@ -183,6 +183,20 @@
       "when": 1772918692814,
       "tag": "0025_smooth_luke_cage",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1772919282127,
+      "tag": "0026_fast_flatman",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1772919300256,
+      "tag": "0027_brief_mole_man",
+      "breakpoints": true
     }
   ]
 }
