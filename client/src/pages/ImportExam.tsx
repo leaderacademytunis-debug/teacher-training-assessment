@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import BackButton from "@/components/BackButton";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,6 +102,7 @@ export default function ImportExam() {
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
+        <BackButton className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">استيراد الأسئلة</h1>
         <p className="text-muted-foreground">
           استورد أسئلة الاختبار من Google Forms أو ملفات CSV

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import BackButton from "@/components/BackButton";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +30,7 @@ export default function ReferenceLibrary() {
   return (
     <div className="container py-8">
       <div className="mb-8">
+        <BackButton className="mb-4" />
         <h1 className="text-3xl font-bold mb-2">مكتبة المراجع الرسمية</h1>
         <p className="text-muted-foreground">
           استعرض جميع المراجع الرسمية المتاحة من وزارة التربية التونسية

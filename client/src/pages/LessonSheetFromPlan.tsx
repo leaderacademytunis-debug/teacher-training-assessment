@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, FileText, Download, Wand2, ChevronRight, BookOpen, Target, Layers, CheckCircle2, Edit3, ClipboardCheck } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -161,12 +162,7 @@ export default function LessonSheetFromPlan() {
       <div className="bg-gradient-to-r from-[#1B4F72] to-[#2E86C1] text-white py-6 px-6 shadow-lg">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
-            <button
-              onClick={() => navigate("/teacher-tools")}
-              className="text-blue-200 hover:text-white transition-colors text-sm flex items-center gap-1"
-            >
-              أدوات المدرس
-            </button>
+            <BackButton to="/teacher-tools" label="أدوات المدرس" className="text-white/80 hover:text-white hover:bg-white/10" />
             <ChevronRight className="w-4 h-4 text-blue-300" />
             <span className="text-sm">توليد جذاذة من المخطط السنوي</span>
           </div>

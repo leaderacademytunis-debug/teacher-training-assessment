@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Loader2, Download, Sparkles, Edit2, Check, X, FileText, BookOpen, ClipboardCheck } from "lucide-react";
+import BackButton from "@/components/BackButton";
 
 interface PlanRow {
   trimester: string;
@@ -253,6 +254,9 @@ export default function AnnualPlanGenerator() {
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-6">
         <div className="bg-gradient-to-r from-[#1B4F72] to-[#2E86C1] rounded-2xl p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between mb-3">
+            <BackButton to="/teacher-tools" label="أدوات المدرس" className="text-white/80 hover:text-white hover:bg-white/10" />
+          </div>
           <div className="flex items-center gap-3 mb-2">
             <BookOpen className="w-8 h-8 text-yellow-300" />
             <div>

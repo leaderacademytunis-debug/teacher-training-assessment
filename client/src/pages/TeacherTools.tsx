@@ -3,7 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Calendar, ClipboardList, BookOpen, Plus, Home } from "lucide-react";
+import { FileText, Calendar, ClipboardList, BookOpen, Plus } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { Link } from "wouter";
 import { PedagogicalSheetFormEnhanced } from "@/components/PedagogicalSheetFormEnhanced";
 import { LessonPlanFormEnhanced } from "@/components/LessonPlanFormEnhanced";
@@ -48,12 +49,7 @@ function TeacherTools() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <Link href="/">
-            <Button variant="outline" className="gap-2">
-              <Home className="h-4 w-4" />
-              العودة إلى الرئيسية
-            </Button>
-          </Link>
+          <BackButton to="/" label="الرئيسية" />
         </div>
         <h1 className="text-4xl font-bold text-center mb-2">أدوات المدرس</h1>
         <p className="text-center text-muted-foreground">

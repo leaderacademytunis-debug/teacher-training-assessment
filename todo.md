@@ -1301,3 +1301,23 @@
 - [x] تحديث exportEvaluationToWord بترويسة SC2M223 رسمية
 - [x] كتابة 24 اختباراً وحدوياً ناجحاً في evaluationFromPlanRow.test.ts
 - [ ] حفظ نقطة التفتيش
+
+## إضافة زر الرجوع في جميع الصفحات
+- [ ] إنشاء مكوّن BackButton قابل لإعادة الاستخدام
+- [ ] إضافة زر الرجوع في صفحة LessonSheetFromPlan
+- [ ] إضافة زر الرجوع في صفحة EvaluationFromSheet
+- [ ] إضافة زر الرجوع في صفحة AnnualPlanGenerator
+- [ ] إضافة زر الرجوع في صفحة TeacherTools
+- [ ] إضافة زر الرجوع في صفحات أخرى (QuizTake, ExamResults, CourseDetail, etc.)
+- [ ] حفظ نقطة التفتيش
+
+## إضافة زر الرجوع في جميع الصفحات
+- [x] إنشاء مكوّن BackButton قابل لإعادة الاستخدام
+- [x] إضافة زر الرجوع في LessonSheetFromPlan
+- [x] إضافة زر الرجوع في EvaluationFromSheet
+- [x] إضافة زر الرجوع في AnnualPlanGenerator
+- [x] إضافة زر الرجوع في TeacherTools
+- [x] إضافة زر الرجوع في ImportExam
+- [x] إضافة زر الرجوع في ReferenceLibrary
+- [x] إضافة زر الرجوع في TemplateLibrary
+- [ ] حفظ نقطة التفتيش

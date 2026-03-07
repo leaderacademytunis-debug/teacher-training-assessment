@@ -15,6 +15,7 @@ import {
   ClipboardCheck, Target, BookOpen, CheckCircle2, Edit3,
   ListChecks, AlertCircle, RotateCcw
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -172,15 +173,7 @@ export default function EvaluationFromSheet() {
       {/* Header */}
       <div className="bg-white border-b border-green-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/lesson-sheet-from-plan")}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <ChevronRight className="w-4 h-4 ml-1" />
-            العودة للجذاذة
-          </Button>
+          <BackButton to="/lesson-sheet-from-plan" label="العودة للجذاذة" />
           <Separator orientation="vertical" className="h-5" />
           <div className="flex items-center gap-2">
             <ClipboardCheck className="w-5 h-5 text-green-600" />
