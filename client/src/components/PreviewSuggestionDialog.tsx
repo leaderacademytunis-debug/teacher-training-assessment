@@ -44,6 +44,16 @@ export function PreviewSuggestionDialog({
     setFormData(initialData);
   }, [initialData]);
 
+  const exportJathathWord = trpc.pedagogicalSheets.exportJathathToWord.useMutation({
+    onSuccess: (data) => {
+      toast.success("تم تصدير الجذاذة إلى Word بقالب Leader Academy ✨");
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في التصدير: ${error.message}`);
+    },
+  });
+
   const exportLeaderAcademy = trpc.pedagogicalSheets.exportLeaderAcademyJathatha.useMutation({
     onSuccess: (data) => {
       toast.success("تم تصدير الجذاذة بقالب Leader Academy Standard بنجاح ✨");
@@ -383,7 +393,46 @@ export function PreviewSuggestionDialog({
             className="gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md"
           >
             <Star className="h-4 w-4" />
-            {exportLeaderAcademy.isPending ? "جاري التصدير..." : "قالب Leader Academy ✦"}
+            {exportLeaderAcademy.isPending ? "جاري التصدير..." : "قالب Leader Academy PDF ✦"}
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => {
+              const levelMap: Record<string, string> = { primary: "ابتدائي", middle: "إعدادي", secondary: "ثانوي" };
+              exportJathathWord.mutate({
+                Header: {
+                  title: formData.lessonTitle || "عنوان الدرس",
+                  subject: formData.subject || "المادة",
+                  level: `${levelMap[formData.educationLevel] || formData.educationLevel} — ${formData.grade}`,
+                  duration: formData.duration ? `${formData.duration} دقيقة` : "45 دقيقة",
+                  trimester: "الثلاثي الأول",
+                  terminalCompetency: formData.lessonObjectives || "الكفاية الختامية",
+                  distinctiveObjective: formData.lessonObjectives?.split("\n")[0] || "الهدف المميز",
+                  tools: formData.materials || "وسائل الدرس",
+                },
+                Objectives: formData.lessonObjectives
+                  ? formData.lessonObjectives.split("\n").filter(Boolean)
+                  : ["الهدف الإجرائي"],
+                Stages: [
+                  { name: "وضعية المشكلة", teacherRole: "يقدم السند ويطرح السؤال", studentRole: "يلاحظ ويتساءل", duration: "5-8 دق", content: formData.introduction || "وضعية تونسية دالة" },
+                  { name: "الفرضيات", teacherRole: "يوجه ويسجل الفرضيات", studentRole: "يقترح تفسيرات", duration: "8-10 دق", content: "صياغة الفرضيات المتوقعة" },
+                  { name: "التحقق", teacherRole: "يوزع الأدوات ويراقب", studentRole: "يجرب ويلاحظ ويقيس", duration: "15-20 دق", content: formData.mainActivitiesText || "الأنشطة الرئيسية" },
+                  { name: "الاستنتاج", teacherRole: "يهيكل النتائج", studentRole: "يصيغ الاستنتاج", duration: "5-8 دق", content: formData.conclusion || "صياغة المفهوم" },
+                  { name: "التقييم", teacherRole: "يقدم التمرين", studentRole: "يحل بشكل فردي", duration: "5-8 دق", content: formData.evaluation || "وضعية إدماجية" },
+                ],
+                Evaluation: {
+                  type: "وضعية إدماجية",
+                  question: formData.evaluation || "سؤال التقييم",
+                  successCriteria: "الإجابة الصحيحة في 3 من 5 معايير",
+                  correctAnswer: "وفق البرنامج الرسمي",
+                },
+              });
+            }}
+            disabled={exportJathathWord.isPending}
+            className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-md"
+          >
+            <FileText className="h-4 w-4" />
+            {exportJathathWord.isPending ? "جاري التصدير..." : "تصدير Word • ليدر أكاديمي"}
           </Button>
         </DialogFooter>
       </DialogContent>

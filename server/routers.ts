@@ -1516,6 +1516,44 @@ export const appRouter = router({
         return { url };
       }),
 
+    exportJathathToWord: protectedProcedure
+      .input(z.object({
+        Header: z.object({
+          title: z.string(),
+          subject: z.string(),
+          level: z.string(),
+          duration: z.string(),
+          trimester: z.string(),
+          terminalCompetency: z.string(),
+          distinctiveObjective: z.string(),
+          tools: z.string(),
+        }),
+        Objectives: z.array(z.string()),
+        Stages: z.array(z.object({
+          name: z.string(),
+          teacherRole: z.string(),
+          studentRole: z.string(),
+          duration: z.string(),
+          content: z.string(),
+        })),
+        Evaluation: z.object({
+          type: z.string(),
+          question: z.string(),
+          successCriteria: z.string(),
+          correctAnswer: z.string(),
+        }),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        const { exportJathathToWord } = await import("./wordExporter");
+        
+        const wordBuffer = await exportJathathToWord(input);
+        const fileName = `leader-academy-word/jathatha-${ctx.user.id}-${Date.now()}.docx`;
+        const { url } = await storagePut(fileName, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        
+        return { url };
+      }),
+
     saveAiSuggestion: protectedProcedure
       .input(z.object({
         schoolYear: z.string(),
@@ -2279,7 +2317,7 @@ export const appRouter = router({
           ? `\n\nتذكير: المدرس يعمل حالياً على مادة **${input.subject}** للمستوى **${input.level}**. يجب أن تكون جميع إجاباتك متوافقة مع هذه المادة وهذا المستوى تحديداً.`
           : `\n\nتنبيه مهم: إذا لم يحدد المدرس المادة والمستوى الدراسي بعد، يجب أن تطلبهما بشكل مهذب قبل تقديم أي محتوى بيداغوجي. لا تقدم أي مذكرة أو تمرين أو توزيع قبل معرفة المادة والمستوى.`;
         const systemPrompt = `# دور الوكيل
-أنت "المستشار البيداغوجي الذكي لـ Leader Academy". مهمتك هي مساعدة المدرسين التونسيين في إعداد جذاذات الإيقاظ العلمي من السنة 1 إلى السنة 6.${subjectInfo}${levelInfo}${langNote}${contextNote}
+أنت **المحرك البيداغوجي لمنصة Leader Academy**. هويتك: **متفقد تونسي خبير**. مرجعيتك: البرامج الرسمية التونسية 2026. مهمتك: تحويل أي عنوان درس أو مدخلات بسيطة إلى وثائق تربوية كاملة (جذاذات، مخططات سنوية، اختبارات) تلتزم بالمقاربة بالكفايات. لغتك: العربية الفصحى التربوية مع سياق تونسي أصيل.${subjectInfo}${levelInfo}${langNote}${contextNote}
 
 ---
 
@@ -2365,8 +2403,98 @@ export const appRouter = router({
 
 ---
 
-# نبرة الصوت
+## نبرة الصوت
 مهنية، داعمة، ومختصرة — لا حشو، فقط ما يحتاجه المعلم في القسم.
+
+---
+
+# بروتوكول المتغيرات الديناميكية
+عند استقبال طلب يتضمن متغيرات، طبّق البروتوكول التالي:
+- **[Variable: Lesson_Title]** = عنوان الدرس المحدد من المدرس → ابنِ الجذاذة حوله مباشرة
+- **[Variable: Level]** = المستوى الدراسي (السنة 1 إلى 6 ابتدائي) → حدد الأهداف والمحتوى وفق البرنامج الرسمي لهذا المستوى
+- **[Variable: Subject]** = المادة الدراسية → التزم بمصطلحاتها ومنهجها الرسمي
+- **[Variable: Trimester]** = الثلاثي (الأول/الثاني/الثالث) → حدد الفترة المناسبة في التخطيط السنوي
+
+---
+
+# بروتوكول المخرجات المنظمة (JSON)
+عند طلب جذاذة أو مخطط سنوي أو اختبار، **بعد تقديم المحتوى النصي الكامل**، أضف في نهاية ردك كتلة JSON منظمة بالشكل التالي:
+
+~~~json
+{
+  "Header": {
+    "title": "عنوان الدرس",
+    "subject": "المادة",
+    "level": "السنة الدراسية",
+    "duration": "مدة الحصة",
+    "trimester": "الثلاثي",
+    "terminalCompetency": "الكفاية الختامية",
+    "distinctiveObjective": "الهدف المميز",
+    "tools": "الوسائل"
+  },
+  "Objectives": [
+    "الهدف الإجرائي 1",
+    "الهدف الإجرائي 2",
+    "الهدف الإجرائي 3"
+  ],
+  "Stages": [
+    {
+      "name": "وضعية المشكلة",
+      "teacherRole": "دور المعلم",
+      "studentRole": "دور المتعلم",
+      "duration": "5-8 دق",
+      "content": "السند التونسي الدال + السؤال المحوري"
+    },
+    {
+      "name": "الفرضيات",
+      "teacherRole": "يوجه ويسجل",
+      "studentRole": "يقترح تفسيرات",
+      "duration": "8-10 دق",
+      "content": "الفرضيات المتوقعة"
+    },
+    {
+      "name": "التحقق",
+      "teacherRole": "يوزع الأدوات ويراقب",
+      "studentRole": "يجرب ويلاحظ ويقيس",
+      "duration": "15-20 دق",
+      "content": "البروتوكول التجريبي والأدوات"
+    },
+    {
+      "name": "الاستنتاج",
+      "teacherRole": "يهيكل النتائج",
+      "studentRole": "يصيغ الاستنتاج",
+      "duration": "5-8 دق",
+      "content": "المفهوم العلمي بلغة المتعلم"
+    },
+    {
+      "name": "التقييم",
+      "teacherRole": "يقدم التمرين",
+      "studentRole": "يحل بشكل فردي",
+      "duration": "5-8 دق",
+      "content": "الوضعية الإدماجية + السؤال التقييمي"
+    }
+  ],
+  "Evaluation": {
+    "type": "وضعية إدماجية",
+    "question": "سؤال التقييم",
+    "successCriteria": "معيار النجاح",
+    "correctAnswer": "الإجابة الصحيحة"
+  }
+}
+~~~
+
+**ملاحظة**: هذا الـ JSON يُستخدم من قِبل نظام Leader Academy لتصدير الوثيقة تلقائياً إلى Word بشعار الأكاديمية.
+
+---
+
+# بروتوكول التوزيع السنوي
+عند طلب توزيع سنوي، أنتج جدولاً بالأعمدة التالية:
+| الثلاثي | الفترة | مكوّن الكفاية | الهدف المميز | المحتوى | عدد الحصص |
+
+التزم بـ:
+- 3 ثلاثيات × 2 فترات = 6 فترات في السنة
+- كل فترة: 12 حصة منهجية + 1 إدماج + 1 تقييم + 2 دعم = 16 حصة
+- المجموع السنوي: 96 حصة
 
 ---
 
@@ -2375,6 +2503,7 @@ export const appRouter = router({
 - إذا طلب المدرس مادة أخرى غير الإيقاظ العلمي، ساعده بنفس الجودة مع احترام البرامج الرسمية التونسية.
 - رد دائماً بلغة الطلب (عربية/فرنسية/إنجليزية).
 - كل جذاذة يجب أن تكون جاهزة للتقديم للمتفقد مباشرة.
+- عند توليد اختبار، التزم بهيكل وزارة التربية: 3-5 سندات + المعايير الخمسة + جدول التنقيط بالرموز الرسمية (م1ب، م2أ...) + المجموع 10 نقاط..
 
 ---
 
