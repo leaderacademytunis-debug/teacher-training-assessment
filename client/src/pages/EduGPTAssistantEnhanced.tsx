@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe } from "lucide-react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -194,16 +194,27 @@ export default function EduGPTAssistantEnhanced() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [conversationTitle, setConversationTitle] = useState("محادثة جديدة");
-  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
-  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(() => {
+    try { return localStorage.getItem('assistant_subject') || null; } catch { return null; }
+  });
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(() => {
+    try { return localStorage.getItem('assistant_level') || null; } catch { return null; }
+  });
   const { language: globalLanguage, setLanguage } = useLanguage();
   const t = UI[globalLanguage as keyof typeof UI] ?? UI.ar;
   const [teachingLanguage, setTeachingLanguage] = useState<"arabic" | "french" | "english" | null>(() => {
-    // Sync with global language on first load
+    try {
+      const saved = localStorage.getItem('assistant_teaching_language') as "arabic" | "french" | "english" | null;
+      if (saved) return saved;
+    } catch { /* ignore */ }
     if (globalLanguage === "fr") return "french";
     if (globalLanguage === "en") return "english";
     return null;
   });
+  // Inline rename state
+  const [editingConvId, setEditingConvId] = useState<number | null>(null);
+  const [editingConvTitle, setEditingConvTitle] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const [showContextSelector, setShowContextSelector] = useState(false);
   const [templateLoaded, setTemplateLoaded] = useState(false);
 
@@ -359,6 +370,49 @@ export default function EduGPTAssistantEnhanced() {
     }
   };
 
+  // Persist subject/level/language to localStorage
+  useEffect(() => {
+    try { if (selectedSubject) localStorage.setItem('assistant_subject', selectedSubject); else localStorage.removeItem('assistant_subject'); } catch { /* ignore */ }
+  }, [selectedSubject]);
+  useEffect(() => {
+    try { if (selectedLevel) localStorage.setItem('assistant_level', selectedLevel); else localStorage.removeItem('assistant_level'); } catch { /* ignore */ }
+  }, [selectedLevel]);
+  useEffect(() => {
+    try { if (teachingLanguage) localStorage.setItem('assistant_teaching_language', teachingLanguage); else localStorage.removeItem('assistant_teaching_language'); } catch { /* ignore */ }
+  }, [teachingLanguage]);
+  // Inline rename helpers
+  const startRenaming = (conv: { id: number; title: string }, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingConvId(conv.id);
+    setEditingConvTitle(conv.title);
+    setTimeout(() => renameInputRef.current?.focus(), 50);
+  };
+  const commitRename = async () => {
+    if (editingConvId === null) return;
+    const trimmed = editingConvTitle.trim();
+    if (trimmed) {
+      await updateConversationMutation.mutateAsync({ id: editingConvId, title: trimmed, messages: [] });
+      if (currentConversationId === editingConvId) setConversationTitle(trimmed);
+    }
+    setEditingConvId(null);
+  };
+  // Group conversations by date
+  const groupedConversations = useMemo(() => {
+    const now = new Date();
+    const today: typeof conversations = [];
+    const yesterday: typeof conversations = [];
+    const thisWeek: typeof conversations = [];
+    const older: typeof conversations = [];
+    conversations.forEach((conv) => {
+      const d = new Date(conv.lastMessageAt);
+      const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) today.push(conv);
+      else if (diffDays === 1) yesterday.push(conv);
+      else if (diffDays < 7) thisWeek.push(conv);
+      else older.push(conv);
+    });
+    return { today, yesterday, thisWeek, older };
+  }, [conversations]);
   // Load conversation - fetch full data including messages from server
   const loadConversation = (conv: { id: number; title: string }) => {
     setConversationTitle(conv.title);
@@ -693,42 +747,70 @@ export default function EduGPTAssistantEnhanced() {
         
         <ScrollArea className="flex-1">
           <div className="p-2 space-y-1">
-            {conversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group ${
-                  currentConversationId === conv.id ? "bg-blue-50 border border-blue-200" : ""
-                } ${loadingConvId === conv.id ? "opacity-60" : ""}`}
-                onClick={() => loadConversation(conv)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                      <h3 className="font-medium text-sm truncate">{conv.title}</h3>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">{formatDate(conv.lastMessageAt)}</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteConversation(conv.id);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            
             {conversations.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">{t.noConversations}</p>
               </div>
+            )}
+            {([
+              { label: "اليوم", items: groupedConversations.today },
+              { label: "أمس", items: groupedConversations.yesterday },
+              { label: "هذا الأسبوع", items: groupedConversations.thisWeek },
+              { label: "أقدم", items: groupedConversations.older },
+            ] as { label: string; items: typeof conversations }[]).map(({ label, items }) =>
+              items.length > 0 ? (
+                <div key={label}>
+                  <p className="text-xs font-semibold text-gray-400 px-2 pt-3 pb-1 uppercase tracking-wide">{label}</p>
+                  {items.map((conv) => (
+                    <div
+                      key={conv.id}
+                      className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group ${
+                        currentConversationId === conv.id ? "bg-blue-50 border border-blue-200" : ""
+                      } ${loadingConvId === conv.id ? "opacity-60" : ""}`}
+                      onClick={() => editingConvId !== conv.id && loadConversation(conv)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                            {editingConvId === conv.id ? (
+                              <div className="flex items-center gap-1 flex-1" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  ref={renameInputRef}
+                                  value={editingConvTitle}
+                                  onChange={(e) => setEditingConvTitle(e.target.value)}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingConvId(null); }}
+                                  onBlur={commitRename}
+                                  className="flex-1 text-sm border border-blue-300 rounded px-1 py-0.5 outline-none bg-white"
+                                />
+                                <button onClick={commitRename} className="text-green-600 hover:text-green-700">
+                                  <Check className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <h3
+                                className="font-medium text-sm truncate"
+                                onDoubleClick={(e) => startRenaming(conv, e)}
+                                title="انقر مرتين لتغيير الاسم"
+                              >{conv.title}</h3>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">{formatDate(conv.lastMessageAt)}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => startRenaming(conv, e)} title="إعادة التسمية">
+                            <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }} title="حذف">
+                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null
             )}
           </div>
         </ScrollArea>
