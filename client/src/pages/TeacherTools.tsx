@@ -174,10 +174,18 @@ function TeacherTools() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">تخطيط الدروس</h2>
-              <Button onClick={() => setShowPlanForm(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                إنشاء خطة جديدة
-              </Button>
+              <div className="flex gap-2">
+                <Link href="/annual-plan">
+                  <Button variant="outline" className="gap-2 border-amber-500 text-amber-700 hover:bg-amber-50">
+                    <Calendar className="h-4 w-4" />
+                    ✨ توليد مخطط سنوي تلقائي
+                  </Button>
+                </Link>
+                <Button onClick={() => setShowPlanForm(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  إنشاء خطة جديدة
+                </Button>
+              </div>
             </div>
 
             {showPlanForm && (

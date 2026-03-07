@@ -1256,3 +1256,10 @@
 - [x] إضافة endpoint exportJathathToWord في routers.ts
 - [x] إضافة زر "تصدير Word • ليدر أكاديمي" في PreviewSuggestionDialog
 - [ ] حفظ نقطة التفتيش
+
+## ميزة توليد المخطط السنوي التلقائي (اللغة العربية - تونس)
+- [x] إضافة endpoint generateAnnualPlan في routers.ts (LLM + JSON منظم)
+- [x] بناء صفحة AnnualPlanGenerator.tsx مع جدول تفاعلي قابل للتعديل وإضافة صف جديد
+- [x] إضافة endpoint exportAnnualPlanToWord في wordExporter.ts
+- [x] ربط الصفحة بالتنقل في App.tsx وإضافة زر في TeacherTools.tsx
+- [ ] حفظ نقطة التفتيش

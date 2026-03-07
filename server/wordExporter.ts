@@ -324,3 +324,155 @@ export async function exportJathathToWord(data: JathathJSON): Promise<Buffer> {
 
   return await Packer.toBuffer(doc);
 }
+
+// ─── تصدير المخطط السنوي إلى Word ─────────────────────────────────────────
+
+export interface AnnualPlanRow {
+  trimester: string;
+  unit: string;
+  activity: string;
+  competencyComponent: string;
+  distinguishedObjective: string;
+  content: string;
+  sessions: number;
+}
+
+export interface AnnualPlanData {
+  subject: string;
+  grade: string;
+  schoolYear?: string;
+  rows: AnnualPlanRow[];
+}
+
+export async function exportAnnualPlanToWord(data: AnnualPlanData): Promise<Buffer> {
+  const sections: any[] = [];
+
+  // ── الترويسة ──────────────────────────────────────────────────────────────
+  sections.push(
+    new Paragraph({
+      children: [arabicText("الجمهورية التونسية — وزارة التربية", { bold: true, size: 12, color: COLORS.primary })],
+      alignment: AlignmentType.CENTER,
+      bidirectional: true,
+    }),
+    new Paragraph({
+      children: [arabicText("المحرك البيداغوجي الذكي — Leader Academy", { bold: true, size: 16, color: COLORS.accent })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 100, after: 50 },
+      bidirectional: true,
+    }),
+    new Paragraph({
+      children: [arabicText(`المخطط السنوي — مادة: ${data.subject} — السنة: ${data.grade} ابتدائي`, { bold: true, size: 18, color: COLORS.white })],
+      alignment: AlignmentType.CENTER,
+      shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary },
+      spacing: { before: 200, after: 200 },
+      bidirectional: true,
+    }),
+    new Paragraph({
+      children: [arabicText(`السنة الدراسية: ${data.schoolYear || "2025-2026"}`, { size: 11, color: COLORS.secondary })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 300 },
+      bidirectional: true,
+    }),
+  );
+
+  // ── رأس الجدول ─────────────────────────────────────────────────────────────
+  const headerCellStyle = (text: string) => new TableCell({
+    children: [new Paragraph({
+      children: [arabicText(text, { bold: true, size: 10, color: COLORS.white })],
+      alignment: AlignmentType.CENTER,
+      bidirectional: true,
+    })],
+    shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary },
+  });
+
+  const headerRow = new TableRow({
+    children: [
+      headerCellStyle("عدد الحصص"),
+      headerCellStyle("المحتوى"),
+      headerCellStyle("الهدف المميز"),
+      headerCellStyle("مكوّن الكفاية"),
+      headerCellStyle("النشاط"),
+      headerCellStyle("الفترة"),
+      headerCellStyle("الثلاثي"),
+    ],
+    tableHeader: true,
+  });
+
+  // ── صفوف البيانات ──────────────────────────────────────────────────────────
+  const dataRows = data.rows.map((row, i) => {
+    const bgColor = i % 2 === 0 ? COLORS.light : COLORS.white;
+    const cell = (text: string, bold = false) => new TableCell({
+      children: [new Paragraph({
+        children: [arabicText(text, { size: 10, bold })],
+        alignment: AlignmentType.RIGHT,
+        bidirectional: true,
+      })],
+      shading: { type: ShadingType.SOLID, color: bgColor, fill: bgColor },
+    });
+
+    return new TableRow({
+      children: [
+        cell(String(row.sessions)),
+        cell(row.content),
+        cell(row.distinguishedObjective),
+        cell(row.competencyComponent),
+        cell(row.activity, true),
+        cell(row.unit),
+        cell(row.trimester, true),
+      ],
+    });
+  });
+
+  sections.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [headerRow, ...dataRows],
+    }),
+  );
+
+  // ── التذييل ───────────────────────────────────────────────────────────────
+  sections.push(
+    new Paragraph({ spacing: { before: 300 }, children: [] }),
+    new Paragraph({
+      children: [arabicText("🇹🇳 الجمهورية التونسية — Leader Academy — leaderacademy.school", { size: 9, color: COLORS.secondary, italics: true })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200 },
+      bidirectional: true,
+    }),
+  );
+
+  // ── بناء الوثيقة ──────────────────────────────────────────────────────────
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: {
+              top: convertInchesToTwip(0.7),
+              right: convertInchesToTwip(0.7),
+              bottom: convertInchesToTwip(0.7),
+              left: convertInchesToTwip(0.7),
+            },
+            size: {
+              orientation: PageOrientation.LANDSCAPE,
+            },
+          },
+        },
+        children: sections,
+      },
+    ],
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: ARABIC_FONT,
+            size: 20,
+            color: COLORS.text,
+          },
+        },
+      },
+    },
+  });
+
+  return await Packer.toBuffer(doc);
+}

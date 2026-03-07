@@ -1554,6 +1554,66 @@ export const appRouter = router({
         return { url };
       }),
 
+    generateAnnualPlan: protectedProcedure
+      .input(z.object({
+        subject: z.string(),
+        grade: z.string(),
+        schoolYear: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const systemPrompt = `أنت خبير بيداغوجي تونسي متخصص في إعداد المخططات السنوية لمدارس الابتدائي وفق البرامج الرسمية التونسية 2026 والمقاربة بالكفايات (APC).
+مهمتك: توليد مخطط سنوي كامل ومفصّل بصيغة JSON منظمة.
+قواعد المحتوى:
+- للغة العربية: الأنشطة تشمل (تواصل شفوي، قراءة، قواعد لغة: نحو/صرف/رسم، إنتاج كتابي)
+- للرياضيات: الأنشطة تشمل (أعداد وحساب، هندسة، قياس، إحصاء)
+- للإيقاظ العلمي: الأنشطة تشمل (علوم الحياة، علوم المادة، تكنولوجيا)
+- التوزيع: 6 وحدات في السنة، كل وحدة 3 أسابيع تعلم + أسبوع إدماج وتقييم
+- الثلاثيات: الأول (وحدات 1-2)، الثاني (وحدات 3-4)، الثالث (وحدات 5-6)
+- استخرج الأهداف المميزة والمحتويات من البرنامج الرسمي التونسي
+- السياق التونسي: استخدم أمثلة من البيئة التونسية (زيتون، واحات، مطبخ تونسي، سيدي بوسعيد...)
+أجب فقط بـ JSON صالح بالهيكل التالي بدون أي نص إضافي:
+{"subject":"اسم المادة","grade":"السنة الدراسية","schoolYear":"السنة الدراسية","rows":[{"trimester":"الأول","unit":"الوحدة 1","activity":"قراءة","competencyComponent":"مكوّن الكفاية","distinguishedObjective":"الهدف المميز","content":"المحتوى","sessions":4}]}`;
+        const userMessage = `أنشئ مخططاً سنوياً كاملاً لمادة "${input.subject}" للسنة ${input.grade} ابتدائي للسنة الدراسية ${input.schoolYear || "2025-2026"}.
+يجب أن يحتوي المخطط على جميع الأنشطة لكل وحدة من الوحدات الست، مع تفصيل دقيق للأهداف والمحتويات وفق البرنامج الرسمي التونسي.
+أجب بـ JSON فقط بدون markdown أو نص إضافي.`;
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+        });
+        const content = response.choices[0].message.content;
+        const text = typeof content === "string" ? content : "";
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("لم يتمكن النظام من توليد المخطط السنوي");
+        const plan = JSON.parse(jsonMatch[0]);
+        return plan;
+      }),
+
+    exportAnnualPlanToWord: protectedProcedure
+      .input(z.object({
+        subject: z.string(),
+        grade: z.string(),
+        schoolYear: z.string().optional(),
+        rows: z.array(z.object({
+          trimester: z.string(),
+          unit: z.string(),
+          activity: z.string(),
+          competencyComponent: z.string(),
+          distinguishedObjective: z.string(),
+          content: z.string(),
+          sessions: z.number(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportAnnualPlanToWord } = await import("./wordExporter");
+        const wordBuffer = await exportAnnualPlanToWord(input);
+        const base64 = wordBuffer.toString("base64");
+        return { base64, filename: `مخطط-سنوي-${input.subject}-${input.grade}.docx` };
+      }),
+
     saveAiSuggestion: protectedProcedure
       .input(z.object({
         schoolYear: z.string(),
