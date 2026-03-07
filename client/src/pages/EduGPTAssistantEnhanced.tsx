@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check } from "lucide-react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -314,6 +314,11 @@ export default function EduGPTAssistantEnhanced() {
   const uploadFileMutation = trpc.assistant.uploadFile.useMutation();
   const analyzeFileMutation = trpc.assistant.analyzeFile.useMutation();
 
+  const togglePinMutation = trpc.assistant.togglePinConversation.useMutation({
+    onSuccess: () => refetchConversations(),
+    onError: () => toast.error("خطأ في تثبيت المحادثة"),
+  });
+
   // State for loading a specific conversation
   const [loadingConvId, setLoadingConvId] = useState<number | null>(null);
   const { data: loadedConvData, isFetching: isLoadingConv } = trpc.assistant.getConversation.useQuery(
@@ -396,14 +401,16 @@ export default function EduGPTAssistantEnhanced() {
     }
     setEditingConvId(null);
   };
-  // Group conversations by date
+  // Group conversations by date (pinned first, then by date)
   const groupedConversations = useMemo(() => {
     const now = new Date();
+    const pinned: typeof conversations = [];
     const today: typeof conversations = [];
     const yesterday: typeof conversations = [];
     const thisWeek: typeof conversations = [];
     const older: typeof conversations = [];
     conversations.forEach((conv) => {
+      if (conv.isPinned) { pinned.push(conv); return; }
       const d = new Date(conv.lastMessageAt);
       const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
       if (diffDays === 0) today.push(conv);
@@ -411,7 +418,7 @@ export default function EduGPTAssistantEnhanced() {
       else if (diffDays < 7) thisWeek.push(conv);
       else older.push(conv);
     });
-    return { today, yesterday, thisWeek, older };
+    return { pinned, today, yesterday, thisWeek, older };
   }, [conversations]);
   // Load conversation - fetch full data including messages from server
   const loadConversation = (conv: { id: number; title: string }) => {
@@ -754,20 +761,25 @@ export default function EduGPTAssistantEnhanced() {
               </div>
             )}
             {([
-              { label: "اليوم", items: groupedConversations.today },
-              { label: "أمس", items: groupedConversations.yesterday },
-              { label: "هذا الأسبوع", items: groupedConversations.thisWeek },
-              { label: "أقدم", items: groupedConversations.older },
-            ] as { label: string; items: typeof conversations }[]).map(({ label, items }) =>
+              { label: "📌 مثبتة", items: groupedConversations.pinned, isPinnedGroup: true },
+              { label: "اليوم", items: groupedConversations.today, isPinnedGroup: false },
+              { label: "أمس", items: groupedConversations.yesterday, isPinnedGroup: false },
+              { label: "هذا الأسبوع", items: groupedConversations.thisWeek, isPinnedGroup: false },
+              { label: "أقدم", items: groupedConversations.older, isPinnedGroup: false },
+            ] as { label: string; items: typeof conversations; isPinnedGroup: boolean }[]).map(({ label, items, isPinnedGroup }) =>
               items.length > 0 ? (
                 <div key={label}>
-                  <p className="text-xs font-semibold text-gray-400 px-2 pt-3 pb-1 uppercase tracking-wide">{label}</p>
+                  <p className={`text-xs font-semibold px-2 pt-3 pb-1 uppercase tracking-wide ${
+                    isPinnedGroup ? "text-amber-500" : "text-gray-400"
+                  }`}>{label}</p>
                   {items.map((conv) => (
                     <div
                       key={conv.id}
                       className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group ${
                         currentConversationId === conv.id ? "bg-blue-50 border border-blue-200" : ""
-                      } ${loadingConvId === conv.id ? "opacity-60" : ""}`}
+                      } ${loadingConvId === conv.id ? "opacity-60" : ""} ${
+                        conv.isPinned ? "border-r-2 border-r-amber-400" : ""
+                      }`}
                       onClick={() => editingConvId !== conv.id && loadConversation(conv)}
                     >
                       <div className="flex items-start justify-between">
@@ -799,6 +811,15 @@ export default function EduGPTAssistantEnhanced() {
                           <p className="text-xs text-gray-500 mt-1">{formatDate(conv.lastMessageAt)}</p>
                         </div>
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            size="sm" variant="ghost" className="h-7 w-7 p-0"
+                            onClick={(e) => { e.stopPropagation(); togglePinMutation.mutate({ id: conv.id, isPinned: !conv.isPinned }); }}
+                            title={conv.isPinned ? "إلغاء التثبيت" : "تثبيت في الأعلى"}
+                          >
+                            {conv.isPinned
+                              ? <PinOff className="h-3.5 w-3.5 text-amber-500" />
+                              : <Pin className="h-3.5 w-3.5 text-gray-500" />}
+                          </Button>
                           <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => startRenaming(conv, e)} title="إعادة التسمية">
                             <Pencil className="h-3.5 w-3.5 text-gray-500" />
                           </Button>

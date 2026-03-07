@@ -1247,15 +1247,25 @@ export async function getUserConversations(userId: number, searchQuery?: string)
 
   const conditions = [eq(conversations.userId, userId)];
   
-  // If search query is provided, filter by title
+  // If search query is provided, filter by title OR message content
   if (searchQuery) {
-    conditions.push(sql`${conversations.title} LIKE ${`%${searchQuery}%`}`);
+    conditions.push(sql`(${conversations.title} LIKE ${`%${searchQuery}%`} OR JSON_SEARCH(${conversations.messages}, 'one', ${`%${searchQuery}%`}) IS NOT NULL)`);
   }
   
+  // Pinned conversations first, then by lastMessageAt
   return await db.select()
     .from(conversations)
     .where(and(...conditions))
-    .orderBy(desc(conversations.lastMessageAt));
+    .orderBy(desc(conversations.isPinned), desc(conversations.lastMessageAt));
+}
+
+export async function togglePinConversation(id: number, userId: number, isPinned: boolean): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(conversations)
+    .set({ isPinned })
+    .where(sql`${conversations.id} = ${id} AND ${conversations.userId} = ${userId}`);
+  return true;
 }
 
 export async function getConversationById(id: number, userId: number): Promise<Conversation | null> {

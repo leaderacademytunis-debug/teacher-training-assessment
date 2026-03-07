@@ -3483,6 +3483,44 @@ When creating an English lesson plan, use this structure:
         
         return { url };
       }),
+
+    exportConversationAsWord: protectedProcedure
+      .input(z.object({
+        title: z.string(),
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string(),
+          })).optional(),
+          timestamp: z.number(),
+        })),
+        createdAt: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportConversationAsWord } = await import("./exportConversation");
+        const wordBuffer = await exportConversationAsWord({
+          title: input.title,
+          messages: input.messages,
+          createdAt: new Date(input.createdAt),
+        });
+        
+        // Upload to S3
+        const { storagePut } = await import("./storage");
+        const fileName = `conversation-${Date.now()}.docx`;
+        const { url } = await storagePut(`conversations/${fileName}`, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        
+        return { url };
+      }),
+
+    togglePinConversation: protectedProcedure
+      .input(z.object({ id: z.number(), isPinned: z.boolean() }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.togglePinConversation(input.id, ctx.user.id, input.isPinned);
+      }),
     
     evaluateFiche: protectedProcedure
       .input(z.object({
@@ -3746,38 +3784,6 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
           html,
         });
         return { success: true };
-      }),
-
-    exportConversationAsWord: protectedProcedure
-      .input(z.object({
-        title: z.string(),
-        messages: z.array(z.object({
-          role: z.enum(["user", "assistant"]),
-          content: z.string(),
-          attachments: z.array(z.object({
-            name: z.string(),
-            size: z.number(),
-            type: z.string(),
-            url: z.string(),
-          })).optional(),
-          timestamp: z.number(),
-        })),
-        createdAt: z.string(),
-      }))
-      .mutation(async ({ input }) => {
-        const { exportConversationAsWord } = await import("./exportConversation");
-        const wordBuffer = await exportConversationAsWord({
-          title: input.title,
-          messages: input.messages,
-          createdAt: new Date(input.createdAt),
-        });
-        
-        // Upload to S3
-        const { storagePut } = await import("./storage");
-        const fileName = `conversation-${Date.now()}.docx`;
-        const { url } = await storagePut(`conversations/${fileName}`, wordBuffer, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-        
-        return { url };
       }),
 
     exportCleanNotePDF: protectedProcedure
