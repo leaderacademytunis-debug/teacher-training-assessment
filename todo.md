@@ -1226,3 +1226,9 @@
 - [x] تحديث schema exportLeaderAcademyJathatha بالحقول الجديدة (sessionNumber، schoolName، textbookRef، المراحل الثلاث)
 - [x] إصلاح خطأ TypeScript في PedagogicalSheetFormEnhanced.tsx
 - [ ] حفظ نقطة التفتيش
+
+## إضافة مخطط الإيقاظ العلمي — السنة الخامسة ابتدائي
+- [x] قراءة وتحليل ملف planningannuelScience23-24C5.docx
+- [x] توثيق المخطط السنوي الكامل (5 فترات، 3 ثلاثيات)
+- [x] دمج المحتوى كمرجع داخلي في system prompt الوكيل
+- [ ] حفظ نقطة التفتيش
