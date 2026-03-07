@@ -2343,6 +2343,90 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
         const evaluation = JSON.parse(content);
         return { evaluation };
       }),
+
+    // ── مكتبة التقييمات ──────────────────────────────────────────────────────
+    saveEvaluation: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        trimester: z.string().optional(),
+        evaluationType: z.string().optional(),
+        schoolYear: z.string().optional(),
+        schoolName: z.string().optional(),
+        teacherName: z.string().optional(),
+        totalPoints: z.number().optional(),
+        variant: z.string().optional(),
+        evaluationData: z.record(z.string(), z.unknown()),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.savePedagogicalEvaluation({
+          userId: ctx.user.id,
+          ...input,
+        });
+        return { id, success: true };
+      }),
+
+    listEvaluations: protectedProcedure
+      .query(async ({ ctx }) => {
+        const items = await db.listPedagogicalEvaluations(ctx.user.id);
+        return { items };
+      }),
+
+    getEvaluation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const item = await db.getPedagogicalEvaluation(input.id, ctx.user.id);
+        if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "التقييم غير موجود" });
+        return { item };
+      }),
+
+    deleteEvaluation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deletePedagogicalEvaluation(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    // ── توليد نسخة بديلة (Variante B) ───────────────────────────────────────
+    generateVariantB: protectedProcedure
+      .input(z.object({
+        originalEvaluation: z.record(z.string(), z.unknown()),
+        schoolName: z.string().optional(),
+        teacherName: z.string().optional(),
+        schoolYear: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const orig = input.originalEvaluation as Record<string, unknown>;
+        const systemPrompt = `أنت خبير تربوي تونسي متخصص في إعداد أوراق التقييم وفق القالب الرسمي SC2M223.
+مهمتك: إنشاء نسخة بديلة (Variante B) لورقة التقييم المقدمة، مع الحفاظ على:
+- نفس المادة والمستوى والثلاثي والكفاية والأهداف
+- نفس عدد السندات والتعليمات ونفس توزيع النقاط
+- نفس هيكل شبكة التصحيح
+لكن تغيير:
+- نصوص السندات (سياقات مختلفة من البيئة التونسية)
+- صياغة التعليمات (أفعال مختلفة: صنّف، رتّب، اشرح، قارن...)
+- الأمثلة والأرقام والأسماء في الأسئلة
+أعد الاستجابة بصيغة JSON فقط بنفس الهيكل الأصلي تماماً.`;
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `ورقة التقييم الأصلية (النسخة أ):\n${JSON.stringify(orig, null, 2)}\n\nأنشئ النسخة البديلة (ب) بنفس الهيكل.` },
+          ],
+          response_format: { type: "json_object" },
+        });
+        const rawContent = response.choices[0]?.message?.content;
+        if (!rawContent) throw new Error("فشل توليد النسخة البديلة");
+        const content2 = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+        const variantB = JSON.parse(content2);
+        variantB.evaluationTitle = ((variantB.evaluationTitle as string) || "").replace(" - نسخة أ", "") + " - نسخة ب";
+        variantB.variant = "B";
+        if (input.schoolName) variantB.schoolName = input.schoolName;
+        if (input.teacherName) variantB.teacherName = input.teacherName;
+        if (input.schoolYear) variantB.schoolYear = input.schoolYear;
+        return { evaluation: variantB };
+      }),
   }),
   lessonPlans: router({
     create: protectedProcedure

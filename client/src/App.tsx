@@ -29,6 +29,7 @@ import LessonHistory from "@/pages/LessonHistory";
 import AnnualPlanGenerator from "@/pages/AnnualPlanGenerator";
 import LessonSheetFromPlan from "@/pages/LessonSheetFromPlan";
 import EvaluationFromSheet from "@/pages/EvaluationFromSheet";
+import EvaluationLibrary from "@/pages/EvaluationLibrary";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
 
 function Router() {
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/annual-plan" component={AnnualPlanGenerator} />
       <Route path="/lesson-sheet-from-plan" component={LessonSheetFromPlan} />
       <Route path="/evaluation-from-sheet" component={EvaluationFromSheet} />
+      <Route path="/evaluation-library" component={EvaluationLibrary} />
       {/* <Route path="/infographic-generator" component={InfographicGenerator} /> */}
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

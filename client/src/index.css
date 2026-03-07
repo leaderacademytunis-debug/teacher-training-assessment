@@ -187,3 +187,44 @@
     }
   }
 }
+/* ─── Styles d'impression A4 pour ورقة التقييم SC2M223 ─────────────────────── */
+@media print {
+  /* Masquer les éléments d'interface */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Configuration de la page A4 */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+  }
+
+  body {
+    background: white !important;
+    font-size: 11pt;
+    color: black !important;
+  }
+
+  /* Fond blanc pour l'impression */
+  .min-h-screen,
+  .bg-gradient-to-br {
+    background: white !important;
+    min-height: auto !important;
+  }
+
+  /* Supprimer les ombres */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* Éviter les coupures dans les tableaux */
+  table, tr {
+    page-break-inside: avoid;
+  }
+
+  /* Masquer le header sticky */
+  .sticky {
+    position: static !important;
+  }
+}

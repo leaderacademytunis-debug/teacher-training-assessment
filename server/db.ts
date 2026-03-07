@@ -18,7 +18,8 @@ import {
   referenceDocuments, ReferenceDocument, InsertReferenceDocument,
   aiSuggestions, AiSuggestion, InsertAiSuggestion,
   templates, Template, InsertTemplate,
-  conversations, Conversation, InsertConversation
+  conversations, Conversation, InsertConversation,
+  savedEvaluations, SavedEvaluation, InsertSavedEvaluation
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1276,5 +1277,78 @@ export async function deleteConversation(id: number, userId: number): Promise<bo
   const result = await db.delete(conversations)
     .where(sql`${conversations.id} = ${id} AND ${conversations.userId} = ${userId}`);
   
+  return true;
+}
+
+// ─── Saved Evaluations (مكتبة التقييمات) ─────────────────────────────────────
+export async function savePedagogicalEvaluation(data: {
+  userId: number;
+  title: string;
+  subject?: string;
+  level?: string;
+  trimester?: string;
+  evaluationType?: string;
+  schoolYear?: string;
+  schoolName?: string;
+  teacherName?: string;
+  totalPoints?: number;
+  variant?: string;
+  evaluationData: Record<string, unknown>;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(savedEvaluations).values({
+    userId: data.userId,
+    title: data.title,
+    subject: data.subject,
+    level: data.level,
+    trimester: data.trimester,
+    evaluationType: data.evaluationType,
+    schoolYear: data.schoolYear,
+    schoolName: data.schoolName,
+    teacherName: data.teacherName,
+    totalPoints: data.totalPoints ?? 20,
+    variant: data.variant ?? "A",
+    evaluationData: data.evaluationData,
+  });
+  return Number((result as any).insertId ?? 0);
+}
+
+export async function listPedagogicalEvaluations(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select({
+    id: savedEvaluations.id,
+    title: savedEvaluations.title,
+    subject: savedEvaluations.subject,
+    level: savedEvaluations.level,
+    trimester: savedEvaluations.trimester,
+    evaluationType: savedEvaluations.evaluationType,
+    schoolYear: savedEvaluations.schoolYear,
+    schoolName: savedEvaluations.schoolName,
+    teacherName: savedEvaluations.teacherName,
+    totalPoints: savedEvaluations.totalPoints,
+    variant: savedEvaluations.variant,
+    createdAt: savedEvaluations.createdAt,
+  }).from(savedEvaluations)
+    .where(sql`${savedEvaluations.userId} = ${userId}`)
+    .orderBy(sql`${savedEvaluations.createdAt} DESC`)
+    .limit(200);
+}
+
+export async function getPedagogicalEvaluation(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(savedEvaluations)
+    .where(sql`${savedEvaluations.id} = ${id} AND ${savedEvaluations.userId} = ${userId}`)
+    .limit(1);
+  return row || null;
+}
+
+export async function deletePedagogicalEvaluation(id: number, userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(savedEvaluations)
+    .where(sql`${savedEvaluations.id} = ${id} AND ${savedEvaluations.userId} = ${userId}`);
   return true;
 }

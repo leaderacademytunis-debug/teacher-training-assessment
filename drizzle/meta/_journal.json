@@ -169,6 +169,13 @@
       "when": 1772278388168,
       "tag": "0023_yielding_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1772898051077,
+      "tag": "0024_powerful_kingpin",
+      "breakpoints": true
     }
   ]
 }

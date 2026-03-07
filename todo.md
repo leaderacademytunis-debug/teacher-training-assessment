@@ -1327,4 +1327,12 @@
 - [x] إعادة كتابة exportEvaluationToWord بترويسة مزدوجة + سندات + مربعات النقاط + شبكة التصحيح
 - [x] إعادة كتابة EvaluationFromSheet.tsx لعرض هيكل SC2M223 (سندات+تعليمات+شبكة)
 - [x] TypeScript: 0 أخطاء
+- [x] حفظ نقطة التفتيش (f8483c15)
+
+## ثلاث ميزات جديدة في صفحة التقييم
+- [x] طباعة مباشرة بتنسيق A4 (CSS print + زر طباعة)
+- [x] توليد نسخة بديلة (Variante B) بسندات وتعليمات مختلفة
+- [x] مكتبة التقييمات: جدول saved_evaluations + endpoints tRPC (save/list/get/delete/generateVariantB)
+- [x] صفحة EvaluationLibrary.tsx مع بحث وفلاتر حسب المادة/المستوى/الثلاثي
+- [x] ربط المسار /evaluation-library في App.tsx + زر في TeacherTools
 - [ ] حفظ نقطة التفتيش

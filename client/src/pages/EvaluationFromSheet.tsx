@@ -13,7 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import {
   Loader2, FileText, Download, Wand2, ChevronRight,
   ClipboardCheck, Target, BookOpen, CheckCircle2, Edit3,
-  ListChecks, AlertCircle, RotateCcw, Grid3X3
+  ListChecks, AlertCircle, RotateCcw, Grid3X3,
+  Printer, Copy, Save, BookMarked
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
@@ -73,6 +74,8 @@ export default function EvaluationFromSheet() {
   const [editedEvaluation, setEditedEvaluation] = useState<Evaluation | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [showAnswerKey, setShowAnswerKey] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [savedId, setSavedId] = useState<number | null>(null);
 
   // Paramètres de génération
   const [evaluationType, setEvaluationType] = useState<"formative" | "summative" | "diagnostic">("formative");
@@ -104,6 +107,66 @@ export default function EvaluationFromSheet() {
       toast.error(`خطأ في التوليد: ${err.message}`);
     },
   });
+
+  // ── Mutation: حفظ في المكتبة ─────────────────────────────────────────────
+  const saveEvalMutation = trpc.pedagogicalSheets.saveEvaluation.useMutation({
+    onSuccess: (data) => {
+      setIsSaved(true);
+      setSavedId(data.id);
+      toast.success("تم حفظ ورقة التقييم في المكتبة!");
+    },
+    onError: (err) => {
+      toast.error(`خطأ في الحفظ: ${err.message}`);
+    },
+  });
+
+  // ── Mutation: توليد نسخة بديلة ───────────────────────────────────────────
+  const variantBMutation = trpc.pedagogicalSheets.generateVariantB.useMutation({
+    onSuccess: (data) => {
+      setEvaluation(data.evaluation as Evaluation);
+      setEditedEvaluation(data.evaluation as Evaluation);
+      setIsSaved(false);
+      setSavedId(null);
+      toast.success("تم توليد النسخة البديلة (ب) بنجاح!");
+    },
+    onError: (err) => {
+      toast.error(`خطأ في توليد النسخة البديلة: ${err.message}`);
+    },
+  });
+
+  const handleSave = () => {
+    const evalToSave = editMode ? editedEvaluation : evaluation;
+    if (!evalToSave) return;
+    const ev = evalToSave as Record<string, unknown>;
+    saveEvalMutation.mutate({
+      title: String(ev.evaluationTitle || `تقييم ${ev.subject || ""} — ${ev.level || ""}`.trim() || "ورقة تقييم"),
+      subject: String(ev.subject || "") || undefined,
+      level: String(ev.level || "") || undefined,
+      trimester: String(ev.trimester || "") || undefined,
+      evaluationType: String(ev.evaluationType || evaluationType) || undefined,
+      schoolYear: schoolYear || undefined,
+      schoolName: schoolName || undefined,
+      teacherName: teacherName || undefined,
+      totalPoints: typeof ev.totalPoints === "number" ? ev.totalPoints : 20,
+      variant: String(ev.variant || "A") || undefined,
+      evaluationData: ev,
+    });
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleGenerateVariantB = () => {
+    const evalToUse = editMode ? editedEvaluation : evaluation;
+    if (!evalToUse) return;
+    variantBMutation.mutate({
+      originalEvaluation: evalToUse as Record<string, unknown>,
+      schoolName: schoolName || undefined,
+      teacherName: teacherName || undefined,
+      schoolYear: schoolYear || undefined,
+    });
+  };
 
   // ── Mutation: تصدير Word ──────────────────────────────────────────────────
   const exportWordMutation = trpc.pedagogicalSheets.exportEvaluationToWord.useMutation({
@@ -603,25 +666,56 @@ export default function EvaluationFromSheet() {
               </CardContent>
             </Card>
 
-            {/* أزرار التصدير النهائية */}
-            <div className="flex gap-3 justify-center pt-2">
+            {/* أزرار الإجراءات النهائية */}
+            <div className="flex flex-wrap gap-3 justify-center pt-2 print:hidden">
+              {/* تحميل Word */}
               <Button
                 onClick={handleExportWord}
                 disabled={exportWordMutation.isPending}
-                className="bg-[#1E8449] hover:bg-[#196F3D] text-white px-8 py-3 text-base font-bold shadow-lg"
+                className="bg-[#1E8449] hover:bg-[#196F3D] text-white px-6 py-3 text-sm font-bold shadow-lg"
               >
-                {exportWordMutation.isPending ? (
-                  <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                ) : (
-                  <Download className="w-5 h-5 ml-2" />
-                )}
-                تحميل ورقة التقييم بصيغة Word • قالب SC2M223
+                {exportWordMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Download className="w-4 h-4 ml-2" />}
+                تحميل Word
               </Button>
+
+              {/* طباعة A4 */}
+              <Button
+                onClick={handlePrint}
+                variant="outline"
+                className="border-blue-500 text-blue-700 hover:bg-blue-50 px-6 py-3 text-sm font-bold"
+              >
+                <Printer className="w-4 h-4 ml-2" />
+                طباعة A4
+              </Button>
+
+              {/* توليد نسخة ب */}
+              <Button
+                onClick={handleGenerateVariantB}
+                disabled={variantBMutation.isPending}
+                variant="outline"
+                className="border-purple-500 text-purple-700 hover:bg-purple-50 px-6 py-3 text-sm font-bold"
+              >
+                {variantBMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Copy className="w-4 h-4 ml-2" />}
+                نسخة بديلة (ب)
+              </Button>
+
+              {/* حفظ في المكتبة */}
+              <Button
+                onClick={handleSave}
+                disabled={saveEvalMutation.isPending || isSaved}
+                variant="outline"
+                className={isSaved ? "border-green-500 text-green-700 bg-green-50 px-6 py-3 text-sm font-bold" : "border-amber-500 text-amber-700 hover:bg-amber-50 px-6 py-3 text-sm font-bold"}
+              >
+                {saveEvalMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+                {isSaved ? "تم الحفظ ✓" : "حفظ في المكتبة"}
+              </Button>
+
+              {/* توليد جديد */}
               <Button
                 variant="outline"
                 onClick={handleGenerate}
                 disabled={generateMutation.isPending}
-                className="border-green-500 text-green-700 hover:bg-green-50 px-6"
+                className="border-gray-400 text-gray-600 hover:bg-gray-50 px-5 py-3 text-sm"
               >
                 <RotateCcw className="w-4 h-4 ml-2" />
                 توليد جديد

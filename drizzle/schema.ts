@@ -658,3 +658,32 @@ export const sharedEvaluations = mysqlTable("shared_evaluations", {
 
 export type SharedEvaluation = typeof sharedEvaluations.$inferSelect;
 export type InsertSharedEvaluation = typeof sharedEvaluations.$inferInsert;
+
+/**
+ * Saved evaluations library - stores generated SC2M223 evaluation sheets
+ */
+export const savedEvaluations = mysqlTable("saved_evaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+
+  // Metadata for search/filter
+  title: varchar("title", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 100 }),
+  level: varchar("level", { length: 100 }),
+  trimester: varchar("trimester", { length: 50 }),
+  evaluationType: varchar("evaluationType", { length: 50 }), // formative | summative | diagnostic
+  schoolYear: varchar("schoolYear", { length: 20 }),
+  schoolName: varchar("schoolName", { length: 255 }),
+  teacherName: varchar("teacherName", { length: 255 }),
+  totalPoints: int("totalPoints").default(20),
+  variant: varchar("variant", { length: 10 }).default("A"), // A or B
+
+  // Full evaluation JSON (SC2M223 structure)
+  evaluationData: json("evaluationData").$type<Record<string, unknown>>().notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SavedEvaluation = typeof savedEvaluations.$inferSelect;
+export type InsertSavedEvaluation = typeof savedEvaluations.$inferInsert;

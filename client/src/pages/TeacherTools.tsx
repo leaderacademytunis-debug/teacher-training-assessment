@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Calendar, ClipboardList, BookOpen, Plus } from "lucide-react";
+import { FileText, Calendar, ClipboardList, BookOpen, Plus, BookMarked } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Link } from "wouter";
 import { PedagogicalSheetFormEnhanced } from "@/components/PedagogicalSheetFormEnhanced";
@@ -181,6 +181,12 @@ function TeacherTools() {
                   <Button variant="outline" className="gap-2 border-amber-500 text-amber-700 hover:bg-amber-50">
                     <Calendar className="h-4 w-4" />
                     ✨ توليد مخطط سنوي تلقائي
+                  </Button>
+                </Link>
+                <Link href="/evaluation-library">
+                  <Button variant="outline" className="gap-2 border-orange-500 text-orange-700 hover:bg-orange-50">
+                    <BookMarked className="h-4 w-4" />
+                    مكتبة التقييمات
                   </Button>
                 </Link>
                 <Button onClick={() => setShowPlanForm(true)} className="gap-2">
