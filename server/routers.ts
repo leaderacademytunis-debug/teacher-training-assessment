@@ -2249,8 +2249,151 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
         const ev = input.evaluation as Record<string, string>;
         return { base64, filename: `تقييم-${ev.subject || ""}-${ev.level || ""}.docx` };
       }),
-  }),
 
+    // توليد ورقة تقييم مباشرة من صف المخطط السنوي (SC2M223)
+    generateEvaluationFromPlanRow: protectedProcedure
+      .input(z.object({
+        subject: z.string(),
+        grade: z.string(),
+        schoolYear: z.string().optional(),
+        trimester: z.string(),
+        unit: z.string().optional(),
+        activity: z.string().optional(),
+        competencyComponent: z.string().optional(),
+        distinguishedObjective: z.string(),
+        content: z.string().optional(),
+        sessions: z.number().optional(),
+        evaluationType: z.enum(["formative", "summative", "diagnostic"]).default("formative"),
+        questionCount: z.number().min(3).max(20).default(8),
+        includeAnswerKey: z.boolean().default(true),
+        schoolName: z.string().optional(),
+        teacherName: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const evalTypeLabel =
+          input.evaluationType === "formative" ? "تكويني" :
+          input.evaluationType === "summative" ? "إجمالي" : "تشخيصي";
+
+        const systemPrompt = `أنت المحرك البيداغوجي لمنصة Leader Academy — متفقد تونسي خبير في إعداد أوراق التقييم وفق البرامج الرسمية التونسية 2026 والمقاربة بالكفايات (APC).
+
+مهمتك: توليد ورقة تقييم ${evalTypeLabel} كاملة ومتدرجة وفق النموذج الرسمي SC2M223 بناءً على معطيات صف المخطط السنوي.
+
+قواعد التقييم التونسي الرسمي (SC2M223):
+1. ترويسة رسمية: اسم المدرسة، الاسم واللقب، المادة، المستوى، الثلاثي، السنة الدراسية
+2. سندات تعليمية حقيقية (نصوص، صور، جداول) مرتبطة بالبيئة التونسية
+3. تعليمات متدرجة: من الأسهل إلى الأصعب (تذكر → فهم → تطبيق → تحليل)
+4. أنواع الأسئلة: صواب/خطأ، ملء فراغات، اختيار من متعدد، ربط، تصحيح خطأ، وضعية إدماجية
+5. الوضعية الإدماجية: سياق تونسي محفز (زيتون، مقرونة، واحات توزر، منارة سيدي بوسعيد...)
+6. توزيع النقاط: مجموع 20 نقطة
+7. معايير التقييم: الملاءمة، الدقة، الانسجام، الإتقان (قاعدة 75%)
+8. شبكة التصحيح: واضحة ومفصلة لكل سؤال
+9. اللغة: العربية الفصحى التربوية التونسية`;
+
+        const userMessage = `أعدّ ورقة تقييم ${evalTypeLabel} للمعطيات التالية من المخطط السنوي:
+- المادة: ${input.subject}
+- المستوى: ${input.grade}
+- الثلاثي: ${input.trimester}
+- الفترة/الوحدة: ${input.unit || ""}
+- النشاط: ${input.activity || ""}
+- مكوّن الكفاية: ${input.competencyComponent || ""}
+- الهدف المميز: ${input.distinguishedObjective}
+- المحتوى: ${input.content || ""}
+- عدد الحصص: ${input.sessions || 2}
+- عدد الأسئلة المطلوبة: ${input.questionCount}
+- تضمين مفتاح الإجابة: ${input.includeAnswerKey ? "نعم" : "لا"}
+قدّم ورقة التقييم الكاملة بتنسيق JSON فقط، دون أي نص إضافي خارج الـ JSON.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "evaluation_from_plan_row",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  evaluationTitle: { type: "string" },
+                  subject: { type: "string" },
+                  level: { type: "string" },
+                  trimester: { type: "string" },
+                  duration: { type: "string" },
+                  evaluationType: { type: "string" },
+                  totalPoints: { type: "number" },
+                  learningObjective: { type: "string" },
+                  competency: { type: "string" },
+                  sections: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        sectionNumber: { type: "number" },
+                        sectionTitle: { type: "string" },
+                        sectionType: { type: "string" },
+                        points: { type: "number" },
+                        instructions: { type: "string" },
+                        questions: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              number: { type: "number" },
+                              question: { type: "string" },
+                              options: { type: "array", items: { type: "string" } },
+                              points: { type: "number" },
+                              answer: { type: "string" },
+                              justification: { type: "string" },
+                            },
+                            required: ["number", "question", "points", "answer", "options", "justification"],
+                            additionalProperties: false,
+                          },
+                        },
+                      },
+                      required: ["sectionNumber", "sectionTitle", "sectionType", "points", "instructions", "questions"],
+                      additionalProperties: false,
+                    },
+                  },
+                  integrationSituation: {
+                    type: "object",
+                    properties: {
+                      context: { type: "string" },
+                      task: { type: "string" },
+                      points: { type: "number" },
+                      expectedAnswer: { type: "string" },
+                    },
+                    required: ["context", "task", "points", "expectedAnswer"],
+                    additionalProperties: false,
+                  },
+                  evaluationCriteria: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        criterion: { type: "string" },
+                        indicators: { type: "array", items: { type: "string" } },
+                      },
+                      required: ["criterion", "indicators"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["evaluationTitle", "subject", "level", "trimester", "duration", "evaluationType", "totalPoints", "learningObjective", "competency", "sections", "integrationSituation", "evaluationCriteria"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const rawContent = response.choices[0]?.message?.content;
+        if (!rawContent) throw new Error("فشل توليد ورقة التقييم");
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+        const evaluation = JSON.parse(content);
+        return { evaluation };
+      }),
+  }),
   lessonPlans: router({
     create: protectedProcedure
       .input(z.object({

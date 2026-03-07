@@ -1292,4 +1292,12 @@
 - [x] إضافة زر "توليد اختبار" في LessonSheetFromPlan.tsx
 - [x] إضافة المسار /evaluation-from-sheet في App.tsx
 - [x] كتابة 17 اختباراً وحدوياً ناجحاً في evaluationFromSheet.test.ts
+- [x] حفظ نقطة التفتيش (da2391df)
+
+## ميزة توليد التقييم مباشرة من جدول المخطط السنوي (SC2M223)
+- [x] تحليل وثيقة SC2M223 ومعايير التقييم التونسية
+- [x] إضافة endpoint generateEvaluationFromPlanRow في routers.ts
+- [x] إضافة زر "توليد تقييم" في كل صف من جدول AnnualPlanGenerator مع ديالوج الإعداد
+- [x] تحديث exportEvaluationToWord بترويسة SC2M223 رسمية
+- [x] كتابة 24 اختباراً وحدوياً ناجحاً في evaluationFromPlanRow.test.ts
 - [ ] حفظ نقطة التفتيش

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Download, Sparkles, Edit2, Check, X, FileText, BookOpen } from "lucide-react";
+import { Loader2, Download, Sparkles, Edit2, Check, X, FileText, BookOpen, ClipboardCheck } from "lucide-react";
 
 interface PlanRow {
   trimester: string;
@@ -50,12 +52,23 @@ const ACTIVITY_COLORS: Record<string, string> = {
 };
 
 export default function AnnualPlanGenerator() {
+  const [, navigate] = useLocation();
   const [subject, setSubject] = useState("اللغة العربية");
   const [grade, setGrade] = useState("السادسة");
   const [schoolYear, setSchoolYear] = useState("2025-2026");
   const [rows, setRows] = useState<PlanRow[]>([]);
   const [editingCell, setEditingCell] = useState<{ rowIdx: number; field: keyof PlanRow } | null>(null);
   const [editValue, setEditValue] = useState("");
+
+  // Dialog state for evaluation generation
+  const [evalDialogOpen, setEvalDialogOpen] = useState(false);
+  const [selectedRowIdx, setSelectedRowIdx] = useState<number | null>(null);
+  const [evalType, setEvalType] = useState<"formative" | "summative" | "diagnostic">("formative");
+  const [questionCount, setQuestionCount] = useState(8);
+  const [includeAnswerKey, setIncludeAnswerKey] = useState(true);
+  const [schoolName, setSchoolName] = useState("");
+  const [teacherName, setTeacherName] = useState("");
+  const [isGeneratingEval, setIsGeneratingEval] = useState(false);
 
   const generateMutation = trpc.pedagogicalSheets.generateAnnualPlan.useMutation({
     onSuccess: (data: { rows: PlanRow[]; subject: string; grade: string; schoolYear: string }) => {
@@ -71,7 +84,6 @@ export default function AnnualPlanGenerator() {
 
   const exportMutation = trpc.pedagogicalSheets.exportAnnualPlanToWord.useMutation({
     onSuccess: (data: { base64: string; filename: string }) => {
-      // Download the Word file
       const byteCharacters = atob(data.base64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -92,6 +104,21 @@ export default function AnnualPlanGenerator() {
     },
   });
 
+  const generateEvalMutation = trpc.pedagogicalSheets.generateEvaluationFromPlanRow.useMutation({
+    onSuccess: (data) => {
+      setIsGeneratingEval(false);
+      setEvalDialogOpen(false);
+      toast.success("تم توليد ورقة التقييم بنجاح!");
+      // Navigate to evaluation page with the generated data
+      const evalData = encodeURIComponent(JSON.stringify(data.evaluation));
+      navigate(`/evaluation-from-sheet?data=${evalData}&includeAnswerKey=${includeAnswerKey}`);
+    },
+    onError: (err: { message: string }) => {
+      setIsGeneratingEval(false);
+      toast.error(`خطأ في توليد التقييم: ${err.message}`);
+    },
+  });
+
   const handleGenerate = () => {
     generateMutation.mutate({ subject, grade, schoolYear });
   };
@@ -102,6 +129,34 @@ export default function AnnualPlanGenerator() {
       return;
     }
     exportMutation.mutate({ subject, grade, schoolYear, rows });
+  };
+
+  const openEvalDialog = (rowIdx: number) => {
+    setSelectedRowIdx(rowIdx);
+    setEvalDialogOpen(true);
+  };
+
+  const handleGenerateEvaluation = () => {
+    if (selectedRowIdx === null) return;
+    const row = rows[selectedRowIdx];
+    setIsGeneratingEval(true);
+    generateEvalMutation.mutate({
+      subject,
+      grade,
+      schoolYear,
+      trimester: row.trimester,
+      unit: row.unit,
+      activity: row.activity,
+      competencyComponent: row.competencyComponent,
+      distinguishedObjective: row.distinguishedObjective,
+      content: row.content,
+      sessions: row.sessions,
+      evaluationType: evalType,
+      questionCount,
+      includeAnswerKey,
+      schoolName: schoolName || undefined,
+      teacherName: teacherName || undefined,
+    });
   };
 
   const startEdit = (rowIdx: number, field: keyof PlanRow) => {
@@ -145,7 +200,6 @@ export default function AnnualPlanGenerator() {
 
   const totalSessions = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
 
-  // Group rows by trimester for summary
   const trimesterSummary = rows.reduce((acc, row) => {
     acc[row.trimester] = (acc[row.trimester] || 0) + row.sessions;
     return acc;
@@ -171,7 +225,6 @@ export default function AnnualPlanGenerator() {
       );
     }
 
-    // Special rendering for activity field
     if (field === "activity") {
       const colorClass = ACTIVITY_COLORS[value] || "bg-gray-100 text-gray-700";
       return (
@@ -192,6 +245,8 @@ export default function AnnualPlanGenerator() {
       </div>
     );
   };
+
+  const selectedRow = selectedRowIdx !== null ? rows[selectedRowIdx] : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-6" dir="rtl">
@@ -330,7 +385,8 @@ export default function AnnualPlanGenerator() {
                 2. اضغط "توليد المخطط"<br />
                 3. انقر على أي خانة لتعديلها<br />
                 4. اضغط Enter لحفظ التعديل<br />
-                5. صدّر إلى Word بشعار Leader Academy
+                5. اضغط <ClipboardCheck className="w-3 h-3 inline" /> لتوليد ورقة تقييم<br />
+                6. صدّر إلى Word بشعار Leader Academy
               </p>
             </CardContent>
           </Card>
@@ -376,7 +432,7 @@ export default function AnnualPlanGenerator() {
                       <th className="px-3 py-2 text-right font-semibold text-xs">الهدف المميز</th>
                       <th className="px-3 py-2 text-right font-semibold text-xs">المحتوى</th>
                       <th className="px-3 py-2 text-center font-semibold text-xs w-16">الحصص</th>
-                      <th className="px-3 py-2 text-center font-semibold text-xs w-12">حذف</th>
+                      <th className="px-3 py-2 text-center font-semibold text-xs w-20">إجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -401,12 +457,24 @@ export default function AnnualPlanGenerator() {
                           </div>
                         </td>
                         <td className="px-2 py-2 text-center">
-                          <button
-                            onClick={() => deleteRow(idx)}
-                            className="text-red-400 hover:text-red-600 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            {/* زر توليد التقييم */}
+                            <button
+                              onClick={() => openEvalDialog(idx)}
+                              title="توليد ورقة تقييم لهذا الدرس"
+                              className="text-green-600 hover:text-green-800 hover:bg-green-50 rounded p-1 transition-colors"
+                            >
+                              <ClipboardCheck className="w-4 h-4" />
+                            </button>
+                            {/* زر الحذف */}
+                            <button
+                              onClick={() => deleteRow(idx)}
+                              title="حذف هذا الصف"
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded p-1 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -416,7 +484,10 @@ export default function AnnualPlanGenerator() {
 
               {/* Footer */}
               <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
-                <p className="text-xs text-gray-500">انقر على أي خانة لتعديلها • اضغط Enter لحفظ التعديل</p>
+                <p className="text-xs text-gray-500">
+                  انقر على أي خانة لتعديلها • اضغط Enter لحفظ التعديل •
+                  <span className="text-green-600 font-medium"> اضغط <ClipboardCheck className="w-3 h-3 inline" /> لتوليد ورقة تقييم</span>
+                </p>
                 <Button
                   onClick={handleExportWord}
                   disabled={exportMutation.isPending}
@@ -434,6 +505,122 @@ export default function AnnualPlanGenerator() {
           )}
         </div>
       </div>
+
+      {/* Dialog: إعدادات توليد التقييم */}
+      <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#1B4F72]">
+              <ClipboardCheck className="w-5 h-5 text-green-600" />
+              توليد ورقة تقييم — SC2M223
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedRow && (
+            <div className="space-y-4">
+              {/* معلومات الدرس */}
+              <div className="bg-blue-50 rounded-lg p-3 text-sm">
+                <p className="font-semibold text-[#1B4F72] mb-1">الدرس المختار:</p>
+                <p className="text-gray-700 text-xs leading-relaxed">
+                  <span className="font-medium">{subject}</span> — السنة {grade} —
+                  الثلاثي {selectedRow.trimester}
+                </p>
+                <p className="text-gray-600 text-xs mt-1">
+                  <span className="font-medium">الهدف المميز:</span> {selectedRow.distinguishedObjective || "غير محدد"}
+                </p>
+              </div>
+
+              {/* نوع التقييم */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1 block">نوع التقييم</Label>
+                <Select value={evalType} onValueChange={(v) => setEvalType(v as typeof evalType)}>
+                  <SelectTrigger className="text-right">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="formative" className="text-right">تكويني (نهاية الثلاثي)</SelectItem>
+                    <SelectItem value="summative" className="text-right">إجمالي (نهاية السنة)</SelectItem>
+                    <SelectItem value="diagnostic" className="text-right">تشخيصي (بداية السنة)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* عدد الأسئلة */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1 block">
+                  عدد الأسئلة: {questionCount}
+                </Label>
+                <input
+                  type="range"
+                  min={3}
+                  max={15}
+                  value={questionCount}
+                  onChange={(e) => setQuestionCount(Number(e.target.value))}
+                  className="w-full accent-[#1B4F72]"
+                />
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>3</span>
+                  <span>15</span>
+                </div>
+              </div>
+
+              {/* اسم المدرسة */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1 block">اسم المدرسة (اختياري)</Label>
+                <Input
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  placeholder="مثال: المدرسة الابتدائية النموذجية"
+                  className="text-right text-sm"
+                />
+              </div>
+
+              {/* اسم المدرس */}
+              <div>
+                <Label className="text-sm font-medium text-gray-700 mb-1 block">اسم المدرس (اختياري)</Label>
+                <Input
+                  value={teacherName}
+                  onChange={(e) => setTeacherName(e.target.value)}
+                  placeholder="مثال: الأستاذ محمد بن علي"
+                  className="text-right text-sm"
+                />
+              </div>
+
+              {/* تضمين مفتاح الإجابة */}
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                <span className="text-sm font-medium text-gray-700">تضمين شبكة التصحيح</span>
+                <button
+                  onClick={() => setIncludeAnswerKey(!includeAnswerKey)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${includeAnswerKey ? "bg-green-500" : "bg-gray-300"}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${includeAnswerKey ? "translate-x-7" : "translate-x-1"}`} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button
+              onClick={handleGenerateEvaluation}
+              disabled={isGeneratingEval}
+              className="bg-green-600 hover:bg-green-700 text-white flex-1"
+            >
+              {isGeneratingEval ? (
+                <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري التوليد...</>
+              ) : (
+                <><ClipboardCheck className="w-4 h-4 ml-2" />توليد ورقة التقييم</>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setEvalDialogOpen(false)}
+              disabled={isGeneratingEval}
+            >
+              إلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

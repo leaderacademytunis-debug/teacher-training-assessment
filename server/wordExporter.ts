@@ -802,29 +802,81 @@ export async function exportEvaluationToWord(data: EvaluationWordInput): Promise
 
   const docSections: (Paragraph | Table)[] = [];
 
-  // ── الترويسة ──────────────────────────────────────────────────────────────
+  // ــ الترويسة الرسمية SC2M223 ــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــ
+  // صف الترويسة SC2M223: اسم المدرسة | المادة والسنة | الاسم واللقب | الرقم
+  docSections.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [arabicText("اسم المدرسة: " + (data.schoolName || "..................."), { bold: true, size: 11 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              shading: { type: ShadingType.SOLID, color: COLORS.light, fill: COLORS.light },
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [arabicText("المادة: " + (ev.subject || "—") + " | السنة: " + (ev.level || "—"), { bold: true, size: 11 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              shading: { type: ShadingType.SOLID, color: COLORS.light, fill: COLORS.light },
+            }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [arabicText("الاسم واللقب: ...........................................", { size: 11 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [arabicText("الثلاثي: " + (ev.trimester || "—") + " | " + (data.schoolYear || "2025-2026"), { size: 11 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+            }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ children: [arabicText("الرقم: .............", { size: 11 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+            }),
+            new TableCell({
+              children: [new Paragraph({ children: [arabicText("المدة: " + (ev.duration || "45 دقيقة") + " | المجموع: " + (ev.totalPoints || 20) + "/20", { size: 11 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+              width: { size: 50, type: WidthType.PERCENTAGE },
+            }),
+          ],
+        }),
+      ],
+    }),
+  );
+  // عنوان ورقة التقييم
   docSections.push(
     new Paragraph({
       children: [arabicText("الجمهورية التونسية — وزارة التربية", { bold: true, size: 11, color: COLORS.secondary })],
       alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 40 },
       bidirectional: true,
     }),
     new Paragraph({
       children: [arabicText("المحرك البيداغوجي الذكي — Leader Academy", { bold: true, size: 14, color: COLORS.accent })],
       alignment: AlignmentType.CENTER,
-      spacing: { before: 80, after: 80 },
+      spacing: { before: 40, after: 80 },
       bidirectional: true,
     }),
     new Paragraph({
-      children: [arabicText(`ورقة تقييم: ${ev.evaluationTitle || "تقييم"}`, { bold: true, size: 20, color: COLORS.white })],
+      children: [arabicText(`امتحان الثلاثي ${ev.trimester || "الأول"} — ${ev.evaluationType || "تقييم تكويني"}`, { bold: true, size: 18, color: COLORS.white })],
       alignment: AlignmentType.CENTER,
       shading: { type: ShadingType.SOLID, color: COLORS.green, fill: COLORS.green },
-      spacing: { before: 150, after: 150 },
+      spacing: { before: 100, after: 60 },
       bidirectional: true,
     }),
-  );
-
-  // ── بيانات المتعلم ────────────────────────────────────────────────────────
+    new Paragraph({
+      children: [arabicText(`${ev.subject || ""} — السنة ${ev.level || ""} — المدة: ${ev.duration || "45 دقيقة"} — المجموع: ${ev.totalPoints || 20}/20`, { bold: false, size: 12, color: COLORS.secondary })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 60, after: 150 },
+      bidirectional: true,
+    }),
+  );// ── بيانات المتعلم ────────────────────────────────────────────────────────
   docSections.push(sectionTitle("أولاً — بيانات المتعلم"));
   docSections.push(
     new Table({
