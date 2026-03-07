@@ -1207,3 +1207,14 @@
 ## تحديث الوكيل: المستشار البيداغوجي الذكي لـ Leader Academy
 - [x] استبدال system prompt بالبروتوكول الجديد (APC + جذاذات الإيقاظ العلمي س1-س6)
 - [ ] حفظ نقطة التفتيش
+
+## قالب Leader Academy Standard للجذاذات
+- [x] إضافة مكتبة QR Code لتوليد الباركود
+- [x] تحميل شعار Leader Academy وحفظه محلياً
+- [x] بناء قالب HTML/CSS احترافي (ترويسة + بلوكات + تذييل)
+- [x] دمج خطوط Amiri و Cairo العربية من Google Fonts
+- [x] إدراج علم تونس CSS في التذييل
+- [x] إضافة endpoint exportLeaderAcademyJathatha في routers.ts
+- [x] إضافة زر قالب Leader Academy Standard في واجهة المستخدم
+- [x] 7 اختبارات وحدة ناجحة
+- [ ] حفظ نقطة التفتيش

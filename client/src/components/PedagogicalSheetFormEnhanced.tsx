@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Loader2, Sparkles, BookOpen, Info, Bookmark, Save, FileText, Download, Eye, History } from "lucide-react";
+import { X, Loader2, Sparkles, BookOpen, Info, Bookmark, Save, FileText, Download, Eye, History, Star } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PromptEngineeringGuide } from "@/components/PromptEngineeringGuide";
 import { SavedPromptsDialog } from "@/components/SavedPromptsDialog";
@@ -134,6 +134,16 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     },
   });
 
+  const exportLeaderAcademy = trpc.pedagogicalSheets.exportLeaderAcademyJathatha.useMutation({
+    onSuccess: (data) => {
+      toast.success("تم تصدير الجذاذة بقالب Leader Academy Standard ✨");
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في التصدير: ${error.message}`);
+    },
+  });
+
   const exportToPDF = trpc.pedagogicalSheets.exportAiSuggestionToPDF.useMutation({
     onSuccess: (data) => {
       toast.success("تم تصدير الاقتراح إلى PDF بنجاح");
@@ -162,6 +172,29 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
       subject: formData.subject,
       lessonTitle: formData.lessonTitle,
       language: formData.language === "auto" ? undefined : (formData.language as "arabic" | "french" | "english"), // Pass language if selected
+    });
+  };
+
+  const handleExportLeaderAcademy = () => {
+    if (!formData.schoolYear || !formData.educationLevel || !formData.grade ||
+        !formData.subject || !formData.lessonTitle) {
+      toast.error("يرجى ملء المعلومات الأساسية أولاً");
+      return;
+    }
+    const levelMap: Record<string, string> = { primary: "ابتدائي", middle: "إعدادي", secondary: "ثانوي" };
+    exportLeaderAcademy.mutate({
+      schoolYear: formData.schoolYear,
+      level: `${levelMap[formData.educationLevel] || formData.educationLevel} — ${formData.grade}`,
+      subject: formData.subject,
+      lessonTitle: formData.lessonTitle,
+      duration: formData.duration ? `${formData.duration} دقيقة` : undefined,
+      terminalCompetency: formData.lessonObjectives || undefined,
+      materials: formData.materials || undefined,
+      problemSituation: formData.introduction || undefined,
+      conclusion: formData.conclusion || undefined,
+      evaluation: formData.evaluation || undefined,
+      freeContent: formData.mainActivitiesText || undefined,
+      language: "arabic",
     });
   };
 
@@ -572,6 +605,21 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
                       <Download className="h-4 w-4" />
                     )}
                     PDF
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={handleExportLeaderAcademy}
+                    disabled={exportLeaderAcademy.isPending}
+                    className="gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+                  >
+                    {exportLeaderAcademy.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Star className="h-4 w-4" />
+                    )}
+                    Leader Academy ✦
                   </Button>
                 </div>
               </>

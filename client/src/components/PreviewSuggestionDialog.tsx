@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Download, Save, X } from "lucide-react";
+import { FileText, Download, Save, X, Star } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -44,6 +44,16 @@ export function PreviewSuggestionDialog({
     setFormData(initialData);
   }, [initialData]);
 
+  const exportLeaderAcademy = trpc.pedagogicalSheets.exportLeaderAcademyJathatha.useMutation({
+    onSuccess: (data) => {
+      toast.success("تم تصدير الجذاذة بقالب Leader Academy Standard بنجاح ✨");
+      window.open(data.url, "_blank");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في التصدير: ${error.message}`);
+    },
+  });
+
   const exportToPDF = trpc.pedagogicalSheets.exportAiSuggestionToPDF.useMutation({
     onSuccess: (data) => {
       toast.success("تم تصدير الاقتراح إلى PDF بنجاح");
@@ -72,6 +82,28 @@ export function PreviewSuggestionDialog({
       toast.error(`خطأ في الحفظ: ${error.message}`);
     },
   });
+
+  const handleExportLeaderAcademy = () => {
+    const levelMap: Record<string, string> = {
+      primary: "ابتدائي",
+      middle: "إعدادي",
+      secondary: "ثانوي",
+    };
+    exportLeaderAcademy.mutate({
+      schoolYear: formData.schoolYear,
+      level: `${levelMap[formData.educationLevel] || formData.educationLevel} — ${formData.grade}`,
+      subject: formData.subject,
+      lessonTitle: formData.lessonTitle,
+      duration: formData.duration ? `${formData.duration} دقيقة` : undefined,
+      terminalCompetency: formData.lessonObjectives,
+      materials: formData.materials,
+      problemSituation: formData.introduction,
+      conclusion: formData.conclusion,
+      evaluation: formData.evaluation,
+      freeContent: formData.mainActivitiesText,
+      language: "arabic",
+    });
+  };
 
   const handleExportPDF = () => {
     const mainActivities = formData.mainActivitiesText
@@ -343,6 +375,15 @@ export function PreviewSuggestionDialog({
           >
             <Download className="h-4 w-4" />
             تصدير PDF
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleExportLeaderAcademy}
+            disabled={exportLeaderAcademy.isPending}
+            className="gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md"
+          >
+            <Star className="h-4 w-4" />
+            {exportLeaderAcademy.isPending ? "جاري التصدير..." : "قالب Leader Academy ✦"}
           </Button>
         </DialogFooter>
       </DialogContent>

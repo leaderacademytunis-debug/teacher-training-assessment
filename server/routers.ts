@@ -1456,6 +1456,40 @@ export const appRouter = router({
         return { url };
       }),
 
+    exportLeaderAcademyJathatha: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string(),
+        level: z.string(),
+        subject: z.string(),
+        lessonTitle: z.string(),
+        duration: z.string().optional(),
+        teacherName: z.string().optional(),
+        date: z.string().optional(),
+        terminalCompetency: z.string().optional(),
+        distinctiveObjective: z.string().optional(),
+        materials: z.string().optional(),
+        problemSituation: z.string().optional(),
+        hypotheses: z.string().optional(),
+        verification: z.string().optional(),
+        conclusion: z.string().optional(),
+        evaluation: z.string().optional(),
+        freeContent: z.string().optional(),
+        qrUrl: z.string().optional(),
+        language: z.enum(["arabic", "french", "english"]).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        const { generateLeaderAcademyJathathaPDF } = await import("./pdfGenerator");
+        
+        const qrUrl = input.qrUrl || `${process.env.VITE_APP_URL || "https://leaderacademy.school"}`;
+        const pdfBuffer = await generateLeaderAcademyJathathaPDF({ ...input, qrUrl });
+        
+        const fileName = `leader-academy-jathatha/jathatha-${ctx.user.id}-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileName, pdfBuffer, "application/pdf");
+        
+        return { url };
+      }),
+
     saveAiSuggestion: protectedProcedure
       .input(z.object({
         schoolYear: z.string(),

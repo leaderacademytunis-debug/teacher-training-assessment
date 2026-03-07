@@ -554,3 +554,32 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
     }
   });
 }
+
+/**
+ * Generate a PDF using the Leader Academy Standard template
+ * with smart header (logo + QR code), rounded blocks, and Tunisian identity footer.
+ */
+export async function generateLeaderAcademyJathathaPDF(data: {
+  schoolYear: string;
+  level: string;
+  subject: string;
+  lessonTitle: string;
+  duration?: string;
+  teacherName?: string;
+  date?: string;
+  terminalCompetency?: string;
+  distinctiveObjective?: string;
+  materials?: string;
+  problemSituation?: string;
+  hypotheses?: string;
+  verification?: string;
+  conclusion?: string;
+  evaluation?: string;
+  freeContent?: string;
+  qrUrl?: string;
+  language?: "arabic" | "french" | "english";
+}): Promise<Buffer> {
+  const { generateLeaderAcademyPDF } = await import("./leaderAcademyTemplate");
+  const html = await generateLeaderAcademyPDF(data);
+  return await createPDF(html);
+}
