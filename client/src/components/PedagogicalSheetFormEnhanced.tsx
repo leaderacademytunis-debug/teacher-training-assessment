@@ -44,7 +44,35 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     evaluation: "",
     guidePageReference: "",
     programReference: "",
-    language: "auto" as "arabic" | "french" | "english" | "auto", // Optional language override
+    language: "auto" as "arabic" | "french" | "english" | "auto",
+    // ─── Tunisian lesson plan fields ──────────────────────────────────────
+    sessionNumber: "",
+    schoolName: "",
+    teacherName: "",
+    textbookRef: "",
+    terminalCompetency: "",
+    distinctiveObjective: "",
+    contentTarget: "",
+    // Phase 1: Exploration (مرحلة الاستكشاف)
+    explorationLaunch: "",
+    scene1: "",
+    spontaneousReactions: "",
+    guidingQuestions: "",
+    scene2: "",
+    hypotheses: "",
+    textBuilding: "",
+    // Phase 2: Analysis (مرحلة التحليل)
+    auditoryDiscrimination: "",
+    visualDiscrimination: "",
+    letterExtraction: "",
+    readingActivities: "",
+    writingActivities: "",
+    // Phase 3: Synthesis (مرحلة التركيب)
+    textReading: "",
+    enrichmentActivities: "",
+    rhythmicGames: "",
+    exercisesBook: "",
+    evaluationCriteria: "",
   });
 
   const [aiSuggestion, setAiSuggestion] = useState<string>("");
@@ -184,16 +212,42 @@ export function PedagogicalSheetFormEnhanced({ onClose, onSuccess }: Pedagogical
     const levelMap: Record<string, string> = { primary: "ابتدائي", middle: "إعدادي", secondary: "ثانوي" };
     exportLeaderAcademy.mutate({
       schoolYear: formData.schoolYear,
-      level: `${levelMap[formData.educationLevel] || formData.educationLevel} — ${formData.grade}`,
+      level: formData.grade || `${levelMap[formData.educationLevel] || formData.educationLevel}`,
       subject: formData.subject,
       lessonTitle: formData.lessonTitle,
+      sessionNumber: formData.sessionNumber || undefined,
       duration: formData.duration ? `${formData.duration} دقيقة` : undefined,
-      terminalCompetency: formData.lessonObjectives || undefined,
+      teacherName: formData.teacherName || undefined,
+      schoolName: formData.schoolName || undefined,
+      textbookRef: formData.textbookRef || undefined,
+      // Competencies
+      terminalCompetency: formData.terminalCompetency || formData.lessonObjectives || undefined,
+      distinctiveObjective: formData.distinctiveObjective || undefined,
+      contentTarget: formData.contentTarget || undefined,
       materials: formData.materials || undefined,
-      problemSituation: formData.introduction || undefined,
-      conclusion: formData.conclusion || undefined,
+      // Phase 1
+      explorationLaunch: formData.explorationLaunch || formData.introduction || undefined,
+      scene1: formData.scene1 || undefined,
+      spontaneousReactions: formData.spontaneousReactions || undefined,
+      guidingQuestions: formData.guidingQuestions || undefined,
+      scene2: formData.scene2 || undefined,
+      hypotheses: formData.hypotheses || undefined,
+      textBuilding: formData.textBuilding || undefined,
+      // Phase 2
+      auditoryDiscrimination: formData.auditoryDiscrimination || undefined,
+      visualDiscrimination: formData.visualDiscrimination || undefined,
+      letterExtraction: formData.letterExtraction || undefined,
+      readingActivities: formData.readingActivities || undefined,
+      writingActivities: formData.writingActivities || undefined,
+      // Phase 3
+      textReading: formData.textReading || undefined,
+      enrichmentActivities: formData.enrichmentActivities || formData.mainActivitiesText || undefined,
+      rhythmicGames: formData.rhythmicGames || undefined,
+      exercisesBook: formData.exercisesBook || formData.conclusion || undefined,
+      // Evaluation
       evaluation: formData.evaluation || undefined,
-      freeContent: formData.mainActivitiesText || undefined,
+      evaluationCriteria: formData.evaluationCriteria || undefined,
+      freeContent: undefined,
       language: "arabic",
     });
   };

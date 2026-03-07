@@ -1462,17 +1462,43 @@ export const appRouter = router({
         level: z.string(),
         subject: z.string(),
         lessonTitle: z.string(),
+        sessionNumber: z.string().optional(),
         duration: z.string().optional(),
         teacherName: z.string().optional(),
         date: z.string().optional(),
+        schoolName: z.string().optional(),
+        textbookRef: z.string().optional(),
+        // Competencies
         terminalCompetency: z.string().optional(),
         distinctiveObjective: z.string().optional(),
+        contentTarget: z.string().optional(),
         materials: z.string().optional(),
-        problemSituation: z.string().optional(),
+        // Phase 1: Exploration
+        explorationLaunch: z.string().optional(),
+        scene1: z.string().optional(),
+        spontaneousReactions: z.string().optional(),
+        guidingQuestions: z.string().optional(),
+        scene2: z.string().optional(),
         hypotheses: z.string().optional(),
+        textBuilding: z.string().optional(),
+        // Phase 2: Analysis
+        auditoryDiscrimination: z.string().optional(),
+        visualDiscrimination: z.string().optional(),
+        letterExtraction: z.string().optional(),
+        readingActivities: z.string().optional(),
+        writingActivities: z.string().optional(),
+        // Phase 3: Synthesis
+        textReading: z.string().optional(),
+        enrichmentActivities: z.string().optional(),
+        rhythmicGames: z.string().optional(),
+        exercisesBook: z.string().optional(),
+        // Evaluation
+        evaluation: z.string().optional(),
+        evaluationCriteria: z.string().optional(),
+        // Legacy
+        problemSituation: z.string().optional(),
         verification: z.string().optional(),
         conclusion: z.string().optional(),
-        evaluation: z.string().optional(),
         freeContent: z.string().optional(),
         qrUrl: z.string().optional(),
         language: z.enum(["arabic", "french", "english"]).optional(),
@@ -2413,7 +2439,70 @@ When creating an English lesson plan, use this structure:
 - **Accuracy**: Grammar and vocabulary correctness
 - **Fluency**: Communication effectiveness
 - **Coherence**: Organization and logical flow
-- **Task completion**: Meeting the lesson objectives`;
+- **Task completion**: Meeting the lesson objectives
+
+---
+# قاعدة المعرفة الداخلية: التخطيط السنوي للرياضيات (وزارة التربية التونسية)
+## ملاحظة: هذه مراجع داخلية للاستخدام في توليد المذكرات فقط
+
+### السنة الثالثة ابتدائي — رياضيات (مكونات: حساب / هندسة / قياس)
+
+**الثلاثي الأول — أهداف مميزة:**
+- هندسة: التعرف على الشبكة ومكوناتها + رسم المسالك على الشبكة
+- قياس: العلاقة بين المتر والسنتيمتر + التصرف في القطعة النقدية (د1/د2)
+- حساب: الطرح بالزيادة (الفروق المتساوية) + التصرف في الأعداد من 0 إلى 9999
+
+**الثلاثي الثاني — أهداف مميزة:**
+- حساب: التصرف في الأعداد ذات 4 أرقام (2) + الطرح بالزيادة (2)
+- قياس: العلاقة بين المتر والسنتيمتر والديسيمتر + القطعة النقدية (2)
+
+**الثلاثي الثالث — أهداف مميزة:**
+- هندسة: رسم وتصنيف المضلعات + تصنيف الزوايا حسب فتحاتها ورسمها
+- حساب: تفكيك الأعداد ذات 4 أرقام وتركيبها + فكرة قاسم عددين + توظيف خصائص الضرب
+- قياس: القطعة النقدية والورقة المالية (د5)
+
+**معايير التقييم الخمسة (مشتركة بين الثلاثيات):**
+م1: التأويل الملائم | م2: صحة الحساب | م3: إجراء تحويلات أنظمة القياس | م4: التصرف في المسالك/الهندسة | م5: الدقة
+
+---
+
+### السنة الرابعة ابتدائي — رياضيات
+
+**الفترة الأولى (أكتوبر) — 16 حصة:**
+- حساب: الضرب في عدد ذي رقمين (أحدهما مئة كاملة أو عقد)
+- هندسة: رسم المتوازيين والمتعامدين + رسم المستطيل والمربع وخصائصهما
+- قياس: وحدات قياس الأطوال والسعة والكتلة (مضاعفات المتر وأجزاؤه)
+
+**الفترة الثانية (نوفمبر) — 14 حصة:**
+- حساب: الأعداد ذات 5 أرقام (تكويناً وكتابةً وقراءةً وتمثيلاً ومقارنةً وترتيباً وتفكيكاً وتركيباً) + الجمع بالاحتفاظ والطرح بالزيادة على الأعداد ذات 5 أرقام
+- هندسة: المستقيم ونصف المستقيم والقطعة
+- قياس: وحدات قياس الأطوال (المتر وأجزاؤه)
+
+**الفترة الثالثة (مارس) — 16 حصة:**
+- حساب: الضرب في عدد ذي رقمين (2)
+- هندسة: التوازي والتعامد (2) + المستطيل والمربع (2) + المسالك المختصرة على الشبكة
+- قياس: الأوراق المالية والقطع النقدية (د10/د20/د50) + وحدات الأطوال والسعة والكتلة
+
+**الكفاية الختامية للسنة الرابعة:** يحل المتعلم وضعيات مشكلة دالة بتوظيف آلية الضرب في عدد ذي رقمين، والتصرف في وحدات القياس، والوضعيات النسبية للمستقيمين، ورسم المستطيل والمربع.
+
+**الأداء المنتظر (معايير التقييم):**
+م1: اختيار العملية المناسبة | م2: الضرب في عدد ذي رقمين | م3: إجراء تحويلات أنظمة القياس | م4: رسم الأشكال الهندسية | م5: الدقة
+
+---
+
+### هيكل الحصة الرياضية التونسية (16 حصة لكل فترة):
+- 12 حصة منهجية (تعلم جديد)
+- 1 حصة إدماج (تجميع المكتسبات)
+- 1 حصة تقييم (قياس مستوى التحصيل)
+- 2 حصة دعم وعلاج (معالجة الصعوبات)
+
+### بنية الوضعية المشكلة في الرياضيات:
+1. تقديم وضعية دالة من الحياة اليومية التونسية
+2. تملك الوضعية (قراءة وفهم)
+3. صياغة الفرضيات وخطة الحل
+4. التحقق من صحة الحساب
+5. الاستنتاج وصياغة الحل
+6. التقييم وفق المعايير الخمسة`;
 
         // Build LLM messages with proper attachment handling
         const llmMessages = input.messages.map(m => {

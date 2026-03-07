@@ -1218,3 +1218,11 @@
 - [x] إضافة زر قالب Leader Academy Standard في واجهة المستخدم
 - [x] 7 اختبارات وحدة ناجحة
 - [ ] حفظ نقطة التفتيش
+
+## إضافة مراجع داخلية: التخطيط السنوي للرياضيات
+- [x] قراءة وتحليل ملف التخطيط السنوي للرياضيات (السنة الثالثة والرابعة)
+- [x] قراءة وتحليل مخطط الرياضيات للسنة الرابعة (4ème)
+- [x] دمج محتوى الملفين كمراجع داخلية في system prompt الوكيل
+- [x] تحديث schema exportLeaderAcademyJathatha بالحقول الجديدة (sessionNumber، schoolName، textbookRef، المراحل الثلاث)
+- [x] إصلاح خطأ TypeScript في PedagogicalSheetFormEnhanced.tsx
+- [ ] حفظ نقطة التفتيش

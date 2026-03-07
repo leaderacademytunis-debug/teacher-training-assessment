@@ -1,11 +1,12 @@
 /**
- * Leader Academy Standard Template
- * Professional pedagogical sheet (Jathatha) template for Tunisian teachers
- * Features:
- *  - Smart Header: Logo (right) + Title (center) + QR Code (left)
- *  - Rounded table blocks with academy colors
- *  - Amiri Arabic font
- *  - Tunisian flag in footer
+ * Leader Academy Standard Template — نسخة تونس 2026
+ * Professional Tunisian lesson plan (مذكرة) template
+ * Follows the official Tunisian Ministry of Education structure:
+ *   - Header: Logo + Title + QR Code
+ *   - General Info Table (المعطيات العامة)
+ *   - 3 Pedagogical Phases: Exploration → Analysis → Synthesis
+ *   - Evaluation block
+ *   - Tunisian identity footer
  */
 import QRCode from "qrcode";
 import fs from "fs";
@@ -19,16 +20,20 @@ const FONTS_DIR = path.join(__dirname, "fonts");
 
 // Academy brand colors
 const COLORS = {
-  primary: "#1a3a5c",      // Deep navy blue
-  secondary: "#2d7dd2",    // Academy blue
-  accent: "#f0a500",       // Gold accent
-  lightBg: "#f4f7fb",      // Light grey-blue background
-  blockBg: "#eef3fa",      // Block background
-  border: "#c8d8ed",       // Soft border
-  text: "#1a2535",         // Dark text
-  mutedText: "#5a6a7e",    // Muted text
+  primary: "#1a3a5c",
+  secondary: "#2d7dd2",
+  accent: "#f0a500",
+  lightBg: "#f4f7fb",
+  blockBg: "#eef3fa",
+  border: "#c8d8ed",
+  text: "#1a2535",
+  mutedText: "#5a6a7e",
   white: "#ffffff",
   tunisiaRed: "#E70013",
+  phase1: "#fff8e8",   // Exploration — warm yellow
+  phase2: "#e8f4fd",   // Analysis — soft blue
+  phase3: "#f0fff4",   // Synthesis — soft green
+  evalBg: "#fff7ed",   // Evaluation — warm orange
 };
 
 function getLogoBase64(): string {
@@ -45,10 +50,7 @@ async function generateQRCode(url: string): Promise<string> {
     return await QRCode.toDataURL(url, {
       width: 100,
       margin: 1,
-      color: {
-        dark: COLORS.primary,
-        light: COLORS.white,
-      },
+      color: { dark: COLORS.primary, light: COLORS.white },
       errorCorrectionLevel: "M",
     });
   } catch {
@@ -57,31 +59,54 @@ async function generateQRCode(url: string): Promise<string> {
 }
 
 export interface JathathaBlocData {
-  // Header info
+  // ─── General Info ───────────────────────────────────────────────────────────
   schoolYear: string;
-  level: string;       // e.g. "السنة الثالثة ابتدائي"
-  subject: string;     // e.g. "الإيقاظ العلمي"
+  level: string;            // e.g. "السنة الأولى ابتدائي"
+  subject: string;          // e.g. "القراءة" / "الإيقاظ العلمي"
   lessonTitle: string;
-  duration?: string;
+  sessionNumber?: string;   // رقم الحصة
+  duration?: string;        // المدة الزمنية
   teacherName?: string;
   date?: string;
+  schoolName?: string;      // اسم المدرسة
+  textbookRef?: string;     // المرجع (كتاب التلميذ صفحة...)
 
-  // Pedagogical content
-  terminalCompetency?: string;  // الكفاية الختامية
+  // ─── Competencies ───────────────────────────────────────────────────────────
+  terminalCompetency?: string;   // الكفاية الختامية
   distinctiveObjective?: string; // الهدف المميز
-  materials?: string;            // الوسائل
+  contentTarget?: string;        // المحتوى المستهدف
+  materials?: string;            // الوسائل والأدوات
 
-  // Lesson stages
-  problemSituation?: string;   // وضعية المشكلة
-  hypotheses?: string;         // الفرضيات
-  verification?: string;       // التحقق
-  conclusion?: string;         // الاستنتاج
-  evaluation?: string;         // التقييم
+  // ─── Phase 1: Exploration (مرحلة الاستكشاف) ─────────────────────────────────
+  explorationLaunch?: string;    // بناء نص الانطلاق
+  scene1?: string;               // مشهد مصوّر 1 — وضعية المشكلة
+  spontaneousReactions?: string; // ردود فعل تلقائية
+  guidingQuestions?: string;     // توجيه المتعلمين
+  scene2?: string;               // مشهد مصوّر 2
+  hypotheses?: string;           // صياغة الفرضيات
+  textBuilding?: string;         // إكمال بناء النص
 
-  // Free content (for AI suggestions)
+  // ─── Phase 2: Analysis (مرحلة التحليل) ──────────────────────────────────────
+  auditoryDiscrimination?: string;  // التمييز السمعي
+  visualDiscrimination?: string;    // التمييز البصري
+  letterExtraction?: string;        // استخراج الحرف / المفهوم
+  readingActivities?: string;       // أنشطة القراءة
+  writingActivities?: string;       // أنشطة الكتابة
+
+  // ─── Phase 3: Synthesis (مرحلة التركيب) ─────────────────────────────────────
+  textReading?: string;             // قراءة النص الكامل
+  enrichmentActivities?: string;    // أنشطة الإثراء
+  rhythmicGames?: string;           // ألعاب إيقاعية
+  exercisesBook?: string;           // تمارين من كتاب التلميذ
+
+  // ─── Evaluation ─────────────────────────────────────────────────────────────
+  evaluation?: string;              // التقييم
+  evaluationCriteria?: string;      // معايير التقييم
+
+  // ─── Free / AI content ──────────────────────────────────────────────────────
   freeContent?: string;
 
-  // QR Code URL
+  // ─── Meta ───────────────────────────────────────────────────────────────────
   qrUrl?: string;
   language?: "arabic" | "french" | "english";
 }
@@ -96,21 +121,57 @@ function escapeHtml(text: string): string {
     .replace(/\n/g, "<br>");
 }
 
-function renderBlock(
+function renderPhaseBlock(
+  phaseNumber: string,
+  phaseTitle: string,
+  phaseSubtitle: string,
+  rows: Array<{ icon: string; label: string; content: string }>,
+  bgColor: string,
+  borderColor: string
+): string {
+  const validRows = rows.filter(r => r.content && r.content.trim());
+  if (validRows.length === 0) return "";
+
+  const rowsHtml = validRows.map(row => `
+    <tr>
+      <td class="phase-label">
+        <span class="row-icon">${row.icon}</span>
+        ${escapeHtml(row.label)}
+      </td>
+      <td class="phase-content">${escapeHtml(row.content)}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <div class="phase-block" style="background:${bgColor}; border-right:5px solid ${borderColor};">
+      <div class="phase-header" style="background:${borderColor};">
+        <span class="phase-number">${phaseNumber}</span>
+        <div class="phase-titles">
+          <div class="phase-title">${phaseTitle}</div>
+          <div class="phase-subtitle">${phaseSubtitle}</div>
+        </div>
+      </div>
+      <table class="phase-table">
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderSimpleBlock(
   icon: string,
   title: string,
   content: string,
-  bgColor: string = COLORS.blockBg,
-  titleColor: string = COLORS.primary
+  bgColor: string,
+  borderColor: string
 ): string {
-  if (!content) return "";
+  if (!content || !content.trim()) return "";
   return `
-    <div class="block" style="background:${bgColor}; border-right:4px solid ${titleColor};">
-      <div class="block-title" style="color:${titleColor};">
-        <span class="block-icon">${icon}</span>
-        ${escapeHtml(title)}
+    <div class="simple-block" style="background:${bgColor}; border-right:4px solid ${borderColor};">
+      <div class="simple-block-title" style="color:${borderColor};">
+        <span>${icon}</span> ${escapeHtml(title)}
       </div>
-      <div class="block-content">${escapeHtml(content)}</div>
+      <div class="simple-block-content">${escapeHtml(content)}</div>
     </div>
   `;
 }
@@ -121,16 +182,84 @@ export async function generateLeaderAcademyPDF(data: JathathaBlocData): Promise<
   const qrBase64 = await generateQRCode(qrUrl);
 
   const isArabic = data.language !== "french" && data.language !== "english";
+  const isFrench = data.language === "french";
 
-  // Build the info table rows
+  const L = {
+    // Labels
+    generalInfo: isArabic ? "المعطيات العامة" : "Informations générales",
+    schoolYear: isArabic ? "السنة الدراسية" : "Année scolaire",
+    level: isArabic ? "المستوى" : "Niveau",
+    subject: isArabic ? "المادة" : "Matière",
+    lessonTitle: isArabic ? "عنوان الدرس" : "Titre de la leçon",
+    sessionNumber: isArabic ? "رقم الحصة" : "N° de séance",
+    duration: isArabic ? "المدة الزمنية" : "Durée",
+    teacher: isArabic ? "المدرس/ة" : "Enseignant(e)",
+    date: isArabic ? "التاريخ" : "Date",
+    school: isArabic ? "المدرسة" : "École",
+    textbookRef: isArabic ? "المرجع" : "Référence",
+
+    // Competencies
+    competencies: isArabic ? "الكفايات والأهداف" : "Compétences et objectifs",
+    terminalComp: isArabic ? "الكفاية الختامية" : "Compétence terminale",
+    distinctiveObj: isArabic ? "الهدف المميز" : "Objectif spécifique",
+    contentTarget: isArabic ? "المحتوى المستهدف" : "Contenu ciblé",
+    materials: isArabic ? "الوسائل والأدوات" : "Matériel et outils",
+
+    // Phase 1
+    phase1Title: isArabic ? "مرحلة الاستكشاف" : "Phase de Découverte",
+    phase1Sub: isArabic ? "Exploration" : "Exploration",
+    explorationLaunch: isArabic ? "بناء نص الانطلاق" : "Mise en situation",
+    scene1: isArabic ? "المشهد المصوّر 1 — وضعية المشكلة" : "Scène 1 — Situation-problème",
+    spontaneous: isArabic ? "ردود فعل تلقائية من التلاميذ" : "Réactions spontanées",
+    guiding: isArabic ? "توجيه المتعلمين" : "Guidage des apprenants",
+    scene2: isArabic ? "المشهد المصوّر 2" : "Scène 2",
+    hypotheses: isArabic ? "صياغة الفرضيات" : "Formulation d'hypothèses",
+    textBuilding: isArabic ? "إكمال بناء النص" : "Construction du texte",
+
+    // Phase 2
+    phase2Title: isArabic ? "مرحلة التحليل" : "Phase d'Analyse",
+    phase2Sub: isArabic ? "Analyse" : "Analyse",
+    auditoryDisc: isArabic ? "التمييز السمعي" : "Discrimination auditive",
+    visualDisc: isArabic ? "التمييز البصري" : "Discrimination visuelle",
+    letterExt: isArabic ? "استخراج الحرف / المفهوم" : "Extraction du concept",
+    readingAct: isArabic ? "أنشطة القراءة" : "Activités de lecture",
+    writingAct: isArabic ? "أنشطة الكتابة" : "Activités d'écriture",
+
+    // Phase 3
+    phase3Title: isArabic ? "مرحلة التركيب" : "Phase de Synthèse",
+    phase3Sub: isArabic ? "Synthèse" : "Synthèse",
+    textReading: isArabic ? "قراءة النص الكامل" : "Lecture du texte complet",
+    enrichment: isArabic ? "أنشطة الإثراء" : "Activités d'enrichissement",
+    rhythmic: isArabic ? "ألعاب إيقاعية" : "Jeux rythmiques",
+    exercises: isArabic ? "تمارين من كتاب التلميذ" : "Exercices du manuel",
+
+    // Evaluation
+    evaluation: isArabic ? "التقييم" : "Évaluation",
+    evalCriteria: isArabic ? "معايير التقييم" : "Critères d'évaluation",
+    freeContent: isArabic ? "المحتوى البيداغوجي" : "Contenu pédagogique",
+
+    // Footer
+    republic: isArabic ? "الجمهورية التونسية" : "République Tunisienne",
+    tagline: isArabic ? "نحو تعليم رقمي متميز" : "Pour une éducation numérique d'excellence",
+    scanQR: isArabic ? "امسح للمعاينة" : "Scanner pour aperçu",
+    headerTitle: isArabic ? "المساعد البيداغوجي الذكي" : "Assistant Pédagogique Intelligent",
+    headerSub: isArabic ? "نسخة تونس 2026 — المقاربة بالكفايات (APC)" : "Tunisie 2026 — Approche Par Compétences (APC)",
+    badge: "Leader Academy Standard ✦",
+    jathatha: isArabic ? "مذكرة بيداغوجية" : "Fiche pédagogique",
+  };
+
+  // ── Info table ──────────────────────────────────────────────────────────────
   const infoRows = [
-    { label: isArabic ? "السنة الدراسية" : "Année scolaire", value: data.schoolYear },
-    { label: isArabic ? "المستوى" : "Niveau", value: data.level },
-    { label: isArabic ? "المادة" : "Matière", value: data.subject },
-    { label: isArabic ? "عنوان الدرس" : "Titre de la leçon", value: data.lessonTitle },
-    data.duration ? { label: isArabic ? "المدة" : "Durée", value: data.duration } : null,
-    data.teacherName ? { label: isArabic ? "المدرس/ة" : "Enseignant(e)", value: data.teacherName } : null,
-    data.date ? { label: isArabic ? "التاريخ" : "Date", value: data.date } : null,
+    { label: L.schoolYear, value: data.schoolYear },
+    { label: L.level, value: data.level },
+    { label: L.subject, value: data.subject },
+    { label: L.lessonTitle, value: data.lessonTitle },
+    data.sessionNumber ? { label: L.sessionNumber, value: data.sessionNumber } : null,
+    data.duration ? { label: L.duration, value: data.duration } : null,
+    data.teacherName ? { label: L.teacher, value: data.teacherName } : null,
+    data.date ? { label: L.date, value: data.date } : null,
+    data.schoolName ? { label: L.school, value: data.schoolName } : null,
+    data.textbookRef ? { label: L.textbookRef, value: data.textbookRef } : null,
   ].filter(Boolean) as { label: string; value: string }[];
 
   const infoTableHtml = infoRows.map((row, i) => `
@@ -140,28 +269,91 @@ export async function generateLeaderAcademyPDF(data: JathathaBlocData): Promise<
     </tr>
   `).join("");
 
-  // Build pedagogical blocks
-  const pedagogicalBlocks = [
-    data.terminalCompetency ? renderBlock("🎯", isArabic ? "الكفاية الختامية" : "Compétence terminale", data.terminalCompetency, "#fff8e8", "#b8860b") : "",
-    data.distinctiveObjective ? renderBlock("📌", isArabic ? "الهدف المميز" : "Objectif spécifique", data.distinctiveObjective, "#e8f4fd", COLORS.secondary) : "",
-    data.materials ? renderBlock("🧰", isArabic ? "الوسائل" : "Matériel", data.materials, "#f0f8f0", "#2d8a4e") : "",
-    data.problemSituation ? renderBlock("❓", isArabic ? "وضعية المشكلة" : "Situation-problème", data.problemSituation, "#fef3f3", "#c0392b") : "",
-    data.hypotheses ? renderBlock("💡", isArabic ? "الفرضيات" : "Hypothèses", data.hypotheses, "#f5f0ff", "#7c3aed") : "",
-    data.verification ? renderBlock("🔬", isArabic ? "التحقق والاستقصاء" : "Vérification", data.verification, "#f0fbf8", "#0d9488") : "",
-    data.conclusion ? renderBlock("✅", isArabic ? "الاستنتاج" : "Conclusion", data.conclusion, "#f0fff4", "#15803d") : "",
-    data.evaluation ? renderBlock("📝", isArabic ? "التقييم" : "Évaluation", data.evaluation, "#fff7ed", "#c2410c") : "",
-    data.freeContent ? renderBlock("📄", isArabic ? "المحتوى البيداغوجي" : "Contenu pédagogique", data.freeContent, COLORS.blockBg, COLORS.primary) : "",
-  ].join("");
+  // ── Competencies block ──────────────────────────────────────────────────────
+  const hasCompetencies = data.terminalCompetency || data.distinctiveObjective || data.contentTarget || data.materials;
+  const competenciesHtml = hasCompetencies ? `
+    <div class="section-title"><span>🎯</span> ${L.competencies}</div>
+    <div class="competencies-grid">
+      ${data.terminalCompetency ? renderSimpleBlock("🏆", L.terminalComp, data.terminalCompetency, "#fff8e8", "#b8860b") : ""}
+      ${data.distinctiveObjective ? renderSimpleBlock("📌", L.distinctiveObj, data.distinctiveObjective, "#e8f4fd", COLORS.secondary) : ""}
+      ${data.contentTarget ? renderSimpleBlock("📚", L.contentTarget, data.contentTarget, "#f0f8f0", "#2d8a4e") : ""}
+      ${data.materials ? renderSimpleBlock("🧰", L.materials, data.materials, "#faf0ff", "#7c3aed") : ""}
+    </div>
+  ` : "";
+
+  // ── Phase 1: Exploration ────────────────────────────────────────────────────
+  const phase1Html = renderPhaseBlock(
+    "1",
+    L.phase1Title,
+    L.phase1Sub,
+    [
+      { icon: "📖", label: L.explorationLaunch, content: data.explorationLaunch || "" },
+      { icon: "🖼️", label: L.scene1, content: data.scene1 || "" },
+      { icon: "💬", label: L.spontaneous, content: data.spontaneousReactions || "" },
+      { icon: "❓", label: L.guiding, content: data.guidingQuestions || "" },
+      { icon: "🖼️", label: L.scene2, content: data.scene2 || "" },
+      { icon: "💡", label: L.hypotheses, content: data.hypotheses || "" },
+      { icon: "✍️", label: L.textBuilding, content: data.textBuilding || "" },
+    ],
+    COLORS.phase1,
+    "#b8860b"
+  );
+
+  // ── Phase 2: Analysis ───────────────────────────────────────────────────────
+  const phase2Html = renderPhaseBlock(
+    "2",
+    L.phase2Title,
+    L.phase2Sub,
+    [
+      { icon: "👂", label: L.auditoryDisc, content: data.auditoryDiscrimination || "" },
+      { icon: "👁️", label: L.visualDisc, content: data.visualDiscrimination || "" },
+      { icon: "🔤", label: L.letterExt, content: data.letterExtraction || "" },
+      { icon: "📖", label: L.readingAct, content: data.readingActivities || "" },
+      { icon: "✏️", label: L.writingAct, content: data.writingActivities || "" },
+    ],
+    COLORS.phase2,
+    COLORS.secondary
+  );
+
+  // ── Phase 3: Synthesis ──────────────────────────────────────────────────────
+  const phase3Html = renderPhaseBlock(
+    "3",
+    L.phase3Title,
+    L.phase3Sub,
+    [
+      { icon: "📚", label: L.textReading, content: data.textReading || "" },
+      { icon: "🌟", label: L.enrichment, content: data.enrichmentActivities || "" },
+      { icon: "🎵", label: L.rhythmic, content: data.rhythmicGames || "" },
+      { icon: "📝", label: L.exercises, content: data.exercisesBook || "" },
+    ],
+    COLORS.phase3,
+    "#15803d"
+  );
+
+  // ── Evaluation ──────────────────────────────────────────────────────────────
+  const evalHtml = (data.evaluation || data.evaluationCriteria) ? `
+    <div class="section-title"><span>📊</span> ${L.evaluation}</div>
+    <div class="eval-container">
+      ${data.evaluation ? renderSimpleBlock("📝", L.evaluation, data.evaluation, COLORS.evalBg, "#c2410c") : ""}
+      ${data.evaluationCriteria ? renderSimpleBlock("✅", L.evalCriteria, data.evaluationCriteria, "#f0fff4", "#15803d") : ""}
+    </div>
+  ` : "";
+
+  // ── Free content (AI suggestions) ──────────────────────────────────────────
+  const freeHtml = data.freeContent ? `
+    <div class="section-title"><span>🤖</span> ${L.freeContent}</div>
+    ${renderSimpleBlock("📄", L.freeContent, data.freeContent, COLORS.blockBg, COLORS.primary)}
+  ` : "";
 
   const html = `<!DOCTYPE html>
-<html dir="${isArabic ? "rtl" : "ltr"}" lang="${isArabic ? "ar" : data.language === "french" ? "fr" : "en"}">
+<html dir="${isArabic ? "rtl" : "ltr"}" lang="${isArabic ? "ar" : isFrench ? "fr" : "en"}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>جذاذة بيداغوجية — Leader Academy</title>
+  <title>${L.jathatha} — Leader Academy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -169,8 +361,8 @@ export async function generateLeaderAcademyPDF(data: JathathaBlocData): Promise<
       font-family: 'Amiri', 'Cairo', 'Traditional Arabic', serif;
       background: ${COLORS.white};
       color: ${COLORS.text};
-      font-size: 13pt;
-      line-height: 1.7;
+      font-size: 12.5pt;
+      line-height: 1.75;
       direction: ${isArabic ? "rtl" : "ltr"};
     }
 
@@ -178,230 +370,132 @@ export async function generateLeaderAcademyPDF(data: JathathaBlocData): Promise<
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
-      padding: 0;
       background: ${COLORS.white};
     }
 
     /* ===== HEADER ===== */
     .header {
       background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%);
-      padding: 16px 20px;
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
-
     .header-logo {
-      width: 90px;
-      height: auto;
-      object-fit: contain;
-      flex-shrink: 0;
+      width: 85px; height: auto; object-fit: contain; flex-shrink: 0;
       filter: brightness(0) invert(1);
     }
-
-    .header-center {
-      flex: 1;
-      text-align: center;
-      color: ${COLORS.white};
-    }
-
+    .header-center { flex: 1; text-align: center; color: ${COLORS.white}; }
     .header-title {
-      font-family: 'Cairo', 'Amiri', sans-serif;
-      font-size: 15pt;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      font-family: 'Cairo', sans-serif; font-size: 15pt; font-weight: 800;
+      margin-bottom: 3px;
     }
-
-    .header-subtitle {
-      font-size: 10pt;
-      opacity: 0.85;
-      font-weight: 400;
-    }
-
+    .header-subtitle { font-size: 9.5pt; opacity: 0.85; }
     .header-badge {
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 20px;
-      padding: 3px 12px;
-      font-size: 9pt;
-      margin-top: 6px;
-      display: inline-block;
-      color: ${COLORS.accent};
-      font-weight: 600;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px; padding: 2px 12px; font-size: 8.5pt; margin-top: 5px;
+      display: inline-block; color: ${COLORS.accent}; font-weight: 700;
     }
-
-    .header-qr {
-      flex-shrink: 0;
-      text-align: center;
-    }
-
+    .header-qr { flex-shrink: 0; text-align: center; }
     .header-qr img {
-      width: 70px;
-      height: 70px;
-      border-radius: 6px;
-      background: white;
-      padding: 3px;
+      width: 68px; height: 68px; border-radius: 6px; background: white; padding: 3px;
     }
-
-    .header-qr-label {
-      color: rgba(255,255,255,0.7);
-      font-size: 7pt;
-      margin-top: 3px;
-      text-align: center;
-    }
+    .header-qr-label { color: rgba(255,255,255,0.7); font-size: 7pt; margin-top: 3px; }
 
     /* ===== CONTENT ===== */
-    .content {
-      padding: 18px 20px;
+    .content { padding: 16px 20px; }
+
+    .section-title {
+      font-family: 'Cairo', sans-serif; font-size: 11pt; font-weight: 700;
+      color: ${COLORS.primary}; border-bottom: 2px solid ${COLORS.accent};
+      padding-bottom: 4px; margin-bottom: 10px; margin-top: 16px;
+      display: flex; align-items: center; gap: 6px;
     }
 
     /* ===== INFO TABLE ===== */
-    .section-title {
-      font-family: 'Cairo', sans-serif;
-      font-size: 11pt;
-      font-weight: 700;
-      color: ${COLORS.primary};
-      border-bottom: 2px solid ${COLORS.accent};
-      padding-bottom: 5px;
-      margin-bottom: 10px;
-      margin-top: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
     .info-table {
-      width: 100%;
-      border-collapse: collapse;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid ${COLORS.border};
-      margin-bottom: 16px;
-      font-size: 12pt;
+      width: 100%; border-collapse: collapse; border-radius: 10px;
+      overflow: hidden; border: 1px solid ${COLORS.border}; margin-bottom: 4px;
     }
-
-    .info-table td {
-      padding: 8px 14px;
-      border-bottom: 1px solid ${COLORS.border};
-      vertical-align: top;
-    }
-
+    .info-table td { padding: 7px 13px; border-bottom: 1px solid ${COLORS.border}; vertical-align: top; }
     .info-label {
-      background: ${COLORS.primary};
-      color: ${COLORS.white};
-      font-weight: 700;
-      width: 35%;
-      font-size: 11pt;
-      white-space: nowrap;
+      background: ${COLORS.primary}; color: ${COLORS.white}; font-weight: 700;
+      width: 32%; font-size: 10.5pt; white-space: nowrap;
     }
+    .info-value { font-size: 11.5pt; color: ${COLORS.text}; }
 
-    .info-value {
-      font-size: 12pt;
-      color: ${COLORS.text};
-    }
+    /* ===== COMPETENCIES GRID ===== */
+    .competencies-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
 
-    /* ===== BLOCKS ===== */
-    .blocks-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .block {
-      border-radius: 10px;
-      padding: 12px 16px;
-      border: 1px solid ${COLORS.border};
+    /* ===== SIMPLE BLOCK ===== */
+    .simple-block {
+      border-radius: 8px; padding: 10px 14px; border: 1px solid ${COLORS.border};
       page-break-inside: avoid;
     }
-
-    .block-title {
-      font-family: 'Cairo', sans-serif;
-      font-size: 12pt;
-      font-weight: 700;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .simple-block-title {
+      font-family: 'Cairo', sans-serif; font-size: 11pt; font-weight: 700;
+      margin-bottom: 6px; display: flex; align-items: center; gap: 5px;
     }
+    .simple-block-content { font-size: 11.5pt; line-height: 1.8; color: ${COLORS.text}; }
 
-    .block-icon {
-      font-size: 14pt;
+    /* ===== PHASE BLOCKS ===== */
+    .phase-block {
+      border-radius: 10px; overflow: hidden; border: 1px solid ${COLORS.border};
+      margin-bottom: 12px; page-break-inside: avoid;
     }
+    .phase-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 16px; color: white;
+    }
+    .phase-number {
+      font-family: 'Cairo', sans-serif; font-size: 18pt; font-weight: 800;
+      background: rgba(255,255,255,0.2); border-radius: 50%;
+      width: 36px; height: 36px; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+    .phase-titles { }
+    .phase-title { font-family: 'Cairo', sans-serif; font-size: 12pt; font-weight: 700; }
+    .phase-subtitle { font-size: 9pt; opacity: 0.85; font-style: italic; }
 
-    .block-content {
-      font-size: 12pt;
-      line-height: 1.8;
-      color: ${COLORS.text};
+    .phase-table { width: 100%; border-collapse: collapse; }
+    .phase-table tr { border-bottom: 1px solid ${COLORS.border}; }
+    .phase-table tr:last-child { border-bottom: none; }
+    .phase-label {
+      background: rgba(255,255,255,0.6); font-weight: 700; font-size: 10.5pt;
+      padding: 8px 13px; width: 30%; vertical-align: top; white-space: nowrap;
+      color: ${COLORS.primary};
     }
+    .row-icon { margin-left: 4px; margin-right: 4px; }
+    .phase-content { padding: 8px 13px; font-size: 11.5pt; line-height: 1.8; vertical-align: top; }
+
+    /* ===== EVAL ===== */
+    .eval-container { display: flex; flex-direction: column; gap: 8px; }
 
     /* ===== FOOTER ===== */
     .footer {
-      background: ${COLORS.primary};
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 20px;
+      background: ${COLORS.primary}; padding: 10px 20px;
+      display: flex; align-items: center; justify-content: space-between; margin-top: 20px;
     }
-
-    .footer-text {
-      color: rgba(255,255,255,0.8);
-      font-size: 9pt;
-    }
-
-    .footer-brand {
-      color: ${COLORS.accent};
-      font-weight: 700;
-      font-size: 10pt;
-    }
-
-    .footer-flag {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* Tunisia flag CSS */
+    .footer-text { color: rgba(255,255,255,0.8); font-size: 9pt; }
+    .footer-brand { color: ${COLORS.accent}; font-weight: 700; font-size: 10pt; }
+    .footer-flag { display: flex; align-items: center; gap: 6px; }
     .tunisia-flag {
-      width: 30px;
-      height: 20px;
-      background: ${COLORS.tunisiaRed};
-      border-radius: 2px;
-      position: relative;
-      overflow: hidden;
-      display: inline-block;
-      flex-shrink: 0;
+      width: 30px; height: 20px; background: ${COLORS.tunisiaRed};
+      border-radius: 2px; position: relative; overflow: hidden;
+      display: inline-block; flex-shrink: 0;
     }
-
     .tunisia-flag::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 14px;
-      height: 14px;
-      background: white;
-      border-radius: 50%;
+      content: ''; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); width: 14px; height: 14px;
+      background: white; border-radius: 50%;
     }
-
     .tunisia-flag::after {
-      content: '☪';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: ${COLORS.tunisiaRed};
-      font-size: 8px;
-      line-height: 1;
+      content: '☪'; position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%); color: ${COLORS.tunisiaRed};
+      font-size: 8px; line-height: 1;
     }
-
-    .footer-country {
-      color: rgba(255,255,255,0.7);
-      font-size: 9pt;
-    }
+    .footer-country { color: rgba(255,255,255,0.7); font-size: 9pt; }
 
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -412,62 +506,63 @@ export async function generateLeaderAcademyPDF(data: JathathaBlocData): Promise<
 <body>
   <div class="page">
 
-    <!-- HEADER -->
+    <!-- ═══ HEADER ═══ -->
     <div class="header">
       ${logoBase64
         ? `<img src="${logoBase64}" alt="Leader Academy" class="header-logo">`
-        : `<div style="color:white;font-weight:bold;font-size:12pt;width:90px">Leader<br>Academy</div>`
+        : `<div style="color:white;font-weight:800;font-size:13pt;width:85px;font-family:Cairo,sans-serif">Leader<br>Academy</div>`
       }
-
       <div class="header-center">
-        <div class="header-title">المساعد البيداغوجي الذكي</div>
-        <div class="header-subtitle">نسخة تونس 2026 — المقاربة بالكفايات (APC)</div>
-        <div class="header-badge">Leader Academy Standard ✦</div>
+        <div class="header-title">${L.headerTitle}</div>
+        <div class="header-subtitle">${L.headerSub}</div>
+        <div class="header-badge">${L.badge}</div>
       </div>
-
       <div class="header-qr">
         ${qrBase64
           ? `<img src="${qrBase64}" alt="QR Code">`
-          : `<div style="width:70px;height:70px;background:rgba(255,255,255,0.2);border-radius:6px;"></div>`
+          : `<div style="width:68px;height:68px;background:rgba(255,255,255,0.2);border-radius:6px;"></div>`
         }
-        <div class="header-qr-label">${isArabic ? "امسح للمعاينة" : "Scanner pour aperçu"}</div>
+        <div class="header-qr-label">${L.scanQR}</div>
       </div>
     </div>
 
-    <!-- CONTENT -->
+    <!-- ═══ CONTENT ═══ -->
     <div class="content">
 
-      <!-- INFO TABLE -->
-      <div class="section-title">
-        <span>📋</span>
-        ${isArabic ? "المعطيات العامة" : "Informations générales"}
-      </div>
+      <!-- General Info -->
+      <div class="section-title"><span>📋</span> ${L.generalInfo}</div>
       <table class="info-table">
-        <tbody>
-          ${infoTableHtml}
-        </tbody>
+        <tbody>${infoTableHtml}</tbody>
       </table>
 
-      <!-- PEDAGOGICAL BLOCKS -->
-      <div class="section-title">
-        <span>🏫</span>
-        ${isArabic ? "المسار البيداغوجي" : "Démarche pédagogique"}
-      </div>
-      <div class="blocks-container">
-        ${pedagogicalBlocks}
-      </div>
+      <!-- Competencies -->
+      ${competenciesHtml}
+
+      <!-- Phases -->
+      ${(phase1Html || phase2Html || phase3Html) ? `
+        <div class="section-title"><span>🏫</span> ${isArabic ? "المسار البيداغوجي" : "Démarche pédagogique"}</div>
+        ${phase1Html}
+        ${phase2Html}
+        ${phase3Html}
+      ` : ""}
+
+      <!-- Evaluation -->
+      ${evalHtml}
+
+      <!-- Free / AI content -->
+      ${freeHtml}
 
     </div>
 
-    <!-- FOOTER -->
+    <!-- ═══ FOOTER ═══ -->
     <div class="footer">
       <div class="footer-flag">
         <div class="tunisia-flag"></div>
-        <span class="footer-country">${isArabic ? "الجمهورية التونسية" : "République Tunisienne"}</span>
+        <span class="footer-country">${L.republic}</span>
       </div>
       <div class="footer-text">
         <span class="footer-brand">Leader Academy</span>
-        ${isArabic ? " — نحو تعليم رقمي متميز" : " — Pour une éducation numérique d'excellence"}
+        ${isArabic ? " — " + L.tagline : " — " + L.tagline}
       </div>
       <div class="footer-text">leaderacademy.school</div>
     </div>
