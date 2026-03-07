@@ -1335,4 +1335,9 @@
 - [x] مكتبة التقييمات: جدول saved_evaluations + endpoints tRPC (save/list/get/delete/generateVariantB)
 - [x] صفحة EvaluationLibrary.tsx مع بحث وفلاتر حسب المادة/المستوى/الثلاثي
 - [x] ربط المسار /evaluation-library في App.tsx + زر في TeacherTools
+- [x] حفظ نقطة التفتيش (9037ab35)
+
+## إصلاح نافذة إعداد توليد التقييم
+- [x] إضافة زر X لإغلاق النافذة
+- [x] إصلاح التمرير وتحسين تخطيط النافذة (max-h-[60vh] overflow-y-auto)
 - [ ] حفظ نقطة التفتيش

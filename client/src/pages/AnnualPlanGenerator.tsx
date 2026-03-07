@@ -512,16 +512,25 @@ export default function AnnualPlanGenerator() {
 
       {/* Dialog: إعدادات توليد التقييم */}
       <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-[#1B4F72]">
-              <ClipboardCheck className="w-5 h-5 text-green-600" />
-              توليد ورقة تقييم — SC2M223
-            </DialogTitle>
+        <DialogContent className="max-w-lg w-full" dir="rtl">
+          <DialogHeader className="border-b pb-3 mb-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-[#1B4F72]">
+                <ClipboardCheck className="w-5 h-5 text-green-600" />
+                توليد ورقة تقييم — SC2M223
+              </DialogTitle>
+              <button
+                onClick={() => setEvalDialogOpen(false)}
+                className="rounded-full p-1.5 hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+                aria-label="إغلاق"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </DialogHeader>
 
           {selectedRow && (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto max-h-[60vh] px-1 py-2">
               {/* معلومات الدرس */}
               <div className="bg-blue-50 rounded-lg p-3 text-sm">
                 <p className="font-semibold text-[#1B4F72] mb-1">الدرس المختار:</p>
