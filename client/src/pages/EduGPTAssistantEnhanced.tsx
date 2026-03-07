@@ -303,6 +303,26 @@ export default function EduGPTAssistantEnhanced() {
   const uploadFileMutation = trpc.assistant.uploadFile.useMutation();
   const analyzeFileMutation = trpc.assistant.analyzeFile.useMutation();
 
+  // State for loading a specific conversation
+  const [loadingConvId, setLoadingConvId] = useState<number | null>(null);
+  const { data: loadedConvData, isFetching: isLoadingConv } = trpc.assistant.getConversation.useQuery(
+    { id: loadingConvId! },
+    { enabled: loadingConvId !== null }
+  );
+
+  // Apply loaded conversation data when fetch completes
+  useEffect(() => {
+    if (!isLoadingConv && loadedConvData && loadingConvId !== null) {
+      const msgs = Array.isArray(loadedConvData.messages) ? loadedConvData.messages : [];
+      setMessages(msgs as Message[]);
+      setCurrentConversationId(loadedConvData.id);
+      setConversationTitle(loadedConvData.title);
+      setAttachedFiles([]);
+      setInput("");
+      setLoadingConvId(null);
+    }
+  }, [isLoadingConv, loadedConvData, loadingConvId]);
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
@@ -339,13 +359,10 @@ export default function EduGPTAssistantEnhanced() {
     }
   };
 
-  // Load conversation
-  const loadConversation = (conv: Conversation) => {
-    setMessages(conv.messages);
-    setCurrentConversationId(conv.id);
+  // Load conversation - fetch full data including messages from server
+  const loadConversation = (conv: { id: number; title: string }) => {
     setConversationTitle(conv.title);
-    setAttachedFiles([]);
-    setInput("");
+    setLoadingConvId(conv.id);
   };
 
   // Start new conversation
@@ -681,7 +698,7 @@ export default function EduGPTAssistantEnhanced() {
                 key={conv.id}
                 className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group ${
                   currentConversationId === conv.id ? "bg-blue-50 border border-blue-200" : ""
-                }`}
+                } ${loadingConvId === conv.id ? "opacity-60" : ""}`}
                 onClick={() => loadConversation(conv)}
               >
                 <div className="flex items-start justify-between">
