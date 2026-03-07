@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, FileText, Download, Wand2, ChevronRight, BookOpen, Target, Layers, CheckCircle2, Edit3 } from "lucide-react";
+import { Loader2, FileText, Download, Wand2, ChevronRight, BookOpen, Target, Layers, CheckCircle2, Edit3, ClipboardCheck } from "lucide-react";
 import { useLocation } from "wouter";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -575,6 +575,19 @@ export default function LessonSheetFromPlan() {
               >
                 <Wand2 className="w-4 h-4 ml-2" />
                 توليد جديد
+              </Button>
+              <Button
+                onClick={() => {
+                  const sheetData = editMode ? editedSheet : sheet;
+                  if (sheetData) {
+                    sessionStorage.setItem("evaluationSheet", JSON.stringify(sheetData));
+                    navigate("/evaluation-from-sheet");
+                  }
+                }}
+                className="bg-[#1E8449] hover:bg-[#196F3D] text-white px-6 font-bold shadow-md"
+              >
+                <ClipboardCheck className="w-5 h-5 ml-2" />
+                ✨ توليد ورقة التقييم
               </Button>
             </div>
 

@@ -1284,3 +1284,12 @@
 - [x] إضافة زر "توليد جذاذة تلقائية" في TeacherTools.tsx (تبويب تخطيط الدروس)
 - [x] كتابة 12 اختباراً وحدوياً ناجحاً في lessonSheetFromPlan.test.ts
 - [ ] حفظ نقطة التفتيش
+
+## ميزة توليد الاختبار التقييمي من الجذاذة البيداغوجية
+- [x] تحليل البنية الموجودة (routers, LessonSheetFromPlan, wordExporter)
+- [x] إضافة endpoint generateEvaluationFromSheet في routers.ts
+- [x] بناء صفحة EvaluationFromSheet.tsx (عرض + تعديل + تصدير)
+- [x] إضافة زر "توليد اختبار" في LessonSheetFromPlan.tsx
+- [x] إضافة المسار /evaluation-from-sheet في App.tsx
+- [x] كتابة 17 اختباراً وحدوياً ناجحاً في evaluationFromSheet.test.ts
+- [ ] حفظ نقطة التفتيش

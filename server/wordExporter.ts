@@ -742,3 +742,339 @@ export async function exportLessonSheetToWord(data: LessonSheetInput): Promise<B
 
   return await Packer.toBuffer(doc);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// exportEvaluationToWord — ورقة تقييم كاملة مولّدة من الجذاذة
+// ─────────────────────────────────────────────────────────────────────────────
+interface EvaluationQuestion {
+  number: number;
+  question: string;
+  options?: string[];
+  points: number;
+  answer: string;
+  justification?: string;
+}
+
+interface EvaluationSection {
+  sectionNumber: number;
+  sectionTitle: string;
+  sectionType: string;
+  points: number;
+  instructions: string;
+  questions: EvaluationQuestion[];
+}
+
+interface IntegrationSituation {
+  context: string;
+  task: string;
+  points: number;
+  expectedAnswer: string;
+}
+
+interface EvaluationCriterion {
+  criterion: string;
+  indicators: string[];
+}
+
+interface EvaluationWordInput {
+  evaluation: Record<string, unknown>;
+  includeAnswerKey: boolean;
+  schoolName?: string;
+  teacherName?: string;
+  schoolYear?: string;
+}
+
+export async function exportEvaluationToWord(data: EvaluationWordInput): Promise<Buffer> {
+  const ev = data.evaluation as {
+    evaluationTitle?: string;
+    subject?: string;
+    level?: string;
+    trimester?: string;
+    duration?: string;
+    evaluationType?: string;
+    totalPoints?: number;
+    learningObjective?: string;
+    competency?: string;
+    sections?: EvaluationSection[];
+    integrationSituation?: IntegrationSituation;
+    evaluationCriteria?: EvaluationCriterion[];
+  };
+
+  const docSections: (Paragraph | Table)[] = [];
+
+  // ── الترويسة ──────────────────────────────────────────────────────────────
+  docSections.push(
+    new Paragraph({
+      children: [arabicText("الجمهورية التونسية — وزارة التربية", { bold: true, size: 11, color: COLORS.secondary })],
+      alignment: AlignmentType.CENTER,
+      bidirectional: true,
+    }),
+    new Paragraph({
+      children: [arabicText("المحرك البيداغوجي الذكي — Leader Academy", { bold: true, size: 14, color: COLORS.accent })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 80, after: 80 },
+      bidirectional: true,
+    }),
+    new Paragraph({
+      children: [arabicText(`ورقة تقييم: ${ev.evaluationTitle || "تقييم"}`, { bold: true, size: 20, color: COLORS.white })],
+      alignment: AlignmentType.CENTER,
+      shading: { type: ShadingType.SOLID, color: COLORS.green, fill: COLORS.green },
+      spacing: { before: 150, after: 150 },
+      bidirectional: true,
+    }),
+  );
+
+  // ── بيانات المتعلم ────────────────────────────────────────────────────────
+  docSections.push(sectionTitle("أولاً — بيانات المتعلم"));
+  docSections.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        twoColRow("المادة", ev.subject || ""),
+        twoColRow("المستوى", ev.level || ""),
+        twoColRow("الثلاثي", ev.trimester || ""),
+        twoColRow("المدة", ev.duration || "45 دقيقة"),
+        twoColRow("نوع التقييم", ev.evaluationType || ""),
+        twoColRow("المجموع", `${ev.totalPoints || 20} / 20`),
+        twoColRow("المدرسة", data.schoolName || "—"),
+        twoColRow("المدرس/ة", data.teacherName || "—"),
+        twoColRow("السنة الدراسية", data.schoolYear || "2025-2026"),
+        twoColRow("اسم المتعلم/ة", "..............................................."),
+        twoColRow("الرقم", "..............."),
+      ],
+    }),
+  );
+
+  // ── الكفاية والهدف ────────────────────────────────────────────────────────
+  docSections.push(sectionTitle("ثانياً — الكفاية والهدف المستهدف"));
+  docSections.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        twoColRow("الكفاية المقيّمة", ev.competency || ""),
+        twoColRow("الهدف المستهدف", ev.learningObjective || ""),
+      ],
+    }),
+  );
+
+  // ── الأسئلة ───────────────────────────────────────────────────────────────
+  docSections.push(sectionTitle("ثالثاً — أسئلة التقييم"));
+
+  const evalSections = Array.isArray(ev.sections) ? ev.sections : [];
+  for (const sec of evalSections) {
+    docSections.push(
+      new Paragraph({
+        children: [
+          arabicText(
+            `القسم ${sec.sectionNumber} — ${sec.sectionTitle} (${sec.points} ن)`,
+            { bold: true, size: 13, color: COLORS.secondary }
+          ),
+        ],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 200, after: 80 },
+        bidirectional: true,
+        shading: { type: ShadingType.SOLID, color: COLORS.light, fill: COLORS.light },
+      }),
+      new Paragraph({
+        children: [arabicText(`التعليمة: ${sec.instructions}`, { italics: true, size: 11, color: COLORS.text })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 60, after: 100 },
+        bidirectional: true,
+      }),
+    );
+    const questions = Array.isArray(sec.questions) ? sec.questions : [];
+    for (const q of questions) {
+      docSections.push(
+        new Paragraph({
+          children: [arabicText(`${q.number}. ${q.question}  (${q.points} ن)`, { bold: false, size: 12 })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 80, after: 40 },
+          bidirectional: true,
+        }),
+      );
+      if (Array.isArray(q.options) && q.options.length > 0) {
+        for (const opt of q.options) {
+          docSections.push(
+            new Paragraph({
+              children: [arabicText(`    ${opt}`, { size: 11 })],
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 20, after: 20 },
+              bidirectional: true,
+            }),
+          );
+        }
+      }
+      if (sec.sectionType === "open" || sec.sectionType === "integration") {
+        docSections.push(
+          new Paragraph({
+            children: [arabicText("الإجابة: ............................................................................", { size: 11, color: COLORS.lightGray })],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 40, after: 60 },
+            bidirectional: true,
+          }),
+        );
+      }
+    }
+  }
+
+  // ── الوضعية الإدماجية ────────────────────────────────────────────────────
+  const intSit = ev.integrationSituation;
+  if (intSit) {
+    docSections.push(
+      sectionTitle(`رابعاً — الوضعية الإدماجية (${intSit.points} ن)`),
+      new Paragraph({
+        children: [arabicText("السياق:", { bold: true, size: 12 })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 100, after: 40 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText(intSit.context, { size: 11 })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 40, after: 80 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText("المهمة:", { bold: true, size: 12 })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 60, after: 40 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText(intSit.task, { size: 11 })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 40, after: 80 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText("الإجابة: ............................................................................", { size: 11, color: COLORS.lightGray })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 40, after: 40 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText("        ............................................................................", { size: 11, color: COLORS.lightGray })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 20, after: 40 },
+        bidirectional: true,
+      }),
+    );
+  }
+
+  // ── مفتاح الإجابة (اختياري) ──────────────────────────────────────────────
+  if (data.includeAnswerKey) {
+    docSections.push(
+      new Paragraph({
+        children: [arabicText("═══════════════════════════════════════════════════════", { size: 10, color: COLORS.secondary })],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 300, after: 100 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText("مفتاح الإجابة — للمدرس/ة فقط", { bold: true, size: 16, color: COLORS.white })],
+        alignment: AlignmentType.CENTER,
+        shading: { type: ShadingType.SOLID, color: COLORS.green, fill: COLORS.green },
+        spacing: { before: 100, after: 150 },
+        bidirectional: true,
+      }),
+    );
+    for (const sec of evalSections) {
+      docSections.push(
+        new Paragraph({
+          children: [arabicText(`القسم ${sec.sectionNumber} — ${sec.sectionTitle}`, { bold: true, size: 12, color: COLORS.secondary })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 150, after: 60 },
+          bidirectional: true,
+        }),
+      );
+      const questions = Array.isArray(sec.questions) ? sec.questions : [];
+      for (const q of questions) {
+        docSections.push(
+          new Paragraph({
+            children: [arabicText(`${q.number}. الإجابة: ${q.answer}${q.justification ? ` — ${q.justification}` : ""}`, { size: 11 })],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 40, after: 40 },
+            bidirectional: true,
+          }),
+        );
+      }
+    }
+    if (intSit) {
+      docSections.push(
+        new Paragraph({
+          children: [arabicText("الوضعية الإدماجية — الإجابة المتوقعة:", { bold: true, size: 12, color: COLORS.secondary })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 150, after: 60 },
+          bidirectional: true,
+        }),
+        new Paragraph({
+          children: [arabicText(intSit.expectedAnswer, { size: 11 })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 40, after: 80 },
+          bidirectional: true,
+        }),
+      );
+    }
+    const criteria = Array.isArray(ev.evaluationCriteria) ? ev.evaluationCriteria : [];
+    if (criteria.length > 0) {
+      docSections.push(
+        new Paragraph({
+          children: [arabicText("معايير التقييم:", { bold: true, size: 12, color: COLORS.secondary })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 150, after: 60 },
+          bidirectional: true,
+        }),
+      );
+      for (const c of criteria) {
+        docSections.push(
+          new Paragraph({
+            children: [arabicText(`• ${c.criterion}: ${Array.isArray(c.indicators) ? c.indicators.join(" — ") : ""}`, { size: 11 })],
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 40, after: 40 },
+            bidirectional: true,
+          }),
+        );
+      }
+    }
+  }
+
+  // ── التذييل ───────────────────────────────────────────────────────────────
+  docSections.push(
+    new Paragraph({
+      children: [arabicText("🇹🇳 الجمهورية التونسية — Leader Academy — leaderacademy.school", { size: 9, color: COLORS.secondary, italics: true })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 300, after: 60 },
+      bidirectional: true,
+    }),
+  );
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: {
+              top: convertInchesToTwip(0.8),
+              right: convertInchesToTwip(0.8),
+              bottom: convertInchesToTwip(0.8),
+              left: convertInchesToTwip(0.8),
+            },
+          },
+        },
+        children: docSections,
+      },
+    ],
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: ARABIC_FONT,
+            size: 22,
+            color: COLORS.text,
+          },
+        },
+      },
+    },
+  });
+  return await Packer.toBuffer(doc);
+}
