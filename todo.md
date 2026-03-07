@@ -1263,3 +1263,24 @@
 - [x] إضافة endpoint exportAnnualPlanToWord في wordExporter.ts
 - [x] ربط الصفحة بالتنقل في App.tsx وإضافة زر في TeacherTools.tsx
 - [ ] حفظ نقطة التفتيش
+
+## Génération automatique de fiches de cours depuis le plan annuel
+- [ ] Analyser l'architecture existante (routers, wordExporter, AnnualPlanGenerator)
+- [ ] Ajouter endpoint generateLessonSheetFromPlan dans routers.ts
+- [ ] Construire la page LessonSheetFromPlan.tsx (sélection ligne du plan → génération → édition → export)
+- [ ] Intégrer la navigation depuis AnnualPlanGenerator et TeacherTools
+- [ ] Sauvegarder le checkpoint
+
+## توليد جذاذة تلقائية من المخطط السنوي — مكتمل
+- [x] تحليل البنية الموجودة (routers, wordExporter, AnnualPlanGenerator)
+- [x] التحقق من endpoint generateLessonSheetFromPlan الموجود في routers.ts (pedagogicalSheets)
+- [x] بناء صفحة LessonSheetFromPlan.tsx مع:
+  - [x] نموذج اختيار المادة والمستوى والثلاثي والفترة والهدف المميز
+  - [x] توليد الجذاذة بالذكاء الاصطناعي (استدعاء endpoint generateLessonSheetFromPlan)
+  - [x] عرض الجذاذة الكاملة (معطيات عامة، كفاية، أهداف، مراحل الحصة، استنتاج، تقييم)
+  - [x] وضع التعديل اليدوي للحقول
+  - [x] تصدير Word بقالب Leader Academy
+- [x] إضافة الاستيراد والمسار /lesson-sheet-from-plan في App.tsx
+- [x] إضافة زر "توليد جذاذة تلقائية" في TeacherTools.tsx (تبويب تخطيط الدروس)
+- [x] كتابة 12 اختباراً وحدوياً ناجحاً في lessonSheetFromPlan.test.ts
+- [ ] حفظ نقطة التفتيش

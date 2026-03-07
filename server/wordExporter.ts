@@ -103,6 +103,37 @@ function sectionTitle(text: string): Paragraph {
     bidirectional: true,
   });
 }
+function bodyParagraph(text: string, bold = false): Paragraph {
+  return new Paragraph({
+    children: [arabicText(String(text || "—"), { size: 11, bold })],
+    alignment: AlignmentType.RIGHT,
+    spacing: { before: 60, after: 60 },
+    bidirectional: true,
+  });
+}
+function twoColRow(label: string, value: string): TableRow {
+  return new TableRow({
+    children: [
+      new TableCell({
+        width: { size: 30, type: WidthType.PERCENTAGE },
+        shading: { type: ShadingType.SOLID, color: COLORS.light, fill: COLORS.light },
+        children: [new Paragraph({
+          children: [arabicText(label, { bold: true, size: 11, color: COLORS.primary })],
+          alignment: AlignmentType.RIGHT,
+          bidirectional: true,
+        })],
+      }),
+      new TableCell({
+        width: { size: 70, type: WidthType.PERCENTAGE },
+        children: [new Paragraph({
+          children: [arabicText(String(value || "—"), { size: 11 })],
+          alignment: AlignmentType.RIGHT,
+          bidirectional: true,
+        })],
+      }),
+    ],
+  });
+}
 
 function labeledRow(label: string, value: string): TableRow {
   return new TableRow({
@@ -467,6 +498,241 @@ export async function exportAnnualPlanToWord(data: AnnualPlanData): Promise<Buff
           run: {
             font: ARABIC_FONT,
             size: 20,
+            color: COLORS.text,
+          },
+        },
+      },
+    },
+  });
+
+  return await Packer.toBuffer(doc);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// exportLessonSheetToWord — جذاذة كاملة مولّدة من المخطط السنوي
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface LessonSheetInput {
+  sheet: Record<string, unknown>;
+  schoolName?: string;
+  teacherName?: string;
+  schoolYear?: string;
+}
+
+export async function exportLessonSheetToWord(data: LessonSheetInput): Promise<Buffer> {
+  const s = data.sheet as Record<string, unknown>;
+  const sections: (Paragraph | Table)[] = [];
+
+  // ── الترويسة ──────────────────────────────────────────────────────────────
+  sections.push(
+    new Paragraph({
+      children: [arabicText("الجمهورية التونسية — وزارة التربية", { bold: true, size: 11, color: COLORS.secondary })],
+      alignment: AlignmentType.CENTER,
+      bidirectional: true,
+    }),
+    new Paragraph({
+      children: [arabicText("المحرك البيداغوجي الذكي — Leader Academy", { bold: true, size: 14, color: COLORS.accent })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 80, after: 80 },
+      bidirectional: true,
+    }),
+    new Paragraph({
+      children: [arabicText(`جذاذة درس: ${String(s.lessonTitle || s.distinguishedObjective || "درس")}`, { bold: true, size: 20, color: COLORS.white })],
+      alignment: AlignmentType.CENTER,
+      shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary },
+      spacing: { before: 150, after: 150 },
+      bidirectional: true,
+    }),
+  );
+
+  // ── المعطيات العامة ────────────────────────────────────────────────────────
+  sections.push(sectionTitle("أولاً — المعطيات العامة"));
+  sections.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        twoColRow("المادة", String(s.subject || "")),
+        twoColRow("المستوى", String(s.level || "")),
+        twoColRow("الثلاثي", String(s.trimester || "")),
+        twoColRow("الفترة / الوحدة", String(s.period || "")),
+        twoColRow("المدة", String(s.duration || "45 دقيقة")),
+        twoColRow("المدرسة", data.schoolName || "—"),
+        twoColRow("المدرس/ة", data.teacherName || "—"),
+        twoColRow("السنة الدراسية", data.schoolYear || "2025-2026"),
+      ],
+    }),
+  );
+
+  // ── الكفاية والأهداف ───────────────────────────────────────────────────────
+  sections.push(sectionTitle("ثانياً — الكفاية والأهداف"));
+  sections.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        twoColRow("الكفاية الختامية", String(s.finalCompetency || "")),
+        twoColRow("الهدف المميز", String(s.distinguishedObjective || "")),
+      ],
+    }),
+  );
+
+  // الأهداف الإجرائية
+  const objectives = Array.isArray(s.proceduralObjectives) ? s.proceduralObjectives : [];
+  if (objectives.length > 0) {
+    sections.push(
+      new Paragraph({
+        children: [arabicText("الأهداف الإجرائية:", { bold: true, size: 12, color: COLORS.primary })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 150, after: 60 },
+        bidirectional: true,
+      }),
+    );
+    objectives.forEach((obj, i) => {
+      sections.push(bodyParagraph(`${i + 1}. ${String(obj)}`));
+    });
+  }
+
+  // الوسائل
+  const materials = Array.isArray(s.materials) ? s.materials : [];
+  if (materials.length > 0) {
+    sections.push(
+      new Paragraph({
+        children: [arabicText("الوسائل والأدوات: " + materials.join(" — "), { size: 11, italics: true })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 100, after: 100 },
+        bidirectional: true,
+      }),
+    );
+  }
+
+  // ── مراحل الحصة ───────────────────────────────────────────────────────────
+  sections.push(sectionTitle("ثالثاً — مراحل الحصة"));
+
+  // مرحلة الانطلاق
+  const launch = (s.launchPhase as Record<string, string>) || {};
+  sections.push(
+    new Paragraph({
+      children: [arabicText(`أ) وضعية الانطلاق / التهيئة (${launch.duration || "10 دقائق"})`, { bold: true, size: 12, color: COLORS.secondary })],
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 150, after: 60 },
+      bidirectional: true,
+    }),
+  );
+  if (launch.problemSituation) {
+    sections.push(
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          twoColRow("وضعية المشكلة", launch.problemSituation),
+          twoColRow("نشاط المعلم", launch.teacherActivity || ""),
+          twoColRow("نشاط المتعلم", launch.learnerActivity || ""),
+        ],
+      }),
+    );
+  }
+
+  // المرحلة الرئيسية
+  const main = (s.mainPhase as Record<string, unknown>) || {};
+  sections.push(
+    new Paragraph({
+      children: [arabicText(`ب) بناء التعلمات / النشاط الرئيسي (${String(main.duration || "25 دقائق")})`, { bold: true, size: 12, color: COLORS.secondary })],
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 150, after: 60 },
+      bidirectional: true,
+    }),
+  );
+  const steps = Array.isArray(main.steps) ? main.steps : [];
+  if (steps.length > 0) {
+    const stepRows = steps.map((step: unknown) => {
+      const st = step as Record<string, string>;
+      return new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 20, type: WidthType.PERCENTAGE },
+            shading: { type: ShadingType.SOLID, color: COLORS.light, fill: COLORS.light },
+            children: [new Paragraph({ children: [arabicText(st.step || "", { bold: true, size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+          }),
+          new TableCell({
+            width: { size: 40, type: WidthType.PERCENTAGE },
+            children: [new Paragraph({ children: [arabicText(st.teacherActivity || "", { size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+          }),
+          new TableCell({
+            width: { size: 40, type: WidthType.PERCENTAGE },
+            children: [new Paragraph({ children: [arabicText(st.learnerActivity || "", { size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
+          }),
+        ],
+      });
+    });
+    const headerRow = new TableRow({
+      children: [
+        new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("الخطوة", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
+        new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("نشاط المعلم", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
+        new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("نشاط المتعلم", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
+      ],
+      tableHeader: true,
+    });
+    sections.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...stepRows] }));
+  }
+
+  // مرحلة الاستثمار
+  const consol = (s.consolidationPhase as Record<string, string>) || {};
+  sections.push(
+    new Paragraph({
+      children: [arabicText(`ج) الاستثمار والتقييم (${consol.duration || "10 دقائق"})`, { bold: true, size: 12, color: COLORS.secondary })],
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 150, after: 60 },
+      bidirectional: true,
+    }),
+  );
+  if (consol.exercise) {
+    sections.push(bodyParagraph(`التمرين (${consol.exerciseType || "تقييمي"}): ${consol.exercise}`));
+  }
+
+  // ── الاستنتاج والتقييم الختامي ────────────────────────────────────────────
+  sections.push(sectionTitle("رابعاً — الاستنتاج والتقييم الختامي"));
+  sections.push(
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        twoColRow("الاستنتاج", String(s.conclusion || "")),
+        twoColRow("التقييم الختامي (وضعية إدماجية)", String(s.summativeEvaluation || "")),
+      ],
+    }),
+  );
+
+  // ── التذييل ───────────────────────────────────────────────────────────────
+  sections.push(
+    new Paragraph({ spacing: { before: 300 }, children: [] }),
+    new Paragraph({
+      children: [arabicText("🇹🇳 الجمهورية التونسية — Leader Academy — leaderacademy.school", { size: 9, color: COLORS.secondary, italics: true })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 200 },
+      bidirectional: true,
+    }),
+  );
+
+  // ── بناء الوثيقة ──────────────────────────────────────────────────────────
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: {
+              top: convertInchesToTwip(0.8),
+              right: convertInchesToTwip(0.8),
+              bottom: convertInchesToTwip(0.8),
+              left: convertInchesToTwip(0.8),
+            },
+          },
+        },
+        children: sections,
+      },
+    ],
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: ARABIC_FONT,
+            size: 22,
             color: COLORS.text,
           },
         },

@@ -27,6 +27,7 @@ import EvaluateFiche from "@/pages/EvaluateFiche";
 import SharedEvaluationView from "@/pages/SharedEvaluationView";
 import LessonHistory from "@/pages/LessonHistory";
 import AnnualPlanGenerator from "@/pages/AnnualPlanGenerator";
+import LessonSheetFromPlan from "@/pages/LessonSheetFromPlan";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
 
 function Router() {
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/shared-evaluation/:token" component={SharedEvaluationView} />
       <Route path="/lesson-history" component={LessonHistory} />
       <Route path="/annual-plan" component={AnnualPlanGenerator} />
+      <Route path="/lesson-sheet-from-plan" component={LessonSheetFromPlan} />
       {/* <Route path="/infographic-generator" component={InfographicGenerator} /> */}
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

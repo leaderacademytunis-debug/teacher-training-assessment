@@ -1613,6 +1613,158 @@ export const appRouter = router({
         const base64 = wordBuffer.toString("base64");
         return { base64, filename: `مخطط-سنوي-${input.subject}-${input.grade}.docx` };
       }),
+    generateLessonSheetFromPlan: protectedProcedure
+      .input(z.object({
+        subject: z.string(),
+        level: z.string(),
+        trimester: z.string(),
+        period: z.string(),
+        activity: z.string(),
+        competencyComponent: z.string(),
+        distinguishedObjective: z.string(),
+        content: z.string(),
+        sessionCount: z.number().optional(),
+        schoolName: z.string().optional(),
+        teacherName: z.string().optional(),
+        schoolYear: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { invokeLLM } = await import("./_core/llm");
+
+        const systemPrompt = `أنت المحرك البيداغوجي لمنصة Leader Academy — متفقد تونسي خبير في إعداد الجذاذات وفق البرامج الرسمية التونسية 2026 والمقاربة بالكفايات (APC).
+
+مهمتك: توليد جذاذة كاملة ومفصّلة بناءً على المعطيات المستخرجة من المخطط السنوي.
+
+الهيكل الإلزامي للجذاذة:
+1. المعطيات العامة (المادة، المستوى، الثلاثي، الفترة، عنوان الدرس، المدة، المرجع)
+2. الكفاية الختامية
+3. الهدف المميز
+4. الأهداف الإجرائية (3 إلى 5 أهداف قابلة للقياس بأفعال: يُعرِّف، يُصنِّف، يُطبِّق...)
+5. الوسائل والأدوات (كتاب مدرسي، سبورة، صور، تجارب...)
+6. مراحل الحصة:
+   أ) وضعية الانطلاق / التهيئة (5-10 دقائق): وضعية مشكلة تونسية واقعية ومحفزة
+   ب) بناء التعلمات / النشاط الرئيسي (20-25 دقائق): أنشطة المعلم وأنشطة المتعلم في جدول
+   ج) الاستثمار والتقييم (10 دقائق): تمرين تقييمي سريع (صواب/خطأ أو ملء فراغات)
+7. الاستنتاج (جملة واحدة يصيغها المتعلم)
+8. التقييم الختامي (سؤال وضعية إدماجية قصيرة)
+
+قواعد ملزمة:
+- الوضعية المشكلة يجب أن تكون من البيئة التونسية (مقرونة، زيتون، واحات توزر، منارة سيدي بوسعيد...)
+- استخدم المصطلحات البيداغوجية التونسية الرسمية حصراً
+- وزّع المهام بين المعلم والمتعلم بوضوح
+- اقترح وسائل بيداغوجية واقعية ومتاحة في المدارس التونسية
+- النبرة: مهنية، مختصرة، جاهزة للاستخدام المباشر في القسم
+
+المخرج النهائي: جذاذة كاملة بالعربية الفصحى التربوية، منظمة في JSON بالمفاتيح التالية:
+{
+  "lessonTitle": "عنوان الدرس",
+  "subject": "المادة",
+  "level": "المستوى",
+  "trimester": "الثلاثي",
+  "period": "الفترة",
+  "duration": "المدة بالدقائق",
+  "finalCompetency": "الكفاية الختامية",
+  "distinguishedObjective": "الهدف المميز",
+  "proceduralObjectives": ["هدف 1", "هدف 2", "هدف 3"],
+  "materials": ["وسيلة 1", "وسيلة 2"],
+  "launchPhase": {
+    "duration": "10 دقائق",
+    "problemSituation": "وضعية المشكلة",
+    "teacherActivity": "نشاط المعلم",
+    "learnerActivity": "نشاط المتعلم"
+  },
+  "mainPhase": {
+    "duration": "25 دقائق",
+    "steps": [
+      {"step": "الخطوة 1", "teacherActivity": "...", "learnerActivity": "..."},
+      {"step": "الخطوة 2", "teacherActivity": "...", "learnerActivity": "..."}
+    ]
+  },
+  "consolidationPhase": {
+    "duration": "10 دقائق",
+    "exercise": "التمرين التقييمي",
+    "exerciseType": "صواب/خطأ أو ملء فراغات"
+  },
+  "conclusion": "الاستنتاج",
+  "summativeEvaluation": "سؤال الوضعية الإدماجية"
+}`;
+
+        const userMessage = `أعدّ جذاذة كاملة للدرس التالي:
+- المادة: ${input.subject}
+- المستوى: ${input.level}
+- الثلاثي: ${input.trimester}
+- الفترة: ${input.period}
+- النشاط: ${input.activity}
+- مكوّن الكفاية: ${input.competencyComponent}
+- الهدف المميز: ${input.distinguishedObjective}
+- المحتوى: ${input.content}
+- عدد الحصص: ${input.sessionCount || 1}
+${input.schoolName ? `- المدرسة: ${input.schoolName}` : ''}
+${input.teacherName ? `- المدرس/ة: ${input.teacherName}` : ''}
+${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
+
+قدّم الجذاذة الكاملة بتنسيق JSON فقط، دون أي نص إضافي خارج الـ JSON.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMessage },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "lesson_sheet",
+              strict: false,
+              schema: {
+                type: "object",
+                properties: {
+                  lessonTitle: { type: "string" },
+                  subject: { type: "string" },
+                  level: { type: "string" },
+                  trimester: { type: "string" },
+                  period: { type: "string" },
+                  duration: { type: "string" },
+                  finalCompetency: { type: "string" },
+                  distinguishedObjective: { type: "string" },
+                  proceduralObjectives: { type: "array", items: { type: "string" } },
+                  materials: { type: "array", items: { type: "string" } },
+                  launchPhase: { type: "object" },
+                  mainPhase: { type: "object" },
+                  consolidationPhase: { type: "object" },
+                  conclusion: { type: "string" },
+                  summativeEvaluation: { type: "string" },
+                },
+                additionalProperties: true,
+              },
+            },
+          },
+        });
+
+        const rawContent = response.choices[0].message.content;
+        let sheetData: Record<string, unknown>;
+        try {
+          sheetData = typeof rawContent === "string" ? JSON.parse(rawContent) : rawContent;
+        } catch {
+          sheetData = { lessonTitle: input.distinguishedObjective, rawContent };
+        }
+
+        return { success: true, sheet: sheetData };
+      }),
+
+    exportLessonSheetToWord: protectedProcedure
+      .input(z.object({
+        sheet: z.record(z.string(), z.unknown()),
+        schoolName: z.string().optional(),
+        teacherName: z.string().optional(),
+        schoolYear: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportLessonSheetToWord } = await import("./wordExporter");
+        const wordBuffer = await exportLessonSheetToWord(input);
+        const base64 = wordBuffer.toString("base64");
+        return { base64, filename: `جذاذة-${(input.sheet as Record<string, string>).lessonTitle || "درس"}.docx` };
+      }),
+
 
     saveAiSuggestion: protectedProcedure
       .input(z.object({
