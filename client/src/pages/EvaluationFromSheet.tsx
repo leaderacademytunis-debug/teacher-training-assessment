@@ -13,40 +13,37 @@ import { Switch } from "@/components/ui/switch";
 import {
   Loader2, FileText, Download, Wand2, ChevronRight,
   ClipboardCheck, Target, BookOpen, CheckCircle2, Edit3,
-  ListChecks, AlertCircle, RotateCcw
+  ListChecks, AlertCircle, RotateCcw, Grid3X3
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface EvaluationQuestion {
-  number: number;
-  question: string;
-  options?: string[];
+// ─── Types SC2M223 ────────────────────────────────────────────────────────────
+interface Instruction {
+  instructionNumber: number;
+  instructionText: string;
+  criterionCode?: string;
   points: number;
-  answer: string;
-  justification?: string;
+  items?: string[];
+  tableHeaders?: string[];
+  answer?: string;
 }
 
-interface EvaluationSection {
-  sectionNumber: number;
-  sectionTitle: string;
-  sectionType: string;
-  points: number;
-  instructions: string;
-  questions: EvaluationQuestion[];
+interface Support {
+  supportNumber: number;
+  supportTitle: string;
+  supportText?: string;
+  instructions: Instruction[];
 }
 
-interface IntegrationSituation {
-  context: string;
-  task: string;
-  points: number;
-  expectedAnswer: string;
+interface ScoringLevel {
+  levelCode: string;
+  description: string;
 }
 
-interface EvaluationCriterion {
-  criterion: string;
-  indicators: string[];
+interface ScoringGrid {
+  criteria: string[];
+  levels: ScoringLevel[];
 }
 
 interface Evaluation {
@@ -59,38 +56,23 @@ interface Evaluation {
   totalPoints?: number;
   learningObjective?: string;
   competency?: string;
-  sections?: EvaluationSection[];
-  integrationSituation?: IntegrationSituation;
-  evaluationCriteria?: EvaluationCriterion[];
+  supports?: Support[];
+  scoringGrid?: ScoringGrid;
+  // Legacy fields (backward compat)
+  sections?: unknown[];
+  integrationSituation?: unknown;
+  evaluationCriteria?: unknown[];
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const SECTION_TYPE_LABELS: Record<string, string> = {
-  true_false: "صواب / خطأ",
-  fill_blank: "ملء فراغات",
-  mcq: "اختيار من متعدد",
-  open: "أسئلة مفتوحة",
-  integration: "وضعية إدماجية",
-};
-
-const SECTION_TYPE_COLORS: Record<string, string> = {
-  true_false: "bg-blue-100 text-blue-700",
-  fill_blank: "bg-purple-100 text-purple-700",
-  mcq: "bg-amber-100 text-amber-700",
-  open: "bg-green-100 text-green-700",
-  integration: "bg-rose-100 text-rose-700",
-};
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function EvaluationFromSheet() {
   const [, navigate] = useLocation();
 
-  // Récupérer la fiche depuis sessionStorage (passée depuis LessonSheetFromPlan)
   const [sheet, setSheet] = useState<Record<string, unknown> | null>(null);
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [editedEvaluation, setEditedEvaluation] = useState<Evaluation | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [showAnswerKey, setShowAnswerKey] = useState(true);
+  const [showAnswerKey, setShowAnswerKey] = useState(false);
 
   // Paramètres de génération
   const [evaluationType, setEvaluationType] = useState<"formative" | "summative" | "diagnostic">("formative");
@@ -177,7 +159,7 @@ export default function EvaluationFromSheet() {
           <Separator orientation="vertical" className="h-5" />
           <div className="flex items-center gap-2">
             <ClipboardCheck className="w-5 h-5 text-green-600" />
-            <h1 className="text-lg font-bold text-gray-800">توليد ورقة التقييم</h1>
+            <h1 className="text-lg font-bold text-gray-800">توليد ورقة التقييم — قالب SC2M223</h1>
           </div>
           {sheet && (
             <Badge variant="outline" className="mr-auto border-green-300 text-green-700 text-xs">
@@ -242,7 +224,7 @@ export default function EvaluationFromSheet() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2 text-gray-700">
               <Target className="w-5 h-5 text-green-600" />
-              إعدادات ورقة التقييم
+              إعدادات ورقة التقييم (SC2M223)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -262,9 +244,9 @@ export default function EvaluationFromSheet() {
                 </Select>
               </div>
 
-              {/* عدد الأسئلة */}
+              {/* عدد التعليمات */}
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-gray-700">عدد الأسئلة ({questionCount})</Label>
+                <Label className="text-sm font-medium text-gray-700">عدد التعليمات ({questionCount})</Label>
                 <input
                   type="range"
                   min={3}
@@ -274,35 +256,30 @@ export default function EvaluationFromSheet() {
                   className="w-full accent-green-600"
                 />
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>3</span>
-                  <span>15</span>
+                  <span>3</span><span>15</span>
                 </div>
               </div>
 
-              {/* مفتاح الإجابة */}
+              {/* السنة الدراسية */}
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-gray-700">مفتاح الإجابة</Label>
-                <div className="flex items-center gap-3 pt-2">
-                  <Switch
-                    checked={includeAnswerKey}
-                    onCheckedChange={setIncludeAnswerKey}
-                    className="data-[state=checked]:bg-green-600"
-                  />
-                  <span className="text-sm text-gray-600">
-                    {includeAnswerKey ? "مضمّن في الملف" : "غير مضمّن"}
-                  </span>
-                </div>
+                <Label className="text-sm font-medium text-gray-700">السنة الدراسية</Label>
+                <Input
+                  value={schoolYear}
+                  onChange={(e) => setSchoolYear(e.target.value)}
+                  placeholder="2025-2026"
+                  className="border-gray-300"
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-gray-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-gray-700">اسم المدرسة (اختياري)</Label>
                 <Input
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
-                  placeholder="مدرسة ابتدائية..."
-                  className="border-gray-300 text-sm"
+                  placeholder="مثال: المدرسة الابتدائية ..."
+                  className="border-gray-300"
                 />
               </div>
               <div className="space-y-1.5">
@@ -310,25 +287,27 @@ export default function EvaluationFromSheet() {
                 <Input
                   value={teacherName}
                   onChange={(e) => setTeacherName(e.target.value)}
-                  placeholder="الأستاذ/ة..."
-                  className="border-gray-300 text-sm"
+                  placeholder="مثال: أ. محمد ..."
+                  className="border-gray-300"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-gray-700">السنة الدراسية</Label>
-                <Input
-                  value={schoolYear}
-                  onChange={(e) => setSchoolYear(e.target.value)}
-                  placeholder="2025-2026"
-                  className="border-gray-300 text-sm"
-                />
-              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <Switch
+                id="includeAnswerKey"
+                checked={includeAnswerKey}
+                onCheckedChange={setIncludeAnswerKey}
+              />
+              <Label htmlFor="includeAnswerKey" className="text-sm text-gray-700 cursor-pointer">
+                تضمين مفتاح الإجابة في ملف Word
+              </Label>
             </div>
 
             <Button
               onClick={handleGenerate}
               disabled={generateMutation.isPending || !sheet}
-              className="w-full bg-green-700 hover:bg-green-800 text-white py-3 text-base font-bold shadow-md"
+              className="w-full bg-[#1E8449] hover:bg-[#196F3D] text-white font-bold py-3 text-base shadow-md"
             >
               {generateMutation.isPending ? (
                 <>
@@ -338,7 +317,7 @@ export default function EvaluationFromSheet() {
               ) : (
                 <>
                   <Wand2 className="w-5 h-5 ml-2" />
-                  ✨ توليد ورقة التقييم بالذكاء الاصطناعي
+                  توليد ورقة التقييم بالذكاء الاصطناعي
                 </>
               )}
             </Button>
@@ -392,50 +371,68 @@ export default function EvaluationFromSheet() {
               </div>
             </div>
 
-            {/* ترويسة ورقة التقييم */}
-            <Card className="border-green-300 shadow-sm overflow-hidden">
-              <div className="bg-[#1E8449] text-white px-6 py-4 text-center">
-                <p className="text-xs opacity-80 mb-1">الجمهورية التونسية — وزارة التربية</p>
-                <p className="text-xs opacity-70 mb-2">المحرك البيداغوجي الذكي — Leader Academy</p>
-                {editMode ? (
-                  <Input
-                    value={editedEvaluation?.evaluationTitle || ""}
-                    onChange={(e) => setEditedEvaluation(prev => prev ? { ...prev, evaluationTitle: e.target.value } : prev)}
-                    className="text-center font-bold text-lg bg-white/20 border-white/40 text-white placeholder:text-white/60"
-                  />
-                ) : (
-                  <h2 className="text-xl font-bold">{displayEval.evaluationTitle || "ورقة تقييم"}</h2>
-                )}
+            {/* ورقة التقييم — محاكاة قالب SC2M223 */}
+            <Card className="border-green-300 shadow-md overflow-hidden">
+              {/* ترويسة مزدوجة SC2M223 */}
+              <div className="bg-[#1E8449]">
+                {/* الصف الأول: الجمهورية التونسية */}
+                <div className="flex items-center justify-between px-6 py-2 border-b border-white/20">
+                  <div className="text-white text-xs text-right">
+                    <p className="font-bold">الجمهورية التونسية</p>
+                    <p className="opacity-80">وزارة التربية</p>
+                  </div>
+                  <div className="text-white text-center text-xs opacity-70">
+                    <p>Leader Academy</p>
+                    <p>leaderacademy.school</p>
+                  </div>
+                  <div className="text-white text-xs text-left">
+                    <p className="font-bold">{schoolName || "اسم المدرسة"}</p>
+                    <p className="opacity-80">السنة الدراسية: {schoolYear}</p>
+                  </div>
+                </div>
+                {/* الصف الثاني: عنوان الورقة */}
+                <div className="px-6 py-3 text-center">
+                  {editMode ? (
+                    <Input
+                      value={editedEvaluation?.evaluationTitle || ""}
+                      onChange={(e) => setEditedEvaluation(prev => prev ? { ...prev, evaluationTitle: e.target.value } : prev)}
+                      className="text-center font-bold text-lg bg-white/20 border-white/40 text-white placeholder:text-white/60"
+                    />
+                  ) : (
+                    <h2 className="text-xl font-bold text-white">{displayEval.evaluationTitle || "ورقة تقييم"}</h2>
+                  )}
+                </div>
               </div>
 
               <CardContent className="pt-4 pb-4">
-                {/* بيانات عامة */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                  {[
-                    { label: "المادة", key: "subject" },
-                    { label: "المستوى", key: "level" },
-                    { label: "الثلاثي", key: "trimester" },
-                    { label: "المدة", key: "duration" },
-                  ].map(({ label, key }) => (
-                    <div key={key} className="bg-green-50 rounded-lg p-2.5 text-center border border-green-100">
-                      <p className="text-xs text-green-600 font-medium mb-0.5">{label}</p>
-                      {editMode ? (
-                        <Input
-                          value={String((editedEvaluation as Record<string, unknown>)?.[key] || "")}
-                          onChange={(e) => setEditedEvaluation(prev => prev ? { ...prev, [key]: e.target.value } : prev)}
-                          className="text-center text-sm h-7 border-green-200"
-                        />
-                      ) : (
-                        <p className="text-sm font-bold text-gray-800">
-                          {String((displayEval as Record<string, unknown>)?.[key] ?? "—")}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                {/* بيانات التلميذ — جدول SC2M223 */}
+                <div className="border border-gray-300 rounded-lg overflow-hidden mb-4">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      <tr className="border-b border-gray-200">
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs w-1/4 border-l border-gray-200">الاسم واللقب</td>
+                        <td className="px-3 py-2 text-gray-400 text-xs">.....................................................</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs w-1/4 border-l border-gray-200">الرقم</td>
+                        <td className="px-3 py-2 text-gray-400 text-xs">.............</td>
+                      </tr>
+                      <tr className="border-b border-gray-200">
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">المادة</td>
+                        <td className="px-3 py-2 text-xs font-medium">{displayEval.subject || "—"}</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">المستوى</td>
+                        <td className="px-3 py-2 text-xs font-medium">{displayEval.level || "—"}</td>
+                      </tr>
+                      <tr>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">الثلاثي</td>
+                        <td className="px-3 py-2 text-xs font-medium">{displayEval.trimester || "—"}</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">المدة</td>
+                        <td className="px-3 py-2 text-xs font-medium">{displayEval.duration || "—"}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* الكفاية والهدف */}
-                <div className="space-y-2 mb-4 p-3 bg-teal-50 rounded-lg border border-teal-100">
+                <div className="space-y-2 mb-5 p-3 bg-teal-50 rounded-lg border border-teal-100">
                   <div className="flex gap-2 items-start">
                     <span className="text-xs font-bold text-teal-700 shrink-0 mt-0.5">الكفاية المقيّمة:</span>
                     {editMode ? (
@@ -464,68 +461,95 @@ export default function EvaluationFromSheet() {
 
                 <Separator className="my-4" />
 
-                {/* أقسام الأسئلة */}
-                <div className="space-y-5">
-                  {(displayEval.sections || []).map((sec, sIdx) => (
+                {/* السندات والتعليمات — هيكل SC2M223 */}
+                <div className="space-y-6">
+                  {(displayEval.supports || []).map((sup, sIdx) => (
                     <div key={sIdx} className="border border-gray-200 rounded-lg overflow-hidden">
-                      {/* رأس القسم */}
-                      <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-gray-800 text-sm">
-                            القسم {sec.sectionNumber} — {sec.sectionTitle}
-                          </span>
-                          <Badge className={`text-xs ${SECTION_TYPE_COLORS[sec.sectionType] || "bg-gray-100 text-gray-600"}`}>
-                            {SECTION_TYPE_LABELS[sec.sectionType] || sec.sectionType}
-                          </Badge>
-                        </div>
-                        <Badge variant="outline" className="text-xs border-gray-300">
-                          {sec.points} نقطة
-                        </Badge>
+                      {/* رأس السند */}
+                      <div className="bg-[#1E8449] text-white px-4 py-2.5">
+                        <span className="font-bold text-sm">
+                          السند {sup.supportNumber}: {sup.supportTitle}
+                        </span>
                       </div>
 
-                      <div className="px-4 py-3 space-y-3">
-                        {/* التعليمة */}
-                        <p className="text-xs text-gray-500 italic border-r-2 border-green-400 pr-2">
-                          {sec.instructions}
-                        </p>
+                      {/* نص السند */}
+                      {sup.supportText && (
+                        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 border-r-4 border-r-[#1E8449]">
+                          <p className="text-sm text-gray-700 italic leading-relaxed">{sup.supportText}</p>
+                        </div>
+                      )}
 
-                        {/* الأسئلة */}
-                        {sec.questions.map((q, qIdx) => (
-                          <div key={qIdx} className="space-y-1.5">
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs font-bold text-green-700 shrink-0 mt-0.5 w-5">
-                                {q.number}.
-                              </span>
+                      {/* التعليمات */}
+                      <div className="divide-y divide-gray-100">
+                        {(sup.instructions || []).map((inst, iIdx) => (
+                          <div key={iIdx} className="px-4 py-3">
+                            {/* صف التعليمة مع مربع النقطة */}
+                            <div className="flex items-start gap-3 mb-2">
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-800">{q.question}</p>
-                                {/* خيارات MCQ */}
-                                {Array.isArray(q.options) && q.options.length > 0 && (
-                                  <div className="mt-1.5 grid grid-cols-2 gap-1">
-                                    {q.options.map((opt, oIdx) => (
-                                      <div key={oIdx} className="text-xs text-gray-600 bg-gray-50 rounded px-2 py-1 border border-gray-100">
-                                        {opt}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {/* مساحة الإجابة للأسئلة المفتوحة */}
-                                {(sec.sectionType === "open" || sec.sectionType === "fill_blank") && (
-                                  <div className="mt-1.5 border-b border-dashed border-gray-300 h-6" />
-                                )}
-                                {/* مفتاح الإجابة */}
-                                {showAnswerKey && includeAnswerKey && (
-                                  <div className="mt-1.5 flex items-start gap-1.5 bg-green-50 rounded px-2 py-1 border border-green-100">
-                                    <CheckCircle2 className="w-3 h-3 text-green-600 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-green-700">
-                                      <span className="font-medium">الإجابة: </span>
-                                      {q.answer}
-                                      {q.justification && <span className="text-green-600"> — {q.justification}</span>}
-                                    </p>
-                                  </div>
-                                )}
+                                <p className="text-sm font-semibold text-gray-800">
+                                  <span className="text-[#1E8449] font-bold ml-1">تعليمة {inst.instructionNumber}:</span>
+                                  {inst.instructionText}
+                                </p>
                               </div>
-                              <span className="text-xs text-gray-400 shrink-0">({q.points}ن)</span>
+                              {/* مربع النقطة والمعيار */}
+                              <div className="shrink-0 border border-[#1E8449] rounded px-2 py-1 text-center min-w-[60px]">
+                                {inst.criterionCode && (
+                                  <p className="text-xs font-bold text-[#1E8449]">{inst.criterionCode}</p>
+                                )}
+                                <p className="text-xs font-bold text-gray-700">{inst.points} ن</p>
+                              </div>
                             </div>
+
+                            {/* عناصر الإجابة */}
+                            {inst.tableHeaders && inst.tableHeaders.length > 0 ? (
+                              <div className="overflow-x-auto mt-2">
+                                <table className="w-full border border-gray-200 text-xs rounded">
+                                  <thead>
+                                    <tr>
+                                      {inst.tableHeaders.map((h, hIdx) => (
+                                        <th key={hIdx} className="bg-[#1E8449]/10 border border-gray-200 px-3 py-2 text-center font-bold text-[#1E8449]">
+                                          {h}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      {inst.tableHeaders.map((_, hIdx) => (
+                                        <td key={hIdx} className="border border-gray-200 px-3 py-3 text-center text-gray-300">
+                                          .........
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : inst.items && inst.items.length > 0 ? (
+                              <div className="mt-2 space-y-1 pr-4">
+                                {inst.items.map((item, itemIdx) => (
+                                  <div key={itemIdx} className="flex items-center gap-2 text-sm text-gray-700">
+                                    <span className="w-4 h-4 border border-gray-400 rounded-sm shrink-0 inline-block" />
+                                    {item}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="mt-2 space-y-1">
+                                <div className="border-b border-dashed border-gray-300 h-6" />
+                                <div className="border-b border-dashed border-gray-300 h-6" />
+                              </div>
+                            )}
+
+                            {/* مفتاح الإجابة */}
+                            {showAnswerKey && inst.answer && (
+                              <div className="mt-2 flex items-start gap-1.5 bg-green-50 rounded px-2 py-1.5 border border-green-100">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0 mt-0.5" />
+                                <p className="text-xs text-green-700">
+                                  <span className="font-bold">الإجابة: </span>
+                                  {inst.answer}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -533,79 +557,45 @@ export default function EvaluationFromSheet() {
                   ))}
                 </div>
 
-                {/* الوضعية الإدماجية */}
-                {displayEval.integrationSituation && (
+                {/* شبكة التصحيح SC2M223 */}
+                {displayEval.scoringGrid && (displayEval.scoringGrid.criteria?.length ?? 0) > 0 && (
                   <>
-                    <Separator className="my-4" />
-                    <div className="border border-rose-200 rounded-lg overflow-hidden">
-                      <div className="bg-rose-50 border-b border-rose-200 px-4 py-2.5 flex items-center justify-between">
-                        <span className="font-bold text-rose-800 text-sm">الوضعية الإدماجية</span>
-                        <Badge className="bg-rose-100 text-rose-700 text-xs">
-                          {displayEval.integrationSituation.points} نقطة
-                        </Badge>
+                    <Separator className="my-5" />
+                    <div className="border border-[#1E8449] rounded-lg overflow-hidden">
+                      <div className="bg-[#1E8449] text-white px-4 py-2.5 flex items-center gap-2">
+                        <Grid3X3 className="w-4 h-4" />
+                        <span className="font-bold text-sm">شبكة التصحيح</span>
                       </div>
-                      <div className="px-4 py-3 space-y-3">
-                        <div>
-                          <p className="text-xs font-bold text-rose-700 mb-1">السياق:</p>
-                          {editMode ? (
-                            <Textarea
-                              value={editedEvaluation?.integrationSituation?.context || ""}
-                              onChange={(e) => setEditedEvaluation(prev => prev ? {
-                                ...prev,
-                                integrationSituation: { ...prev.integrationSituation!, context: e.target.value }
-                              } : prev)}
-                              className="text-sm border-rose-200 min-h-[60px]"
-                            />
-                          ) : (
-                            <p className="text-sm text-gray-700 bg-rose-50/50 rounded p-2 border border-rose-100">
-                              {displayEval.integrationSituation.context}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs font-bold text-rose-700 mb-1">المهمة:</p>
-                          {editMode ? (
-                            <Textarea
-                              value={editedEvaluation?.integrationSituation?.task || ""}
-                              onChange={(e) => setEditedEvaluation(prev => prev ? {
-                                ...prev,
-                                integrationSituation: { ...prev.integrationSituation!, task: e.target.value }
-                              } : prev)}
-                              className="text-sm border-rose-200 min-h-[50px]"
-                            />
-                          ) : (
-                            <p className="text-sm text-gray-700">{displayEval.integrationSituation.task}</p>
-                          )}
-                        </div>
-                        <div className="border-b border-dashed border-gray-300 h-8" />
-                        <div className="border-b border-dashed border-gray-300 h-8" />
-                        {showAnswerKey && includeAnswerKey && (
-                          <div className="bg-green-50 rounded p-2 border border-green-100">
-                            <p className="text-xs font-bold text-green-700 mb-1">الإجابة المتوقعة:</p>
-                            <p className="text-sm text-green-800">{displayEval.integrationSituation.expectedAnswer}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* معايير التقييم */}
-                {displayEval.evaluationCriteria && displayEval.evaluationCriteria.length > 0 && showAnswerKey && (
-                  <>
-                    <Separator className="my-4" />
-                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                      <p className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-1.5">
-                        <ListChecks className="w-4 h-4" />
-                        معايير التقييم
-                      </p>
-                      <div className="space-y-2">
-                        {displayEval.evaluationCriteria.map((c, cIdx) => (
-                          <div key={cIdx} className="text-xs">
-                            <span className="font-semibold text-blue-700">• {c.criterion}: </span>
-                            <span className="text-blue-600">{Array.isArray(c.indicators) ? c.indicators.join(" — ") : ""}</span>
-                          </div>
-                        ))}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr>
+                              <th className="bg-[#1E8449]/10 border border-gray-200 px-3 py-2 text-right font-bold text-[#1E8449] w-1/3">
+                                مستوى الأداء
+                              </th>
+                              {displayEval.scoringGrid.criteria.map((c, cIdx) => (
+                                <th key={cIdx} className="bg-[#1E8449]/10 border border-gray-200 px-3 py-2 text-center font-bold text-[#1E8449]">
+                                  {c}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(displayEval.scoringGrid.levels || []).map((lv, lIdx) => (
+                              <tr key={lIdx} className={lIdx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                                <td className="border border-gray-200 px-3 py-3">
+                                  <p className="font-bold text-[#1E8449] text-sm">{lv.levelCode}</p>
+                                  <p className="text-gray-600 text-xs mt-0.5">{lv.description}</p>
+                                </td>
+                                {displayEval.scoringGrid!.criteria.map((_, cIdx) => (
+                                  <td key={cIdx} className="border border-gray-200 px-3 py-3 text-center">
+                                    <span className="w-5 h-5 border-2 border-gray-400 rounded-sm inline-block" />
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   </>
@@ -625,7 +615,7 @@ export default function EvaluationFromSheet() {
                 ) : (
                   <Download className="w-5 h-5 ml-2" />
                 )}
-                تحميل ورقة التقييم بصيغة Word • قالب Leader Academy
+                تحميل ورقة التقييم بصيغة Word • قالب SC2M223
               </Button>
               <Button
                 variant="outline"

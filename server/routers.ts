@@ -2076,58 +2076,17 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
           input.evaluationType === "formative" ? "تكويني" :
           input.evaluationType === "summative" ? "إجمالي" : "تشخيصي";
 
-        const systemPrompt = `أنت المحرك البيداغوجي لمنصة Leader Academy — متفقد تونسي خبير في إعداد أوراق التقييم وفق البرامج الرسمية التونسية 2026 والمقاربة بالكفايات (APC).
-مهمتك: توليد ورقة تقييم ${evalTypeLabel} كاملة ومتدرجة بناءً على الجذاذة المقدمة.
+        const systemPrompt = `أنت متفقد تونسي خبير في إعداد أوراق التقييم وفق النموذج الرسمي SC2M223 والبرامج التونسية 2026.
+مهمتك: توليد ورقة تقييم ${evalTypeLabel} كاملة بهيكل السندات والتعليمات وشبكة التصحيح مطابقاً للنموذج SC2M223.
 
-قواعد التقييم التونسي الرسمي:
-- تتضمن ورقة التقييم ترويسة رسمية (المادة، المستوى، الثلاثي، المدة، اسم المتعلم)
-- الأسئلة متدرجة: من الأسهل إلى الأصعب (تذكر → فهم → تطبيق → تحليل)
-- أنواع الأسئلة: صواب/خطأ، ملء فراغات، اختيار من متعدد، أسئلة مفتوحة، وضعية إدماجية
-- يجب أن تكون الوضعية الإدماجية مرتبطة بالبيئة التونسية (مقرونة، زيتون، واحات توزر، منارة سيدي بوسعيد...)
-- توزيع النقاط: مجموع 20 نقطة
-- مفتاح الإجابة: واضح ومفصّل
-- اللغة: العربية الفصحى التربوية التونسية
-
-المخرج النهائي: ورقة تقييم كاملة بتنسيق JSON بالمفاتيح التالية:
-{
-  "evaluationTitle": "عنوان ورقة التقييم",
-  "subject": "المادة",
-  "level": "المستوى",
-  "trimester": "الثلاثي",
-  "duration": "المدة بالدقائق",
-  "evaluationType": "نوع التقييم",
-  "totalPoints": 20,
-  "learningObjective": "الهدف المستهدف",
-  "competency": "الكفاية المقيّمة",
-  "sections": [
-    {
-      "sectionNumber": 1,
-      "sectionTitle": "عنوان القسم",
-      "sectionType": "true_false | fill_blank | mcq | open | integration",
-      "points": 4,
-      "instructions": "التعليمة",
-      "questions": [
-        {
-          "number": 1,
-          "question": "نص السؤال",
-          "options": ["أ) ...", "ب) ...", "ج) ...", "د) ..."],
-          "points": 1,
-          "answer": "الإجابة الصحيحة",
-          "justification": "التبرير (اختياري)"
-        }
-      ]
-    }
-  ],
-  "integrationSituation": {
-    "context": "السياق التونسي للوضعية",
-    "task": "المهمة المطلوبة",
-    "points": 4,
-    "expectedAnswer": "الإجابة المتوقعة"
-  },
-  "evaluationCriteria": [
-    {"criterion": "معيار 1", "indicators": ["مؤشر 1", "مؤشر 2"]}
-  ]
-}`;
+قواعد الهيكل الرسمي SC2M223:
+1. ترويسة رسمية بجدول مزدوج: [اسم ولقب] | [عنوان الامتحان] | [اسم المدرسة] في الصف الأول، [السنة] | [المادة] | [السنة الدراسية] في الصف الثاني
+2. سندات تعليمية (3-5 سندات): كل سند له عنوان ونص سردي بسياق تونسي محفز (زيتون، محمية، ضيعة، مدرسة، سوق تونسي...)
+3. تعليمة واحدة أو اثنتان بعد كل سند: نوع التعليمة من بين: تصنيف في جدول، إكمال جمل، شطب عنصر دخيل، ربط، تصحيح خطأ، اختيار من متعدد
+4. مربعات النقطة على الهامش الأيمن برمز المعيار: "مع 1 أ"، "مع 1 ب"، "مع 2 أ"، "مع 2 ب"، "مع 2 ج"، "مع 3"
+5. شبكة التصحيح في النهاية: جدول بأعمدة رموز المعايير وصفوف مستويات الأداء (---، +--، ++-، +++)
+6. توزيع النقاط: مجموع 20 نقطة
+7. اللغة: العربية الفصحى التربوية التونسية`;
 
         const userMessage = `أعدّ ورقة تقييم ${evalTypeLabel} للدرس التالي:
 - عنوان الدرس: ${String(s.lessonTitle || s.distinguishedObjective || "درس")}
@@ -2151,7 +2110,7 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
           response_format: {
             type: "json_schema",
             json_schema: {
-              name: "evaluation_sheet",
+              name: "evaluation_sc2m223",
               strict: true,
               schema: {
                 type: "object",
@@ -2165,62 +2124,59 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
                   totalPoints: { type: "number" },
                   learningObjective: { type: "string" },
                   competency: { type: "string" },
-                  sections: {
+                  supports: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        sectionNumber: { type: "number" },
-                        sectionTitle: { type: "string" },
-                        sectionType: { type: "string" },
-                        points: { type: "number" },
-                        instructions: { type: "string" },
-                        questions: {
+                        supportNumber: { type: "number" },
+                        supportTitle: { type: "string" },
+                        supportText: { type: "string" },
+                        instructions: {
                           type: "array",
                           items: {
                             type: "object",
                             properties: {
-                              number: { type: "number" },
-                              question: { type: "string" },
-                              options: { type: "array", items: { type: "string" } },
+                              instructionNumber: { type: "number" },
+                              instructionText: { type: "string" },
+                              instructionType: { type: "string" },
                               points: { type: "number" },
+                              criterionCode: { type: "string" },
+                              tableHeaders: { type: "array", items: { type: "string" } },
+                              items: { type: "array", items: { type: "string" } },
                               answer: { type: "string" },
-                              justification: { type: "string" },
                             },
-                            required: ["number", "question", "points", "answer", "options", "justification"],
+                            required: ["instructionNumber", "instructionText", "instructionType", "points", "criterionCode", "tableHeaders", "items", "answer"],
                             additionalProperties: false,
                           },
                         },
                       },
-                      required: ["sectionNumber", "sectionTitle", "sectionType", "points", "instructions", "questions"],
+                      required: ["supportNumber", "supportTitle", "supportText", "instructions"],
                       additionalProperties: false,
                     },
                   },
-                  integrationSituation: {
+                  scoringGrid: {
                     type: "object",
                     properties: {
-                      context: { type: "string" },
-                      task: { type: "string" },
-                      points: { type: "number" },
-                      expectedAnswer: { type: "string" },
+                      criteria: { type: "array", items: { type: "string" } },
+                      levels: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            levelCode: { type: "string" },
+                            description: { type: "string" },
+                          },
+                          required: ["levelCode", "description"],
+                          additionalProperties: false,
+                        },
+                      },
                     },
-                    required: ["context", "task", "points", "expectedAnswer"],
+                    required: ["criteria", "levels"],
                     additionalProperties: false,
                   },
-                  evaluationCriteria: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        criterion: { type: "string" },
-                        indicators: { type: "array", items: { type: "string" } },
-                      },
-                      required: ["criterion", "indicators"],
-                      additionalProperties: false,
-                    },
-                  },
                 },
-                required: ["evaluationTitle", "subject", "level", "trimester", "duration", "evaluationType", "totalPoints", "learningObjective", "competency", "sections", "integrationSituation", "evaluationCriteria"],
+                required: ["evaluationTitle", "subject", "level", "trimester", "duration", "evaluationType", "totalPoints", "learningObjective", "competency", "supports", "scoringGrid"],
                 additionalProperties: false,
               },
             },
@@ -2275,20 +2231,17 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
           input.evaluationType === "formative" ? "تكويني" :
           input.evaluationType === "summative" ? "إجمالي" : "تشخيصي";
 
-        const systemPrompt = `أنت المحرك البيداغوجي لمنصة Leader Academy — متفقد تونسي خبير في إعداد أوراق التقييم وفق البرامج الرسمية التونسية 2026 والمقاربة بالكفايات (APC).
+        const systemPrompt = `أنت متفقد تونسي خبير في إعداد أوراق التقييم وفق النموذج الرسمي SC2M223 والبرامج التونسية 2026.
+مهمتك: توليد ورقة تقييم ${evalTypeLabel} كاملة بهيكل السندات والتعليمات وشبكة التصحيح مطابقاً للنموذج SC2M223.
 
-مهمتك: توليد ورقة تقييم ${evalTypeLabel} كاملة ومتدرجة وفق النموذج الرسمي SC2M223 بناءً على معطيات صف المخطط السنوي.
-
-قواعد التقييم التونسي الرسمي (SC2M223):
-1. ترويسة رسمية: اسم المدرسة، الاسم واللقب، المادة، المستوى، الثلاثي، السنة الدراسية
-2. سندات تعليمية حقيقية (نصوص، صور، جداول) مرتبطة بالبيئة التونسية
-3. تعليمات متدرجة: من الأسهل إلى الأصعب (تذكر → فهم → تطبيق → تحليل)
-4. أنواع الأسئلة: صواب/خطأ، ملء فراغات، اختيار من متعدد، ربط، تصحيح خطأ، وضعية إدماجية
-5. الوضعية الإدماجية: سياق تونسي محفز (زيتون، مقرونة، واحات توزر، منارة سيدي بوسعيد...)
+قواعد الهيكل الرسمي SC2M223:
+1. ترويسة رسمية بجدول مزدوج: [اسم ولقب] | [عنوان الامتحان] | [اسم المدرسة] في الصف الأول، [السنة] | [المادة] | [السنة الدراسية] في الصف الثاني
+2. سندات تعليمية (3-5 سندات): كل سند له عنوان ونص سردي بسياق تونسي محفز (زيتون، محمية، ضيعة، مدرسة، سوق تونسي...)
+3. تعليمة واحدة أو اثنتان بعد كل سند: نوع التعليمة من بين: تصنيف في جدول، إكمال جمل، شطب عنصر دخيل، ربط، تصحيح خطأ، اختيار من متعدد
+4. مربعات النقطة على الهامش الأيمن برمز المعيار: "مع 1 أ"، "مع 1 ب"، "مع 2 أ"، "مع 2 ب"، "مع 2 ج"، "مع 3"
+5. شبكة التصحيح في النهاية: جدول بأعمدة رموز المعايير وصفوف مستويات الأداء (---، +--، ++-، +++)
 6. توزيع النقاط: مجموع 20 نقطة
-7. معايير التقييم: الملاءمة، الدقة، الانسجام، الإتقان (قاعدة 75%)
-8. شبكة التصحيح: واضحة ومفصلة لكل سؤال
-9. اللغة: العربية الفصحى التربوية التونسية`;
+7. اللغة: العربية الفصحى التربوية التونسية`;
 
         const userMessage = `أعدّ ورقة تقييم ${evalTypeLabel} للمعطيات التالية من المخطط السنوي:
 - المادة: ${input.subject}
@@ -2312,7 +2265,7 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
           response_format: {
             type: "json_schema",
             json_schema: {
-              name: "evaluation_from_plan_row",
+              name: "evaluation_sc2m223_plan",
               strict: true,
               schema: {
                 type: "object",
@@ -2326,62 +2279,59 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
                   totalPoints: { type: "number" },
                   learningObjective: { type: "string" },
                   competency: { type: "string" },
-                  sections: {
+                  supports: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        sectionNumber: { type: "number" },
-                        sectionTitle: { type: "string" },
-                        sectionType: { type: "string" },
-                        points: { type: "number" },
-                        instructions: { type: "string" },
-                        questions: {
+                        supportNumber: { type: "number" },
+                        supportTitle: { type: "string" },
+                        supportText: { type: "string" },
+                        instructions: {
                           type: "array",
                           items: {
                             type: "object",
                             properties: {
-                              number: { type: "number" },
-                              question: { type: "string" },
-                              options: { type: "array", items: { type: "string" } },
+                              instructionNumber: { type: "number" },
+                              instructionText: { type: "string" },
+                              instructionType: { type: "string" },
                               points: { type: "number" },
+                              criterionCode: { type: "string" },
+                              tableHeaders: { type: "array", items: { type: "string" } },
+                              items: { type: "array", items: { type: "string" } },
                               answer: { type: "string" },
-                              justification: { type: "string" },
                             },
-                            required: ["number", "question", "points", "answer", "options", "justification"],
+                            required: ["instructionNumber", "instructionText", "instructionType", "points", "criterionCode", "tableHeaders", "items", "answer"],
                             additionalProperties: false,
                           },
                         },
                       },
-                      required: ["sectionNumber", "sectionTitle", "sectionType", "points", "instructions", "questions"],
+                      required: ["supportNumber", "supportTitle", "supportText", "instructions"],
                       additionalProperties: false,
                     },
                   },
-                  integrationSituation: {
+                  scoringGrid: {
                     type: "object",
                     properties: {
-                      context: { type: "string" },
-                      task: { type: "string" },
-                      points: { type: "number" },
-                      expectedAnswer: { type: "string" },
+                      criteria: { type: "array", items: { type: "string" } },
+                      levels: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            levelCode: { type: "string" },
+                            description: { type: "string" },
+                          },
+                          required: ["levelCode", "description"],
+                          additionalProperties: false,
+                        },
+                      },
                     },
-                    required: ["context", "task", "points", "expectedAnswer"],
+                    required: ["criteria", "levels"],
                     additionalProperties: false,
                   },
-                  evaluationCriteria: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        criterion: { type: "string" },
-                        indicators: { type: "array", items: { type: "string" } },
-                      },
-                      required: ["criterion", "indicators"],
-                      additionalProperties: false,
-                    },
-                  },
                 },
-                required: ["evaluationTitle", "subject", "level", "trimester", "duration", "evaluationType", "totalPoints", "learningObjective", "competency", "sections", "integrationSituation", "evaluationCriteria"],
+                required: ["evaluationTitle", "subject", "level", "trimester", "duration", "evaluationType", "totalPoints", "learningObjective", "competency", "supports", "scoringGrid"],
                 additionalProperties: false,
               },
             },
