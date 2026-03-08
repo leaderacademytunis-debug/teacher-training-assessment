@@ -30,7 +30,7 @@ const MARGIN = 56; // ~15mm for more content space
 
 // ─── Markdown → HTML converter (Tunisian exam style) ───────────────────────────
 
-function mdToHtml(md: string): string {
+function mdToHtml(md: string, imageMap?: Map<string, string>): string {
   let html = md
     // Tables: detect lines with | separators
     .replace(/^(\|.+\|)\n(\|[-:| ]+\|)\n((?:\|.+\|\n?)+)/gm, (_match, headerRow: string, _sep: string, bodyRows: string) => {
@@ -66,9 +66,18 @@ function mdToHtml(md: string): string {
     .replace(/\(مع(\d+)\s*([أ-ي]?)\)/g, '<span style="display:inline-block;background:#e8e8e8;border:1px solid #aaa;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;margin:0 3px;">مع$1 $2</span>')
     // Dotted lines for answers (........)
     .replace(/(\.{5,})/g, '<span style="display:inline-block;border-bottom:1.5px dotted #333;min-width:150px;margin:0 4px;">&nbsp;</span>')
-    // Image placeholders [رسم: ...]
-    .replace(/\[رسم:\s*([^\]]*)\]/g, '<div style="border:2px dashed #888;padding:30px 20px;text-align:center;margin:14px auto;color:#555;border-radius:6px;background:#fafafa;max-width:80%;font-size:13px;"><span style="font-size:24px;display:block;margin-bottom:6px;">🎨</span>رسم توضيحي: $1</div>')
-    .replace(/\[رسم[^\]]*\]/g, '<div style="border:2px dashed #888;padding:30px 20px;text-align:center;margin:14px auto;color:#555;border-radius:6px;background:#fafafa;max-width:80%;font-size:13px;"><span style="font-size:24px;display:block;margin-bottom:6px;">🎨</span>$&</div>')
+    // Image placeholders [رسم: ...] - replace with actual images if available
+    .replace(/\[رسم:\s*([^\]]*)\]/g, (_match: string, desc: string) => {
+      if (imageMap) {
+        // Try to find a matching image by caption
+        const trimDesc = desc.trim();
+        const matchUrl = imageMap.get(trimDesc);
+        if (matchUrl) {
+          return `<div style="text-align:center;margin:14px auto;max-width:85%;"><img src="${matchUrl}" alt="${trimDesc}" style="max-width:280px;max-height:220px;border:1.5px solid #333;border-radius:4px;filter:grayscale(100%) contrast(1.2);" /><div style="font-size:10px;color:#666;margin-top:4px;">${trimDesc}</div></div>`;
+        }
+      }
+      return `<div style="border:2px dashed #888;padding:30px 20px;text-align:center;margin:14px auto;color:#555;border-radius:6px;background:#fafafa;max-width:80%;font-size:13px;"><span style="font-size:24px;display:block;margin-bottom:6px;">🎨</span>رسم توضيحي: ${desc}</div>`;
+    })
     .replace(/\[صورة[^\]]*\]/g, '<div style="border:2px dashed #888;padding:30px 20px;text-align:center;margin:14px auto;color:#555;border-radius:6px;background:#fafafa;max-width:80%;font-size:13px;"><span style="font-size:24px;display:block;margin-bottom:6px;">📷</span>$&</div>')
     // Unordered list
     .replace(/^[-•] (.+)$/gm, '<div style="padding-right:20px;margin:4px 0;position:relative;font-size:14px;"><span style="position:absolute;right:4px;">•</span> $1</div>')
@@ -98,8 +107,10 @@ function generatePrintHTML(opts: {
   grayscale: boolean;
   images: Array<{ url: string; caption?: string }>;
   type: string;
+  imageMap?: Map<string, string>;
 }): string {
-  const { pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type } = opts;
+  const { pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type, imageMap: imageMapForPrint } = opts;
+  const hasInlineImages = imageMapForPrint && imageMapForPrint.size > 0;
 
   const headerHTML = (pageNum: number) => `
     <div class="page-header">
@@ -140,7 +151,7 @@ function generatePrintHTML(opts: {
   const pagesHTML = pages.map((content, i) => `
     <div class="a4-page">
       ${headerHTML(i + 1)}
-      <div class="page-content ${grayscale ? "grayscale" : ""}">${mdToHtml(content)}${i === pages.length - 1 ? imagesHTML : ""}</div>
+      <div class="page-content ${grayscale ? "grayscale" : ""}">${mdToHtml(content, imageMapForPrint)}${i === pages.length - 1 && !hasInlineImages ? imagesHTML : ""}</div>
       <div class="page-footer">
         <span>صفحة ${i + 1} / ${pages.length}</span>
         <span class="footer-brand">Leader Academy</span>
@@ -305,6 +316,12 @@ export default function PrintPreview({
 
   const exportWordMutation = trpc.edugpt.exportExamWord.useMutation();
 
+  // Build image map from generated images (caption → url)
+  const imageMap = new Map<string, string>();
+  images.forEach(img => {
+    if (img.caption) imageMap.set(img.caption.trim(), img.url);
+  });
+
   // ── Paginate content ──
   useEffect(() => {
     const lines = content.split("\n");
@@ -401,7 +418,7 @@ export default function PrintPreview({
     try {
       const printHTML = generatePrintHTML({
         pages, title, subject, level, trimester, schoolName, schoolYear,
-        studentName, duration, totalScore, grayscale, images, type,
+        studentName, duration, totalScore, grayscale, images, type, imageMap,
       });
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
@@ -420,7 +437,7 @@ export default function PrintPreview({
     } finally {
       setTimeout(() => setIsExporting(null), 2000);
     }
-  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type]);
+  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type, imageMap]);
 
   // ── PDF export (opens print dialog with "Save as PDF") ──
   const handleExportPDF = useCallback(() => {
@@ -428,7 +445,7 @@ export default function PrintPreview({
     try {
       const printHTML = generatePrintHTML({
         pages, title, subject, level, trimester, schoolName, schoolYear,
-        studentName, duration, totalScore, grayscale: true, images, type,
+        studentName, duration, totalScore, grayscale: true, images, type, imageMap,
       });
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
@@ -448,7 +465,7 @@ export default function PrintPreview({
     } finally {
       setTimeout(() => setIsExporting(null), 2000);
     }
-  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, images, type]);
+  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, images, type, imageMap]);
 
   // ── Word export ──
   const handleExportWord = useCallback(async () => {
@@ -627,7 +644,7 @@ export default function PrintPreview({
                   filter: grayscale ? "grayscale(100%) contrast(1.15)" : "none",
                   transition: "filter 0.3s ease",
                 }}
-                dangerouslySetInnerHTML={{ __html: mdToHtml(pageContent) }}
+                dangerouslySetInnerHTML={{ __html: mdToHtml(pageContent, imageMap) }}
               />
 
               {/* Images on last page */}

@@ -112,7 +112,65 @@ function LibraryItem({
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Exam Content With Inline Images ─────────────────────────────────────────────────────────────
+
+function ExamContentWithImages({ content, images }: { content: string; images: Array<{ url: string; caption?: string }> }) {
+  // Build a map from caption to URL
+  const imageMap = new Map<string, string>();
+  images.forEach(img => {
+    if (img.caption) imageMap.set(img.caption.trim(), img.url);
+  });
+
+  // Split content by [رسم: ...] placeholders and render inline images
+  const parts: Array<{ type: 'text' | 'image'; text: string; url?: string }> = [];
+  const regex = /\[رسم:\s*([^\]]+)\]/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: 'text', text: content.slice(lastIndex, match.index) });
+    }
+    const desc = match[1].trim();
+    const url = imageMap.get(desc);
+    parts.push({ type: 'image', text: desc, url });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < content.length) {
+    parts.push({ type: 'text', text: content.slice(lastIndex) });
+  }
+
+  return (
+    <div>
+      {parts.map((part, i) => {
+        if (part.type === 'text') {
+          return <Streamdown key={i}>{part.text}</Streamdown>;
+        }
+        if (part.url) {
+          return (
+            <div key={i} className="my-3 text-center">
+              <img
+                src={part.url}
+                alt={part.text}
+                className="mx-auto max-w-[280px] max-h-[220px] rounded-lg border border-white/20"
+                style={{ filter: "grayscale(100%) contrast(1.2)" }}
+              />
+              <p className="text-[10px] text-white/50 mt-1">{part.text}</p>
+            </div>
+          );
+        }
+        // No image generated yet - show placeholder
+        return (
+          <div key={i} className="my-3 p-4 border-2 border-dashed border-white/20 rounded-lg text-center text-white/40">
+            <span className="text-2xl block mb-1">🎨</span>
+            <span className="text-xs">رسم توضيحي: {part.text}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────────────────────
 
 export default function ExamBuilder() {
   const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
@@ -571,7 +629,11 @@ export default function ExamBuilder() {
 
                   <TabsContent value="exam">
                     <div className="prose prose-invert prose-sm max-w-none text-white/90 leading-relaxed overflow-auto max-h-[600px] pr-1" style={{ direction: "rtl" }}>
-                      <Streamdown>{generatedExam}</Streamdown>
+                      {examImages.length > 0 ? (
+                        <ExamContentWithImages content={generatedExam} images={examImages} />
+                      ) : (
+                        <Streamdown>{generatedExam}</Streamdown>
+                      )}
                     </div>
                   </TabsContent>
 
