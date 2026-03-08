@@ -40,6 +40,7 @@ const NAV_LINKS = [
   { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment" },
   { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs" },
   { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About" },
+  { href: "/admin", labelAr: "لوحة التحكم", labelFr: "Admin", labelEn: "Admin" },
 ];
 
 const FEATURES = [

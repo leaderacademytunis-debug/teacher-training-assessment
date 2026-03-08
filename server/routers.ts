@@ -5,8 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations } from "../drizzle/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog } from "../drizzle/schema";
+import { eq, desc, and, sql, count, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
@@ -5012,6 +5012,361 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         });
         return { success: true, alreadySubscribed: false };
       }),
+  }),
+
+  // ===== ADMIN DASHBOARD =====
+  adminDashboard: router({
+    // --- Overview Analytics ---
+    getOverview: adminProcedure.query(async () => {
+      const database = (await getDb())!;
+      const { users } = await import("../drizzle/schema");
+      const totalUsers = await database.select({ count: count() }).from(users);
+      const pendingPayments = await database.select({ count: count() }).from(paymentRequests).where(eq(paymentRequests.status, "pending"));
+      const edugptSubs = await database.select({ count: count() }).from(servicePermissions).where(eq(servicePermissions.accessEdugpt, true));
+      const courseStudents = await database.select({ count: count() }).from(servicePermissions).where(or(eq(servicePermissions.accessCourseAi, true), eq(servicePermissions.accessCoursePedagogy, true)));
+      const recentActivity = await database.select({ count: count() }).from(aiActivityLog);
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const todayActivity = await database.select({ count: count() }).from(aiActivityLog).where(sql`${aiActivityLog.createdAt} >= ${todayStart}`);
+      return {
+        totalUsers: totalUsers[0]?.count ?? 0,
+        pendingPayments: pendingPayments[0]?.count ?? 0,
+        edugptSubscribers: edugptSubs[0]?.count ?? 0,
+        courseStudents: courseStudents[0]?.count ?? 0,
+        totalAiActivities: recentActivity[0]?.count ?? 0,
+        todayAiActivities: todayActivity[0]?.count ?? 0,
+      };
+    }),
+
+    // --- User Management ---
+    listUsers: adminProcedure.input(z.object({
+      page: z.number().default(1),
+      limit: z.number().default(20),
+      search: z.string().optional(),
+      role: z.string().optional(),
+    })).query(async ({ input }) => {
+      const database = (await getDb())!;
+      const { users } = await import("../drizzle/schema");
+      const offset = (input.page - 1) * input.limit;
+      let query = database.select().from(users);
+      // Count total
+      const totalResult = await database.select({ count: count() }).from(users);
+      const total = totalResult[0]?.count ?? 0;
+      // Get users with pagination
+      const userList = await database.select().from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(input.limit)
+        .offset(offset);
+      // Get permissions for all users
+      const perms = await database.select().from(servicePermissions);
+      const permMap = new Map(perms.map(p => [p.userId, p]));
+      const enrichedUsers = userList.map(u => ({
+        ...u,
+        permissions: permMap.get(u.id) || null,
+      }));
+      return { users: enrichedUsers, total, page: input.page, totalPages: Math.ceil(total / input.limit) };
+    }),
+
+    updateUserRole: adminProcedure.input(z.object({
+      userId: z.number(),
+      role: z.enum(["user", "admin", "trainer", "supervisor"]),
+    })).mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const { users } = await import("../drizzle/schema");
+      await database.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
+      return { success: true };
+    }),
+
+    updateUserPermissions: adminProcedure.input(z.object({
+      userId: z.number(),
+      accessEdugpt: z.boolean(),
+      accessCourseAi: z.boolean(),
+      accessCoursePedagogy: z.boolean(),
+      accessFullBundle: z.boolean(),
+      tier: z.enum(["free", "pro", "premium"]).default("free"),
+    })).mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const existing = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, input.userId)).limit(1);
+      if (existing.length > 0) {
+        await database.update(servicePermissions).set({
+          accessEdugpt: input.accessEdugpt,
+          accessCourseAi: input.accessCourseAi,
+          accessCoursePedagogy: input.accessCoursePedagogy,
+          accessFullBundle: input.accessFullBundle,
+          tier: input.tier,
+        }).where(eq(servicePermissions.userId, input.userId));
+      } else {
+        await database.insert(servicePermissions).values({
+          userId: input.userId,
+          accessEdugpt: input.accessEdugpt,
+          accessCourseAi: input.accessCourseAi,
+          accessCoursePedagogy: input.accessCoursePedagogy,
+          accessFullBundle: input.accessFullBundle,
+          tier: input.tier,
+        });
+      }
+      return { success: true };
+    }),
+
+    // --- Payment Requests ---
+    listPaymentRequests: adminProcedure.input(z.object({
+      status: z.enum(["pending", "approved", "rejected"]).optional(),
+      page: z.number().default(1),
+      limit: z.number().default(20),
+    })).query(async ({ input }) => {
+      const database = (await getDb())!;
+      const { users } = await import("../drizzle/schema");
+      const offset = (input.page - 1) * input.limit;
+      let conditions = [];
+      if (input.status) conditions.push(eq(paymentRequests.status, input.status));
+      const totalResult = await database.select({ count: count() }).from(paymentRequests);
+      const total = totalResult[0]?.count ?? 0;
+      const requests = await database.select({
+        id: paymentRequests.id,
+        userId: paymentRequests.userId,
+        requestedService: paymentRequests.requestedService,
+        receiptImageUrl: paymentRequests.receiptImageUrl,
+        amount: paymentRequests.amount,
+        currency: paymentRequests.currency,
+        paymentMethod: paymentRequests.paymentMethod,
+        status: paymentRequests.status,
+        userNote: paymentRequests.userNote,
+        adminNote: paymentRequests.adminNote,
+        rejectionReason: paymentRequests.rejectionReason,
+        createdAt: paymentRequests.createdAt,
+        userName: users.name,
+        userEmail: users.email,
+      }).from(paymentRequests)
+        .innerJoin(users, eq(paymentRequests.userId, users.id))
+        .orderBy(desc(paymentRequests.createdAt))
+        .limit(input.limit)
+        .offset(offset);
+      return { requests, total, page: input.page, totalPages: Math.ceil(total / input.limit) };
+    }),
+
+    approvePayment: adminProcedure.input(z.object({
+      requestId: z.number(),
+      accessEdugpt: z.boolean().default(false),
+      accessCourseAi: z.boolean().default(false),
+      accessCoursePedagogy: z.boolean().default(false),
+      accessFullBundle: z.boolean().default(false),
+      adminNote: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const { users, notifications } = await import("../drizzle/schema");
+      // Get the payment request
+      const [request] = await database.select().from(paymentRequests).where(eq(paymentRequests.id, input.requestId)).limit(1);
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "طلب الدفع غير موجود" });
+      if (request.status !== "pending") throw new TRPCError({ code: "BAD_REQUEST", message: "تم معالجة هذا الطلب مسبقاً" });
+      // Update payment request
+      await database.update(paymentRequests).set({
+        status: "approved",
+        reviewedBy: ctx.user.id,
+        reviewedAt: new Date(),
+        adminNote: input.adminNote,
+        activatedServices: {
+          access_edugpt: input.accessEdugpt,
+          access_course_ai: input.accessCourseAi,
+          access_course_pedagogy: input.accessCoursePedagogy,
+          access_full_bundle: input.accessFullBundle,
+        },
+      }).where(eq(paymentRequests.id, input.requestId));
+      // Update or create service permissions
+      const existing = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, request.userId)).limit(1);
+      const tier = input.accessFullBundle ? "premium" : (input.accessEdugpt ? "pro" : "free");
+      if (existing.length > 0) {
+        await database.update(servicePermissions).set({
+          accessEdugpt: input.accessEdugpt || existing[0].accessEdugpt,
+          accessCourseAi: input.accessCourseAi || existing[0].accessCourseAi,
+          accessCoursePedagogy: input.accessCoursePedagogy || existing[0].accessCoursePedagogy,
+          accessFullBundle: input.accessFullBundle || existing[0].accessFullBundle,
+          tier: tier as "free" | "pro" | "premium",
+        }).where(eq(servicePermissions.userId, request.userId));
+      } else {
+        await database.insert(servicePermissions).values({
+          userId: request.userId,
+          accessEdugpt: input.accessEdugpt,
+          accessCourseAi: input.accessCourseAi,
+          accessCoursePedagogy: input.accessCoursePedagogy,
+          accessFullBundle: input.accessFullBundle,
+          tier: tier as "free" | "pro" | "premium",
+        });
+      }
+      // Send notification to user
+      const serviceNames = [];
+      if (input.accessEdugpt) serviceNames.push("EDUGPT PRO");
+      if (input.accessCourseAi) serviceNames.push("دورة الذكاء الاصطناعي");
+      if (input.accessCoursePedagogy) serviceNames.push("دورة البيداغوجيا");
+      if (input.accessFullBundle) serviceNames.push("الباقة الكاملة");
+      await database.insert(notifications).values({
+        userId: request.userId,
+        titleAr: "تم تفعيل خدمتك بنجاح! \u2705",
+        messageAr: `تم تفعيل الخدمات التالية: ${serviceNames.join("، ")}. شكراً لثقتك في Leader Academy!`,
+        type: "enrollment_approved",
+      });
+      // Notify owner
+      const { notifyOwner } = await import("./_core/notification");
+      await notifyOwner({ title: "\u2705 تم تفعيل خدمة", content: `تم تفعيل ${serviceNames.join("، ")} للمستخدم #${request.userId}` });
+      return { success: true };
+    }),
+
+    rejectPayment: adminProcedure.input(z.object({
+      requestId: z.number(),
+      rejectionReason: z.string().min(1),
+    })).mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const { notifications } = await import("../drizzle/schema");
+      const [request] = await database.select().from(paymentRequests).where(eq(paymentRequests.id, input.requestId)).limit(1);
+      if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "طلب الدفع غير موجود" });
+      await database.update(paymentRequests).set({
+        status: "rejected",
+        reviewedBy: ctx.user.id,
+        reviewedAt: new Date(),
+        rejectionReason: input.rejectionReason,
+      }).where(eq(paymentRequests.id, input.requestId));
+      // Notify user
+      await database.insert(notifications).values({
+        userId: request.userId,
+        titleAr: "تم رفض طلب الدفع",
+        messageAr: `السبب: ${input.rejectionReason}. يرجى التواصل مع الإدارة لمزيد من المعلومات.`,
+        type: "enrollment_rejected",
+      });
+      return { success: true };
+    }),
+
+    // --- AI Activity Monitoring ---
+    getAiActivityFeed: adminProcedure.input(z.object({
+      page: z.number().default(1),
+      limit: z.number().default(30),
+      activityType: z.string().optional(),
+    })).query(async ({ input }) => {
+      const database = (await getDb())!;
+      const offset = (input.page - 1) * input.limit;
+      const activities = await database.select().from(aiActivityLog)
+        .orderBy(desc(aiActivityLog.createdAt))
+        .limit(input.limit)
+        .offset(offset);
+      const totalResult = await database.select({ count: count() }).from(aiActivityLog);
+      return { activities, total: totalResult[0]?.count ?? 0 };
+    }),
+
+    // --- CSV Export ---
+    exportUsersCSV: adminProcedure.query(async () => {
+      const database = (await getDb())!;
+      const { users } = await import("../drizzle/schema");
+      const allUsers = await database.select().from(users).orderBy(desc(users.createdAt));
+      const perms = await database.select().from(servicePermissions);
+      const permMap = new Map(perms.map(p => [p.userId, p]));
+      // Build CSV
+      const headers = ["ID", "الاسم", "البريد", "الدور", "EDUGPT", "دورة AI", "دورة بيداغوجيا", "الباقة الكاملة", "المستوى", "تاريخ التسجيل"];
+      const rows = allUsers.map(u => {
+        const p = permMap.get(u.id);
+        return [
+          u.id,
+          u.name || u.arabicName || "-",
+          u.email,
+          u.role,
+          p?.accessEdugpt ? "\u2705" : "\u274C",
+          p?.accessCourseAi ? "\u2705" : "\u274C",
+          p?.accessCoursePedagogy ? "\u2705" : "\u274C",
+          p?.accessFullBundle ? "\u2705" : "\u274C",
+          p?.tier || "free",
+          u.createdAt?.toISOString().split("T")[0] || "-",
+        ].join(",");
+      });
+      const csv = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
+      return { csv, filename: `users_export_${new Date().toISOString().split("T")[0]}.csv` };
+    }),
+
+    exportPaymentsCSV: adminProcedure.query(async () => {
+      const database = (await getDb())!;
+      const { users } = await import("../drizzle/schema");
+      const allPayments = await database.select({
+        id: paymentRequests.id,
+        userName: users.name,
+        userEmail: users.email,
+        requestedService: paymentRequests.requestedService,
+        amount: paymentRequests.amount,
+        status: paymentRequests.status,
+        createdAt: paymentRequests.createdAt,
+      }).from(paymentRequests)
+        .innerJoin(users, eq(paymentRequests.userId, users.id))
+        .orderBy(desc(paymentRequests.createdAt));
+      const headers = ["ID", "المستخدم", "البريد", "الخدمة المطلوبة", "المبلغ", "الحالة", "التاريخ"];
+      const rows = allPayments.map(p => [
+        p.id,
+        p.userName || "-",
+        p.userEmail,
+        p.requestedService,
+        p.amount || "-",
+        p.status,
+        p.createdAt?.toISOString().split("T")[0] || "-",
+      ].join(","));
+      const csv = "\uFEFF" + headers.join(",") + "\n" + rows.join("\n");
+      return { csv, filename: `payments_export_${new Date().toISOString().split("T")[0]}.csv` };
+    }),
+
+    // --- User Payment Request (for regular users) ---
+    submitPaymentRequest: protectedProcedure.input(z.object({
+      requestedService: z.enum(["edugpt_pro", "course_ai", "course_pedagogy", "full_bundle"]),
+      receiptImageUrl: z.string().url(),
+      amount: z.string().optional(),
+      paymentMethod: z.string().optional(),
+      userNote: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const { notifications } = await import("../drizzle/schema");
+      await database.insert(paymentRequests).values({
+        userId: ctx.user.id,
+        requestedService: input.requestedService,
+        receiptImageUrl: input.receiptImageUrl,
+        amount: input.amount,
+        paymentMethod: input.paymentMethod,
+        userNote: input.userNote,
+      });
+      // Notify all admins
+      const { users } = await import("../drizzle/schema");
+      const admins = await database.select().from(users).where(eq(users.role, "admin"));
+      for (const admin of admins) {
+        await database.insert(notifications).values({
+          userId: admin.id,
+          titleAr: "\uD83D\uDCB3 طلب دفع جديد",
+          messageAr: `المستخدم ${ctx.user.name || ctx.user.email} أرسل إيصال دفع لخدمة ${input.requestedService}`,
+          type: "enrollment_request",
+        });
+      }
+      // Notify owner
+      const { notifyOwner } = await import("./_core/notification");
+      await notifyOwner({ title: "\uD83D\uDCB3 طلب دفع جديد", content: `${ctx.user.name || ctx.user.email} - ${input.requestedService}` });
+      return { success: true };
+    }),
+
+    // --- Get current user permissions ---
+    getMyPermissions: protectedProcedure.query(async ({ ctx }) => {
+      const database = (await getDb())!;
+      const perms = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, ctx.user.id)).limit(1);
+      return perms[0] || { accessEdugpt: false, accessCourseAi: false, accessCoursePedagogy: false, accessFullBundle: false, tier: "free" };
+    }),
+
+    // --- Log AI activity ---
+    logActivity: protectedProcedure.input(z.object({
+      activityType: z.enum(["lesson_plan", "exam_generated", "evaluation", "image_generated", "inspection_report"]),
+      title: z.string().optional(),
+      subject: z.string().optional(),
+      level: z.string().optional(),
+      contentPreview: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      await database.insert(aiActivityLog).values({
+        userId: ctx.user.id,
+        userName: ctx.user.name || ctx.user.email,
+        activityType: input.activityType,
+        title: input.title,
+        subject: input.subject,
+        level: input.level,
+        contentPreview: input.contentPreview?.substring(0, 500),
+      });
+      return { success: true };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

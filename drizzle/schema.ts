@@ -748,3 +748,94 @@ export const imageUsageTracking = mysqlTable("image_usage_tracking", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type ImageUsageTracking = typeof imageUsageTracking.$inferSelect;
+
+
+// ===== PAYMENT REQUESTS (طلبات الدفع والتفعيل) =====
+export const paymentRequests = mysqlTable("payment_requests", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  
+  // Requested service
+  requestedService: mysqlEnum("requestedService", [
+    "edugpt_pro",
+    "course_ai",
+    "course_pedagogy",
+    "full_bundle"
+  ]).notNull(),
+  
+  // Payment proof
+  receiptImageUrl: text("receiptImageUrl").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default("TND"),
+  paymentMethod: varchar("paymentMethod", { length: 50 }), // e.g., 'bank_transfer', 'd17', 'flouci'
+  
+  // Admin review
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  rejectionReason: text("rejectionReason"),
+  
+  // Services activated (set by admin on approval)
+  activatedServices: json("activatedServices").$type<{
+    access_edugpt?: boolean;
+    access_course_ai?: boolean;
+    access_course_pedagogy?: boolean;
+    access_full_bundle?: boolean;
+  }>(),
+  
+  // Notes
+  userNote: text("userNote"),
+  adminNote: text("adminNote"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PaymentRequest = typeof paymentRequests.$inferSelect;
+export type InsertPaymentRequest = typeof paymentRequests.$inferInsert;
+
+// ===== SERVICE PERMISSIONS (صلاحيات الخدمات) =====
+export const servicePermissions = mysqlTable("service_permissions", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  
+  // Service access flags
+  accessEdugpt: boolean("access_edugpt").default(false).notNull(),
+  accessCourseAi: boolean("access_course_ai").default(false).notNull(),
+  accessCoursePedagogy: boolean("access_course_pedagogy").default(false).notNull(),
+  accessFullBundle: boolean("access_full_bundle").default(false).notNull(),
+  
+  // Subscription details
+  tier: mysqlEnum("tier", ["free", "pro", "premium"]).default("free").notNull(),
+  expiresAt: timestamp("expiresAt"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ServicePermission = typeof servicePermissions.$inferSelect;
+export type InsertServicePermission = typeof servicePermissions.$inferInsert;
+
+// ===== AI ACTIVITY LOG (سجل نشاط الذكاء الاصطناعي) =====
+export const aiActivityLog = mysqlTable("ai_activity_log", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  userName: varchar("userName", { length: 255 }),
+  
+  // Activity details
+  activityType: mysqlEnum("activityType", [
+    "lesson_plan",
+    "exam_generated",
+    "evaluation",
+    "image_generated",
+    "inspection_report"
+  ]).notNull(),
+  
+  // Content snapshot
+  title: varchar("title", { length: 500 }),
+  subject: varchar("subject", { length: 100 }),
+  level: varchar("level", { length: 100 }),
+  contentPreview: text("contentPreview"), // First 500 chars of generated content
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AiActivityLog = typeof aiActivityLog.$inferSelect;
+export type InsertAiActivityLog = typeof aiActivityLog.$inferInsert;

@@ -1524,3 +1524,30 @@
 - [x] معاينة حية WYSIWYG تطابق الورقة المطبوعة
 - [x] ربط PrintPreview مع EduGPT (الجذاذات والدروس)
 - [x] التأكد من ربط PrintPreview مع ExamBuilder
+
+## Admin Dashboard الشامل (جلسة 24)
+- [ ] تحديث schema: إضافة حقول صلاحيات الخدمات (access_edugpt, access_course_ai, etc.)
+- [ ] إنشاء جدول payment_requests (طلبات الدفع مع صور الإيصالات)
+- [ ] إنشاء endpoints إدارية: إدارة المستخدمين، الموافقة على المدفوعات، الإحصائيات
+- [ ] تصدير CSV/Excel لقائمة المستخدمين وسجل المدفوعات
+- [ ] لوحة تحكم: صفحة Overview بالبطاقات (إجمالي المستخدمين، المشتركين، المدفوعات المعلقة)
+- [ ] قائمة المستخدمين مع badges ملونة لكل خدمة نشطة
+- [ ] صفحة الموافقات المعلقة (عرض إيصال الدفع + أزرار تفعيل/رفض)
+- [ ] مدير المحتوى ومراقبة الذكاء الاصطناعي (Live Feed)
+- [ ] التحكم الشرطي في الوصول (حالة مقفلة + زر "ترقية إلى Pro")
+- [ ] إشعارات تلقائية (تنبيه الأدمن عند رفع إيصال + رسالة نجاح للمستخدم)
+- [ ] تأمين لوحة التحكم خلف صلاحية admin فقط
+
+## Admin Dashboard - الإنجاز
+- [x] جداول DB جديدة: payment_requests, service_permissions, ai_activity_log
+- [x] Endpoints إدارية: getOverview, listUsers, updateUserRole, updateUserPermissions
+- [x] Endpoints المدفوعات: listPaymentRequests, approvePayment, rejectPayment
+- [x] Endpoints التصدير: exportUsersCSV, exportPaymentsCSV
+- [x] Endpoint نشاط AI: getAiActivityFeed, logActivity
+- [x] Endpoint المستخدم: submitPaymentRequest, getMyPermissions
+- [x] واجهة لوحة التحكم: sidebar + overview + users + payments + activity + settings
+- [x] مكون LockedFeature للتحكم الشرطي في الوصول
+- [x] نظام رفع إيصال الدفع للمستخدمين
+- [x] إشعارات تلقائية عند الموافقة/الرفض
+- [x] تصدير CSV للمستخدمين والمدفوعات
+- [x] مسار /admin في App.tsx ورابط في الصفحة الرئيسية
