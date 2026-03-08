@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `schoolName` varchar(255);

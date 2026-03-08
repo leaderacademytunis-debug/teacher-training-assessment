@@ -749,6 +749,7 @@ export async function updateUserProfile(
     phone?: string;
     idCardNumber?: string;
     email?: string;
+    schoolName?: string;
   }
 ): Promise<void> {
   const db = await getDb();

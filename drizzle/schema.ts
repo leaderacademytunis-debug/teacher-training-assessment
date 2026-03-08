@@ -21,6 +21,7 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   idCardNumber: varchar("idCardNumber", { length: 50 }),
   paymentReceiptUrl: text("paymentReceiptUrl"),
+  schoolName: varchar("schoolName", { length: 255 }),
   registrationCompleted: boolean("registrationCompleted").default(false).notNull(),
   registrationStatus: mysqlEnum("registrationStatus", ["pending", "approved", "rejected"]).default("pending").notNull(),
   

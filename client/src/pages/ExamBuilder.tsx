@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { LockedFeature, usePermissions } from "@/components/LockedFeature";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -126,6 +127,28 @@ export default function ExamBuilder() {
     );
   }
 
+  // Auth & school name
+  const { user, refresh: refreshAuth } = useAuth();
+  const userSchoolName = (user as any)?.schoolName || "";
+  const [schoolNameInput, setSchoolNameInput] = useState(userSchoolName);
+  const [schoolNameSaved, setSchoolNameSaved] = useState(false);
+
+  // Save school name to profile
+  const updateProfile = trpc.profile.update.useMutation({
+    onSuccess: () => {
+      setSchoolNameSaved(true);
+      refreshAuth();
+      toast.success("تم حفظ اسم المدرسة في ملفك الشخصي");
+      setTimeout(() => setSchoolNameSaved(false), 2000);
+    },
+  });
+
+  const handleSaveSchoolName = () => {
+    if (schoolNameInput.trim()) {
+      updateProfile.mutate({ schoolName: schoolNameInput.trim() });
+    }
+  };
+
   // Form state
   const [subject, setSubject] = useState("");
   const [level, setLevel] = useState("");
@@ -134,6 +157,8 @@ export default function ExamBuilder() {
   const [totalScore, setTotalScore] = useState(20);
   const [topics, setTopics] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
+  const [examImages, setExamImages] = useState<Array<{ url: string; caption?: string }>>([]);
+  const [generatingImages, setGeneratingImages] = useState(false);
 
   // Result state
   const [generatedExam, setGeneratedExam] = useState("");
@@ -218,6 +243,45 @@ export default function ExamBuilder() {
 
   const handleExportWord = (content: string) => {
     exportWord.mutate({ subject, level, trimester, duration, totalScore, examContent: content });
+  };
+
+  // Auto-generate Line Art images from [رسم: ...] placeholders
+  const generateLineArt = trpc.visualStudio.generateEducationalImage.useMutation();
+
+  const handleAutoGenerateImages = async () => {
+    if (!generatedExam) return;
+    const placeholders: RegExpExecArray[] = [];
+    const regex = /\[رسم:\s*([^\]]+)\]/g;
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(generatedExam)) !== null) placeholders.push(m);
+    if (placeholders.length === 0) {
+      toast.info("لا توجد عناصر [رسم: ...] في الاختبار");
+      return;
+    }
+    setGeneratingImages(true);
+    const newImages: Array<{ url: string; caption?: string }> = [];
+    for (const match of placeholders) {
+      const description = match[1].trim();
+      try {
+        const result = await generateLineArt.mutateAsync({
+          prompt: description,
+          style: "bw_lineart",
+          subject,
+          level,
+          source: "exam-builder",
+        });
+        if (result.url) {
+          newImages.push({ url: result.url, caption: description });
+        }
+      } catch (err: any) {
+        toast.error(`فشل توليد صورة: ${description.substring(0, 30)}...`);
+      }
+    }
+    setExamImages(prev => [...prev, ...newImages]);
+    setGeneratingImages(false);
+    if (newImages.length > 0) {
+      toast.success(`تم توليد ${newImages.length} صورة توضيحية`);
+    }
   };
 
   const handleCopy = (text: string) => {
@@ -357,6 +421,30 @@ export default function ExamBuilder() {
                     className="bg-white/10 border-white/20 text-white h-9" />
                 </div>
               </div>
+              {/* School name */}
+              <div className="space-y-1">
+                <Label className="text-blue-200 text-xs">اسم المدرسة (يظهر في الترويسة)</Label>
+                <div className="flex gap-1.5">
+                  <Input
+                    value={schoolNameInput}
+                    onChange={e => setSchoolNameInput(e.target.value)}
+                    placeholder="مثال: المدرسة الابتدائية النموذجية"
+                    className="bg-white/10 border-white/20 text-white h-9 flex-1 placeholder:text-white/30 text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSaveSchoolName}
+                    disabled={updateProfile.isPending || !schoolNameInput.trim()}
+                    className={`h-9 px-2 text-xs border-white/20 shrink-0 ${
+                      schoolNameSaved ? "border-green-500 text-green-300" : "text-blue-200 hover:bg-white/10"
+                    }`}
+                  >
+                    {schoolNameSaved ? "✅" : updateProfile.isPending ? "⏳" : "حفظ"}
+                  </Button>
+                </div>
+                {userSchoolName && <p className="text-[10px] text-green-400/70">محفوظ: {userSchoolName}</p>}
+              </div>
               <Separator className="bg-white/10" />
               <div className="space-y-1">
                 <Label className="text-blue-200 text-xs">المحاور المقررة (اختياري)</Label>
@@ -419,9 +507,14 @@ export default function ExamBuilder() {
                       className="bg-amber-700 hover:bg-amber-600 text-white text-xs h-7 px-2">
                       📷 معاينة الطباعة
                     </Button>
-                    <Button size="sm" onClick={() => navigate("/visual-studio")}
+                    <Button size="sm" onClick={handleAutoGenerateImages}
+                      disabled={generatingImages}
                       className="bg-violet-700 hover:bg-violet-600 text-white text-xs h-7 px-2">
-                      🎨 صورة للسند
+                      {generatingImages ? <span className="flex items-center gap-1"><span className="animate-spin">⏳</span> توليد...</span> : "🎨 توليد رسومات"}
+                    </Button>
+                    <Button size="sm" onClick={() => navigate("/visual-studio")}
+                      className="bg-violet-700/60 hover:bg-violet-600/60 text-white text-xs h-7 px-2">
+                      🖌️ الاستوديو
                     </Button>
                   </div>
                 )}
@@ -496,6 +589,51 @@ export default function ExamBuilder() {
                   </TabsContent>
                 </Tabs>
               )}
+
+              {/* Generated Images Gallery */}
+              {examImages.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-semibold text-violet-300 flex items-center gap-1">
+                      🎨 الرسومات التوضيحية المولّدة ({examImages.length})
+                    </h4>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setExamImages([])}
+                      className="text-xs h-6 px-2 border-red-500/30 text-red-400 hover:bg-red-900/20"
+                    >
+                      مسح الكل
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {examImages.map((img, idx) => (
+                      <div key={idx} className="relative group rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                        <img
+                          src={img.url}
+                          alt={img.caption || `صورة ${idx + 1}`}
+                          className="w-full h-28 object-contain bg-white p-1"
+                          style={{ filter: "grayscale(100%) contrast(1.2)" }}
+                        />
+                        {img.caption && (
+                          <div className="p-1.5 text-[10px] text-white/60 text-center truncate">
+                            {img.caption}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setExamImages(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-1 left-1 bg-red-600/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-white/40 mt-1.5">
+                    هذه الصور ستظهر في معاينة الطباعة ويمكن طباعتها مع الاختبار
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -542,8 +680,10 @@ export default function ExamBuilder() {
           subject={subject}
           level={level}
           trimester={trimester}
+          schoolName={schoolNameInput.trim() || userSchoolName || undefined}
           studentName={activeTab === "exam"}
           onClose={() => setShowPrintPreview(false)}
+          images={examImages.length > 0 ? examImages : undefined}
         />
       )}
     </div>

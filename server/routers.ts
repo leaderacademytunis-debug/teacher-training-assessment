@@ -82,6 +82,7 @@ export const appRouter = router({
         phone: z.string().optional(),
         idCardNumber: z.string().optional(),
         email: z.string().email().optional(),
+        schoolName: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         await db.updateUserProfile(ctx.user.id, input);
