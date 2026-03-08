@@ -4616,6 +4616,188 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         const exam = response?.choices?.[0]?.message?.content || "";
         return { exam: typeof exam === "string" ? exam : JSON.stringify(exam) };
       }),
+
+    // ── Save Exam ──────────────────────────────────────────────────────
+    saveExam: publicProcedure
+      .input(z.object({
+        subject: z.string(),
+        level: z.string(),
+        trimester: z.string(),
+        duration: z.string().optional(),
+        totalScore: z.number().optional(),
+        topics: z.string().optional(),
+        examContent: z.string(),
+        answerKeyContent: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        const { savedExams } = await import("../drizzle/schema");
+        const [result] = await database!.insert(savedExams).values({
+          subject: input.subject,
+          level: input.level,
+          trimester: input.trimester,
+          duration: input.duration,
+          totalScore: input.totalScore ?? 20,
+          topics: input.topics,
+          examContent: input.examContent,
+          answerKeyContent: input.answerKeyContent,
+        });
+        return { id: (result as any).insertId, success: true };
+      }),
+
+    // ── List Saved Exams ─────────────────────────────────────────────
+    listExams: publicProcedure
+      .query(async () => {
+        const database = await getDb();
+        const { savedExams } = await import("../drizzle/schema");
+        const { desc } = await import("drizzle-orm");
+        const exams = await database!.select().from(savedExams).orderBy(desc(savedExams.createdAt));
+        return exams;
+      }),
+
+    // ── Get Single Exam ──────────────────────────────────────────────
+    getExam: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const database = await getDb();
+        const { savedExams } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const [exam] = await database!.select().from(savedExams).where(eq(savedExams.id, input.id));
+        if (!exam) throw new TRPCError({ code: "NOT_FOUND", message: "الاختبار غير موجود" });
+        return exam;
+      }),
+
+    // ── Delete Exam ──────────────────────────────────────────────────
+    deleteExam: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        const { savedExams } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        await database!.delete(savedExams).where(eq(savedExams.id, input.id));
+        return { success: true };
+      }),
+
+    // ── Generate Answer Key ──────────────────────────────────────────
+    generateAnswerKey: publicProcedure
+      .input(z.object({
+        examContent: z.string(),
+        subject: z.string(),
+        level: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const systemPrompt = `أنت "المتفقد المميز للتربية". مهمتك إعداد نموذج الإجابة النموذجية وشبكة التنقيط للاختبار المقدم.
+
+المخرجات المطلوبة:
+1. **نموذج الإجابة النموذجية**: إجابة كاملة ومفصلة لكل تعليمة
+2. **شبكة التنقيط**: جدول بالمعايير (مع1، مع2، مع3، مع4) والدرجات التفصيلية
+3. **تعليمات التصحيح**: ملاحظات للمصحح حول الأخطاء الشائعة
+4. **توزيع النقاط**: توزيع النقاط على كل سند وتعليمة`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: `أعدّ نموذج الإجابة النموذجية وشبكة التنقيط لهذا الاختبار:\n\nالمادة: ${input.subject}\nالمستوى: ${input.level}\n\n${input.examContent}` },
+          ],
+        });
+        const key = response?.choices?.[0]?.message?.content || "";
+        return { answerKey: typeof key === "string" ? key : JSON.stringify(key) };
+      }),
+
+    // ── Export Word (.docx) ───────────────────────────────────────────
+    exportExamWord: publicProcedure
+      .input(z.object({
+        subject: z.string(),
+        level: z.string(),
+        trimester: z.string(),
+        duration: z.string().optional(),
+        totalScore: z.number().optional(),
+        examContent: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, BorderStyle, Table, TableRow, TableCell, WidthType } = await import("docx");
+
+        // Parse exam content into paragraphs
+        const lines = input.examContent.split("\n");
+        const paragraphs: InstanceType<typeof Paragraph>[] = [
+          // Header
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({ text: "جمهورية تونس | وزارة التربية", bold: true, size: 22 }),
+            ],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new TextRun({ text: "Leader Academy - المتفقد المميز للتربية", bold: true, size: 20, color: "1A237E" }),
+            ],
+          }),
+          new Paragraph({ text: "" }),
+          // Exam info table
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [
+              new TextRun({ text: `المادة: ${input.subject}  |  المستوى: ${input.level}  |  الثلاثي: ${input.trimester}`, bold: true, size: 22 }),
+            ],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [
+              new TextRun({ text: `المدة: ${input.duration || "45 دقيقة"}  |  المجموع: ${input.totalScore || 20} نقطة  |  السنة الدراسية: 2025-2026`, size: 20 }),
+            ],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [
+              new TextRun({ text: "المدرسة: ............................  |  الاسم واللقب: ............................  |  القسم: ...........", size: 20 }),
+            ],
+          }),
+          new Paragraph({ text: "" }),
+          new Paragraph({ text: "─".repeat(60), alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: "" }),
+        ];
+
+        // Add exam content lines
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            paragraphs.push(new Paragraph({ text: "" }));
+            continue;
+          }
+          const isHeading = trimmed.startsWith("السند") || trimmed.startsWith("التعليمة") || !!trimmed.match(/^\*\*.*\*\*$/) || trimmed.startsWith("#");
+          const cleanText = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
+          paragraphs.push(
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              heading: isHeading ? HeadingLevel.HEADING_2 : undefined,
+              children: [
+                new TextRun({
+                  text: cleanText,
+                  bold: isHeading,
+                  size: isHeading ? 24 : 22,
+                }),
+              ],
+            })
+          );
+        }
+
+        const doc = new Document({
+          sections: [{
+            properties: {
+              page: {
+                margin: { top: 720, right: 720, bottom: 720, left: 720 },
+              },
+            },
+            children: paragraphs,
+          }],
+        });
+
+        const buffer = await Packer.toBuffer(doc);
+        const base64 = buffer.toString("base64");
+        return { base64, filename: `اختبار_${input.subject}_${input.level}_${input.trimester}.docx` };
+      }),
    }),
 
   newsletter: router({

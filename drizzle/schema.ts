@@ -703,3 +703,19 @@ export const newsletterSubscribers = mysqlTable("newsletter_subscribers", {
 });
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type InsertNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert;
+
+// ===== SAVED EXAMS (بناء الاختبار - المتفقد المميز) =====
+export const savedExams = mysqlTable("saved_exams", {
+  id: int("id").primaryKey().autoincrement(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  level: varchar("level", { length: 100 }).notNull(),
+  trimester: varchar("trimester", { length: 50 }).notNull(),
+  duration: varchar("duration", { length: 30 }),
+  totalScore: int("totalScore").default(20),
+  topics: text("topics"),
+  examContent: text("examContent").notNull(),
+  answerKeyContent: text("answerKeyContent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SavedExam = typeof savedExams.$inferSelect;
+export type InsertSavedExam = typeof savedExams.$inferInsert;

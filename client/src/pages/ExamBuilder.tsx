@@ -8,44 +8,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SUBJECTS = [
-  "اللغة العربية",
-  "الرياضيات",
-  "الإيقاظ العلمي",
-  "التربية الإسلامية",
-  "التربية المدنية",
-  "اللغة الفرنسية",
-  "التربية التشكيلية",
-  "التربية الموسيقية",
-  "التربية البدنية",
+  "اللغة العربية", "الرياضيات", "الإيقاظ العلمي", "التربية الإسلامية",
+  "التربية المدنية", "اللغة الفرنسية", "التربية التشكيلية",
+  "التربية الموسيقية", "التربية البدنية",
 ];
-
 const LEVELS = [
-  "السنة الأولى ابتدائي",
-  "السنة الثانية ابتدائي",
-  "السنة الثالثة ابتدائي",
-  "السنة الرابعة ابتدائي",
-  "السنة الخامسة ابتدائي",
-  "السنة السادسة ابتدائي",
+  "السنة الأولى ابتدائي", "السنة الثانية ابتدائي", "السنة الثالثة ابتدائي",
+  "السنة الرابعة ابتدائي", "السنة الخامسة ابتدائي", "السنة السادسة ابتدائي",
 ];
+const TRIMESTERS = ["الثلاثي الأول", "الثلاثي الثاني", "الثلاثي الثالث"];
+const DURATIONS = ["30 دقيقة", "45 دقيقة", "60 دقيقة", "90 دقيقة"];
 
-const TRIMESTERS = [
-  "الثلاثي الأول",
-  "الثلاثي الثاني",
-  "الثلاثي الثالث",
-];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const DURATIONS = [
-  "30 دقيقة",
-  "45 دقيقة",
-  "60 دقيقة",
-  "90 دقيقة",
-];
+function downloadBase64(base64: string, filename: string) {
+  const byteChars = atob(base64);
+  const byteNums = new Array(byteChars.length).fill(0).map((_, i) => byteChars.charCodeAt(i));
+  const blob = new Blob([new Uint8Array(byteNums)], {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function formatDate(ts: Date | string | number) {
+  return new Date(ts).toLocaleDateString("ar-TN", { year: "numeric", month: "short", day: "numeric" });
+}
 
 // ─── Criteria Badge ────────────────────────────────────────────────────────────
 
@@ -58,9 +58,60 @@ function CriteriaBadge({ code, label, color }: { code: string; label: string; co
   );
 }
 
+// ─── Library Item ──────────────────────────────────────────────────────────────
+
+type SavedExam = {
+  id: number;
+  subject: string;
+  level: string;
+  trimester: string;
+  duration: string | null;
+  totalScore: number | null;
+  topics: string | null;
+  examContent: string;
+  answerKeyContent: string | null;
+  createdAt: Date;
+};
+
+function LibraryItem({
+  exam,
+  onLoad,
+  onDelete,
+}: {
+  exam: SavedExam;
+  onLoad: (exam: SavedExam) => void;
+  onDelete: (id: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+      <div className="flex-1 min-w-0 text-right">
+        <p className="font-semibold text-white text-sm truncate">
+          {exam.subject} — {exam.level}
+        </p>
+        <p className="text-xs text-blue-300">{exam.trimester} · {formatDate(exam.createdAt)}</p>
+        {exam.topics && <p className="text-xs text-white/40 truncate mt-0.5">{exam.topics}</p>}
+      </div>
+      <div className="flex gap-2 mr-3 shrink-0">
+        {exam.answerKeyContent && (
+          <Badge className="bg-purple-700 text-white text-xs">+ تصحيح</Badge>
+        )}
+        <Button size="sm" variant="outline" onClick={() => onLoad(exam)}
+          className="border-blue-500/50 text-blue-300 hover:bg-blue-900/30 text-xs h-7 px-2">
+          تحميل
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => onDelete(exam.id)}
+          className="border-red-500/30 text-red-400 hover:bg-red-900/20 text-xs h-7 px-2">
+          حذف
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function ExamBuilder() {
+  // Form state
   const [subject, setSubject] = useState("");
   const [level, setLevel] = useState("");
   const [trimester, setTrimester] = useState("");
@@ -68,102 +119,161 @@ export default function ExamBuilder() {
   const [totalScore, setTotalScore] = useState(20);
   const [topics, setTopics] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
+
+  // Result state
   const [generatedExam, setGeneratedExam] = useState("");
+  const [answerKey, setAnswerKey] = useState("");
+  const [activeTab, setActiveTab] = useState<"exam" | "answer">("exam");
   const [copied, setCopied] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
+
+  // tRPC hooks
+  const utils = trpc.useUtils();
 
   const generateExam = trpc.edugpt.generateExam.useMutation({
     onSuccess: (data) => {
       setGeneratedExam(data.exam);
+      setAnswerKey("");
+      setActiveTab("exam");
       toast.success("تم إنشاء الاختبار بنجاح!");
     },
-    onError: (err) => {
-      toast.error(`حدث خطأ: ${err.message}`);
+    onError: (err) => toast.error(`خطأ: ${err.message}`),
+  });
+
+  const saveExam = trpc.edugpt.saveExam.useMutation({
+    onSuccess: () => {
+      toast.success("تم حفظ الاختبار في المكتبة ✅");
+      utils.edugpt.listExams.invalidate();
+    },
+    onError: (err) => toast.error(`خطأ في الحفظ: ${err.message}`),
+  });
+
+  const deleteExam = trpc.edugpt.deleteExam.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف الاختبار");
+      utils.edugpt.listExams.invalidate();
     },
   });
 
+  const generateAnswerKey = trpc.edugpt.generateAnswerKey.useMutation({
+    onSuccess: (data) => {
+      setAnswerKey(data.answerKey);
+      setActiveTab("answer");
+      toast.success("تم إنشاء نموذج الإجابة النموذجية ✅");
+      // Auto-update in DB if already saved
+    },
+    onError: (err) => toast.error(`خطأ: ${err.message}`),
+  });
+
+  const exportWord = trpc.edugpt.exportExamWord.useMutation({
+    onSuccess: (data) => {
+      downloadBase64(data.base64, data.filename);
+      toast.success("تم تحميل ملف Word ✅");
+    },
+    onError: (err) => toast.error(`خطأ في التصدير: ${err.message}`),
+  });
+
+  const { data: savedExams, isLoading: loadingExams } = trpc.edugpt.listExams.useQuery(undefined, {
+    enabled: showLibrary,
+  });
+
+  // Handlers
   const handleGenerate = () => {
     if (!subject || !level || !trimester) {
       toast.error("يُرجى تحديد المادة والمستوى والثلاثي");
       return;
     }
     setGeneratedExam("");
-    generateExam.mutate({
-      subject,
-      level,
-      trimester,
-      duration,
-      totalScore,
-      topics: topics.trim() || undefined,
-      additionalInstructions: additionalInstructions.trim() || undefined,
-    });
+    setAnswerKey("");
+    generateExam.mutate({ subject, level, trimester, duration, totalScore, topics: topics.trim() || undefined, additionalInstructions: additionalInstructions.trim() || undefined });
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedExam);
+  const handleSave = () => {
+    if (!generatedExam) return;
+    saveExam.mutate({ subject, level, trimester, duration, totalScore, topics: topics.trim() || undefined, examContent: generatedExam, answerKeyContent: answerKey || undefined });
+  };
+
+  const handleGenerateAnswerKey = () => {
+    if (!generatedExam) return;
+    generateAnswerKey.mutate({ examContent: generatedExam, subject, level });
+  };
+
+  const handleExportWord = (content: string) => {
+    exportWord.mutate({ subject, level, trimester, duration, totalScore, examContent: content });
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
-    toast.success("تم نسخ الاختبار إلى الحافظة");
+    toast.success("تم النسخ إلى الحافظة");
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-        <title>اختبار - ${subject} - ${level}</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
-          body { font-family: 'Amiri', serif; direction: rtl; padding: 20px; font-size: 14px; line-height: 1.8; }
-          h1, h2, h3 { font-weight: bold; }
-          table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-          th, td { border: 1px solid #333; padding: 6px 10px; text-align: right; }
-          th { background: #f0f0f0; }
-          @media print { body { padding: 10px; } }
-        </style>
-      </head>
-      <body>
-        <div style="white-space: pre-wrap;">${generatedExam.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+  const handlePrint = (content: string) => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+      <title>اختبار - ${subject}</title>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+      body{font-family:'Amiri',serif;direction:rtl;padding:20px;font-size:14px;line-height:1.8}
+      h1,h2,h3{font-weight:bold}table{width:100%;border-collapse:collapse;margin:10px 0}
+      th,td{border:1px solid #333;padding:6px 10px;text-align:right}th{background:#f0f0f0}</style>
+      </head><body><div style="white-space:pre-wrap">${content.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div></body></html>`);
+    win.document.close();
+    win.print();
   };
+
+  const handleLoadFromLibrary = (exam: SavedExam) => {
+    setSubject(exam.subject);
+    setLevel(exam.level);
+    setTrimester(exam.trimester);
+    setDuration(exam.duration || "45 دقيقة");
+    setTotalScore(exam.totalScore || 20);
+    setTopics(exam.topics || "");
+    setGeneratedExam(exam.examContent);
+    setAnswerKey(exam.answerKeyContent || "");
+    setActiveTab("exam");
+    setShowLibrary(false);
+    toast.success("تم تحميل الاختبار من المكتبة");
+  };
+
+  const hasExam = !!generatedExam;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-800 to-indigo-800 border-b border-blue-700 px-6 py-5">
+      <div className="bg-gradient-to-r from-blue-800 to-indigo-800 border-b border-blue-700 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl">
-            📝
-          </div>
+          <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-2xl">📝</div>
           <div>
-            <h1 className="text-xl font-bold">المتفقد المميز للتربية</h1>
-            <p className="text-blue-200 text-sm">بناء اختبارات رسمية وفق المقاربة بالكفايات — المرحلة الابتدائية التونسية</p>
+            <h1 className="text-lg font-bold">المتفقد المميز للتربية</h1>
+            <p className="text-blue-200 text-xs">بناء اختبارات رسمية وفق المقاربة بالكفايات — المرحلة الابتدائية التونسية</p>
           </div>
-          <div className="mr-auto">
-            <Badge variant="outline" className="border-blue-400 text-blue-200 text-xs">
-              خبرة 30 عاماً في هندسة التقييم
+          <div className="mr-auto flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowLibrary(true)}
+              className="border-blue-400/50 text-blue-200 hover:bg-blue-800/50 text-xs"
+            >
+              📚 مكتبة الاختبارات
+            </Button>
+            <Badge variant="outline" className="border-blue-400 text-blue-200 text-xs hidden sm:flex">
+              خبرة 30 عاماً
             </Badge>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <div className="max-w-6xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left Panel: Form */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Criteria Info */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Criteria */}
           <Card className="bg-white/5 border-white/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-blue-300 flex items-center gap-2">
-                <span>🎯</span> نظام المعايير المعتمد
-              </CardTitle>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-xs text-blue-300 flex items-center gap-2">🎯 نظام المعايير المعتمد</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-2">
+            <CardContent className="grid grid-cols-1 gap-1.5 px-4 pb-3">
               <CriteriaBadge code="مع1" label="التملك الأساسي للموارد" color="bg-green-900/30 border-green-700/50 text-green-300" />
               <CriteriaBadge code="مع2" label="التوظيف السليم للموارد" color="bg-blue-900/30 border-blue-700/50 text-blue-300" />
               <CriteriaBadge code="مع3" label="التميز والدقة (الإدماج)" color="bg-purple-900/30 border-purple-700/50 text-purple-300" />
@@ -173,124 +283,81 @@ export default function ExamBuilder() {
 
           {/* Form */}
           <Card className="bg-white/5 border-white/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm text-white flex items-center gap-2">
-                <span>⚙️</span> معطيات الاختبار
-              </CardTitle>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <CardTitle className="text-xs text-white flex items-center gap-2">⚙️ معطيات الاختبار</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Subject */}
-              <div className="space-y-1.5">
+            <CardContent className="space-y-3 px-4 pb-4">
+              <div className="space-y-1">
                 <Label className="text-blue-200 text-xs">المادة *</Label>
                 <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white h-9">
                     <SelectValue placeholder="اختر المادة..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {SUBJECTS.map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
+                    {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Level */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className="text-blue-200 text-xs">المستوى *</Label>
                 <Select value={level} onValueChange={setLevel}>
-                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white h-9">
                     <SelectValue placeholder="اختر المستوى..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {LEVELS.map(l => (
-                      <SelectItem key={l} value={l}>{l}</SelectItem>
-                    ))}
+                    {LEVELS.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Trimester */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className="text-blue-200 text-xs">الثلاثي *</Label>
                 <Select value={trimester} onValueChange={setTrimester}>
-                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white h-9">
                     <SelectValue placeholder="اختر الثلاثي..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {TRIMESTERS.map(t => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
+                    {TRIMESTERS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Duration + Score */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
                   <Label className="text-blue-200 text-xs">المدة</Label>
                   <Select value={duration} onValueChange={setDuration}>
-                    <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectTrigger className="bg-white/10 border-white/20 text-white h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {DURATIONS.map(d => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                      ))}
+                      {DURATIONS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <Label className="text-blue-200 text-xs">المجموع (نقطة)</Label>
-                  <Input
-                    type="number"
-                    min={10}
-                    max={40}
-                    value={totalScore}
+                  <Input type="number" min={10} max={40} value={totalScore}
                     onChange={e => setTotalScore(Number(e.target.value))}
-                    className="bg-white/10 border-white/20 text-white"
-                  />
+                    className="bg-white/10 border-white/20 text-white h-9" />
                 </div>
               </div>
-
               <Separator className="bg-white/10" />
-
-              {/* Topics */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className="text-blue-200 text-xs">المحاور المقررة (اختياري)</Label>
-                <Textarea
-                  value={topics}
-                  onChange={e => setTopics(e.target.value)}
-                  placeholder="مثال: الأعداد الصحيحة، الكسور، الضرب..."
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/30 resize-none h-20"
-                />
+                <Textarea value={topics} onChange={e => setTopics(e.target.value)}
+                  placeholder="مثال: الأعداد الصحيحة، الكسور..."
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/30 resize-none h-16 text-sm" />
               </div>
-
-              {/* Additional Instructions */}
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 <Label className="text-blue-200 text-xs">تعليمات إضافية (اختياري)</Label>
-                <Textarea
-                  value={additionalInstructions}
-                  onChange={e => setAdditionalInstructions(e.target.value)}
-                  placeholder="مثال: أضف تمريناً على الهندسة، ركز على الإدماج..."
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/30 resize-none h-20"
-                />
+                <Textarea value={additionalInstructions} onChange={e => setAdditionalInstructions(e.target.value)}
+                  placeholder="مثال: أضف تمريناً على الهندسة..."
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/30 resize-none h-16 text-sm" />
               </div>
-
-              {/* Generate Button */}
-              <Button
-                onClick={handleGenerate}
+              <Button onClick={handleGenerate}
                 disabled={generateExam.isPending || !subject || !level || !trimester}
-                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 text-base"
-              >
-                {generateExam.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <span className="animate-spin">⏳</span> جارٍ بناء الاختبار...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <span>📝</span> بناء الاختبار
-                  </span>
-                )}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5">
+                {generateExam.isPending
+                  ? <span className="flex items-center gap-2"><span className="animate-spin">⏳</span> جارٍ بناء الاختبار...</span>
+                  : <span className="flex items-center gap-2"><span>📝</span> بناء الاختبار</span>}
               </Button>
             </CardContent>
           </Card>
@@ -299,93 +366,147 @@ export default function ExamBuilder() {
         {/* Right Panel: Result */}
         <div className="lg:col-span-3">
           <Card className="bg-white/5 border-white/10 h-full">
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm text-white flex items-center gap-2">
-                <span>📄</span> الاختبار المُنتَج
-                {generatedExam && (
-                  <Badge className="bg-green-600 text-white text-xs mr-2">جاهز للطباعة</Badge>
+            <CardHeader className="pb-2 pt-3 px-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="text-sm text-white flex items-center gap-2">
+                  <span>📄</span> الاختبار المُنتَج
+                  {hasExam && <Badge className="bg-green-600 text-white text-xs">جاهز</Badge>}
+                </CardTitle>
+                {hasExam && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button size="sm" variant="outline" onClick={() => handleCopy(activeTab === "exam" ? generatedExam : answerKey)}
+                      className="border-white/20 text-white hover:bg-white/10 text-xs h-7 px-2">
+                      {copied ? "✅" : "📋"} نسخ
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handlePrint(activeTab === "exam" ? generatedExam : answerKey)}
+                      className="border-white/20 text-white hover:bg-white/10 text-xs h-7 px-2">
+                      🖨️ طباعة
+                    </Button>
+                    <Button size="sm" onClick={() => handleExportWord(activeTab === "exam" ? generatedExam : answerKey)}
+                      disabled={exportWord.isPending}
+                      className="bg-blue-700 hover:bg-blue-600 text-white text-xs h-7 px-2">
+                      {exportWord.isPending ? "⏳" : "📥"} Word
+                    </Button>
+                    <Button size="sm" onClick={handleSave}
+                      disabled={saveExam.isPending}
+                      className="bg-green-700 hover:bg-green-600 text-white text-xs h-7 px-2">
+                      {saveExam.isPending ? "⏳" : "💾"} حفظ
+                    </Button>
+                    <Button size="sm" onClick={handleGenerateAnswerKey}
+                      disabled={generateAnswerKey.isPending}
+                      className="bg-purple-700 hover:bg-purple-600 text-white text-xs h-7 px-2">
+                      {generateAnswerKey.isPending ? "⏳" : "🔑"} تصحيح
+                    </Button>
+                  </div>
                 )}
-              </CardTitle>
-              {generatedExam && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCopy}
-                    className="border-white/20 text-white hover:bg-white/10 text-xs"
-                  >
-                    {copied ? "✅ تم النسخ" : "📋 نسخ"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handlePrint}
-                    className="bg-green-700 hover:bg-green-600 text-white text-xs"
-                  >
-                    🖨️ طباعة
-                  </Button>
-                </div>
-              )}
+              </div>
             </CardHeader>
-            <CardContent>
-              {!generatedExam && !generateExam.isPending && (
-                <div className="flex flex-col items-center justify-center h-80 text-center text-white/40 gap-4">
-                  <div className="text-6xl">📝</div>
+            <CardContent className="px-4 pb-4">
+              {!hasExam && !generateExam.isPending && (
+                <div className="flex flex-col items-center justify-center h-72 text-center text-white/40 gap-4">
+                  <div className="text-5xl">📝</div>
                   <div>
                     <p className="font-semibold text-white/60">أدخل معطيات الاختبار</p>
                     <p className="text-sm mt-1">حدد المادة والمستوى والثلاثي ثم اضغط "بناء الاختبار"</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 mt-4 text-xs text-white/50 max-w-sm">
-                    <div className="bg-white/5 rounded-lg p-3 text-right">
-                      <div className="font-semibold text-white/70 mb-1">✅ وضعيات مشكلة</div>
-                      <div>3–4 سندات واقعية محفزة</div>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-3 text-right">
-                      <div className="font-semibold text-white/70 mb-1">✅ نظام المعايير</div>
-                      <div>مع1 → مع2 → مع3 → مع4</div>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-3 text-right">
-                      <div className="font-semibold text-white/70 mb-1">✅ تدرج الصعوبة</div>
-                      <div>من السهل إلى الأصعب</div>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-3 text-right">
-                      <div className="font-semibold text-white/70 mb-1">✅ جدول الإسناد</div>
-                      <div>توزيع الدرجات بالمعايير</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {generateExam.isPending && (
-                <div className="flex flex-col items-center justify-center h-80 text-center gap-4">
-                  <div className="text-5xl animate-bounce">⏳</div>
-                  <div>
-                    <p className="font-semibold text-blue-300">المتفقد المميز يبني الاختبار...</p>
-                    <p className="text-sm text-white/50 mt-1">يُطبّق نظام المعايير والمقاربة بالكفايات</p>
-                  </div>
-                  <div className="flex gap-1 mt-2">
-                    {[0, 1, 2].map(i => (
-                      <div
-                        key={i}
-                        className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
-                        style={{ animationDelay: `${i * 0.2}s` }}
-                      />
+                  <div className="grid grid-cols-2 gap-2 mt-2 text-xs text-white/50 max-w-xs">
+                    {[["✅ وضعيات مشكلة", "3–4 سندات واقعية"], ["✅ نظام المعايير", "مع1 → مع2 → مع3 → مع4"],
+                      ["✅ تدرج الصعوبة", "من السهل إلى الأصعب"], ["✅ جدول الإسناد", "توزيع الدرجات"]].map(([t, d]) => (
+                      <div key={t} className="bg-white/5 rounded-lg p-2 text-right">
+                        <div className="font-semibold text-white/70 mb-0.5">{t}</div>
+                        <div>{d}</div>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {generatedExam && (
-                <div
-                  className="prose prose-invert prose-sm max-w-none text-white/90 leading-relaxed overflow-auto max-h-[700px] pr-2"
-                  style={{ direction: "rtl" }}
-                >
-                  <Streamdown>{generatedExam}</Streamdown>
+              {generateExam.isPending && (
+                <div className="flex flex-col items-center justify-center h-72 text-center gap-4">
+                  <div className="text-5xl animate-bounce">⏳</div>
+                  <div>
+                    <p className="font-semibold text-blue-300">المتفقد المميز يبني الاختبار...</p>
+                    <p className="text-sm text-white/50 mt-1">يُطبّق نظام المعايير والمقاربة بالكفايات</p>
+                  </div>
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map(i => (
+                      <div key={i} className="w-2 h-2 rounded-full bg-blue-400 animate-bounce"
+                        style={{ animationDelay: `${i * 0.2}s` }} />
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {hasExam && (
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "exam" | "answer")}>
+                  <TabsList className="bg-white/10 border border-white/20 mb-3 w-full">
+                    <TabsTrigger value="exam" className="flex-1 text-xs data-[state=active]:bg-blue-700 data-[state=active]:text-white">
+                      📄 الاختبار
+                    </TabsTrigger>
+                    <TabsTrigger value="answer" className="flex-1 text-xs data-[state=active]:bg-purple-700 data-[state=active]:text-white"
+                      disabled={!answerKey && !generateAnswerKey.isPending}>
+                      🔑 نموذج الإجابة {!answerKey && !generateAnswerKey.isPending && "(اضغط تصحيح)"}
+                      {generateAnswerKey.isPending && "⏳ جارٍ..."}
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="exam">
+                    <div className="prose prose-invert prose-sm max-w-none text-white/90 leading-relaxed overflow-auto max-h-[600px] pr-1" style={{ direction: "rtl" }}>
+                      <Streamdown>{generatedExam}</Streamdown>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="answer">
+                    {generateAnswerKey.isPending ? (
+                      <div className="flex flex-col items-center justify-center h-48 gap-3">
+                        <div className="text-4xl animate-bounce">🔑</div>
+                        <p className="text-purple-300 font-semibold">يُعدّ نموذج الإجابة النموذجية...</p>
+                      </div>
+                    ) : answerKey ? (
+                      <div className="prose prose-invert prose-sm max-w-none text-white/90 leading-relaxed overflow-auto max-h-[600px] pr-1" style={{ direction: "rtl" }}>
+                        <Streamdown>{answerKey}</Streamdown>
+                      </div>
+                    ) : null}
+                  </TabsContent>
+                </Tabs>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Library Dialog */}
+      <Dialog open={showLibrary} onOpenChange={setShowLibrary}>
+        <DialogContent className="bg-slate-900 border-white/20 text-white max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              📚 مكتبة الاختبارات المحفوظة
+            </DialogTitle>
+          </DialogHeader>
+          {loadingExams ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin text-3xl">⏳</div>
+            </div>
+          ) : !savedExams || savedExams.length === 0 ? (
+            <div className="text-center py-10 text-white/40">
+              <div className="text-4xl mb-3">📭</div>
+              <p>لا توجد اختبارات محفوظة بعد</p>
+              <p className="text-sm mt-1">أنشئ اختباراً واضغط "حفظ" لإضافته هنا</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {savedExams.map(exam => (
+                <LibraryItem
+                  key={exam.id}
+                  exam={exam as SavedExam}
+                  onLoad={handleLoadFromLibrary}
+                  onDelete={(id) => deleteExam.mutate({ id })}
+                />
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
