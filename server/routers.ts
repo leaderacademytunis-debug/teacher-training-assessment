@@ -4036,6 +4036,71 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         return { success };
       }),
   }),
+
+  // ===== EDUGPT: Lesson Plan Generator =====
+  edugpt: router({
+    generateLesson: protectedProcedure
+      .input(z.object({
+        level: z.string(),
+        subject: z.string(),
+        topic: z.string(),
+        objectives: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const systemPrompt = `أنت خبير تربوي متخصص في المنظومة التربوية التونسية. مهمتك توليد جذاذات تربوية احترافية ومتكاملة.
+
+القواعد الأساسية:
+- استخدم المصطلحات التربوية التونسية الرسمية (جذاذة، حصة، كفاءة، نشاط، تقييم تكويني...)
+- اعتمد بنية الجذاذة التونسية الرسمية: المعطيات العامة، الأهداف، التمشي البيداغوجي، التقييم
+- أدرج أمثلة من البيئة التونسية (الزيتون، الحرف التقليدية، الجغرافيا التونسية...)
+- قسّم الحصة إلى مراحل واضحة: وضعية الانطلاق، البناء، الاستثمار، التقييم
+- اذكر الوسائل التعليمية المناسبة
+- أضف خانة التمييز (الدعم والإثراء)
+- اكتب بالعربية الفصحى المبسطة`;
+
+        const userMsg = `أنشئ جذاذة تربوية كاملة للمعطيات التالية:
+- المستوى: ${input.level}
+- المادة: ${input.subject}
+- موضوع الدرس: ${input.topic}${input.objectives ? `\n- الأهداف المطلوبة: ${input.objectives}` : ""}
+
+أنشئ الجذاذة بالشكل الرسمي التونسي الكامل.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userMsg },
+          ],
+        });
+
+        const content = (response.choices[0]?.message?.content as string) ?? "";
+        return { content };
+      }),
+
+    exportLessonAsPdf: protectedProcedure
+      .input(z.object({
+        content: z.string(),
+        subject: z.string(),
+        topic: z.string(),
+        level: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { exportConversationAsPDF } = await import("./exportConversation");
+        const messages = [
+          { role: "assistant" as const, content: input.content, timestamp: Date.now() },
+        ];
+        const pdfBuffer = await exportConversationAsPDF({
+          title: `جذاذة: ${input.subject} — ${input.topic}`,
+          messages,
+          createdAt: new Date(),
+          subject: input.subject,
+          level: input.level,
+          language: "arabic",
+        });
+        const base64 = pdfBuffer.toString("base64");
+        return { base64 };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
