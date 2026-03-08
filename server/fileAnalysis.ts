@@ -1,5 +1,5 @@
 import { PDFParse } from "pdf-parse";
-import { createWorker } from "tesseract.js";
+import { invokeLLM } from "./_core/llm";
 
 export interface FileAnalysisResult {
   text: string;
@@ -14,16 +14,26 @@ export interface FileAnalysisResult {
  */
 export async function analyzePDF(fileBuffer: Buffer): Promise<FileAnalysisResult> {
   try {
-    const parser = new PDFParse(fileBuffer);
+    // PDFParse requires Uint8Array, not Buffer
+    const uint8Array = new Uint8Array(fileBuffer);
+    const parser = new PDFParse(uint8Array);
     const result = await parser.getText();
-    
+
+    const text = result.text?.trim() || "";
+    if (!text || text.length < 10) {
+      throw new Error("PDF_EMPTY_TEXT");
+    }
+
     return {
-      text: result.text,
+      text,
       pageCount: result.total,
     };
-  } catch (error) {
-    console.error("Error analyzing PDF:", error);
-    throw new Error("Failed to extract text from PDF");
+  } catch (error: any) {
+    if (error?.message === "PDF_EMPTY_TEXT") {
+      throw new Error("الملف PDF يحتوي على صور فقط (مسح ضوئي). يُرجى رفع صورة مباشرةً.");
+    }
+    console.error("Error analyzing PDF:", error?.message || error);
+    throw new Error(`فشل استخراج النص من ملف PDF: ${error?.message || "خطأ غير معروف"}`);
   }
 }
 
@@ -35,22 +45,38 @@ export async function analyzePDF(fileBuffer: Buffer): Promise<FileAnalysisResult
  */
 export async function analyzeImage(
   fileBuffer: Buffer,
-  language: string = "ara+fra+eng"
+  mimeType: string = "image/jpeg"
 ): Promise<FileAnalysisResult> {
-  const worker = await createWorker(language);
-  
   try {
-    const { data } = await worker.recognize(fileBuffer);
-    
+    const base64 = fileBuffer.toString("base64");
+    const dataUrl = `data:${mimeType};base64,${base64}`;
+
+    const response = await invokeLLM({
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image_url",
+              image_url: { url: dataUrl, detail: "high" },
+            },
+            {
+              type: "text",
+              text: "استخرج كل النص الموجود في هذه الصورة بدقة. أعد النص كما هو دون أي تعليق أو تعديل.",
+            },
+          ],
+        },
+      ],
+    });
+
+    const text = response?.choices?.[0]?.message?.content || "";
     return {
-      text: data.text,
-      language: data.text ? "detected" : undefined,
+      text: typeof text === "string" ? text : JSON.stringify(text),
+      language: "detected",
     };
-  } catch (error) {
-    console.error("Error analyzing image:", error);
-    throw new Error("Failed to extract text from image");
-  } finally {
-    await worker.terminate();
+  } catch (error: any) {
+    console.error("Error analyzing image:", error?.message || error);
+    throw new Error(`فشل استخراج النص من الصورة: ${error?.message || "خطأ غير معروف"}`);
   }
 }
 
@@ -67,8 +93,19 @@ export async function analyzeFile(
   if (mimeType === "application/pdf") {
     return await analyzePDF(fileBuffer);
   } else if (mimeType.startsWith("image/")) {
-    return await analyzeImage(fileBuffer);
+    return await analyzeImage(fileBuffer, mimeType);
+  } else if (
+    mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    mimeType === "application/msword"
+  ) {
+    try {
+      const mammoth = await import("mammoth");
+      const result = await mammoth.extractRawText({ buffer: fileBuffer });
+      return { text: result.value?.trim() || "" };
+    } catch (error: any) {
+      throw new Error(`فشل استخراج النص من ملف Word: ${error?.message || "خطأ غير معروف"}`);
+    }
   } else {
-    throw new Error(`Unsupported file type: ${mimeType}`);
+    throw new Error(`نوع الملف غير مدعوم: ${mimeType}`);
   }
 }
