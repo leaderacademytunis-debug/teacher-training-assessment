@@ -85,6 +85,110 @@ const STATS = [
   { value: "2026", labelAr: "متوافق مع البرامج", labelFr: "Conforme aux programmes" },
 ];
 
+function NewsletterSection() {
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
+  const { t } = useLanguage();
+
+  const subscribeMutation = trpc.newsletter.subscribe.useMutation({
+    onSuccess: (data) => {
+      if (data.alreadySubscribed) {
+        setAlreadySubscribed(true);
+      }
+      setSubmitted(true);
+      setEmail("");
+      setName("");
+    },
+  });
+
+  return (
+    <section className="py-20 relative overflow-hidden" dir="rtl" style={{ background: "linear-gradient(135deg, #0D1B5E 0%, #1A237E 50%, #1565C0 100%)" }}>
+      <div className="absolute inset-0 opacity-5" style={{ backgroundImage: "radial-gradient(circle at 30% 50%, #FF6D00 0%, transparent 60%), radial-gradient(circle at 70% 50%, #42A5F5 0%, transparent 60%)" }} />
+      <div className="relative max-w-3xl mx-auto px-4 text-center">
+        {/* Badge */}
+        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-6 text-white" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.4)" }}>
+          <Sparkles className="w-4 h-4" style={{ color: "#FF6D00" }} />
+          {t("مجاني 100%", "100% Gratuit", "100% Free")}
+        </span>
+
+        <h2 className="text-3xl lg:text-4xl font-black text-white mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
+          {t("احصل على دليلك المجاني", "Obtenez votre guide gratuit", "Get Your Free Guide")}
+        </h2>
+        <p className="text-2xl font-bold mb-3" style={{ color: "#FF6D00" }}>
+          {t("الذكاء الاصطناعي في الفصل الدراسي التونسي 2026", "L'IA dans la classe tunisienne 2026", "AI in the Tunisian Classroom 2026")}
+        </p>
+        <p className="text-blue-200 text-lg mb-8">
+          {t("انضم إلى أكثر من 500 مدرس تونسي يطوّرون مهاراتهم معنا", "Rejoignez plus de 500 enseignants tunisiens", "Join 500+ Tunisian teachers")}
+        </p>
+
+        {submitted ? (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(255,109,0,0.2)" }}>
+              <Award className="w-8 h-8" style={{ color: "#FF6D00" }} />
+            </div>
+            <h3 className="text-white text-xl font-bold mb-2">
+              {alreadySubscribed
+                ? t("أنت مشترك بالفعل!", "Déjà abonné!", "Already subscribed!")
+                : t("شكراً لاشتراكك!", "Merci pour votre inscription!", "Thank you for subscribing!")}
+            </h3>
+            <p className="text-blue-200">
+              {t("سيصلك الدليل قريباً على بريدك الإلكتروني", "Le guide vous sera envoyé par email", "The guide will be sent to your email")}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <input
+                type="text"
+                placeholder={t("اسمك (اختياري)", "Votre nom (optionnel)", "Your name (optional)")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl text-gray-900 bg-white placeholder-gray-400 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+                dir="rtl"
+              />
+              <input
+                type="email"
+                placeholder={t("بريدك الإلكتروني *", "Votre email *", "Your email *")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl text-gray-900 bg-white placeholder-gray-400 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+                dir="ltr"
+              />
+            </div>
+            <Button
+              onClick={() => {
+                if (!email) return;
+                subscribeMutation.mutate({ email, name: name || undefined });
+              }}
+              disabled={subscribeMutation.isPending || !email}
+              className="w-full py-3 text-white font-bold text-lg rounded-xl hover:scale-105 transition-transform disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 8px 24px rgba(255,109,0,0.4)" }}
+            >
+              {subscribeMutation.isPending ? (
+                <><Loader2 className="w-5 h-5 animate-spin ml-2" />{t("جاري...", "En cours...", "Loading...")}</>
+              ) : (
+                <><Sparkles className="w-5 h-5 ml-2" />{t("احصل على الدليل المجاني", "Obtenir le guide gratuit", "Get Free Guide")}</>
+              )}
+            </Button>
+            {subscribeMutation.isError && (
+              <p className="text-red-300 text-sm mt-2">{t("حدث خطأ، حاول مرة أخرى", "Une erreur est survenue", "An error occurred")}</p>
+            )}
+          </div>
+        )}
+
+        {/* Trust indicators */}
+        <div className="flex flex-wrap justify-center gap-6 mt-8 text-blue-200 text-sm">
+          <span className="flex items-center gap-2"><Shield className="w-4 h-4" />{t("لا رسائل مزعجة", "Pas de spam", "No spam")}</span>
+          <span className="flex items-center gap-2"><Users className="w-4 h-4" />{t("+500 مدرس تونسي", "+500 enseignants", "+500 teachers")}</span>
+          <span className="flex items-center gap-2"><Award className="w-4 h-4" />{t("محتوى حصري", "Contenu exclusif", "Exclusive content")}</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -536,6 +640,87 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* ===== TESTIMONIALS SECTION ===== */}
+      <section className="py-20 bg-gray-50" dir="rtl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-4" style={{ background: "rgba(26,35,126,0.08)", color: "#1A237E" }}>
+              <Star className="w-4 h-4" />
+              {t("ماذا يقول المربون عنا؟", "Ce que disent nos enseignants", "What Teachers Say")}
+            </span>
+            <h2 className="text-3xl lg:text-4xl font-black mb-4" style={{ fontFamily: "Cairo, sans-serif", color: "#1A237E" }}>
+              {t("ماذا يقول المربون عنا؟", "Témoignages de nos enseignants", "Teacher Testimonials")}
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+              {t("آراء حقيقية من مدرسين تونسيين استخدموا منصة Leader Academy", "Avis réels d'enseignants tunisiens", "Real feedback from Tunisian teachers")}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "الأستاذ محمد البوعزيزي",
+                role: "مدرس رياضيات — المرحلة الإعدادية، سوسة",
+                text: "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية!",
+                rating: 5,
+                avatar: "م",
+                color: "#1A237E",
+              },
+              {
+                name: "الأستاذة مريم العامري",
+                role: "مدرسة علوم — المرحلة الابتدائية، تونس"
+                , text: "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له. Leader Academy حوّلت طريقة تدريسي بالكامل.",
+                rating: 5,
+                avatar: "م",
+                color: "#FF6D00",
+              },
+              {
+                name: "الأستاذ أحمد الطرابلسي",
+                role: "مدرس لغة عربية — الثانوية، صفاقس",
+                text: "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية. أنصح بها كل معلم تونسي.",
+                rating: 5,
+                avatar: "أ",
+                color: "#1565C0",
+              },
+            ].map((testimonial, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 relative"
+              >
+                {/* Quote icon */}
+                <div className="absolute top-6 left-6 text-5xl font-black opacity-10" style={{ color: testimonial.color, fontFamily: "Georgia, serif" }}>“</div>
+
+                {/* Stars */}
+                <div className="flex gap-1 mb-4">
+                  {Array.from({ length: testimonial.rating }).map((_, s) => (
+                    <Star key={s} className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />
+                  ))}
+                </div>
+
+                {/* Text */}
+                <p className="text-gray-700 leading-relaxed mb-6 text-sm">
+                  “{testimonial.text}”
+                </p>
+
+                {/* Author */}
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style={{ background: `linear-gradient(135deg, ${testimonial.color}, ${testimonial.color}99)` }}>
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">{testimonial.name}</p>
+                    <p className="text-gray-500 text-xs">{testimonial.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== NEWSLETTER SECTION ===== */}
+      <NewsletterSection />
 
       {/* ===== CTA SECTION ===== */}
       <section className="py-20 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A237E 0%, #1565C0 100%)" }}>

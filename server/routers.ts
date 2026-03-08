@@ -4138,7 +4138,39 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         const base64 = pdfBuffer.toString("base64");
         return { base64 };
       }),
+   }),
+
+  newsletter: router({
+    subscribe: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        name: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { newsletterSubscribers } = await import("../drizzle/schema");
+        // Check if already subscribed
+        const existing = await database.select()
+          .from(newsletterSubscribers)
+          .where(eq(newsletterSubscribers.email, input.email))
+          .limit(1);
+        if (existing.length > 0) {
+          return { success: true, alreadySubscribed: true };
+        }
+        // Insert new subscriber
+        await database.insert(newsletterSubscribers).values({
+          email: input.email,
+          name: input.name ?? null,
+        });
+        // Notify owner
+        const { notifyOwner } = await import("./_core/notification");
+        await notifyOwner({
+          title: `مشترك جديد في النشرة البريدية`,
+          content: `البريد: ${input.email}${input.name ? ` | الاسم: ${input.name}` : ""}`,
+        });
+        return { success: true, alreadySubscribed: false };
+      }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

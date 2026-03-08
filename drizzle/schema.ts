@@ -693,3 +693,13 @@ export const savedEvaluations = mysqlTable("saved_evaluations", {
 
 export type SavedEvaluation = typeof savedEvaluations.$inferSelect;
 export type InsertSavedEvaluation = typeof savedEvaluations.$inferInsert;
+
+// ===== NEWSLETTER SUBSCRIBERS =====
+export const newsletterSubscribers = mysqlTable("newsletter_subscribers", {
+  id: int("id").primaryKey().autoincrement(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type InsertNewsletterSubscriber = typeof newsletterSubscribers.$inferInsert;
