@@ -207,7 +207,7 @@ export default function SelfEvaluationTemplate() {
             شبكة التقييم الذاتي للمذكرة البيداغوجية
           </CardTitle>
           <p className="text-sm text-blue-600">
-            وفق معايير التفتيش التربوي التونسي — قيّم مذكرتك قبل تقديمها للمتفقد
+            وفق معايير التفقد التربوي التونسي — قيّم مذكرتك قبل تقديمها للمتفقد
           </p>
         </CardHeader>
         <CardContent>

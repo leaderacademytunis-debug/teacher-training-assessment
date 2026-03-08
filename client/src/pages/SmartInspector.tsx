@@ -51,7 +51,7 @@ const TABS: Tab[] = [
     color: "text-blue-700",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-300",
-    description: "تقييم مذكرة الدرس وفق معايير التفتيش الرسمية التونسية",
+    description: "تقييم مذكرة الدرس وفق معايير التفقد الرسمية التونسية",
     placeholder: "الصق هنا نص مذكرة الدرس كاملةً أو أبرز محاورها الأساسية (المادة، المستوى، الكفايات، الأهداف، مراحل الدرس، التقييم...)",
     hint: "💡 كلما كانت المذكرة أكثر تفصيلاً، كان التقرير أكثر دقةً وعمقاً.",
   },
@@ -379,7 +379,7 @@ export default function SmartInspector() {
               ) : (
                 <>
                   <Search className="w-5 h-5" />
-                  ابدأ التفتيش الذكي
+                  ابدأ التفقد الذكي
                 </>
               )}
             </Button>
@@ -401,7 +401,7 @@ export default function SmartInspector() {
                 </div>
                 <h3 className="font-bold text-gray-700 text-lg mb-2">في انتظار الوثيقة</h3>
                 <p className="text-gray-400 text-sm max-w-xs">
-                  الصق نص وثيقتك التربوية في الحقل المجاور ثم اضغط "ابدأ التفتيش الذكي"
+                  الصق نص وثيقتك التربوية في الحقل المجاور ثم اضغط "ابدأ التفقد الذكي"
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-3 w-full max-w-xs">
                   {[
@@ -427,7 +427,7 @@ export default function SmartInspector() {
                     <Search className="w-9 h-9 text-white animate-pulse" />
                   </div>
                 </div>
-                <h3 className="font-bold text-gray-700 text-lg mb-2">جارٍ التفتيش الذكي...</h3>
+                <h3 className="font-bold text-gray-700 text-lg mb-2">جارٍ التفقد الذكي...</h3>
                 <p className="text-gray-400 text-sm">يقوم المتفقد الذكي بتحليل وثيقتك وفق المعايير الرسمية</p>
                 <div className="mt-6 space-y-2 w-full max-w-xs">
                   {["تحليل البنية العامة...", "مراجعة الكفايات والأهداف...", "تقييم الأنشطة والوسائل...", "صياغة التوصيات..."].map((step, i) => (
@@ -449,7 +449,7 @@ export default function SmartInspector() {
                       <ClipboardCheck className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="font-bold text-gray-800 text-sm">تقرير التفتيش</p>
+                      <p className="font-bold text-gray-800 text-sm">تقرير التفقد</p>
                       <p className="text-xs text-gray-500">{currentTab.labelAr}</p>
                     </div>
                   </div>
@@ -509,12 +509,12 @@ export default function SmartInspector() {
             {
               icon: "🎓",
               title: "معايير رسمية تونسية",
-              desc: "التقييم وفق منهجية وزارة التربية التونسية ومعايير التفتيش البيداغوجي الرسمية",
+              desc: "التقييم وفق منهجية وزارة التربية التونسية ومعايير التفقد البيداغوجي الرسمية",
             },
             {
               icon: "🤖",
               title: "ذكاء اصطناعي متخصص",
-              desc: "نموذج مدرَّب على آلاف الوثائق التربوية التونسية مع خبرة 30 سنة في التفتيش",
+              desc: "نموذج مدرَّب على آلاف الوثائق التربوية التونسية مع خبرة 30 سنة في التفقد",
             },
             {
               icon: "📊",

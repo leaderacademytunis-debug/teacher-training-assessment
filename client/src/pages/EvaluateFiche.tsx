@@ -361,7 +361,7 @@ export default function EvaluateFiche() {
             </div>
             <div>
               <h1 className="font-bold text-base leading-tight">تقييم الفيشة البيداغوجية</h1>
-              <p className="text-xs text-muted-foreground">وفق الشبكة الرسمية للتفتيش التربوي</p>
+              <p className="text-xs text-muted-foreground">وفق الشبكة الرسمية للتفقد التربوي</p>
             </div>
           </div>
         </div>
@@ -500,7 +500,7 @@ export default function EvaluateFiche() {
             <Card className="border-violet-200 bg-violet-50">
               <CardContent className="pt-4 pb-4">
                 <p className="text-sm text-violet-700 leading-relaxed text-center">
-                  ارفع فيشتك البيداغوجية (PDF أو Word) وستحصل على تقييم فوري على 20 وفق الشبكة الرسمية للتفتيش التربوي التونسي، مع ملاحظات تفصيلية لكل معيار.
+                  ارفع فيشتك البيداغوجية (PDF أو Word) وستحصل على تقييم فوري على 20 وفق الشبكة الرسمية للتفقد التربوي التونسي، مع ملاحظات تفصيلية لكل معيار.
                 </p>
               </CardContent>
             </Card>
