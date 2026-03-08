@@ -104,6 +104,41 @@ export default function EduGPT() {
     setTopic(ex.topic);
   };
 
+  // ===== المتفقد الذكي =====
+  const [inspectText, setInspectText] = useState("");
+  const [inspectReport, setInspectReport] = useState("");
+  const [inspectTab, setInspectTab] = useState<"generate" | "inspect">("generate");
+  const [inspectCopied, setInspectCopied] = useState(false);
+  const inspectReportRef = useRef<HTMLDivElement>(null);
+
+  const inspectMutation = trpc.edugpt.inspectLesson.useMutation({
+    onSuccess: (data) => {
+      const reportText = typeof data.report === "string" ? data.report : String(data.report ?? "");
+      setInspectReport(reportText);
+      setTimeout(() => inspectReportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    },
+    onError: (err) => {
+      toast.error("حدث خطأ أثناء التحليل: " + err.message);
+    },
+  });
+
+  const handleInspect = () => {
+    if (!inspectText.trim() || inspectText.trim().length < 50) {
+      toast.error("يرجى لصق نص الجذاذة (لا يقل عن 50 حرفاً)");
+      return;
+    }
+    setInspectReport("");
+    inspectMutation.mutate({ lessonText: inspectText });
+  };
+
+  const handleInspectCopy = async () => {
+    if (!inspectReport) return;
+    await navigator.clipboard.writeText(inspectReport);
+    setInspectCopied(true);
+    toast.success("تم نسخ تقرير التفقد إلى الحافظة");
+    setTimeout(() => setInspectCopied(false), 2000);
+  };
+
   const isLoading = generateMutation.isPending;
   const hasResult = !!result;
 
@@ -471,6 +506,160 @@ export default function EduGPT() {
                   </Link>
                 </div>
               )}
+            </div>{/* end grid */}
+          </div>{/* end main content */}
+        </div>{/* end outer card */}
+      </div>{/* end max-w-7xl */}
+
+      {/* ===== المتفقد الذكي سكشن ===== */}
+      <div className="max-w-7xl mx-auto px-4 pb-16 mt-10">
+        <div className="rounded-2xl overflow-hidden shadow-xl border-2" style={{ borderColor: "#1A237E", background: "white" }}>
+
+          {/* Header المتفقد */}
+          <div className="px-8 py-6" style={{ background: "linear-gradient(135deg, #1A237E 0%, #283593 100%)" }}>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl" style={{ background: "rgba(255,109,0,0.2)", border: "2px solid #FF6D00" }}>
+                👨‍🏫
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">عرض على المتفقد الذكي</h2>
+                <p className="text-blue-200 text-sm mt-0.5">تقرير تفقد رسمي بمعايير وزارة التربية التونسية — رتبة مميز، 30 سنة خبرة</p>
+              </div>
+              <div className="mr-auto flex gap-2">
+                {[
+                  { icon: "✅", text: "انسجام بيداغوجي" },
+                  { icon: "📊", text: "تمشّي الحصة" },
+                  { icon: "🎯", text: "دقة علمية" },
+                  { icon: "🏆", text: "قرار نهائي" },
+                ].map((badge, i) => (
+                  <div key={i} className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs" style={{ background: "rgba(255,255,255,0.15)", color: "white" }}>
+                    <span>{badge.icon}</span>
+                    <span>{badge.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* محتوى */}
+          <div className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+              {/* يسار: منطقة الإدخال */}
+              <div>
+                <label className="block text-sm font-bold mb-2" style={{ color: "#1A237E" }}>
+                  📝 الصق نص الجذاذة أو المذكرة هنا:
+                </label>
+                <Textarea
+                  value={inspectText}
+                  onChange={(e) => setInspectText(e.target.value)}
+                  placeholder="الصق نص جذاذتك أو مذكرتك هنا... سيقوم المتفقد الذكي بتحليلها وإعطائك تقرير تفقد رسمي شاملاً."
+                  className="w-full text-sm resize-none border-2 focus:ring-2"
+                  style={{ minHeight: "280px", borderColor: "#C5CAE9", fontFamily: "Cairo, sans-serif", direction: "rtl" }}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-gray-400">{inspectText.length} حرف (50 حرف كحد أدنى)</p>
+                  {inspectText && (
+                    <button onClick={() => setInspectText("")} className="text-xs text-red-400 hover:text-red-600">حذف النص</button>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleInspect}
+                  disabled={inspectMutation.isPending || inspectText.trim().length < 50}
+                  className="w-full mt-4 h-12 text-base font-bold rounded-xl shadow-lg transition-all"
+                  style={{ background: inspectMutation.isPending ? "#9E9E9E" : "linear-gradient(135deg, #FF6D00 0%, #FF8F00 100%)", color: "white" }}
+                >
+                  {inspectMutation.isPending ? (
+                    <><Loader2 className="w-5 h-5 animate-spin ml-2" />جاري التحليل... (قد يستغرق 30 ثانية)</>
+                  ) : (
+                    <><span className="ml-2 text-xl">👨‍🏫</span>عرض على المتفقد الذكي</>
+                  )}
+                </Button>
+
+                {/* تعليمات */}
+                <div className="mt-4 p-4 rounded-xl border border-blue-100" style={{ background: "#EEF2FF" }}>
+                  <p className="text-xs font-bold mb-2" style={{ color: "#1A237E" }}>💡 ماذا يحلّل المتفقد؟</p>
+                  <ul className="space-y-1">
+                    {[
+                      "الانسجام بين الأهداف والكفايات",
+                      "تمشّي الحصة ومحورية المتعلّم",
+                      "الدقة العلمية واللغوية",
+                      "هندسة الاختبارات (سند، تعليمة، معيار)",
+                      "الإبداع الرقمي ودمج الذكاء الاصطناعي",
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2 text-xs" style={{ color: "#3949AB" }}>
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#FF6D00" }} />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* يمين: تقرير التفقد */}
+              <div ref={inspectReportRef}>
+                {inspectMutation.isPending ? (
+                  <div className="h-full flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border-2 border-dashed" style={{ borderColor: "#FF6D00", background: "#FFF8F0" }}>
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl animate-pulse" style={{ background: "rgba(255,109,0,0.1)" }}>
+                      👨‍🏫
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold" style={{ color: "#1A237E" }}>المتفقد يقرأ ويحلّل...</p>
+                      <p className="text-sm text-gray-500 mt-1">جاري إعداد تقرير التفقد الرسمي</p>
+                    </div>
+                    <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#FF6D00" }} />
+                  </div>
+                ) : inspectReport ? (
+                  <div className="rounded-2xl border-2 overflow-hidden" style={{ borderColor: "#1A237E" }}>
+                    {/* رأس التقرير */}
+                    <div className="px-6 py-4 flex items-center justify-between" style={{ background: "#1A237E" }}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">📜</span>
+                        <div>
+                          <p className="text-white font-bold text-sm">تقرير التفقد الرسمي</p>
+                          <p className="text-blue-200 text-xs">وزارة التربية التونسية — رتبة مميز</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleInspectCopy}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                        style={{ background: inspectCopied ? "#4CAF50" : "rgba(255,255,255,0.2)", color: "white" }}
+                      >
+                        {inspectCopied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        {inspectCopied ? "تم النسخ" : "نسخ التقرير"}
+                      </button>
+                    </div>
+                    {/* محتوى التقرير */}
+                    <div className="p-6 overflow-y-auto" style={{ maxHeight: "500px", background: "#FAFBFF", fontFamily: "Cairo, sans-serif", direction: "rtl" }}>
+                      <Streamdown>{inspectReport}</Streamdown>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center gap-4 p-8 rounded-2xl border-2 border-dashed" style={{ borderColor: "#C5CAE9", background: "#F8F9FF", minHeight: "300px" }}>
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl" style={{ background: "rgba(26,35,126,0.08)" }}>
+                      👨‍🏫
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold" style={{ color: "#1A237E" }}>المتفقد الذكي في خدمتك</p>
+                      <p className="text-sm text-gray-500 mt-1 max-w-xs">الصق نص جذاذتك واضغط على الزر للحصول على تقرير تفقد رسمي شامل</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 w-full max-w-xs">
+                      {[
+                        { icon: "📜", text: "توطئة تربوية" },
+                        { icon: "✅", text: "نقاط القوة" },
+                        { icon: "⚠️", text: "إخلالات" },
+                        { icon: "🏆", text: "قرار نهائي" },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 bg-white text-xs text-gray-600">
+                          <span>{item.icon}</span>
+                          <span>{item.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
