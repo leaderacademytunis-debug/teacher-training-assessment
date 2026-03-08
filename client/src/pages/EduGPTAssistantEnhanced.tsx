@@ -12,6 +12,7 @@ import { Streamdown } from "streamdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ExportMetadataModal, type ExportMetadata } from "@/components/ExportMetadataModal";
+import PrintPreview from "@/components/PrintPreview";
 
 // ===== TRANSLATIONS =====
 const UI = {
@@ -235,6 +236,7 @@ export default function EduGPTAssistantEnhanced() {
   // Export metadata modal state
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportModalFormat, setExportModalFormat] = useState<"pdf" | "word">("pdf");
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // Read templateId from URL query params
   const templateId = useMemo(() => {
@@ -1073,6 +1075,11 @@ export default function EduGPTAssistantEnhanced() {
                         {exportCleanWordMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
                         Word ✨ (مذكرة نظيفة)
                       </DropdownMenuItem>
+                      <div className="border-t my-1" />
+                      <DropdownMenuItem onClick={() => setShowPrintPreview(true)}>
+                        <FileText className="h-4 w-4 ml-2" />
+                        📄 معاينة الطباعة A4
+                      </DropdownMenuItem>
                     </>
                   )}
                 </DropdownMenuContent>
@@ -1384,6 +1391,17 @@ export default function EduGPTAssistantEnhanced() {
       subject={selectedSubject}
       level={selectedLevel}
     />
+    {showPrintPreview && hasAssistantMessage && (
+      <PrintPreview
+        content={messages.filter(m => m.role === "assistant").slice(-1)[0]?.content || ""}
+        title={selectedSubject ? `جذاذة ${selectedSubject}` : "وثيقة تربوية"}
+        subject={selectedSubject || ""}
+        level={selectedLevel || ""}
+        type="lesson"
+        studentName={false}
+        onClose={() => setShowPrintPreview(false)}
+      />
+    )}
     </>
   );
 }

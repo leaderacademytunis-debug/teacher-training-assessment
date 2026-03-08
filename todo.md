@@ -1513,3 +1513,14 @@
 - [ ] CSS @media print rules لضمان التنسيق
 - [ ] ربط PrintPreview مع ExamBuilder
 - [ ] ربط PrintPreview مع المساعد البيداغوجي
+
+## Print-Ready Preview Enhancement (جلسة 23)
+- [x] إعادة كتابة PrintPreview بـ CSS @media print حقيقي لتنسيق A4
+- [x] ترويسة رسمية متكررة في كل صفحة مطبوعة (thead/CSS running headers)
+- [x] ترقيم صفحات تلقائي (1/2, 2/2) في أسفل كل صفحة
+- [x] وضع تدرج رمادي/تباين عالي للصور عند الطباعة
+- [x] تصدير PDF من الخادم (نظيف وغير قابل للتعديل)
+- [x] تصدير Word (.docx) قابل للتعديل
+- [x] معاينة حية WYSIWYG تطابق الورقة المطبوعة
+- [x] ربط PrintPreview مع EduGPT (الجذاذات والدروس)
+- [x] التأكد من ربط PrintPreview مع ExamBuilder
