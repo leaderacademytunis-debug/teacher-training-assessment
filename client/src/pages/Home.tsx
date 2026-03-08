@@ -32,16 +32,16 @@ const LANGUAGES: { code: AppLanguage; label: string; flag: string }[] = [
 ];
 
 const NAV_LINKS = [
-  { href: "/", labelAr: "الرئيسية", labelFr: "Accueil", labelEn: "Home" },
-  { href: "/assistant", labelAr: "EDUGPT", labelFr: "EDUGPT", labelEn: "EDUGPT" },
-  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector" },
-  { href: "/exam-builder", labelAr: "بناء الاختبار", labelFr: "Créer un examen", labelEn: "Exam Builder" },
-  { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio" },
-  { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment" },
-  { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs" },
-  { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About" },
-  { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing" },
-  { href: "/admin", labelAr: "لوحة التحكم", labelFr: "Admin", labelEn: "Admin" },
+  { href: "/", labelAr: "الرئيسية", labelFr: "Accueil", labelEn: "Home", adminOnly: false },
+  { href: "/assistant", labelAr: "EDUGPT", labelFr: "EDUGPT", labelEn: "EDUGPT", adminOnly: false },
+  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector", adminOnly: false },
+  { href: "/exam-builder", labelAr: "بناء الاختبار", labelFr: "Créer un examen", labelEn: "Exam Builder", adminOnly: false },
+  { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio", adminOnly: false },
+  { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment", adminOnly: false },
+  { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false },
+  { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false },
+  { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false },
+  { href: "/admin", labelAr: "لوحة التحكم", labelFr: "Admin", labelEn: "Admin", adminOnly: true },
 ];
 
 const FEATURES = [
@@ -239,7 +239,7 @@ export default function Home() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              {NAV_LINKS.map((link) => (
+              {NAV_LINKS.filter(link => !link.adminOnly || user?.role === "admin").map((link) => (
                 <Link key={link.href} href={link.href}>
                   <button className="text-blue-100 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap">
                     {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
@@ -311,7 +311,7 @@ export default function Home() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="lg:hidden border-t border-white/20 py-3 space-y-1">
-              {NAV_LINKS.map((link) => (
+              {NAV_LINKS.filter(link => !link.adminOnly || user?.role === "admin").map((link) => (
                 <Link key={link.href} href={link.href}>
                   <button
                     className="block w-full text-right text-blue-100 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium"

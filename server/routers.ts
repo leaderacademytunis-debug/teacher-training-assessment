@@ -5206,6 +5206,23 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
       // Notify owner
       const { notifyOwner } = await import("./_core/notification");
       await notifyOwner({ title: "\u2705 تم تفعيل خدمة", content: `تم تفعيل ${serviceNames.join("، ")} للمستخدم #${request.userId}` });
+      // Send email to user about approval
+      try {
+        const { sendEmail, getPaymentApprovedEmailTemplate } = await import("./emailService");
+        const [requestUser] = await database.select().from(users).where(eq(users.id, request.userId)).limit(1);
+        if (requestUser?.email) {
+          await sendEmail({
+            to: requestUser.email,
+            subject: `🎉 تم تفعيل اشتراكك في ليدر أكاديمي`,
+            html: getPaymentApprovedEmailTemplate(
+              requestUser.arabicName || requestUser.name || requestUser.email,
+              serviceNames
+            ),
+          });
+        }
+      } catch (emailErr) {
+        console.error("[Payment] Failed to send approval email to user:", emailErr);
+      }
       return { success: true };
     }),
 
@@ -5230,6 +5247,24 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         messageAr: `السبب: ${input.rejectionReason}. يرجى التواصل مع الإدارة لمزيد من المعلومات.`,
         type: "enrollment_rejected",
       });
+      // Send email to user about rejection
+      try {
+        const { sendEmail, getPaymentRejectedEmailTemplate } = await import("./emailService");
+        const { users } = await import("../drizzle/schema");
+        const [requestUser] = await database.select().from(users).where(eq(users.id, request.userId)).limit(1);
+        if (requestUser?.email) {
+          await sendEmail({
+            to: requestUser.email,
+            subject: `إشعار بخصوص طلب الدفع - ليدر أكاديمي`,
+            html: getPaymentRejectedEmailTemplate(
+              requestUser.arabicName || requestUser.name || requestUser.email,
+              input.rejectionReason
+            ),
+          });
+        }
+      } catch (emailErr) {
+        console.error("[Payment] Failed to send rejection email to user:", emailErr);
+      }
       return { success: true };
     }),
 
@@ -5337,6 +5372,26 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
       // Notify owner
       const { notifyOwner } = await import("./_core/notification");
       await notifyOwner({ title: "\uD83D\uDCB3 طلب دفع جديد", content: `${ctx.user.name || ctx.user.email} - ${input.requestedService}` });
+      // Send email notification to admin(s)
+      try {
+        const { sendEmail, getNewPaymentRequestEmailTemplate } = await import("./emailService");
+        for (const admin of admins) {
+          if (admin.email) {
+            await sendEmail({
+              to: admin.email,
+              subject: `💳 طلب دفع جديد من ${ctx.user.name || ctx.user.email}`,
+              html: getNewPaymentRequestEmailTemplate(
+                ctx.user.name || ctx.user.email || "مستخدم",
+                ctx.user.email || "",
+                input.requestedService,
+                input.amount
+              ),
+            });
+          }
+        }
+      } catch (emailErr) {
+        console.error("[Payment] Failed to send admin email notification:", emailErr);
+      }
       return { success: true };
     }),
 

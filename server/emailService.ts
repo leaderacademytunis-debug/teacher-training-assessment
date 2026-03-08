@@ -260,6 +260,188 @@ export function getRejectionEmailTemplate(userName: string, userNameAr: string, 
   `;
 }
 
+// ===== PAYMENT WORKFLOW EMAIL TEMPLATES =====
+
+export function getNewPaymentRequestEmailTemplate(userName: string, userEmail: string, serviceName: string, amount?: string): string {
+  const appUrl = ENV.VITE_APP_URL || 'https://your-domain.manus.space';
+  const SERVICE_LABELS: Record<string, string> = {
+    edugpt_pro: 'EDUGPT PRO',
+    course_ai: 'دورة الذكاء الاصطناعي',
+    course_pedagogy: 'دورة البيداغوجيا',
+    full_bundle: 'الباقة الكاملة',
+  };
+  const serviceLabel = SERVICE_LABELS[serviceName] || serviceName;
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; direction: rtl; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #FF6D00 0%, #FF9100 100%); color: white; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+    .content { padding: 30px; }
+    .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .info-table td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 16px; }
+    .info-table td:first-child { font-weight: bold; color: #555; width: 40%; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #FF6D00 0%, #FF9100 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
+    .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 13px; color: #666; }
+    .urgent-badge { background: #FFF3E0; border-right: 4px solid #FF6D00; padding: 12px 15px; border-radius: 4px; margin: 15px 0; font-size: 15px; color: #E65100; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>💳 طلب دفع جديد يحتاج مراجعتك</h1>
+    </div>
+    <div class="content">
+      <div class="urgent-badge">
+        ⚡ يوجد طلب دفع جديد بانتظار المراجعة والتفعيل
+      </div>
+      <table class="info-table">
+        <tr><td>المستخدم</td><td>${userName}</td></tr>
+        <tr><td>البريد الإلكتروني</td><td>${userEmail}</td></tr>
+        <tr><td>الخدمة المطلوبة</td><td>${serviceLabel}</td></tr>
+        ${amount ? `<tr><td>المبلغ</td><td>${amount} د.ت</td></tr>` : ''}
+        <tr><td>التاريخ</td><td>${new Date().toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td></tr>
+      </table>
+      <center>
+        <a href="${appUrl}/admin" class="cta-button">
+          📋 مراجعة الطلب في لوحة التحكم
+        </a>
+      </center>
+    </div>
+    <div class="footer">
+      <p>© 2026 ليدر أكاديمي - إشعار تلقائي للمسؤول</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+export function getPaymentApprovedEmailTemplate(userName: string, serviceNames: string[]): string {
+  const appUrl = ENV.VITE_APP_URL || 'https://your-domain.manus.space';
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; direction: rtl; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%); color: white; padding: 35px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 26px; font-weight: bold; }
+    .content { padding: 35px 30px; }
+    .success-icon { text-align: center; font-size: 64px; margin-bottom: 15px; }
+    .message { font-size: 17px; line-height: 1.8; color: #333; margin-bottom: 25px; }
+    .services-box { background: #E8F5E9; border-right: 4px solid #4CAF50; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
+    .services-box ul { list-style: none; padding: 0; margin: 10px 0 0 0; }
+    .services-box li { padding: 5px 0; font-size: 16px; }
+    .services-box li::before { content: "✅ "; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-size: 17px; font-weight: bold; }
+    .footer { background-color: #f8f9fa; padding: 18px; text-align: center; font-size: 13px; color: #666; }
+    .highlight { color: #2E7D32; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎉 تم تفعيل اشتراكك بنجاح!</h1>
+    </div>
+    <div class="content">
+      <div class="success-icon">✅</div>
+      <div class="message">
+        <p>عزيزي/عزيزتي <span class="highlight">${userName}</span>،</p>
+        <p>يسعدنا إبلاغك بأنه تم <strong>قبول طلب الدفع</strong> وتفعيل خدماتك في ليدر أكاديمي!</p>
+        <div class="services-box">
+          <strong>الخدمات المفعّلة:</strong>
+          <ul>
+            ${serviceNames.map(s => `<li>${s}</li>`).join('')}
+          </ul>
+        </div>
+        <p>يمكنك الآن الوصول إلى جميع الأدوات والميزات المتاحة ضمن اشتراكك.</p>
+        <center>
+          <a href="${appUrl}" class="cta-button">
+            🚀 ابدأ الاستخدام الآن
+          </a>
+        </center>
+        <p style="margin-top: 25px; font-size: 15px; color: #666;">
+          إذا كان لديك أي استفسار، لا تتردد في التواصل معنا.
+        </p>
+      </div>
+    </div>
+    <div class="footer">
+      <p>© 2026 ليدر أكاديمي - جميع الحقوق محفوظة</p>
+      <p>هذا البريد الإلكتروني تم إرساله تلقائياً</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+export function getPaymentRejectedEmailTemplate(userName: string, reason: string): string {
+  const appUrl = ENV.VITE_APP_URL || 'https://your-domain.manus.space';
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; direction: rtl; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #EF5350 0%, #E53935 100%); color: white; padding: 35px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+    .content { padding: 35px 30px; }
+    .info-icon { text-align: center; font-size: 64px; margin-bottom: 15px; }
+    .message { font-size: 17px; line-height: 1.8; color: #333; margin-bottom: 25px; }
+    .reason-box { background-color: #FFF3E0; border-right: 4px solid #FF9800; padding: 15px 20px; margin: 20px 0; border-radius: 4px; }
+    .reason-box strong { color: #E65100; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-size: 17px; font-weight: bold; }
+    .footer { background-color: #f8f9fa; padding: 18px; text-align: center; font-size: 13px; color: #666; }
+    .highlight { color: #E53935; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>إشعار بخصوص طلب الدفع</h1>
+    </div>
+    <div class="content">
+      <div class="info-icon">ℹ️</div>
+      <div class="message">
+        <p>عزيزي/عزيزتي <span class="highlight">${userName}</span>،</p>
+        <p>نشكرك على اهتمامك بخدمات ليدر أكاديمي.</p>
+        <p>بعد مراجعة طلب الدفع الخاص بك، نأسف لإبلاغك بأنه <strong>لم يتم قبول الطلب</strong> في الوقت الحالي.</p>
+        <div class="reason-box">
+          <strong>السبب:</strong> ${reason}
+        </div>
+        <p>يمكنك إعادة تقديم الطلب بعد تصحيح المشكلة المذكورة أعلاه.</p>
+        <center>
+          <a href="${appUrl}/pricing" class="cta-button">
+            🔄 إعادة تقديم الطلب
+          </a>
+        </center>
+        <p style="margin-top: 25px; font-size: 15px; color: #666;">
+          إذا كنت تعتقد أن هناك خطأ، يرجى التواصل معنا.
+        </p>
+      </div>
+    </div>
+    <div class="footer">
+      <p>© 2026 ليدر أكاديمي - جميع الحقوق محفوظة</p>
+      <p>هذا البريد الإلكتروني تم إرساله تلقائياً</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 export function getCertificateEmailTemplate(
   userName: string,
   userNameAr: string,
