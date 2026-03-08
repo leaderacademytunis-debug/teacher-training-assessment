@@ -839,3 +839,25 @@ export const aiActivityLog = mysqlTable("ai_activity_log", {
 });
 export type AiActivityLog = typeof aiActivityLog.$inferSelect;
 export type InsertAiActivityLog = typeof aiActivityLog.$inferInsert;
+
+// ===== PRICING PLANS (خطط الأسعار) =====
+export const pricingPlans = mysqlTable("pricing_plans", {
+  id: int("id").primaryKey().autoincrement(),
+  serviceKey: varchar("serviceKey", { length: 100 }).notNull(),
+  nameAr: varchar("nameAr", { length: 255 }).notNull(),
+  nameEn: varchar("nameEn", { length: 255 }),
+  description: text("description"),
+  price: int("price").notNull().default(0),
+  currency: varchar("currency", { length: 10 }).notNull().default("TND"),
+  billingPeriod: mysqlEnum("billingPeriod", ["monthly", "quarterly", "yearly", "lifetime"]).notNull().default("monthly"),
+  features: text("features"),
+  isPopular: boolean("isPopular").default(false),
+  isActive: boolean("isActive").default(true),
+  sortOrder: int("sortOrder").default(0),
+  badgeText: varchar("badgeText", { length: 100 }),
+  color: varchar("color", { length: 50 }).default("blue"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PricingPlan = typeof pricingPlans.$inferSelect;
+export type InsertPricingPlan = typeof pricingPlans.$inferInsert;

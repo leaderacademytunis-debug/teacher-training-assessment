@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ExportMetadataModal, type ExportMetadata } from "@/components/ExportMetadataModal";
 import PrintPreview from "@/components/PrintPreview";
+import { LockedFeature, usePermissions } from "@/components/LockedFeature";
 
 // ===== TRANSLATIONS =====
 const UI = {
@@ -197,6 +198,19 @@ const PREDEFINED_TAGS = [
 ];
 
 export default function EduGPTAssistantEnhanced() {
+  const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
+
+  // Show locked state for non-subscribers (admin always has access)
+  if (!permLoading && !hasEdugpt && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <LockedFeature requiredService="accessEdugpt" featureName="EDUGPT - المساعد التربوي الذكي">
+          <div />
+        </LockedFeature>
+      </div>
+    );
+  }
+
   const [, navigate] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");

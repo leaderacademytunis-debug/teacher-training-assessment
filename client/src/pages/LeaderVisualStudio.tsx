@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { LockedFeature, usePermissions } from "@/components/LockedFeature";
 import {
   Paintbrush, Download, Trash2, Eraser, Image as ImageIcon,
   Loader2, Sparkles, Palette, PenLine, BarChart3, BookOpen,
@@ -21,7 +22,18 @@ const STYLES = [
 type StyleId = typeof STYLES[number]["id"];
 
 export default function LeaderVisualStudio() {
+  const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
   const { user } = useAuth();
+
+  if (!permLoading && !hasEdugpt && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <LockedFeature requiredService="accessEdugpt" featureName="Leader Visual Studio">
+          <div />
+        </LockedFeature>
+      </div>
+    );
+  }
   const [prompt, setPrompt] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<StyleId>("bw_lineart");
   const [subject, setSubject] = useState("");

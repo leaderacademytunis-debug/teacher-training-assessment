@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+import { LockedFeature, usePermissions } from "@/components/LockedFeature";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,18 @@ function LibraryItem({
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function ExamBuilder() {
+  const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
+
+  if (!permLoading && !hasEdugpt && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <LockedFeature requiredService="accessEdugpt" featureName="بناء الاختبار">
+          <div />
+        </LockedFeature>
+      </div>
+    );
+  }
+
   // Form state
   const [subject, setSubject] = useState("");
   const [level, setLevel] = useState("");

@@ -5347,6 +5347,64 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
       return perms[0] || { accessEdugpt: false, accessCourseAi: false, accessCoursePedagogy: false, accessFullBundle: false, tier: "free" };
     }),
 
+    // --- Pricing Plans CRUD (Admin) ---
+    listPricingPlans: publicProcedure.query(async () => {
+      const database = (await getDb())!;
+      const { pricingPlans } = await import("../drizzle/schema");
+      return database.select().from(pricingPlans).orderBy(pricingPlans.sortOrder);
+    }),
+
+    createPricingPlan: adminProcedure.input(z.object({
+      serviceKey: z.string(),
+      nameAr: z.string(),
+      nameEn: z.string().optional(),
+      description: z.string().optional(),
+      price: z.number().int(),
+      currency: z.string().default("TND"),
+      billingPeriod: z.enum(["monthly", "quarterly", "yearly", "lifetime"]),
+      features: z.string().optional(),
+      isPopular: z.boolean().optional(),
+      isActive: z.boolean().optional(),
+      sortOrder: z.number().int().optional(),
+      badgeText: z.string().optional(),
+      color: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const { pricingPlans } = await import("../drizzle/schema");
+      await database.insert(pricingPlans).values(input);
+      return { success: true };
+    }),
+
+    updatePricingPlan: adminProcedure.input(z.object({
+      id: z.number(),
+      serviceKey: z.string().optional(),
+      nameAr: z.string().optional(),
+      nameEn: z.string().optional(),
+      description: z.string().optional(),
+      price: z.number().int().optional(),
+      currency: z.string().optional(),
+      billingPeriod: z.enum(["monthly", "quarterly", "yearly", "lifetime"]).optional(),
+      features: z.string().optional(),
+      isPopular: z.boolean().optional(),
+      isActive: z.boolean().optional(),
+      sortOrder: z.number().int().optional(),
+      badgeText: z.string().optional(),
+      color: z.string().optional(),
+    })).mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const { pricingPlans } = await import("../drizzle/schema");
+      const { id, ...data } = input;
+      await database.update(pricingPlans).set(data).where(eq(pricingPlans.id, id));
+      return { success: true };
+    }),
+
+    deletePricingPlan: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const { pricingPlans } = await import("../drizzle/schema");
+      await database.delete(pricingPlans).where(eq(pricingPlans.id, input.id));
+      return { success: true };
+    }),
+
     // --- Log AI activity ---
     logActivity: protectedProcedure.input(z.object({
       activityType: z.enum(["lesson_plan", "exam_generated", "evaluation", "image_generated", "inspection_report"]),

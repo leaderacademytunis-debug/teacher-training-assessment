@@ -37,6 +37,7 @@ import Inspector from "@/pages/Inspector";
 import ExamBuilder from "@/pages/ExamBuilder";
 import LeaderVisualStudio from "@/pages/LeaderVisualStudio";
 import AdminDashboard from "@/pages/AdminDashboard";
+import Pricing from "@/pages/Pricing";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/exam-builder" component={ExamBuilder} />
       <Route path="/visual-studio" component={LeaderVisualStudio} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/pricing" component={Pricing} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

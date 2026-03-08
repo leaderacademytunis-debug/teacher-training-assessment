@@ -1551,3 +1551,23 @@
 - [x] إشعارات تلقائية عند الموافقة/الرفض
 - [x] تصدير CSV للمستخدمين والمدفوعات
 - [x] مسار /admin في App.tsx ورابط في الصفحة الرئيسية
+
+## ترقية Admin + LockedFeature + إعدادات الأسعار
+- [ ] ترقية حساب المالك إلى admin في قاعدة البيانات
+- [ ] ربط LockedFeature بصفحات EDUGPT والدورات
+- [ ] إضافة endpoint getMyPermissions للمستخدم
+- [ ] إضافة جدول service_pricing في DB
+- [ ] إضافة صفحة إعدادات الأسعار في لوحة التحكم
+- [ ] صفحة عرض الأسعار العامة للمستخدمين
+
+## تحديث Admin + LockedFeature + Pricing (جلسة 22)
+- [x] ترقية حساب المالك إلى admin في قاعدة البيانات
+- [x] ربط LockedFeature مع EDUGPT (accessEdugpt)
+- [x] ربط LockedFeature مع المتفقد الذكي (accessEdugpt)
+- [x] ربط LockedFeature مع بناء الاختبار (accessEdugpt)
+- [x] ربط LockedFeature مع Visual Studio (accessEdugpt)
+- [x] إنشاء جدول pricing_plans في قاعدة البيانات
+- [x] إضافة endpoints CRUD للأسعار (create, update, delete, list)
+- [x] إضافة تبويب "الأسعار" في لوحة التحكم الإدارية
+- [x] إنشاء صفحة التسعير العامة (/pricing) للمستخدمين
+- [x] إضافة رابط "الأسعار" في الصفحة الرئيسية

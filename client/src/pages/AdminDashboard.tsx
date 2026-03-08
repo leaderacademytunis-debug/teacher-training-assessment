@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 // ===== TYPES =====
-type Tab = "overview" | "users" | "payments" | "activity" | "settings";
+type Tab = "overview" | "users" | "payments" | "activity" | "pricing" | "settings";
 
 const SERVICE_LABELS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   accessEdugpt: { label: "EDUGPT", color: "bg-emerald-500", icon: <Sparkles className="h-3 w-3" /> },
@@ -78,6 +78,7 @@ export default function AdminDashboard() {
     { id: "users", label: "إدارة المستخدمين", icon: <Users className="h-5 w-5" /> },
     { id: "payments", label: "طلبات الدفع", icon: <CreditCard className="h-5 w-5" /> },
     { id: "activity", label: "مراقبة AI", icon: <Activity className="h-5 w-5" /> },
+    { id: "pricing", label: "الأسعار", icon: <CreditCard className="h-5 w-5" /> },
     { id: "settings", label: "الإعدادات", icon: <Settings className="h-5 w-5" /> },
   ];
 
@@ -164,6 +165,7 @@ export default function AdminDashboard() {
           {activeTab === "users" && <UsersTab />}
           {activeTab === "payments" && <PaymentsTab />}
           {activeTab === "activity" && <ActivityTab />}
+          {activeTab === "pricing" && <PricingTab />}
           {activeTab === "settings" && <SettingsTab />}
         </div>
       </main>
@@ -747,7 +749,273 @@ function ActivityTab() {
   );
 }
 
-// ===== SETTINGS TAB =====
+// ===== PRICING TAB =====
+const BILLING_LABELS: Record<string, string> = {
+  monthly: "شهري",
+  quarterly: "ربع سنوي",
+  yearly: "سنوي",
+  lifetime: "مدى الحياة",
+};
+
+const COLOR_OPTIONS = [
+  { value: "blue", label: "أزرق", class: "bg-blue-500" },
+  { value: "emerald", label: "أخضر", class: "bg-emerald-500" },
+  { value: "purple", label: "بنفسجي", class: "bg-purple-500" },
+  { value: "amber", label: "ذهبي", class: "bg-amber-500" },
+  { value: "rose", label: "وردي", class: "bg-rose-500" },
+  { value: "indigo", label: "نيلي", class: "bg-indigo-500" },
+];
+
+function PricingTab() {
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState({
+    serviceKey: "edugpt_pro",
+    nameAr: "",
+    nameEn: "",
+    description: "",
+    price: 0,
+    currency: "TND",
+    billingPeriod: "monthly" as "monthly" | "quarterly" | "yearly" | "lifetime",
+    features: "",
+    isPopular: false,
+    isActive: true,
+    sortOrder: 0,
+    badgeText: "",
+    color: "blue",
+  });
+
+  const utils = trpc.useUtils();
+  const { data: plans, isLoading } = trpc.adminDashboard.listPricingPlans.useQuery();
+  const createPlan = trpc.adminDashboard.createPricingPlan.useMutation({
+    onSuccess: () => { toast.success("تم إنشاء الخطة بنجاح"); utils.adminDashboard.listPricingPlans.invalidate(); resetForm(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updatePlan = trpc.adminDashboard.updatePricingPlan.useMutation({
+    onSuccess: () => { toast.success("تم التحديث بنجاح"); utils.adminDashboard.listPricingPlans.invalidate(); resetForm(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deletePlan = trpc.adminDashboard.deletePricingPlan.useMutation({
+    onSuccess: () => { toast.success("تم الحذف"); utils.adminDashboard.listPricingPlans.invalidate(); },
+  });
+
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ serviceKey: "edugpt_pro", nameAr: "", nameEn: "", description: "", price: 0, currency: "TND", billingPeriod: "monthly", features: "", isPopular: false, isActive: true, sortOrder: 0, badgeText: "", color: "blue" });
+  };
+
+  const handleEdit = (plan: any) => {
+    setEditingId(plan.id);
+    setForm({
+      serviceKey: plan.serviceKey,
+      nameAr: plan.nameAr,
+      nameEn: plan.nameEn || "",
+      description: plan.description || "",
+      price: plan.price,
+      currency: plan.currency,
+      billingPeriod: plan.billingPeriod,
+      features: plan.features || "",
+      isPopular: plan.isPopular || false,
+      isActive: plan.isActive !== false,
+      sortOrder: plan.sortOrder || 0,
+      badgeText: plan.badgeText || "",
+      color: plan.color || "blue",
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = () => {
+    if (!form.nameAr) { toast.error("يرجى إدخال اسم الخطة"); return; }
+    if (editingId) {
+      updatePlan.mutate({ id: editingId, ...form });
+    } else {
+      createPlan.mutate(form);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return (price / 1000).toFixed(3) + " TND";
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">إدارة الأسعار</h2>
+          <p className="text-sm text-muted-foreground">تحديد أسعار الخدمات وعرضها للمستخدمين</p>
+        </div>
+        <Button onClick={() => { resetForm(); setShowForm(true); }} className="gap-2">
+          <span>+</span> خطة جديدة
+        </Button>
+      </div>
+
+      {/* Plans list */}
+      {isLoading ? (
+        <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
+      ) : !plans?.length ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <CreditCard className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">لا توجد خطط أسعار بعد</p>
+            <p className="text-sm text-muted-foreground/70 mt-1">أنشئ خطة جديدة لعرضها للمستخدمين</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {plans.map((plan) => {
+            const colorClass = COLOR_OPTIONS.find(c => c.value === plan.color)?.class || "bg-blue-500";
+            let featuresList: string[] = [];
+            try { featuresList = plan.features ? JSON.parse(plan.features) : []; } catch { featuresList = []; }
+            return (
+              <Card key={plan.id} className={`relative overflow-hidden ${!plan.isActive ? 'opacity-60' : ''}`}>
+                <div className={`h-2 ${colorClass}`} />
+                {plan.isPopular && (
+                  <Badge className="absolute top-4 left-4 bg-amber-500 text-white">
+                    {plan.badgeText || "الأكثر طلباً"}
+                  </Badge>
+                )}
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{plan.nameAr}</CardTitle>
+                    <Badge variant={plan.isActive ? "default" : "secondary"}>
+                      {plan.isActive ? "نشط" : "معطل"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{SERVICE_REQUEST_LABELS[plan.serviceKey] || plan.serviceKey}</p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="text-2xl font-bold">
+                    {formatPrice(plan.price)}
+                    <span className="text-sm font-normal text-muted-foreground"> / {BILLING_LABELS[plan.billingPeriod]}</span>
+                  </div>
+                  {plan.description && <p className="text-sm text-muted-foreground">{plan.description}</p>}
+                  {featuresList.length > 0 && (
+                    <ul className="space-y-1">
+                      {featuresList.map((f, i) => (
+                        <li key={i} className="text-sm flex items-center gap-2">
+                          <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(plan)} className="flex-1">
+                      تعديل
+                    </Button>
+                    <Button size="sm" variant="outline" className="text-red-500 hover:bg-red-50"
+                      onClick={() => { if (confirm("هل تريد حذف هذه الخطة؟")) deletePlan.mutate({ id: plan.id }); }}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => { if (!open) resetForm(); }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "تعديل خطة الأسعار" : "إنشاء خطة أسعار جديدة"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>الخدمة</Label>
+                <Select value={form.serviceKey} onValueChange={(v) => setForm({ ...form, serviceKey: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="edugpt_pro">EDUGPT PRO</SelectItem>
+                    <SelectItem value="course_ai">دورة الذكاء الاصطناعي</SelectItem>
+                    <SelectItem value="course_pedagogy">دورة البيداغوجيا</SelectItem>
+                    <SelectItem value="full_bundle">الباقة الكاملة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>فترة الفوترة</Label>
+                <Select value={form.billingPeriod} onValueChange={(v: any) => setForm({ ...form, billingPeriod: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">شهري</SelectItem>
+                    <SelectItem value="quarterly">ربع سنوي</SelectItem>
+                    <SelectItem value="yearly">سنوي</SelectItem>
+                    <SelectItem value="lifetime">مدى الحياة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>الاسم بالعربية *</Label>
+              <Input value={form.nameAr} onChange={(e) => setForm({ ...form, nameAr: e.target.value })} placeholder="مثال: باقة EDUGPT الاحترافية" />
+            </div>
+            <div>
+              <Label>الاسم بالإنجليزية</Label>
+              <Input value={form.nameEn} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} placeholder="EDUGPT Pro" />
+            </div>
+            <div>
+              <Label>الوصف</Label>
+              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="وصف مختصر للخطة..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>السعر (بالمليمات) *</Label>
+                <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: parseInt(e.target.value) || 0 })} placeholder="25000 = 25 TND" />
+                <p className="text-xs text-muted-foreground mt-1">{(form.price / 1000).toFixed(3)} TND</p>
+              </div>
+              <div>
+                <Label>الترتيب</Label>
+                <Input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} />
+              </div>
+            </div>
+            <div>
+              <Label>المميزات (JSON array)</Label>
+              <Textarea value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })}
+                placeholder='["توليد غير محدود للجذاذات", "بناء اختبارات", "المتفقد الذكي"]'
+                className="font-mono text-xs" rows={3} />
+            </div>
+            <div>
+              <Label>نص الشارة</Label>
+              <Input value={form.badgeText} onChange={(e) => setForm({ ...form, badgeText: e.target.value })} placeholder="الأكثر طلباً" />
+            </div>
+            <div>
+              <Label>اللون</Label>
+              <div className="flex gap-2 mt-1">
+                {COLOR_OPTIONS.map((c) => (
+                  <button key={c.value} onClick={() => setForm({ ...form, color: c.value })}
+                    className={`w-8 h-8 rounded-full ${c.class} ${form.color === c.value ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`}
+                    title={c.label} />
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Switch checked={form.isPopular} onCheckedChange={(v) => setForm({ ...form, isPopular: v })} />
+                <Label>الأكثر طلباً</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={form.isActive} onCheckedChange={(v) => setForm({ ...form, isActive: v })} />
+                <Label>نشط</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={resetForm}>إلغاء</Button>
+            <Button onClick={handleSubmit} disabled={createPlan.isPending || updatePlan.isPending}>
+              {(createPlan.isPending || updatePlan.isPending) ? "جاري..." : editingId ? "تحديث" : "إنشاء"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function SettingsTab() {
   return (
     <div className="space-y-6">
@@ -782,7 +1050,6 @@ function SettingsTab() {
           </div>
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

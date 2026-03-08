@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Link } from "wouter";
+import { LockedFeature, usePermissions } from "@/components/LockedFeature";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
@@ -136,6 +137,18 @@ function formatFileSize(bytes: number): string {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SmartInspector() {
+  const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
+
+  if (!permLoading && !hasEdugpt && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <LockedFeature requiredService="accessEdugpt" featureName="المتفقد الذكي">
+          <div />
+        </LockedFeature>
+      </div>
+    );
+  }
+
   const [activeTab, setActiveTab] = useState<TabId>("lesson");
   const [inputMode, setInputMode] = useState<InputMode>("text");
   const [documentText, setDocumentText] = useState("");
