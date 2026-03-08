@@ -43,10 +43,13 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
+  /* Leader Academy Brand Colors */
+  --brand-deep-blue: #1A237E;
+  --brand-orange: #FF6D00;
+  --primary: oklch(0.28 0.18 264);
+  --primary-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.28 0.18 264);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
   --chart-1: var(--color-blue-300);
   --chart-2: var(--color-blue-500);
   --chart-3: var(--color-blue-600);
