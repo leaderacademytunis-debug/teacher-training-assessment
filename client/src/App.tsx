@@ -31,6 +31,7 @@ import LessonSheetFromPlan from "@/pages/LessonSheetFromPlan";
 import EvaluationFromSheet from "@/pages/EvaluationFromSheet";
 import EvaluationLibrary from "@/pages/EvaluationLibrary";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
+import Contact from "@/pages/Contact";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -63,6 +64,7 @@ function Router() {
       <Route path="/evaluation-from-sheet" component={EvaluationFromSheet} />
       <Route path="/evaluation-library" component={EvaluationLibrary} />
       {/* <Route path="/infographic-generator" component={InfographicGenerator} /> */}
+      <Route path="/contact" component={Contact} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

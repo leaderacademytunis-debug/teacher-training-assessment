@@ -162,6 +162,11 @@ export default function Home() {
                     </Button>
                   </Link>
                 )}
+                <Link href="/contact">
+                  <Button variant="ghost" size="sm" className="h-8 px-3 text-xs font-medium whitespace-nowrap hover:bg-white hover:shadow-sm">
+                    {t("تواصل معنا", "Nous contacter", "Contact Us")}
+                  </Button>
+                </Link>
                 {/* Spacer */}
                 <div className="flex-1" />
                 {/* Primary CTAs */}

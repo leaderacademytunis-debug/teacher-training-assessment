@@ -3980,6 +3980,62 @@ Note totale = somme des 5 critères (max 20). Sois précis, professionnel et bie
         return await db.incrementTemplateUsage(input.id);
       }),
   }),
+
+  // ===== CONTACT ROUTER =====
+  contact: router({
+    // Send contact form email via SMTP
+    send: publicProcedure
+      .input(z.object({
+        name: z.string().min(2),
+        email: z.string().email(),
+        subject: z.string().min(3),
+        message: z.string().min(10),
+        specialty: z.string().optional(),
+        interest: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { notifyOwner } = await import("./_core/notification");
+        const content = [
+          `الاسم: ${input.name}`,
+          `البريد: ${input.email}`,
+          input.specialty ? `التخصص: ${input.specialty}` : null,
+          input.interest ? `مجال الاهتمام: ${input.interest}` : null,
+          `الموضوع: ${input.subject}`,
+          `الرسالة:\n${input.message}`,
+        ].filter(Boolean).join("\n");
+        const success = await notifyOwner({
+          title: `📨 رسالة جديدة من صفحة تواصل معنا — ${input.name}`,
+          content,
+        });
+        return { success };
+      }),
+
+    // Notify owner when assistant detects a serious lead
+    notifyLead: protectedProcedure
+      .input(z.object({
+        userName: z.string(),
+        userEmail: z.string().optional(),
+        specialty: z.string().optional(),
+        interest: z.string(),
+        conversationId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { notifyOwner } = await import("./_core/notification");
+        const content = [
+          `🔔 اكتشف Leader Assistant اهتماماً جدياً!`,
+          `المستخدم: ${input.userName}`,
+          input.userEmail ? `البريد: ${input.userEmail}` : null,
+          input.specialty ? `التخصص: ${input.specialty}` : null,
+          `مجال الاهتمام: ${input.interest}`,
+          input.conversationId ? `رقم المحادثة: #${input.conversationId}` : null,
+        ].filter(Boolean).join("\n");
+        const success = await notifyOwner({
+          title: `🎯 ليد جديد — ${input.interest}`,
+          content,
+        });
+        return { success };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

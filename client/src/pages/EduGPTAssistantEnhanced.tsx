@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff } from "lucide-react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -297,6 +297,12 @@ export default function EduGPTAssistantEnhanced() {
 
       // Auto-save conversation
       await saveCurrentConversation(newMessages);
+
+      // Detect serious lead interest in user messages
+      const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+      if (lastUserMsg) {
+        detectAndNotifyLead(lastUserMsg.content, currentConversationId ?? undefined);
+      }
     },
     onError: (error: any) => {
       toast.error("خطأ في الاتصال بالمساعد الذكي");
@@ -338,6 +344,27 @@ export default function EduGPTAssistantEnhanced() {
     onSuccess: () => { refetchConversations(); setTagMenuConvId(null); },
     onError: () => toast.error("خطأ في تحديث الوسوم"),
   });
+
+  // Lead notification mutation
+  const notifyLeadMutation = trpc.contact.notifyLead.useMutation();
+
+  // Detect serious interest in the assistant response
+  const detectAndNotifyLead = (responseText: string, convId?: number) => {
+    const LEAD_KEYWORDS = [
+      "دورة", "تسجيل", "اشتراك", "سعر", "تكلفة", "كيف ألتحق", "كيف أسجل",
+      "inscription", "formation", "tarif", "prix", "comment s'inscrire",
+    ];
+    const lower = responseText.toLowerCase();
+    const isLead = LEAD_KEYWORDS.some(kw => lower.includes(kw));
+    if (isLead) {
+      notifyLeadMutation.mutate({
+        userName: "مستخدم مهتم",
+        specialty: selectedSubject || undefined,
+        interest: selectedSubject ? `دورة ذكاء اصطناعي — ${selectedSubject}` : "دورة تدريبية",
+        conversationId: convId,
+      });
+    }
+  };
 
   // State for loading a specific conversation
   const [loadingConvId, setLoadingConvId] = useState<number | null>(null);
@@ -446,9 +473,22 @@ export default function EduGPTAssistantEnhanced() {
     setLoadingConvId(conv.id);
   };
 
+  // Welcome message helper
+  const buildWelcomeMessage = (): Message => ({
+    role: "assistant",
+    timestamp: Date.now(),
+    content: `مرحباً بك في **Leader Academy**! أنا **Leader Assistant**، مستشارك التعليمي الرقمي. أنا هنا لمساعدتك في إعداد الجذاذات، المخططات السنوية، ورقاق التقييم وفق البرامج الرسمية التونسية 2026.
+
+لأبدأ بمساعدتك بشكل أفضل، أخبرني:
+- **ما هي المادة التي تدرّسها؟** (مثال: الإيقاظ العلمي، الرياضيات، اللغة العربية...)
+- **ما هو المستوى الدراسي؟** (مثال: السنة الثالثة ابتدائي)
+
+أو أخبرني مباشرة بما تحتاجه وسأكون في خدمتك! 😊`,
+  });
+
   // Start new conversation
   const startNewConversation = () => {
-    setMessages([]);
+    setMessages([buildWelcomeMessage()]);
     setCurrentConversationId(null);
     setConversationTitle("محادثة جديدة");
     setAttachedFiles([]);
