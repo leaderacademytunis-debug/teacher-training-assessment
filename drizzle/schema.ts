@@ -22,6 +22,7 @@ export const users = mysqlTable("users", {
   idCardNumber: varchar("idCardNumber", { length: 50 }),
   paymentReceiptUrl: text("paymentReceiptUrl"),
   schoolName: varchar("schoolName", { length: 255 }),
+  schoolLogo: text("schoolLogo"), // URL to school logo in S3
   registrationCompleted: boolean("registrationCompleted").default(false).notNull(),
   registrationStatus: mysqlEnum("registrationStatus", ["pending", "approved", "rejected"]).default("pending").notNull(),
   

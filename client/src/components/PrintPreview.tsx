@@ -20,6 +20,18 @@ interface PrintPreviewProps {
   onClose?: () => void;
   images?: Array<{ url: string; caption?: string }>;
   type?: "exam" | "lesson" | "plan" | "report";
+  schoolLogo?: string;
+}
+
+interface GradingCell {
+  criterion: string;
+  subCriterion: string;
+  score: string;
+}
+
+interface GradingRow {
+  cells: GradingCell[];
+  total: string;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -108,8 +120,9 @@ function generatePrintHTML(opts: {
   images: Array<{ url: string; caption?: string }>;
   type: string;
   imageMap?: Map<string, string>;
+  schoolLogo?: string;
 }): string {
-  const { pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type, imageMap: imageMapForPrint } = opts;
+  const { pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type, imageMap: imageMapForPrint, schoolLogo } = opts;
   const hasInlineImages = imageMapForPrint && imageMapForPrint.size > 0;
 
   const headerHTML = (pageNum: number) => `
@@ -117,8 +130,13 @@ function generatePrintHTML(opts: {
       <table class="header-table">
         <tr>
           <td class="header-cell header-right">
-            <div class="school-name">${schoolName}</div>
-            <div class="school-sub">المدرسة الابتدائيّة</div>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+              ${schoolLogo ? `<img src="${schoolLogo}" alt="شعار" style="width:36px;height:36px;object-fit:contain;border-radius:4px;" />` : ''}
+              <div>
+                <div class="school-name">${schoolName}</div>
+                <div class="school-sub">المدرسة الابتدائيّة</div>
+              </div>
+            </div>
           </td>
           <td class="header-cell header-center">
             <div class="exam-title">${title}</div>
@@ -307,12 +325,15 @@ export default function PrintPreview({
   onClose,
   images = [],
   type = "exam",
+  schoolLogo,
 }: PrintPreviewProps) {
   const [grayscale, setGrayscale] = useState(true);
   const [zoom, setZoom] = useState(0.6);
   const [isExporting, setIsExporting] = useState<"pdf" | "word" | "print" | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<string[]>([]);
+  const [editingGrading, setEditingGrading] = useState(false);
+  const [gradingData, setGradingData] = useState<GradingRow[]>([]);
 
   const exportWordMutation = trpc.edugpt.exportExamWord.useMutation();
 
@@ -321,6 +342,58 @@ export default function PrintPreview({
   images.forEach(img => {
     if (img.caption) imageMap.set(img.caption.trim(), img.url);
   });
+
+  // ── Parse grading table from content ──
+  useEffect(() => {
+    const gradingMatch = content.match(/## جدول إسناد الأعداد[\s\S]*?(\|.+\|\n\|[-:| ]+\|\n(?:\|.+\|\n?)+)/);
+    if (gradingMatch) {
+      const tableText = gradingMatch[1];
+      const lines = tableText.trim().split("\n").filter(l => l.includes("|"));
+      if (lines.length >= 3) {
+        const dataLines = lines.slice(2); // skip header + separator
+        const rows: GradingRow[] = dataLines.map(line => {
+          const cols = line.split("|").filter(c => c.trim() !== "");
+          return {
+            cells: cols.slice(0, -1).map(c => {
+              const text = c.trim();
+              const parts = text.split(/\s+/);
+              return {
+                criterion: parts[0] || "",
+                subCriterion: parts.slice(1).join(" ") || "",
+                score: "",
+              };
+            }),
+            total: cols[cols.length - 1]?.trim() || "",
+          };
+        });
+        if (gradingData.length === 0) setGradingData(rows);
+      }
+    }
+  }, [content]);
+
+  const updateGradingScore = (rowIdx: number, cellIdx: number, value: string) => {
+    setGradingData(prev => {
+      const updated = [...prev];
+      if (updated[rowIdx]?.cells[cellIdx]) {
+        updated[rowIdx] = {
+          ...updated[rowIdx],
+          cells: updated[rowIdx].cells.map((c, i) => i === cellIdx ? { ...c, score: value } : c),
+          total: updated[rowIdx].total,
+        };
+      }
+      return updated;
+    });
+  };
+
+  const updateGradingTotal = (rowIdx: number, value: string) => {
+    setGradingData(prev => {
+      const updated = [...prev];
+      if (updated[rowIdx]) {
+        updated[rowIdx] = { ...updated[rowIdx], total: value };
+      }
+      return updated;
+    });
+  };
 
   // ── Paginate content ──
   useEffect(() => {
@@ -362,8 +435,15 @@ export default function PrintPreview({
         <tbody>
           <tr>
             <td style={{ border: "1.5px solid #333", padding: "6px 10px", textAlign: "right", width: "30%", verticalAlign: "middle" }}>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>{schoolName}</div>
-              <div style={{ fontSize: 11 }}>المدرسة الابتدائيّة</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
+                {schoolLogo && (
+                  <img src={schoolLogo} alt="شعار" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 4 }} />
+                )}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{schoolName}</div>
+                  <div style={{ fontSize: 11 }}>المدرسة الابتدائيّة</div>
+                </div>
+              </div>
             </td>
             <td style={{ border: "1.5px solid #333", padding: "6px 10px", textAlign: "center", width: "40%", verticalAlign: "middle" }}>
               <div style={{ fontWeight: 700, fontSize: 14 }}>{title}</div>
@@ -418,7 +498,7 @@ export default function PrintPreview({
     try {
       const printHTML = generatePrintHTML({
         pages, title, subject, level, trimester, schoolName, schoolYear,
-        studentName, duration, totalScore, grayscale, images, type, imageMap,
+        studentName, duration, totalScore, grayscale, images, type, imageMap, schoolLogo,
       });
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
@@ -437,7 +517,7 @@ export default function PrintPreview({
     } finally {
       setTimeout(() => setIsExporting(null), 2000);
     }
-  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type, imageMap]);
+  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, grayscale, images, type, imageMap, schoolLogo]);
 
   // ── PDF export (opens print dialog with "Save as PDF") ──
   const handleExportPDF = useCallback(() => {
@@ -445,7 +525,7 @@ export default function PrintPreview({
     try {
       const printHTML = generatePrintHTML({
         pages, title, subject, level, trimester, schoolName, schoolYear,
-        studentName, duration, totalScore, grayscale: true, images, type, imageMap,
+        studentName, duration, totalScore, grayscale: true, images, type, imageMap, schoolLogo,
       });
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
@@ -465,7 +545,7 @@ export default function PrintPreview({
     } finally {
       setTimeout(() => setIsExporting(null), 2000);
     }
-  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, images, type, imageMap]);
+  }, [pages, title, subject, level, trimester, schoolName, schoolYear, studentName, duration, totalScore, images, type, imageMap, schoolLogo]);
 
   // ── Word export ──
   const handleExportWord = useCallback(async () => {
@@ -587,6 +667,18 @@ export default function PrintPreview({
             طباعة مباشرة
           </Button>
 
+          {/* Edit Grading Table */}
+          {gradingData.length > 0 && (
+            <Button
+              variant={editingGrading ? "default" : "outline"}
+              size="sm"
+              onClick={() => setEditingGrading(!editingGrading)}
+              className={`text-xs h-8 px-3 ${editingGrading ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}`}
+            >
+              {editingGrading ? "✅ حفظ التعديلات" : "✏️ تعديل جدول الإسناد"}
+            </Button>
+          )}
+
           {/* Close */}
           {onClose && (
             <Button variant="ghost" size="sm" onClick={onClose} className="p-1 h-8 w-8 hover:bg-red-50">
@@ -671,6 +763,119 @@ export default function PrintPreview({
               {renderFooter(i + 1, pages.length)}
             </div>
           ))}
+
+          {/* ── Editable Grading Table Panel ── */}
+          {editingGrading && gradingData.length > 0 && (
+            <div
+              style={{
+                width: A4_W,
+                background: "white",
+                padding: MARGIN,
+                boxShadow: "0 4px 30px rgba(0,0,0,0.35)",
+                borderRadius: 2,
+                border: "2px solid #f59e0b",
+                fontFamily: "'Noto Kufi Arabic', 'Amiri', sans-serif",
+                direction: "rtl" as const,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#333" }}>✏️ تعديل جدول إسناد الأعداد</h3>
+                <span style={{ fontSize: 11, color: "#888" }}>اضغط على الخلية لتعديل الدرجة</span>
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", border: "2px solid #333" }}>
+                <thead>
+                  <tr>
+                    <th style={{ border: "2px solid #333", padding: "8px 12px", background: "#f5f5f5", fontWeight: 700, fontSize: 13, textAlign: "center" }}>الوضعية</th>
+                    <th style={{ border: "2px solid #333", padding: "8px 12px", background: "#f5f5f5", fontWeight: 700, fontSize: 13, textAlign: "center" }}>المعايير الفرعية</th>
+                    <th style={{ border: "2px solid #333", padding: "8px 12px", background: "#f5f5f5", fontWeight: 700, fontSize: 13, textAlign: "center" }}>الدرجة</th>
+                    <th style={{ border: "2px solid #333", padding: "8px 12px", background: "#f5f5f5", fontWeight: 700, fontSize: 13, textAlign: "center" }}>المجموع</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gradingData.map((row, rowIdx) => (
+                    row.cells.map((cell, cellIdx) => (
+                      <tr key={`${rowIdx}-${cellIdx}`}>
+                        {cellIdx === 0 && (
+                          <td
+                            rowSpan={row.cells.length}
+                            style={{ border: "1.5px solid #555", padding: "10px 12px", textAlign: "center", fontSize: 13, fontWeight: 600, verticalAlign: "middle" }}
+                          >
+                            الوضعية {rowIdx + 1}
+                          </td>
+                        )}
+                        <td style={{ border: "1.5px solid #555", padding: "8px 12px", textAlign: "center", fontSize: 13 }}>
+                          {cell.criterion} {cell.subCriterion}
+                        </td>
+                        <td style={{ border: "1.5px solid #555", padding: "4px", textAlign: "center" }}>
+                          <input
+                            type="text"
+                            value={cell.score}
+                            onChange={(e) => updateGradingScore(rowIdx, cellIdx, e.target.value)}
+                            placeholder="..."
+                            style={{
+                              width: "100%",
+                              textAlign: "center",
+                              border: "1px dashed #ccc",
+                              borderRadius: 4,
+                              padding: "4px 6px",
+                              fontSize: 14,
+                              fontWeight: 600,
+                              background: cell.score ? "#fef3c7" : "#fff",
+                              outline: "none",
+                            }}
+                          />
+                        </td>
+                        {cellIdx === 0 && (
+                          <td
+                            rowSpan={row.cells.length}
+                            style={{ border: "1.5px solid #555", padding: "4px", textAlign: "center", verticalAlign: "middle" }}
+                          >
+                            <input
+                              type="text"
+                              value={row.total}
+                              onChange={(e) => updateGradingTotal(rowIdx, e.target.value)}
+                              placeholder="..."
+                              style={{
+                                width: "100%",
+                                textAlign: "center",
+                                border: "1px dashed #ccc",
+                                borderRadius: 4,
+                                padding: "6px",
+                                fontSize: 16,
+                                fontWeight: 700,
+                                background: row.total ? "#d1fae5" : "#fff",
+                                outline: "none",
+                              }}
+                            />
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  ))}
+                </tbody>
+              </table>
+              <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: "#666" }}>
+                  المجموع الكلي: {gradingData.reduce((sum, r) => sum + (parseFloat(r.total) || 0), 0).toFixed(1)} / {totalScore}
+                </span>
+                <button
+                  onClick={() => setEditingGrading(false)}
+                  style={{
+                    background: "#059669",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 20px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  ✅ حفظ وإغلاق
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

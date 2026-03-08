@@ -83,10 +83,27 @@ export const appRouter = router({
         idCardNumber: z.string().optional(),
         email: z.string().email().optional(),
         schoolName: z.string().optional(),
+        schoolLogo: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         await db.updateUserProfile(ctx.user.id, input);
         return { success: true };
+      }),
+
+    uploadSchoolLogo: protectedProcedure
+      .input(z.object({
+        base64Data: z.string(),
+        fileExtension: z.string(),
+        mimeType: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.base64Data, 'base64');
+        const fileName = `school-logos/${ctx.user.id}-${Date.now()}.${input.fileExtension}`;
+        const { url } = await storagePut(fileName, buffer, input.mimeType);
+        // Save logo URL to user profile
+        await db.updateUserProfile(ctx.user.id, { schoolLogo: url });
+        return { url };
       }),
   }),
 

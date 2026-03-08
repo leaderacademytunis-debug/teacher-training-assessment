@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PrintPreview from "@/components/PrintPreview";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -201,6 +201,17 @@ export default function ExamBuilder() {
     },
   });
 
+  // Upload school logo
+  const uploadSchoolLogo = trpc.profile.uploadSchoolLogo.useMutation({
+    onSuccess: () => refreshAuth(),
+  });
+
+  // Initialize schoolLogo from user profile
+  const userSchoolLogo = (user as any)?.schoolLogo || "";
+  useEffect(() => {
+    if (userSchoolLogo && !schoolLogo) setSchoolLogo(userSchoolLogo);
+  }, [userSchoolLogo]);
+
   const handleSaveSchoolName = () => {
     if (schoolNameInput.trim()) {
       updateProfile.mutate({ schoolName: schoolNameInput.trim() });
@@ -227,6 +238,9 @@ export default function ExamBuilder() {
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [suggestedImages, setSuggestedImages] = useState<Array<{prompt_ar: string; prompt_en: string; type: string}>>([]);
   const [, navigate] = useLocation();
+  const [draggedImage, setDraggedImage] = useState<{url: string; caption?: string} | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [schoolLogo, setSchoolLogo] = useState<string>("");
 
   // tRPC hooks
   const utils = trpc.useUtils();
@@ -503,6 +517,61 @@ export default function ExamBuilder() {
                 </div>
                 {userSchoolName && <p className="text-[10px] text-green-400/70">محفوظ: {userSchoolName}</p>}
               </div>
+              {/* School Logo Upload */}
+              <div className="space-y-1">
+                <Label className="text-blue-200 text-xs">شعار المدرسة (يظهر في الترويسة)</Label>
+                <div className="flex items-center gap-2">
+                  {schoolLogo ? (
+                    <div className="relative w-12 h-12 rounded-lg border border-white/20 overflow-hidden bg-white flex-shrink-0">
+                      <img src={schoolLogo} alt="شعار المدرسة" className="w-full h-full object-contain p-0.5" />
+                      <button
+                        onClick={() => { setSchoolLogo(""); updateProfile.mutate({ schoolLogo: "" }); }}
+                        className="absolute -top-0.5 -left-0.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
+                      >×</button>
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center text-white/30 text-lg flex-shrink-0">
+                      🏫
+                    </div>
+                  )}
+                  <label className="flex-1 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          toast.error("حجم الشعار يجب أن لا يتجاوز 2MB");
+                          return;
+                        }
+                        try {
+                          const reader = new FileReader();
+                          reader.onload = async () => {
+                            const base64 = (reader.result as string).split(',')[1];
+                            const ext = file.name.split('.').pop() || 'png';
+                            const result = await uploadSchoolLogo.mutateAsync({
+                              base64Data: base64,
+                              fileExtension: ext,
+                              mimeType: file.type,
+                            });
+                            setSchoolLogo(result.url);
+                            toast.success("تم رفع شعار المدرسة بنجاح");
+                          };
+                          reader.readAsDataURL(file);
+                        } catch {
+                          toast.error("فشل في رفع الشعار");
+                        }
+                      }}
+                    />
+                    <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-center text-xs text-blue-200 hover:bg-white/15 transition-colors">
+                      {uploadSchoolLogo.isPending ? "✨ جاري الرفع..." : schoolLogo ? "🔄 تغيير الشعار" : "📤 رفع شعار المدرسة"}
+                    </div>
+                  </label>
+                </div>
+                <p className="text-[10px] text-white/40">PNG أو JPG أو SVG — أقصى حجم 2MB</p>
+              </div>
               <Separator className="bg-white/10" />
               <div className="space-y-1">
                 <Label className="text-blue-200 text-xs">المحاور المقررة (اختياري)</Label>
@@ -628,7 +697,35 @@ export default function ExamBuilder() {
                   </TabsList>
 
                   <TabsContent value="exam">
-                    <div className="prose prose-invert prose-sm max-w-none text-white/90 leading-relaxed overflow-auto max-h-[600px] pr-1" style={{ direction: "rtl" }}>
+                    <div
+                      className={`prose prose-invert prose-sm max-w-none text-white/90 leading-relaxed overflow-auto max-h-[600px] pr-1 transition-all duration-200 rounded-lg ${
+                        isDragOver ? "ring-2 ring-violet-400 bg-violet-900/20" : ""
+                      }`}
+                      style={{ direction: "rtl" }}
+                      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                      onDragLeave={() => setIsDragOver(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragOver(false);
+                        if (draggedImage) {
+                          const caption = draggedImage.caption || "صورة توضيحية";
+                          const insertTag = `\n[\u0631\u0633\u0645: ${caption}]\n`;
+                          setGeneratedExam(prev => prev + insertTag);
+                          // Ensure image is in examImages if not already
+                          if (!examImages.find(img => img.url === draggedImage.url)) {
+                            setExamImages(prev => [...prev, draggedImage]);
+                          }
+                          toast.success(`تم إدراج الصورة: ${caption}`);
+                          setDraggedImage(null);
+                        }
+                      }}
+                    >
+                      {isDragOver && (
+                        <div className="text-center py-6 text-violet-300 animate-pulse">
+                          <span className="text-3xl block mb-2">🖼️</span>
+                          <span className="text-sm font-semibold">أفلت الصورة هنا لإدراجها في الاختبار</span>
+                        </div>
+                      )}
                       {examImages.length > 0 ? (
                         <ExamContentWithImages content={generatedExam} images={examImages} />
                       ) : (
@@ -670,7 +767,16 @@ export default function ExamBuilder() {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {examImages.map((img, idx) => (
-                      <div key={idx} className="relative group rounded-lg overflow-hidden border border-white/10 bg-white/5">
+                      <div
+                        key={idx}
+                        draggable
+                        onDragStart={() => setDraggedImage(img)}
+                        onDragEnd={() => setDraggedImage(null)}
+                        className="relative group rounded-lg overflow-hidden border border-white/10 bg-white/5 cursor-grab active:cursor-grabbing hover:ring-2 hover:ring-violet-400/50 transition-all"
+                      >
+                        <div className="absolute top-1 right-1 bg-violet-600/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity z-10" title="اسحب لإدراج في الاختبار">
+                          ✥
+                        </div>
                         <img
                           src={img.url}
                           alt={img.caption || `صورة ${idx + 1}`}
@@ -692,7 +798,7 @@ export default function ExamBuilder() {
                     ))}
                   </div>
                   <p className="text-[10px] text-white/40 mt-1.5">
-                    هذه الصور ستظهر في معاينة الطباعة ويمكن طباعتها مع الاختبار
+                    ✥ اسحب الصورة وأفلتها في منطقة الاختبار لإدراجها في النص
                   </p>
                 </div>
               )}
@@ -746,6 +852,7 @@ export default function ExamBuilder() {
           studentName={activeTab === "exam"}
           onClose={() => setShowPrintPreview(false)}
           images={examImages.length > 0 ? examImages : undefined}
+          schoolLogo={schoolLogo || userSchoolLogo || undefined}
         />
       )}
     </div>

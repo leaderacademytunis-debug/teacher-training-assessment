@@ -750,6 +750,7 @@ export async function updateUserProfile(
     idCardNumber?: string;
     email?: string;
     schoolName?: string;
+    schoolLogo?: string;
   }
 ): Promise<void> {
   const db = await getDb();
