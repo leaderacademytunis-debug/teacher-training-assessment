@@ -6,7 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
 import { infographics, mindMaps, referenceDocuments, sharedEvaluations } from "../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
@@ -4799,6 +4799,187 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         return { base64, filename: `اختبار_${input.subject}_${input.level}_${input.trimester}.docx` };
       }),
    }),
+
+  visualStudio: router({
+    // Check usage limits
+    getUsage: publicProcedure
+      .input(z.object({ sessionId: z.string().optional() }))
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) return { used: 0, limit: 5, tier: "free", remaining: 5 };
+        const { imageUsageTracking } = await import("../drizzle/schema");
+        const now = new Date();
+        const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const userId = ctx.user?.id;
+        const conditions = userId 
+          ? and(eq(imageUsageTracking.userId, userId), eq(imageUsageTracking.monthYear, monthYear))
+          : input.sessionId 
+            ? and(eq(imageUsageTracking.sessionId, input.sessionId), eq(imageUsageTracking.monthYear, monthYear))
+            : undefined;
+        if (!conditions) return { used: 0, limit: 5, tier: "free", remaining: 5 };
+        const [usage] = await database.select().from(imageUsageTracking).where(conditions).limit(1);
+        const tier = usage?.tier || "free";
+        const limit = tier === "pro" ? 999 : 5;
+        const used = usage?.imagesGenerated || 0;
+        return { used, limit, tier, remaining: Math.max(0, limit - used) };
+      }),
+
+    // Suggest 3 image prompts from exam/lesson content
+    suggestImagePrompts: publicProcedure
+      .input(z.object({
+        content: z.string().min(10),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const resp = await invokeLLM({
+          messages: [
+            { role: "system", content: `You are an expert educational illustrator for Tunisian primary schools. Given exam or lesson content, suggest exactly 3 image prompts that would help students understand the material. Each prompt should describe a clear, simple educational illustration suitable for printing on school papers (black & white friendly). Return JSON array of 3 objects with fields: prompt_ar (Arabic description), prompt_en (English prompt for image AI), type (one of: diagram, illustration, scene). Subject: ${input.subject || "general"}, Level: ${input.level || "primary"}.` },
+            { role: "user", content: input.content.substring(0, 2000) },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "image_suggestions",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  suggestions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        prompt_ar: { type: "string" },
+                        prompt_en: { type: "string" },
+                        type: { type: "string" },
+                      },
+                      required: ["prompt_ar", "prompt_en", "type"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["suggestions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const rawContent = typeof resp.choices[0].message.content === "string" ? resp.choices[0].message.content : "{}";
+        const parsed = JSON.parse(rawContent);
+        return { suggestions: parsed.suggestions || [] };
+      }),
+
+    // Generate educational image with usage tracking
+    generateEducationalImage: publicProcedure
+      .input(z.object({
+        prompt: z.string().min(3),
+        style: z.enum(["bw_lineart", "minimalist", "cartoon", "realistic", "diagram", "coloring"]),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        source: z.string().optional(),
+        sessionId: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        // Check usage limits
+        if (database) {
+          const { imageUsageTracking } = await import("../drizzle/schema");
+          const now = new Date();
+          const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const userId = ctx.user?.id;
+          const conditions = userId
+            ? and(eq(imageUsageTracking.userId, userId), eq(imageUsageTracking.monthYear, monthYear))
+            : input.sessionId
+              ? and(eq(imageUsageTracking.sessionId, input.sessionId), eq(imageUsageTracking.monthYear, monthYear))
+              : undefined;
+          if (conditions) {
+            const [usage] = await database.select().from(imageUsageTracking).where(conditions).limit(1);
+            const tier = usage?.tier || "free";
+            const limit = tier === "pro" ? 999 : 5;
+            if (usage && usage.imagesGenerated >= limit) {
+              throw new TRPCError({ code: "FORBIDDEN", message: `\u0644\u0642\u062f \u0648\u0635\u0644\u062a \u0625\u0644\u0649 \u0627\u0644\u062d\u062f \u0627\u0644\u0623\u0642\u0635\u0649 (${limit} \u0635\u0648\u0631/\u0634\u0647\u0631). \u0642\u0645 \u0628\u0627\u0644\u062a\u0631\u0642\u064a\u0629 \u0625\u0644\u0649 Pro \u0644\u0644\u062d\u0635\u0648\u0644 \u0639\u0644\u0649 \u0635\u0648\u0631 \u063a\u064a\u0631 \u0645\u062d\u062f\u0648\u062f\u0629.` });
+            }
+          }
+        }
+
+        const { generateImage } = await import("./_core/imageGeneration");
+        const stylePrompts: Record<string, string> = {
+          bw_lineart: "Black and white line art, clean outlines, no shading, no colors, high contrast, suitable for photocopying on school papers, educational illustration",
+          minimalist: "Minimalist illustration, very simple shapes, limited colors (max 2), clean design, suitable for black and white printing, educational",
+          cartoon: "Cute cartoon illustration, colorful, child-friendly, educational, simple shapes, bright colors, suitable for primary school textbook",
+          realistic: "Photorealistic educational image, high quality, clear details, suitable for classroom use",
+          diagram: "Clean educational diagram/chart, labeled in Arabic, clear lines, professional infographic, white background, organized layout",
+          coloring: "Black and white coloring page for children, simple outlines, no shading, suitable for printing and coloring, educational theme",
+        };
+        const styleLabel = stylePrompts[input.style] || stylePrompts.bw_lineart;
+        const contextInfo = input.subject && input.level ? `Context: ${input.subject} lesson for ${input.level} students in Tunisia. ` : "";
+        const fullPrompt = `${contextInfo}${input.prompt}. Style: ${styleLabel}. The image must be educational and appropriate for school use.`;
+        const result = await generateImage({ prompt: fullPrompt });
+        if (!result.url) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "\u0641\u0634\u0644 \u0641\u064a \u062a\u0648\u0644\u064a\u062f \u0627\u0644\u0635\u0648\u0631\u0629" });
+
+        // Track usage
+        if (database) {
+          const { imageUsageTracking, generatedImages } = await import("../drizzle/schema");
+          const now = new Date();
+          const monthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const userId = ctx.user?.id;
+          const conditions = userId
+            ? and(eq(imageUsageTracking.userId, userId), eq(imageUsageTracking.monthYear, monthYear))
+            : input.sessionId
+              ? and(eq(imageUsageTracking.sessionId, input.sessionId), eq(imageUsageTracking.monthYear, monthYear))
+              : undefined;
+          if (conditions) {
+            const [existing] = await database.select().from(imageUsageTracking).where(conditions).limit(1);
+            if (existing) {
+              await database.update(imageUsageTracking).set({ imagesGenerated: existing.imagesGenerated + 1 }).where(eq(imageUsageTracking.id, existing.id));
+            } else {
+              await database.insert(imageUsageTracking).values({ userId: userId || null, sessionId: input.sessionId || null, imagesGenerated: 1, monthYear, tier: "free" });
+            }
+          }
+          // Auto-save to gallery
+          await database.insert(generatedImages).values({
+            userId: userId || null, url: result.url, prompt: input.prompt, style: input.style,
+            subject: input.subject || null, level: input.level || null, source: input.source || "studio",
+          });
+        }
+        return { url: result.url, prompt: input.prompt, style: input.style };
+      }),
+
+    removeBackground: publicProcedure
+      .input(z.object({ imageUrl: z.string().url() }))
+      .mutation(async ({ input }) => {
+        const { generateImage } = await import("./_core/imageGeneration");
+        const result = await generateImage({
+          prompt: "Remove the background completely, make it transparent. Keep only the main subject/object. Output a clean cutout with transparent background.",
+          originalImages: [{ url: input.imageUrl, mimeType: "image/png" }],
+        });
+        if (!result.url) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "\u0641\u0634\u0644 \u0641\u064a \u0625\u0632\u0627\u0644\u0629 \u0627\u0644\u062e\u0644\u0641\u064a\u0629" });
+        return { url: result.url };
+      }),
+
+    // Gallery CRUD
+    listImages: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).default(20), source: z.string().optional() }))
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) return [];
+        const { generatedImages } = await import("../drizzle/schema");
+        let query = database.select().from(generatedImages).orderBy(desc(generatedImages.createdAt)).limit(input.limit);
+        return await query;
+      }),
+
+    deleteImage: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { generatedImages } = await import("../drizzle/schema");
+        await database.delete(generatedImages).where(eq(generatedImages.id, input.id));
+        return { success: true };
+      }),
+  }),
 
   newsletter: router({
     subscribe: publicProcedure

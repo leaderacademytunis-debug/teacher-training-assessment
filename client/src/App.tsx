@@ -35,6 +35,7 @@ import Contact from "@/pages/Contact";
 import EduGPT from "@/pages/EduGPT";
 import Inspector from "@/pages/Inspector";
 import ExamBuilder from "@/pages/ExamBuilder";
+import LeaderVisualStudio from "@/pages/LeaderVisualStudio";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/edugpt" component={EduGPT} />
       <Route path="/inspector" component={Inspector} />
       <Route path="/exam-builder" component={ExamBuilder} />
+      <Route path="/visual-studio" component={LeaderVisualStudio} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

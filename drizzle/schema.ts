@@ -719,3 +719,32 @@ export const savedExams = mysqlTable("saved_exams", {
 });
 export type SavedExam = typeof savedExams.$inferSelect;
 export type InsertSavedExam = typeof savedExams.$inferInsert;
+
+// ===== GENERATED IMAGES (Leader Visual Studio) =====
+export const generatedImages = mysqlTable("generated_images", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId"),
+  url: text("url").notNull(),
+  prompt: text("prompt").notNull(),
+  style: varchar("style", { length: 50 }).notNull(),
+  subject: varchar("subject", { length: 100 }),
+  level: varchar("level", { length: 100 }),
+  source: varchar("source", { length: 50 }).default("studio"), // 'studio' | 'exam_builder' | 'edugpt'
+  noBgUrl: text("noBgUrl"), // URL after background removal
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type GeneratedImage = typeof generatedImages.$inferSelect;
+export type InsertGeneratedImage = typeof generatedImages.$inferInsert;
+
+// ===== IMAGE USAGE TRACKING =====
+export const imageUsageTracking = mysqlTable("image_usage_tracking", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId"),
+  sessionId: varchar("sessionId", { length: 100 }), // for anonymous users
+  imagesGenerated: int("imagesGenerated").default(0).notNull(),
+  monthYear: varchar("monthYear", { length: 7 }).notNull(), // '2026-03'
+  tier: varchar("tier", { length: 20 }).default("free").notNull(), // 'free' | 'pro'
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ImageUsageTracking = typeof imageUsageTracking.$inferSelect;

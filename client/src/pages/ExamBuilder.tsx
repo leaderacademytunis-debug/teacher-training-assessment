@@ -1,4 +1,6 @@
 import { useState } from "react";
+import PrintPreview from "@/components/PrintPreview";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,6 +128,9 @@ export default function ExamBuilder() {
   const [activeTab, setActiveTab] = useState<"exam" | "answer">("exam");
   const [copied, setCopied] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [suggestedImages, setSuggestedImages] = useState<Array<{prompt_ar: string; prompt_en: string; type: string}>>([]);
+  const [, navigate] = useLocation();
 
   // tRPC hooks
   const utils = trpc.useUtils();
@@ -397,6 +402,14 @@ export default function ExamBuilder() {
                       className="bg-purple-700 hover:bg-purple-600 text-white text-xs h-7 px-2">
                       {generateAnswerKey.isPending ? "⏳" : "🔑"} تصحيح
                     </Button>
+                    <Button size="sm" onClick={() => setShowPrintPreview(true)}
+                      className="bg-amber-700 hover:bg-amber-600 text-white text-xs h-7 px-2">
+                      📷 معاينة الطباعة
+                    </Button>
+                    <Button size="sm" onClick={() => navigate("/visual-studio")}
+                      className="bg-violet-700 hover:bg-violet-600 text-white text-xs h-7 px-2">
+                      🎨 صورة للسند
+                    </Button>
                   </div>
                 )}
               </div>
@@ -507,6 +520,19 @@ export default function ExamBuilder() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Print Preview Modal */}
+      {showPrintPreview && generatedExam && (
+        <PrintPreview
+          content={activeTab === "exam" ? generatedExam : answerKey}
+          title={activeTab === "exam" ? `اختبار ${subject}` : `تصحيح اختبار ${subject}`}
+          subject={subject}
+          level={level}
+          trimester={trimester}
+          studentName={activeTab === "exam"}
+          onClose={() => setShowPrintPreview(false)}
+        />
+      )}
     </div>
   );
 }

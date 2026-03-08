@@ -1479,3 +1479,37 @@
 - [x] بطاقة معاينة النص المستخرج (أول 400 حرف)
 - [x] حالات: جارٍ الاستخراج + نجاح + خطأ
 - [x] TypeScript: 0 أخطاء
+
+## Leader Visual Studio (جلسة 20)
+- [ ] إنشاء endpoints tRPC لتوليد الصور (generateEducationalImage)
+- [ ] إنشاء endpoint لإزالة الخلفية (removeBackground)
+- [ ] إنشاء صفحة LeaderVisualStudio.tsx مع حقل الإدخال وأزرار الأنماط
+- [ ] عرض الصورة مع أزرار التحميل وإزالة الخلفية
+- [ ] تسجيل المسار في App.tsx وإضافة رابط في التنقل
+- [ ] ربط Visual Studio مع صفحة بناء الاختبار (زر لتوليد صور السندات)
+
+## Integrated Visual Solution (جلسة 21)
+- [ ] تحديث جدول generated_images بإضافة userId وحقول التتبع
+- [ ] إنشاء جدول image_usage_tracking لحدود الاستخدام
+- [ ] endpoint suggestImagePrompts: اقتراح 3 prompts تلقائياً من محتوى الاختبار
+- [ ] endpoint generateEducationalImage مع حدود الاستخدام (Free: 2, Pro: Unlimited)
+- [ ] endpoint removeBackground لإزالة الخلفية
+- [ ] endpoint gallery CRUD (save, list, delete)
+- [ ] إنشاء صفحة LeaderVisualStudio.tsx كاملة مع أنماط الطباعة
+- [ ] أولوية الطباعة: B&W Line Art و Minimalist كافتراضي
+- [ ] ربط مع ExamBuilder: زر "توليد صورة تعليمية" بجانب كل سند
+- [ ] اقتراح تلقائي لـ 3 صور عند توليد الاختبار
+- [ ] قسم "وسائلي البصرية" في لوحة المستخدم
+- [ ] عرض حدود الاستخدام وعداد الصور المتبقية
+
+## Print-Ready Preview System (جلسة 22)
+- [ ] مكون PrintPreview: تنسيق A4 مع هوامش 2cm
+- [ ] ترويسة رسمية متكررة في كل صفحة (المدرسة، المادة، المستوى)
+- [ ] ترقيم الصفحات (1/2, 2/2) في أسفل كل صفحة
+- [ ] وضع الطباعة: تحويل الصور إلى تدرج رمادي عالي التباين
+- [ ] زر تحميل PDF نظيف غير قابل للتعديل
+- [ ] زر تحميل Word قابل للتعديل (docx.js)
+- [ ] معاينة حية WYSIWYG تطابق الورقة المطبوعة
+- [ ] CSS @media print rules لضمان التنسيق
+- [ ] ربط PrintPreview مع ExamBuilder
+- [ ] ربط PrintPreview مع المساعد البيداغوجي
