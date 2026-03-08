@@ -785,9 +785,18 @@ export default function EduGPTAssistantEnhanced() {
 
   return (
     <>
-    <div className="h-screen flex bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="h-screen flex bg-gradient-to-br from-blue-50 via-white to-purple-50 overflow-hidden">
+      {/* Sidebar - on mobile it overlays, on desktop it pushes */}
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? "w-80" : "w-0"} transition-all duration-300 border-l border-gray-200 bg-white flex flex-col overflow-hidden`}>
+      <div className={`
+        ${sidebarOpen ? "w-80 translate-x-0" : "w-0 -translate-x-full md:translate-x-0"}
+        fixed md:relative inset-y-0 right-0 z-40 md:z-auto
+        transition-all duration-300 border-l border-gray-200 bg-white flex flex-col overflow-hidden shrink-0
+      `}>
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-lg">{t.sidebarTitle}</h2>
@@ -976,16 +985,18 @@ export default function EduGPTAssistantEnhanced() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="bg-white border-b border-gray-200 px-3 py-2 sm:px-4 sm:py-3 flex flex-col gap-1.5 shrink-0">
+          {/* Row 1: nav + title + action buttons */}
+          <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+            {/* Nav buttons */}
             <Button
               size="sm"
               variant="ghost"
               onClick={() => navigate("/")}
               title="العودة إلى الصفحة الرئيسية"
-              className="text-gray-600 hover:text-blue-600"
+              className="text-gray-600 hover:text-blue-600 shrink-0 h-8 w-8 p-0"
             >
               <ArrowRight className="h-5 w-5" />
             </Button>
@@ -993,126 +1004,106 @@ export default function EduGPTAssistantEnhanced() {
               size="sm"
               variant="ghost"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="shrink-0 h-8 w-8 p-0"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{conversationTitle}</h1>
-              <div className="flex items-center gap-2 mt-0.5">
-                {selectedSubject && selectedLevel ? (
-                  <button
-                    onClick={() => setShowContextSelector(true)}
-                    className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5 hover:bg-blue-100 transition-colors"
-                  >
-                    <span>📚 {selectedSubject}</span>
-                    <span className="text-blue-400">|</span>
-                    <span>🎓 {selectedLevel}</span>
-                    {teachingLanguage && (
-                      <><span className="text-blue-400">|</span>
-                      <span>{teachingLanguage === "french" ? "🇫🇷 Français" : teachingLanguage === "english" ? "🇬🇧 English" : "🇹🇳 عربية"}</span></>
-                    )}
-                    <span className="text-blue-400 mr-1">• {t.changeContext}</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowContextSelector(true)}
-                    className="flex items-center gap-1 text-xs bg-orange-50 text-orange-600 border border-orange-200 rounded-full px-2 py-0.5 hover:bg-orange-100 transition-colors animate-pulse"
-                  >
-                    <span>{t.setContext}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Language Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-1.5 font-medium">
-                  <Globe className="h-4 w-4" />
-                  <span>
-                    {globalLanguage === "fr" ? "🇫🇷" : globalLanguage === "en" ? "🇬🇧" : "🇹🇳"}
-                  </span>
-                  <span className="hidden md:inline text-xs">
-                    {globalLanguage === "fr" ? "Français" : globalLanguage === "en" ? "English" : "العربية"}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                {[
-                  { code: "ar" as const, label: "العربية", flag: "🇹🇳", teaching: null },
-                  { code: "fr" as const, label: "Français", flag: "🇫🇷", teaching: "french" as const },
-                  { code: "en" as const, label: "English", flag: "🇬🇧", teaching: "english" as const },
-                ].map((lang) => (
-                  <DropdownMenuItem
-                    key={lang.code}
-                    onClick={() => {
-                      setLanguage(lang.code);
-                      setTeachingLanguage(lang.teaching);
-                    }}
-                    className={`gap-2 cursor-pointer ${globalLanguage === lang.code ? "bg-primary/10 font-semibold" : ""}`}
-                  >
-                    <span>{lang.flag}</span>
-                    <span>{lang.label}</span>
-                    {globalLanguage === lang.code && <span className="mr-auto text-primary">✓</span>}
+            {/* Title - truncated on mobile */}
+            <h1 className="flex-1 min-w-0 text-sm sm:text-lg font-bold text-gray-900 truncate">
+              {conversationTitle}
+            </h1>
+            {/* Action buttons - always visible but compact */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Language Selector */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="gap-1 font-medium h-8 px-2">
+                    <Globe className="h-3.5 w-3.5" />
+                    <span className="text-sm">
+                      {globalLanguage === "fr" ? "🇫🇷" : globalLanguage === "en" ? "🇬🇧" : "🇹🇳"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  {[
+                    { code: "ar" as const, label: "العربية", flag: "🇹🇳", teaching: null },
+                    { code: "fr" as const, label: "Français", flag: "🇫🇷", teaching: "french" as const },
+                    { code: "en" as const, label: "English", flag: "🇬🇧", teaching: "english" as const },
+                  ].map((lang) => (
+                    <DropdownMenuItem
+                      key={lang.code}
+                      onClick={() => {
+                        setLanguage(lang.code);
+                        setTeachingLanguage(lang.teaching);
+                      }}
+                      className={`gap-2 cursor-pointer ${globalLanguage === lang.code ? "bg-primary/10 font-semibold" : ""}`}
+                    >
+                      <span>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                      {globalLanguage === lang.code && <span className="mr-auto text-primary">✓</span>}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {/* Export dropdown - all export buttons in one menu on mobile */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-8 px-2 gap-1" disabled={messages.length === 0}>
+                    <Download className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline text-xs">تصدير</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem onClick={exportAsPDF} disabled={messages.length === 0}>
+                    <Download className="h-4 w-4 ml-2" />
+                    PDF (محادثة كاملة)
                   </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={exportAsPDF}
-              disabled={messages.length === 0}
-            >
-              <Download className="h-4 w-4 ml-1" />
-              PDF
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={exportAsWord}
-              disabled={messages.length === 0}
-            >
-              <Download className="h-4 w-4 ml-1" />
-              Word
-            </Button>
-          </div>
-          {/* Clean Note Export Buttons */}
-          {hasAssistantMessage && (
-            <div className="flex items-center gap-1 border-t pt-2 mt-1">
-              <span className="text-xs text-gray-500 ml-2">مذكرة نظيفة:</span>
-              <Button
-                size="sm"
-                variant="default"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 h-7"
-                onClick={exportCleanAsPDF}
-                disabled={exportCleanPDFMutation.isPending}
-              >
-                {exportCleanPDFMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin ml-1" />
-                ) : (
-                  <Download className="h-3 w-3 ml-1" />
-                )}
-                PDF ✨
-              </Button>
-              <Button
-                size="sm"
-                variant="default"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2 py-1 h-7"
-                onClick={exportCleanAsWord}
-                disabled={exportCleanWordMutation.isPending}
-              >
-                {exportCleanWordMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin ml-1" />
-                ) : (
-                  <Download className="h-3 w-3 ml-1" />
-                )}
-                Word ✨
-              </Button>
+                  <DropdownMenuItem onClick={exportAsWord} disabled={messages.length === 0}>
+                    <Download className="h-4 w-4 ml-2" />
+                    Word (محادثة كاملة)
+                  </DropdownMenuItem>
+                  {hasAssistantMessage && (
+                    <>
+                      <div className="border-t my-1" />
+                      <DropdownMenuItem onClick={exportCleanAsPDF} disabled={exportCleanPDFMutation.isPending}>
+                        {exportCleanPDFMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
+                        PDF ✨ (مذكرة نظيفة)
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={exportCleanAsWord} disabled={exportCleanWordMutation.isPending}>
+                        {exportCleanWordMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
+                        Word ✨ (مذكرة نظيفة)
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          )}
+          </div>
+          {/* Row 2: context badge */}
+          <div className="flex items-center">
+            {selectedSubject && selectedLevel ? (
+              <button
+                onClick={() => setShowContextSelector(true)}
+                className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5 hover:bg-blue-100 transition-colors max-w-full overflow-hidden"
+              >
+                <span className="truncate">📚 {selectedSubject}</span>
+                <span className="text-blue-400 shrink-0">|</span>
+                <span className="truncate">🎓 {selectedLevel}</span>
+                {teachingLanguage && (
+                  <><span className="text-blue-400 shrink-0">|</span>
+                  <span className="shrink-0">{teachingLanguage === "french" ? "🇫🇷" : teachingLanguage === "english" ? "🇬🇧" : "🇹🇳"}</span></>
+                )}
+                <span className="text-blue-400 mr-1 shrink-0">• {t.changeContext}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowContextSelector(true)}
+                className="flex items-center gap-1 text-xs bg-orange-50 text-orange-600 border border-orange-200 rounded-full px-2 py-0.5 hover:bg-orange-100 transition-colors animate-pulse"
+              >
+                <span>{t.setContext}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Context Selector Modal */}
@@ -1226,7 +1217,7 @@ export default function EduGPTAssistantEnhanced() {
         )}
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="bg-blue-100 p-6 rounded-full mb-4">
@@ -1307,9 +1298,9 @@ export default function EduGPTAssistantEnhanced() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-gray-200 bg-white p-4">
+        <div className="border-t border-gray-200 bg-white p-2 sm:p-4 shrink-0">
           {attachedFiles.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2">
+            <div className="mb-2 flex flex-wrap gap-2">
               {attachedFiles.map((file, index) => (
                 <div
                   key={index}
@@ -1339,7 +1330,7 @@ export default function EduGPTAssistantEnhanced() {
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-end">
             <input
               ref={fileInputRef}
               type="file"
@@ -1353,8 +1344,9 @@ export default function EduGPTAssistantEnhanced() {
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
+              className="shrink-0 h-10 w-10"
             >
-              <Paperclip className="h-5 w-5" />
+              <Paperclip className="h-4 w-4" />
             </Button>
             <Textarea
               ref={textareaRef}
@@ -1362,19 +1354,19 @@ export default function EduGPTAssistantEnhanced() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t.placeholder}
-              className="flex-1 min-h-[60px] max-h-[200px] resize-none"
+              className="flex-1 min-h-[44px] max-h-[160px] resize-none text-sm"
               disabled={isLoading}
             />
             <Button
               size="icon"
               onClick={handleSend}
               disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
-              className="bg-blue-600 hover:bg-blue-700 h-[60px] w-[60px]"
+              className="bg-blue-600 hover:bg-blue-700 shrink-0 h-10 w-10"
             >
               {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4" />
               )}
             </Button>
           </div>
