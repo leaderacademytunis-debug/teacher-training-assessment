@@ -1461,3 +1461,21 @@
 - [x] إضافة رابط "المتفقد الذكي" في NAV_LINKS في Home.tsx
 - [x] نسخ Inspector.tsx من SmartInspector.tsx (0 أخطاء TypeScript)
 - [x] Route /inspector مسجلة في App.tsx
+
+## رفع الملفات في المتفقد الذكي (جلسة 15)
+- [ ] endpoint tRPC edugpt.extractTextFromFile لاستخراج النص من PDF/Word/صورة
+- [ ] منطقة drag & drop لرفع الملفات في Inspector.tsx
+- [ ] دعم: PDF (pdf-parse)، Word (mammoth)، صور (LLM vision)
+- [ ] عرض اسم الملف + حجمه + زر حذف
+- [ ] التبديل بين وضع "لصق النص" و"رفع ملف"
+- [ ] حفظ نقطة التفتيش
+
+## رفع الملفات في المتفقد الذكي - مكتمل (جلسة 15)
+- [x] endpoint tRPC edugpt.extractTextFromFile لاستخراج النص من PDF/Word/صورة
+- [x] منطقة drag & drop لرفع الملفات في Inspector.tsx
+- [x] دعم: PDF (pdf-parse)، Word (mammoth)، صور (LLM vision)
+- [x] عرض اسم الملف + حجمه + زر حذف
+- [x] التبديل بين وضع "لصق النص" و"رفع ملف"
+- [x] بطاقة معاينة النص المستخرج (أول 400 حرف)
+- [x] حالات: جارٍ الاستخراج + نجاح + خطأ
+- [x] TypeScript: 0 أخطاء

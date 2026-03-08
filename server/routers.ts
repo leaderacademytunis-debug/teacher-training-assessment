@@ -4480,7 +4480,82 @@ ${input.planText}` },
         const content = (response.choices?.[0]?.message?.content as string) ?? "";
         return { report: content };
       }),
-   }),  newsletter: router({
+
+    // ===== استخراج النص من الملفات (PDF / Word / صورة) =====
+    extractTextFromFile: publicProcedure
+      .input(z.object({
+        base64Data: z.string(),
+        mimeType: z.string(),
+        fileName: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.base64Data, "base64");
+        let extractedText = "";
+
+        // ── PDF ──────────────────────────────────────────────────────────
+        if (input.mimeType === "application/pdf") {
+          const pdfParseModule = await import("pdf-parse") as any;
+          const pdfParse = pdfParseModule.default || pdfParseModule;
+          const data = await pdfParse(buffer);
+          extractedText = data.text;
+
+        // ── Word (docx) ───────────────────────────────────────────────────
+        } else if (
+          input.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+          input.mimeType === "application/msword" ||
+          input.fileName.toLowerCase().endsWith(".docx") ||
+          input.fileName.toLowerCase().endsWith(".doc")
+        ) {
+          const mammoth = await import("mammoth");
+          const result = await mammoth.extractRawText({ buffer });
+          extractedText = result.value;
+
+        // ── Image (PNG / JPEG / WEBP) — Vision LLM ────────────────────────
+        } else if (input.mimeType.startsWith("image/")) {
+          const { storagePut } = await import("./storage");
+          const ext = input.fileName.split(".").pop() ?? "jpg";
+          const key = `inspector-uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const { url } = await storagePut(key, buffer, input.mimeType);
+
+          const { invokeLLM } = await import("./_core/llm");
+          const visionResponse = await invokeLLM({
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "image_url",
+                    image_url: { url, detail: "high" },
+                  },
+                  {
+                    type: "text",
+                    text: "استخرج كل النص الموجود في هذه الصورة بدقة تامة. أعد النص كما هو دون أي تعليق أو إضافة.",
+                  },
+                ],
+              },
+            ],
+          });
+          extractedText = (visionResponse.choices?.[0]?.message?.content as string) ?? "";
+
+        } else {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "نوع الملف غير مدعوم. يُرجى رفع ملف PDF أو Word أو صورة (PNG/JPG).",
+          });
+        }
+
+        if (!extractedText.trim()) {
+          throw new TRPCError({
+            code: "UNPROCESSABLE_CONTENT",
+            message: "لم يتمكن النظام من استخراج نص من هذا الملف. تأكد من أن الملف يحتوي على نص قابل للقراءة.",
+          });
+        }
+
+        return { text: extractedText.trim() };
+      }),
+   }),
+
+  newsletter: router({
     subscribe: publicProcedure
       .input(z.object({
         email: z.string().email(),

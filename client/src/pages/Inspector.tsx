@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,13 +19,18 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
-  Download,
+  Upload,
+  X,
+  FileImage,
+  File,
+  Type,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type TabId = "lesson" | "exam" | "planning" | "other";
+type InputMode = "text" | "file";
 
 interface Tab {
   id: TabId;
@@ -102,40 +107,48 @@ const CRITERIA_BY_TAB: Record<TabId, string[]> = {
   other: ["الوضوح والتنظيم", "الملاءمة التربوية", "الجدوى والتطبيق", "الأهداف المحددة", "المرجعية القانونية", "القيمة المضافة"],
 };
 
-// ─── Score badge ──────────────────────────────────────────────────────────────
+// ─── Accepted file types ──────────────────────────────────────────────────────
 
-function ScoreBadge({ score }: { score: number }) {
-  const color =
-    score >= 80 ? "bg-green-100 text-green-800 border-green-300" :
-    score >= 60 ? "bg-yellow-100 text-yellow-800 border-yellow-300" :
-    "bg-red-100 text-red-800 border-red-300";
-  const label =
-    score >= 80 ? "ممتاز" :
-    score >= 70 ? "جيد جداً" :
-    score >= 60 ? "جيد" :
-    score >= 50 ? "مقبول" :
-    "يحتاج تحسيناً";
+const ACCEPTED_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/msword",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+];
 
-  return (
-    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border font-bold text-lg ${color}`}>
-      <Star className="w-5 h-5" />
-      <span>{score}/100</span>
-      <span className="text-sm font-medium">— {label}</span>
-    </div>
-  );
+const MAX_FILE_SIZE_MB = 10;
+
+function getFileIcon(mimeType: string) {
+  if (mimeType === "application/pdf") return <File className="w-5 h-5 text-red-500" />;
+  if (mimeType.startsWith("image/")) return <FileImage className="w-5 h-5 text-blue-500" />;
+  return <FileText className="w-5 h-5 text-indigo-500" />;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SmartInspector() {
   const [activeTab, setActiveTab] = useState<TabId>("lesson");
+  const [inputMode, setInputMode] = useState<InputMode>("text");
   const [documentText, setDocumentText] = useState("");
   const [result, setResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedCriteria, setSelectedCriteria] = useState<string[]>([]);
   const [showFullReport, setShowFullReport] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const inspectMutation = trpc.edugpt.inspectDocument.useMutation({
     onSuccess: (data) => {
@@ -146,6 +159,18 @@ export default function SmartInspector() {
     onError: (err) => {
       setError(err.message || "حدث خطأ أثناء التحليل. حاول مرة أخرى.");
       setIsLoading(false);
+    },
+  });
+
+  const extractMutation = trpc.edugpt.extractTextFromFile.useMutation({
+    onSuccess: (data) => {
+      setDocumentText(data.text);
+      setIsExtracting(false);
+      setError(null);
+    },
+    onError: (err) => {
+      setError(err.message || "فشل استخراج النص من الملف.");
+      setIsExtracting(false);
     },
   });
 
@@ -183,6 +208,75 @@ export default function SmartInspector() {
     setDocumentText("");
     setSelectedCriteria([]);
     setError(null);
+    setUploadedFile(null);
+  }
+
+  // ── File handling ────────────────────────────────────────────────────────
+
+  function processFile(file: File) {
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setError(`حجم الملف كبير جداً. الحد الأقصى ${MAX_FILE_SIZE_MB} MB.`);
+      return;
+    }
+    const isValidType =
+      ACCEPTED_TYPES.includes(file.type) ||
+      file.name.toLowerCase().endsWith(".docx") ||
+      file.name.toLowerCase().endsWith(".doc");
+    if (!isValidType) {
+      setError("نوع الملف غير مدعوم. يُرجى رفع ملف PDF أو Word (.docx) أو صورة (PNG/JPG/WEBP).");
+      return;
+    }
+
+    setUploadedFile(file);
+    setDocumentText("");
+    setResult(null);
+    setError(null);
+    setIsExtracting(true);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      extractMutation.mutate({
+        base64Data: base64,
+        mimeType: file.type || "application/octet-stream",
+        fileName: file.name,
+      });
+    };
+    reader.onerror = () => {
+      setError("فشل قراءة الملف. حاول مرة أخرى.");
+      setIsExtracting(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    e.target.value = "";
+  }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  function clearFile() {
+    setUploadedFile(null);
+    setDocumentText("");
+    setError(null);
   }
 
   return (
@@ -204,7 +298,6 @@ export default function SmartInspector() {
                 </span>
               </div>
             </Link>
-
             <div className="flex items-center gap-3">
               <Link href="/assistant">
                 <Button variant="ghost" className="text-blue-200 hover:text-white hover:bg-white/10 text-sm gap-2">
@@ -238,20 +331,18 @@ export default function SmartInspector() {
             نظام تقييم بيداغوجي ذكي يحاكي منهجية المتفقد التربوي التونسي
           </p>
           <p className="text-blue-300 text-sm">
-            تقييم المذكرات، الاختبارات، التوزيعات السنوية وكل الوثائق التربوية وفق المعايير الرسمية
+            الصق النص أو ارفع ملفك مباشرةً (PDF، Word، صورة) للحصول على تقرير تفتيش فوري
           </p>
-
-          {/* Stats row */}
           <div className="flex flex-wrap justify-center gap-6 mt-8">
             {[
               { icon: "📋", value: "4", label: "أنواع وثائق" },
+              { icon: "📎", value: "PDF / Word / صورة", label: "رفع ملفات" },
               { icon: "⚡", value: "30 ثانية", label: "وقت التحليل" },
               { icon: "🎯", value: "معايير رسمية", label: "وزارة التربية" },
-              { icon: "📊", value: "تقرير شامل", label: "نقاط وتوصيات" },
             ].map((s, i) => (
               <div key={i} className="text-center">
                 <div className="text-2xl mb-1">{s.icon}</div>
-                <div className="text-white font-bold">{s.value}</div>
+                <div className="text-white font-bold text-sm">{s.value}</div>
                 <div className="text-blue-300 text-xs">{s.label}</div>
               </div>
             ))}
@@ -304,33 +395,164 @@ export default function SmartInspector() {
 
           {/* ── Left: Input ─────────────────────────────────────────────── */}
           <div className="space-y-5">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-              <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-600" />
-                نص الوثيقة
-              </h2>
-              <Textarea
-                value={documentText}
-                onChange={(e) => setDocumentText(e.target.value)}
-                placeholder={currentTab.placeholder}
-                className="min-h-[220px] text-sm leading-relaxed resize-none border-gray-200 focus:border-blue-400 rounded-xl"
-                dir="rtl"
-              />
-              <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
-                <span>{currentTab.hint}</span>
-              </p>
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-gray-400">{documentText.length} حرف</span>
-                {documentText.length > 0 && (
-                  <button
-                    onClick={() => setDocumentText("")}
-                    className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                  >
-                    مسح النص
-                  </button>
-                )}
-              </div>
+
+            {/* Input mode toggle */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-1 flex gap-1">
+              <button
+                onClick={() => setInputMode("text")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  inputMode === "text"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <Type className="w-4 h-4" />
+                لصق النص
+              </button>
+              <button
+                onClick={() => setInputMode("file")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  inputMode === "file"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <Upload className="w-4 h-4" />
+                رفع ملف
+              </button>
             </div>
+
+            {/* Text input */}
+            {inputMode === "text" && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+                <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  نص الوثيقة
+                </h2>
+                <Textarea
+                  value={documentText}
+                  onChange={(e) => setDocumentText(e.target.value)}
+                  placeholder={currentTab.placeholder}
+                  className="min-h-[220px] text-sm leading-relaxed resize-none border-gray-200 focus:border-blue-400 rounded-xl"
+                  dir="rtl"
+                />
+                <p className="text-xs text-gray-400 mt-2">{currentTab.hint}</p>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-gray-400">{documentText.length} حرف</span>
+                  {documentText.length > 0 && (
+                    <button
+                      onClick={() => setDocumentText("")}
+                      className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                    >
+                      مسح النص
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* File upload */}
+            {inputMode === "file" && (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+                <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-blue-600" />
+                  رفع الوثيقة
+                </h2>
+
+                {/* Uploaded file card */}
+                {uploadedFile && !isExtracting && (
+                  <div className="mb-4 p-3 rounded-xl border border-gray-200 bg-gray-50 flex items-center gap-3">
+                    {getFileIcon(uploadedFile.type)}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{uploadedFile.name}</p>
+                      <p className="text-xs text-gray-400">{formatFileSize(uploadedFile.size)}</p>
+                    </div>
+                    <button
+                      onClick={clearFile}
+                      className="w-7 h-7 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Extracting indicator */}
+                {isExtracting && (
+                  <div className="mb-4 p-4 rounded-xl border border-blue-200 bg-blue-50 flex items-center gap-3">
+                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">جارٍ استخراج النص من الملف...</p>
+                      <p className="text-xs text-blue-500 mt-0.5">قد يستغرق ذلك بضع ثوانٍ</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Drop zone */}
+                {!uploadedFile && !isExtracting && (
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                      isDragging
+                        ? "border-blue-400 bg-blue-50 scale-[1.01]"
+                        : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/50"
+                    }`}
+                  >
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "linear-gradient(135deg, #E8EAF6, #C5CAE9)" }}>
+                      <Upload className="w-7 h-7" style={{ color: "#1A237E" }} />
+                    </div>
+                    <p className="font-bold text-gray-700 mb-1">اسحب الملف هنا أو اضغط للاختيار</p>
+                    <p className="text-gray-400 text-sm">PDF، Word (.docx)، صورة (PNG / JPG / WEBP)</p>
+                    <p className="text-gray-300 text-xs mt-2">الحد الأقصى: {MAX_FILE_SIZE_MB} MB</p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
+                      onChange={handleFileInput}
+                      className="hidden"
+                    />
+                  </div>
+                )}
+
+                {/* Extracted text preview */}
+                {documentText && uploadedFile && !isExtracting && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-medium text-green-700 flex items-center gap-1">
+                        <CheckCheck className="w-3.5 h-3.5" />
+                        تم استخراج النص بنجاح ({documentText.length} حرف)
+                      </p>
+                      <button
+                        onClick={() => { setDocumentText(""); setUploadedFile(null); }}
+                        className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        مسح
+                      </button>
+                    </div>
+                    <div className="max-h-32 overflow-y-auto p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-600 leading-relaxed">
+                      {documentText.slice(0, 400)}{documentText.length > 400 ? "..." : ""}
+                    </div>
+                  </div>
+                )}
+
+                {/* Supported formats */}
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {[
+                    { icon: <File className="w-4 h-4 text-red-500" />, label: "PDF", desc: "نص قابل للقراءة" },
+                    { icon: <FileText className="w-4 h-4 text-indigo-500" />, label: "Word", desc: ".docx / .doc" },
+                    { icon: <FileImage className="w-4 h-4 text-blue-500" />, label: "صورة", desc: "PNG / JPG / WEBP" },
+                  ].map((f, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 text-center">
+                      {f.icon}
+                      <span className="text-xs font-bold text-gray-700">{f.label}</span>
+                      <span className="text-xs text-gray-400">{f.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Criteria chips */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
@@ -367,20 +589,23 @@ export default function SmartInspector() {
             {/* Inspect button */}
             <Button
               onClick={handleInspect}
-              disabled={isLoading || !documentText.trim()}
+              disabled={isLoading || isExtracting || !documentText.trim()}
               className="w-full py-4 text-white font-bold text-base rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 gap-3"
-              style={{ background: isLoading ? "#9E9E9E" : "linear-gradient(135deg, #1A237E, #1565C0)", boxShadow: isLoading ? "none" : "0 8px 24px rgba(26,35,126,0.35)" }}
+              style={{
+                background: (isLoading || isExtracting || !documentText.trim())
+                  ? "#9E9E9E"
+                  : "linear-gradient(135deg, #1A237E, #1565C0)",
+                boxShadow: (isLoading || isExtracting || !documentText.trim())
+                  ? "none"
+                  : "0 8px 24px rgba(26,35,126,0.35)",
+              }}
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  جارٍ التحليل والتقييم...
-                </>
+                <><Loader2 className="w-5 h-5 animate-spin" />جارٍ التحليل والتقييم...</>
+              ) : isExtracting ? (
+                <><Loader2 className="w-5 h-5 animate-spin" />جارٍ استخراج النص...</>
               ) : (
-                <>
-                  <Search className="w-5 h-5" />
-                  ابدأ التفتيش الذكي
-                </>
+                <><Search className="w-5 h-5" />ابدأ التفتيش الذكي</>
               )}
             </Button>
 
@@ -401,7 +626,7 @@ export default function SmartInspector() {
                 </div>
                 <h3 className="font-bold text-gray-700 text-lg mb-2">في انتظار الوثيقة</h3>
                 <p className="text-gray-400 text-sm max-w-xs">
-                  الصق نص وثيقتك التربوية في الحقل المجاور ثم اضغط "ابدأ التفتيش الذكي"
+                  الصق النص أو ارفع ملفك (PDF / Word / صورة) ثم اضغط "ابدأ التفتيش الذكي"
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-3 w-full max-w-xs">
                   {[
@@ -450,7 +675,9 @@ export default function SmartInspector() {
                     </div>
                     <div>
                       <p className="font-bold text-gray-800 text-sm">تقرير التفتيش</p>
-                      <p className="text-xs text-gray-500">{currentTab.labelAr}</p>
+                      <p className="text-xs text-gray-500">
+                        {currentTab.labelAr}{uploadedFile ? ` — ${uploadedFile.name}` : ""}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -483,27 +710,25 @@ export default function SmartInspector() {
                 {/* Footer actions */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-3">
                   <button
-                    onClick={() => { setResult(null); setDocumentText(""); }}
+                    onClick={() => { setResult(null); setDocumentText(""); setUploadedFile(null); }}
                     className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5"
                   >
                     <FileText className="w-4 h-4" />
                     تقييم وثيقة جديدة
                   </button>
-                  <div className="flex items-center gap-2">
-                    <Link href="/assistant">
-                      <Button variant="outline" size="sm" className="text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50">
-                        <BookOpen className="w-3.5 h-3.5" />
-                        إنشاء مذكرة في EDUGPT
-                      </Button>
-                    </Link>
-                  </div>
+                  <Link href="/assistant">
+                    <Button variant="outline" size="sm" className="text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      إنشاء مذكرة في EDUGPT
+                    </Button>
+                  </Link>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Info section ─────────────────────────────────────────────── */}
+        {/* ── Info cards ───────────────────────────────────────────────── */}
         <div className="mt-12 grid sm:grid-cols-3 gap-5">
           {[
             {
@@ -512,9 +737,9 @@ export default function SmartInspector() {
               desc: "التقييم وفق منهجية وزارة التربية التونسية ومعايير التفتيش البيداغوجي الرسمية",
             },
             {
-              icon: "🤖",
-              title: "ذكاء اصطناعي متخصص",
-              desc: "نموذج مدرَّب على آلاف الوثائق التربوية التونسية مع خبرة 30 سنة في التفتيش",
+              icon: "📎",
+              title: "رفع الملفات مباشرةً",
+              desc: "ارفع ملف PDF أو Word أو صورة وسيستخرج النظام النص تلقائياً ويحلله فوراً",
             },
             {
               icon: "📊",
@@ -540,7 +765,10 @@ export default function SmartInspector() {
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/assistant">
-              <Button className="text-white font-bold gap-2 hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 6px 20px rgba(255,109,0,0.4)" }}>
+              <Button
+                className="text-white font-bold gap-2 hover:scale-105 transition-transform"
+                style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 6px 20px rgba(255,109,0,0.4)" }}
+              >
                 <BookOpen className="w-4 h-4" />
                 جرّب EDUGPT
               </Button>
