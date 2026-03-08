@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 // ===== TYPES =====
-type Tab = "overview" | "users" | "payments" | "activity" | "pricing" | "settings";
+type Tab = "overview" | "users" | "payments" | "activity" | "pricing" | "bulk" | "settings";
 
 const SERVICE_LABELS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   accessEdugpt: { label: "EDUGPT", color: "bg-emerald-500", icon: <Sparkles className="h-3 w-3" /> },
@@ -79,6 +79,7 @@ export default function AdminDashboard() {
     { id: "payments", label: "طلبات الدفع", icon: <CreditCard className="h-5 w-5" /> },
     { id: "activity", label: "مراقبة AI", icon: <Activity className="h-5 w-5" /> },
     { id: "pricing", label: "الأسعار", icon: <CreditCard className="h-5 w-5" /> },
+    { id: "bulk", label: "تفعيل جماعي", icon: <Users className="h-5 w-5" /> },
     { id: "settings", label: "الإعدادات", icon: <Settings className="h-5 w-5" /> },
   ];
 
@@ -166,6 +167,7 @@ export default function AdminDashboard() {
           {activeTab === "payments" && <PaymentsTab />}
           {activeTab === "activity" && <ActivityTab />}
           {activeTab === "pricing" && <PricingTab />}
+          {activeTab === "bulk" && <BulkActivationTab />}
           {activeTab === "settings" && <SettingsTab />}
         </div>
       </main>
@@ -1059,6 +1061,165 @@ function SettingsTab() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">يمكنك تصدير بيانات المنصة من صفحات إدارة المستخدمين وطلبات الدفع.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
+// ===== BULK ACTIVATION TAB =====
+function BulkActivationTab() {
+  const [emailsText, setEmailsText] = useState("");
+  const [tier, setTier] = useState<"pro" | "premium">("pro");
+  const [accessEdugpt, setAccessEdugpt] = useState(true);
+  const [accessCourseAi, setAccessCourseAi] = useState(false);
+  const [accessCoursePedagogy, setAccessCoursePedagogy] = useState(false);
+  const [accessFullBundle, setAccessFullBundle] = useState(false);
+  const [result, setResult] = useState<{ activated: number; notFound: number; notFoundEmails: string[]; total: number } | null>(null);
+
+  const bulkActivate = trpc.adminDashboard.bulkActivate.useMutation({
+    onSuccess: (data) => {
+      setResult(data);
+      toast.success(`تم تفعيل ${data.activated} حساب من أصل ${data.total}`);
+    },
+    onError: (err) => toast.error(`خطأ: ${err.message}`),
+  });
+
+  const emails = emailsText
+    .split(/[\n,;]+/)
+    .map(e => e.trim())
+    .filter(e => e.length > 0 && e.includes("@"));
+
+  const handleActivate = () => {
+    if (emails.length === 0) {
+      toast.error("يرجى إدخال عنوان بريد إلكتروني واحد على الأقل");
+      return;
+    }
+    if (emails.length > 500) {
+      toast.error("الحد الأقصى 500 بريد إلكتروني في المرة الواحدة");
+      return;
+    }
+    bulkActivate.mutate({
+      emails,
+      tier,
+      accessEdugpt,
+      accessCourseAi,
+      accessCoursePedagogy,
+      accessFullBundle,
+    });
+  };
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            تفعيل جماعي للحسابات
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            أدخل عناوين البريد الإلكتروني (حتى 500) لترقية حساباتهم دفعة واحدة إلى PRO أو Premium.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Emails input */}
+          <div className="space-y-2">
+            <Label>عناوين البريد الإلكتروني</Label>
+            <Textarea
+              placeholder={"أدخل عناوين البريد (واحد في كل سطر أو مفصولة بفاصلة):\nuser1@example.com\nuser2@example.com\nuser3@example.com"}
+              value={emailsText}
+              onChange={e => { setEmailsText(e.target.value); setResult(null); }}
+              rows={8}
+              className="font-mono text-sm"
+              dir="ltr"
+            />
+            <p className="text-xs text-muted-foreground">
+              {emails.length > 0 ? `✅ تم اكتشاف ${emails.length} بريد إلكتروني صالح` : "لم يتم اكتشاف أي بريد إلكتروني بعد"}
+              {emails.length > 500 && <span className="text-red-500 mr-2">⚠️ تجاوز الحد الأقصى (500)</span>}
+            </p>
+          </div>
+
+          {/* Tier selection */}
+          <div className="space-y-2">
+            <Label>المستوى</Label>
+            <Select value={tier} onValueChange={(v) => setTier(v as "pro" | "premium")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pro">PRO</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Permissions */}
+          <div className="space-y-3">
+            <Label>الصلاحيات</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={accessEdugpt} onCheckedChange={setAccessEdugpt} />
+                <span className="text-sm">EDUGPT</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={accessCourseAi} onCheckedChange={setAccessCourseAi} />
+                <span className="text-sm">دورة AI</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={accessCoursePedagogy} onCheckedChange={setAccessCoursePedagogy} />
+                <span className="text-sm">بيداغوجيا</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={accessFullBundle} onCheckedChange={setAccessFullBundle} />
+                <span className="text-sm">الباقة الكاملة</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action button */}
+          <Button
+            onClick={handleActivate}
+            disabled={bulkActivate.isPending || emails.length === 0 || emails.length > 500}
+            className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+          >
+            {bulkActivate.isPending ? (
+              <span className="flex items-center gap-2"><RefreshCw className="h-4 w-4 animate-spin" /> جاري التفعيل...</span>
+            ) : (
+              `تفعيل ${emails.length} حساب`
+            )}
+          </Button>
+
+          {/* Results */}
+          {result && (
+            <Card className="bg-slate-50 border-slate-200">
+              <CardContent className="p-4 space-y-3">
+                <h4 className="font-bold text-sm">نتائج التفعيل الجماعي</h4>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-2xl font-bold text-emerald-600">{result.activated}</p>
+                    <p className="text-xs text-muted-foreground">تم تفعيلهم</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-2xl font-bold text-red-500">{result.notFound}</p>
+                    <p className="text-xs text-muted-foreground">غير موجودين</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <p className="text-2xl font-bold text-blue-600">{result.total}</p>
+                    <p className="text-xs text-muted-foreground">الإجمالي</p>
+                  </div>
+                </div>
+                {result.notFoundEmails.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-red-600 mb-1">عناوين غير مسجلة في المنصة:</p>
+                    <div className="bg-red-50 rounded p-2 text-xs font-mono max-h-32 overflow-auto" dir="ltr">
+                      {result.notFoundEmails.map((e, i) => (
+                        <div key={i} className="text-red-700">{e}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </CardContent>
       </Card>
     </div>

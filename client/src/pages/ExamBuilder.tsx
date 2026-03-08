@@ -173,7 +173,8 @@ function ExamContentWithImages({ content, images }: { content: string; images: A
 // ─── Main Component ────────────────────────────────────────────────────────────────────────────
 
 export default function ExamBuilder() {
-  const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
+  const { hasEdugpt, isAdmin, isLoading: permLoading, tier } = usePermissions();
+  const isFreeAccount = tier === "free" && !isAdmin;
 
   if (!permLoading && !hasEdugpt && !isAdmin) {
     return (
@@ -314,7 +315,7 @@ export default function ExamBuilder() {
   };
 
   const handleExportWord = (content: string) => {
-    exportWord.mutate({ subject, level, trimester, duration, totalScore, examContent: content });
+    exportWord.mutate({ subject, level, trimester, duration, totalScore, examContent: content, schoolName: schoolNameInput || undefined, schoolYear: "2025-2026", schoolLogoUrl: schoolLogo || undefined });
   };
 
   // Auto-generate Line Art images from [رسم: ...] placeholders
@@ -519,7 +520,7 @@ export default function ExamBuilder() {
               </div>
               {/* School Logo Upload */}
               <div className="space-y-1">
-                <Label className="text-blue-200 text-xs">شعار المدرسة (يظهر في الترويسة)</Label>
+                <Label className="text-blue-200 text-xs">شعار المدرسة (يظهر في الترويسة) {isFreeAccount && <span className="text-amber-400 text-[10px]">🔒 PRO</span>}</Label>
                 <div className="flex items-center gap-2">
                   {schoolLogo ? (
                     <div className="relative w-12 h-12 rounded-lg border border-white/20 overflow-hidden bg-white flex-shrink-0">
@@ -540,6 +541,7 @@ export default function ExamBuilder() {
                       accept="image/png,image/jpeg,image/svg+xml"
                       className="hidden"
                       onChange={async (e) => {
+                        if (isFreeAccount) { toast.error("ميزة رفع شعار المدرسة متاحة فقط للحسابات المدفوعة (PRO/Premium)"); e.target.value = ''; return; }
                         const file = e.target.files?.[0];
                         if (!file) return;
                         if (file.size > 2 * 1024 * 1024) {
@@ -634,10 +636,14 @@ export default function ExamBuilder() {
                       className="bg-amber-700 hover:bg-amber-600 text-white text-xs h-7 px-2">
                       📷 معاينة الطباعة
                     </Button>
-                    <Button size="sm" onClick={handleAutoGenerateImages}
+                    <Button size="sm" onClick={() => {
+                      if (isFreeAccount) { toast.error("ميزة توليد الرسومات متاحة فقط للحسابات المدفوعة (PRO/Premium)"); return; }
+                      handleAutoGenerateImages();
+                    }}
                       disabled={generatingImages}
-                      className="bg-violet-700 hover:bg-violet-600 text-white text-xs h-7 px-2">
+                      className={`bg-violet-700 hover:bg-violet-600 text-white text-xs h-7 px-2 ${isFreeAccount ? 'opacity-60' : ''}`}>
                       {generatingImages ? <span className="flex items-center gap-1"><span className="animate-spin">⏳</span> توليد...</span> : "🎨 توليد رسومات"}
+                      {isFreeAccount && <span className="mr-1 text-[9px]">🔒</span>}
                     </Button>
                     <Button size="sm" onClick={() => navigate("/visual-studio")}
                       className="bg-violet-700/60 hover:bg-violet-600/60 text-white text-xs h-7 px-2">

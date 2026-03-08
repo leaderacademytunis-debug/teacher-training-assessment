@@ -4773,6 +4773,9 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         duration: z.string().optional(),
         totalScore: z.number().optional(),
         examContent: z.string(),
+        schoolName: z.string().optional(),
+        schoolYear: z.string().optional(),
+        schoolLogoUrl: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign } = await import("docx");
@@ -4800,14 +4803,14 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
           rows: [
             new TableRow({
               children: [
-                makeCell("..................\nالمدرسة الابتدائيّة", { bold: true, width: 30, align: AlignmentType.RIGHT }),
+                makeCell(`${input.schoolName || '..................'}\nالمدرسة الابتدائيّة`, { bold: true, width: 30, align: AlignmentType.RIGHT }),
                 makeCell(`${input.subject}\nاختبار ${input.trimester}`, { bold: true, width: 40, fontSize: 26 }),
                 makeCell("الاسم\nواللقب:..................\n.................................", { width: 30, align: AlignmentType.RIGHT }),
               ],
             }),
             new TableRow({
               children: [
-                makeCell("2025-2026", { bold: true, width: 30, align: AlignmentType.LEFT }),
+                makeCell(input.schoolYear || "2025-2026", { bold: true, width: 30, align: AlignmentType.LEFT }),
                 makeCell(`المادّة: ${input.subject}`, { bold: true, width: 40 }),
                 makeCell(`${input.level} | ${input.trimester}`, { bold: true, width: 30, align: AlignmentType.RIGHT }),
               ],
@@ -4951,6 +4954,12 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
               page: {
                 margin: { top: 567, right: 680, bottom: 567, left: 680 },
                 size: { width: 11906, height: 16838 }, // A4
+                borders: {
+                  pageBorderTop: { style: BorderStyle.SINGLE, size: 6, color: "333333", space: 10 },
+                  pageBorderBottom: { style: BorderStyle.SINGLE, size: 6, color: "333333", space: 10 },
+                  pageBorderLeft: { style: BorderStyle.SINGLE, size: 6, color: "333333", space: 10 },
+                  pageBorderRight: { style: BorderStyle.SINGLE, size: 6, color: "333333", space: 10 },
+                },
               },
             },
             children: paragraphs as any[],
@@ -5621,6 +5630,46 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
       const { pricingPlans } = await import("../drizzle/schema");
       await database.delete(pricingPlans).where(eq(pricingPlans.id, input.id));
       return { success: true };
+    }),
+
+    // --- Bulk Activation (up to 500 emails) ---
+    bulkActivate: adminProcedure.input(z.object({
+      emails: z.array(z.string().email()).max(500),
+      tier: z.enum(["pro", "premium"]).default("pro"),
+      accessEdugpt: z.boolean().default(true),
+      accessCourseAi: z.boolean().default(false),
+      accessCoursePedagogy: z.boolean().default(false),
+      accessFullBundle: z.boolean().default(false),
+    })).mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const { users } = await import("../drizzle/schema");
+      let activated = 0;
+      let notFound = 0;
+      const notFoundEmails: string[] = [];
+      for (const email of input.emails) {
+        const userRows = await database.select({ id: users.id }).from(users).where(eq(users.email, email.trim().toLowerCase())).limit(1);
+        if (userRows.length === 0) {
+          notFound++;
+          notFoundEmails.push(email);
+          continue;
+        }
+        const userId = userRows[0].id;
+        const existing = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, userId)).limit(1);
+        const permData = {
+          accessEdugpt: input.accessEdugpt,
+          accessCourseAi: input.accessCourseAi,
+          accessCoursePedagogy: input.accessCoursePedagogy,
+          accessFullBundle: input.accessFullBundle,
+          tier: input.tier,
+        };
+        if (existing.length > 0) {
+          await database.update(servicePermissions).set(permData).where(eq(servicePermissions.userId, userId));
+        } else {
+          await database.insert(servicePermissions).values({ userId, ...permData });
+        }
+        activated++;
+      }
+      return { activated, notFound, notFoundEmails, total: input.emails.length };
     }),
 
     // --- Log AI activity ---
