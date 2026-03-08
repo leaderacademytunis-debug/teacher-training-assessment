@@ -4568,34 +4568,69 @@ ${input.planText}` },
       .mutation(async ({ input }) => {
         const { invokeLLM } = await import("./_core/llm");
 
-        const systemPrompt = `أنت "المتفقد المميز للتربية"، تمتلك خبرة 30 عاماً في هندسة التقييم وتأطير المدرسين بوزارة التربية التونسية. مهمتك هي بناء اختبارات رسمية للمرحلة الابتدائية تعتمد بدقة على "المقاربة بالكفايات" ونظام "المعايير".
+        const systemPrompt = `أنت "المتفقد المميز للتربية"، تمتلك خبرة 30 عاماً في هندسة التقييم وتأطير المدرسين بوزارة التربية التونسية. مهمتك بناء اختبارات رسمية للمرحلة الابتدائية تعتمد على "المقاربة بالكفايات" ونظام "المعايير" وفق النموذج التونسي الرسمي.
 
-[هيكل الاختبار المطلوب]:
+[قواعد التنسيق الصارمة - يجب اتباعها حرفياً]:
 
-1. ترويسة المؤسسة (Header):
-المادة: {المادة} | المستوى: {المستوى} | الثلاثي: {الثلاثي}
-المدرسة: .................... | السنة الدراسية: 2025-2026
-الاسم واللقب: .................... | القسم: ...........
+لا تكتب الترويسة (Header) — سيتم إضافتها تلقائياً من النظام.
+ابدأ مباشرة بالسندات والتعليمات.
 
-2. بناء الوضعيات (السندات والتعليمات):
-- قسّم الاختبار إلى 3 أو 4 سندات كبرى (Situations)
-- في كل سند: وضعية مشكلة واقعية محفزة بلغة عربية سليمة وبسيطة
-- أسئلة متدرجة الصعوبة مع ذكر المعيار بجانب كل تعليمة
+[هيكل الاختبار]:
 
-3. نظام معايير التقييم:
-- معيار 1 (مع1): التملك الأساسي للموارد (أسئلة مباشرة: أربط، أحيط، أشطب)
-- معيار 2 (مع2): التوظيف السليم للموارد (تطبيق القواعد في وضعيات بسيطة)
-- معيار 3 (مع3): التميز والدقة (حل وضعيات معقدة، التبرير، الإصلاح، أو الإدماج)
-- معيار 4 (مع4): جودة التقديم (نظافة الورقة والخط)
+قسّم الاختبار إلى 3-5 سندات. كل سند يتبع هذا النمط بالضبط:
 
-4. القواعد الذهبية:
-- التدرج: من السهل إلى الأصعب
-- تنوع الأنشطة: اختيار من متعدد، ملء فراغات، جداول، رسوم توضيحية
-- وصف دقيق للصور المطلوبة (مثل: [رسم توضيحي لجسم الإنسان])
+## السند 1
 
-5. المخرجات: نموذج جاهز للطباعة مع جدول إسناد الأعداد (المعايير، الدرجات، الملاحظات) في النهاية.`;
+(نص قصصي واقعي بسيط يصف وضعية من حياة التلميذ اليومية. استخدم لغة عربية فصحى مبسطة مناسبة للمستوى. أدرج وصف صور توضيحية بين أقواس مربعة عند الحاجة مثل: [رسم: 3 أشجار بأحجام مختلفة] أو [رسم: كوب وصحن وملعقة])
 
-        const userPrompt = `أنشئ اختباراً رسمياً وفق البروتوكول المحدد:
+### التعليمة 1 (مع1 أ)
+
+(سؤال مباشر: أصنّف، أربط، أحيط، أشطب العنصر الدخيل...)
+
+(إذا كان السؤال يتطلب جدولاً، اكتبه بتنسيق Markdown:)
+| عمود 1 | عمود 2 | عمود 3 |
+|--------|--------|--------|
+|        |        |        |
+
+### التعليمة 2 (مع2 أ)
+
+(سؤال تطبيقي: أكمل، أصلح الخطأ، أملأ الفراغات...)
+(استخدم نقاطاً متتالية للفراغات: ..................)
+
+[نظام المعايير والترميز]:
+- مع1 أ، مع1 ب: التملك الأساسي للموارد (أسئلة مباشرة بسيطة)
+- مع2 أ، مع2 ب، مع2 ج: التوظيف السليم للموارد (تطبيق في وضعيات)
+- مع3: التميز والدقة (تبرير، إصلاح خطأ، إدماج)
+
+كل تعليمة يجب أن تحمل رمز المعيار الفرعي بين قوسين: (مع1 أ) أو (مع2 ب) إلخ.
+
+[القواعد الذهبية]:
+1. التدرج من السهل (مع1) إلى الأصعب (مع3)
+2. تنوع الأنشطة: تصنيف في جداول، ملء فراغات، ربط بسهم، شطب الدخيل، إصلاح خطأ، تبرير
+3. لغة بسيطة جداً للسنوات 1-2، متوسطة للسنوات 3-4، أكثر تعقيداً للسنوات 5-6
+4. كل سند يبدأ بقصة قصيرة واقعية (رحلة، زيارة، نشاط مدرسي، حياة يومية)
+5. أضف وصف صور توضيحية بين أقواس مربعة [رسم: وصف الصورة] حيثما يناسب السند
+6. استخدم فراغات واسعة (نقاط متتالية .........) لإجابات التلاميذ
+
+[جدول إسناد الأعداد - إجباري في النهاية]:
+في نهاية الاختبار، أضف هذا القسم بالضبط:
+
+---
+
+## جدول إسناد الأعداد
+
+| المعيار | مع1 أ | مع1 ب | مع2 أ | مع2 ب | مع2 ج | مع3 |
+|---------|-------|-------|-------|-------|-------|-----|
+| ---     |       |       |       |       |       |     |
+| +--     |       |       |       |       |       |     |
+| ++-     |       |       |       |       |       |     |
+| +++     |       |       |       |       |       |     |
+
+(--- = لم يتحقق | +-- = تحقق جزئياً | ++- = تحقق بشكل كبير | +++ = تحقق كلياً)
+
+ملاحظة: عدّل أعمدة المعايير الفرعية حسب عدد التعليمات الفعلي في الاختبار.`;
+
+        const userPrompt = `أنشئ اختباراً رسمياً تونسياً وفق النموذج المحدد:
 - المادة: ${input.subject}
 - المستوى: ${input.level}
 - الثلاثي: ${input.trimester}
@@ -4604,7 +4639,13 @@ ${input.planText}` },
 ${input.topics ? `- المحاور المقررة: ${input.topics}` : ""}
 ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additionalInstructions}` : ""}
 
-أخرج الاختبار كاملاً بصيغة جاهزة للطباعة مع جدول إسناد الأعداد في النهاية.`;
+تعليمات مهمة:
+1. لا تكتب الترويسة — ابدأ مباشرة بـ "## السند 1"
+2. كل تعليمة تحمل رمز المعيار الفرعي: (مع1 أ)، (مع2 ب)، إلخ
+3. أضف وصف صور توضيحية [رسم: ...] حيثما يناسب
+4. استخدم جداول Markdown للتصنيف والمقارنة
+5. أنهِ الاختبار بـ "## جدول إسناد الأعداد" بالتنسيق المحدد
+6. استخدم فراغات (نقاط .........) لإجابات التلاميذ`;
 
         const response = await invokeLLM({
           messages: [
@@ -4716,81 +4757,185 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         examContent: z.string(),
       }))
       .mutation(async ({ input }) => {
-        const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, BorderStyle, Table, TableRow, TableCell, WidthType } = await import("docx");
+        const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign } = await import("docx");
 
-        // Parse exam content into paragraphs
-        const lines = input.examContent.split("\n");
-        const paragraphs: InstanceType<typeof Paragraph>[] = [
-          // Header
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({ text: "جمهورية تونس | وزارة التربية", bold: true, size: 22 }),
-            ],
-          }),
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({ text: "Leader Academy - المتفقد المميز للتربية", bold: true, size: 20, color: "1A237E" }),
-            ],
-          }),
-          new Paragraph({ text: "" }),
-          // Exam info table
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({ text: `المادة: ${input.subject}  |  المستوى: ${input.level}  |  الثلاثي: ${input.trimester}`, bold: true, size: 22 }),
-            ],
-          }),
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({ text: `المدة: ${input.duration || "45 دقيقة"}  |  المجموع: ${input.totalScore || 20} نقطة  |  السنة الدراسية: 2025-2026`, size: 20 }),
-            ],
-          }),
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [
-              new TextRun({ text: "المدرسة: ............................  |  الاسم واللقب: ............................  |  القسم: ...........", size: 20 }),
-            ],
-          }),
-          new Paragraph({ text: "" }),
-          new Paragraph({ text: "─".repeat(60), alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: "" }),
+        const borderStyle = { style: BorderStyle.SINGLE, size: 2, color: "333333" };
+        const borders = { top: borderStyle, bottom: borderStyle, left: borderStyle, right: borderStyle };
+
+        // Helper: create a table cell
+        const makeCell = (text: string, opts: { bold?: boolean; width?: number; align?: (typeof AlignmentType)[keyof typeof AlignmentType]; fontSize?: number; shading?: string } = {}) =>
+          new TableCell({
+            borders,
+            width: opts.width ? { size: opts.width, type: WidthType.PERCENTAGE } : undefined,
+            verticalAlign: VerticalAlign.CENTER,
+            shading: opts.shading ? { fill: opts.shading } : undefined,
+            children: [new Paragraph({
+              alignment: opts.align || AlignmentType.CENTER,
+              spacing: { before: 40, after: 40 },
+              children: [new TextRun({ text, bold: opts.bold ?? false, size: opts.fontSize || 22, font: "Sakkal Majalla" })],
+            })],
+          });
+
+        // ── Build header table (Tunisian style) ──
+        const headerTable = new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: [
+                makeCell("..................\nالمدرسة الابتدائيّة", { bold: true, width: 30, align: AlignmentType.RIGHT }),
+                makeCell(`${input.subject}\nاختبار ${input.trimester}`, { bold: true, width: 40, fontSize: 26 }),
+                makeCell("الاسم\nواللقب:..................\n.................................", { width: 30, align: AlignmentType.RIGHT }),
+              ],
+            }),
+            new TableRow({
+              children: [
+                makeCell("2025-2026", { bold: true, width: 30, align: AlignmentType.LEFT }),
+                makeCell(`المادّة: ${input.subject}`, { bold: true, width: 40 }),
+                makeCell(`${input.level} | ${input.trimester}`, { bold: true, width: 30, align: AlignmentType.RIGHT }),
+              ],
+            }),
+          ],
+        });
+
+        const paragraphs: (InstanceType<typeof Paragraph> | InstanceType<typeof Table>)[] = [
+          headerTable as any,
+          new Paragraph({ text: "", spacing: { before: 120, after: 120 } }),
         ];
 
-        // Add exam content lines
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) {
-            paragraphs.push(new Paragraph({ text: "" }));
-            continue;
-          }
-          const isHeading = trimmed.startsWith("السند") || trimmed.startsWith("التعليمة") || !!trimmed.match(/^\*\*.*\*\*$/) || trimmed.startsWith("#");
-          const cleanText = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
-          paragraphs.push(
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              heading: isHeading ? HeadingLevel.HEADING_2 : undefined,
-              children: [
-                new TextRun({
-                  text: cleanText,
-                  bold: isHeading,
-                  size: isHeading ? 24 : 22,
-                }),
-              ],
+        // ── Parse exam content ──
+        const lines = input.examContent.split("\n");
+        let inTable = false;
+        let tableRows: string[][] = [];
+        let tableHeaders: string[] = [];
+
+        const flushTable = () => {
+          if (tableHeaders.length === 0 && tableRows.length === 0) return;
+          const allRows = tableHeaders.length > 0 ? [tableHeaders, ...tableRows] : tableRows;
+          const colCount = allRows[0]?.length || 1;
+          const colWidth = Math.floor(100 / colCount);
+
+          const docRows = allRows.map((row, ri) =>
+            new TableRow({
+              children: row.map(cell =>
+                makeCell(cell, {
+                  bold: ri === 0,
+                  width: colWidth,
+                  shading: ri === 0 ? "F0F0F0" : undefined,
+                })
+              ),
             })
           );
+
+          paragraphs.push(new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: docRows,
+          }) as any);
+          paragraphs.push(new Paragraph({ text: "", spacing: { before: 60 } }));
+          tableHeaders = [];
+          tableRows = [];
+          inTable = false;
+        };
+
+        for (let i = 0; i < lines.length; i++) {
+          const trimmed = lines[i].trim();
+
+          // Detect markdown table
+          if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+            const cells = trimmed.split("|").filter(c => c.trim()).map(c => c.trim());
+            // Skip separator row
+            if (cells.every(c => /^[-:]+$/.test(c))) {
+              inTable = true;
+              continue;
+            }
+            if (!inTable && tableHeaders.length === 0) {
+              tableHeaders = cells;
+              inTable = true;
+            } else {
+              tableRows.push(cells);
+            }
+            continue;
+          }
+
+          if (inTable) flushTable();
+
+          if (!trimmed) {
+            paragraphs.push(new Paragraph({ text: "", spacing: { before: 60 } }));
+            continue;
+          }
+
+          // Detect headings
+          const isSened = /^#{1,2}\s*السند/.test(trimmed) || trimmed.startsWith("السند");
+          const isTa3lima = /^#{1,3}\s*التعليمة/.test(trimmed) || trimmed.startsWith("التعليمة");
+          const isGradingHeader = /^#{1,2}\s*جدول إسناد/.test(trimmed) || trimmed.startsWith("جدول إسناد");
+          const isOtherHeading = trimmed.startsWith("#");
+          const cleanText = trimmed.replace(/^#+\s*/, "").replace(/\*\*/g, "");
+
+          if (isSened) {
+            paragraphs.push(new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 240, after: 120 },
+              border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "333333" } },
+              children: [new TextRun({ text: cleanText, bold: true, size: 28, font: "Sakkal Majalla" })],
+            }));
+          } else if (isTa3lima) {
+            paragraphs.push(new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 160, after: 80 },
+              children: [new TextRun({ text: cleanText, bold: true, size: 24, font: "Sakkal Majalla" })],
+            }));
+          } else if (isGradingHeader) {
+            paragraphs.push(new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 300, after: 120 },
+              border: { top: { style: BorderStyle.SINGLE, size: 3, color: "333333" } },
+              children: [new TextRun({ text: cleanText, bold: true, size: 26, font: "Sakkal Majalla" })],
+            }));
+          } else if (isOtherHeading) {
+            paragraphs.push(new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 120, after: 60 },
+              children: [new TextRun({ text: cleanText, bold: true, size: 24, font: "Sakkal Majalla" })],
+            }));
+          } else if (trimmed.startsWith("---")) {
+            paragraphs.push(new Paragraph({
+              alignment: AlignmentType.CENTER,
+              border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "999999" } },
+              children: [new TextRun({ text: "", size: 4 })],
+            }));
+          } else if (trimmed.match(/^\[رسم/)) {
+            // Image placeholder
+            const desc = trimmed.replace(/^\[رسم:?\s*/, "").replace(/\]$/, "");
+            paragraphs.push(new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 120, after: 120 },
+              border: {
+                top: { style: BorderStyle.DASHED, size: 1, color: "999999" },
+                bottom: { style: BorderStyle.DASHED, size: 1, color: "999999" },
+                left: { style: BorderStyle.DASHED, size: 1, color: "999999" },
+                right: { style: BorderStyle.DASHED, size: 1, color: "999999" },
+              },
+              children: [new TextRun({ text: `🎨 رسم توضيحي: ${desc || "..."}`, size: 20, color: "666666", font: "Sakkal Majalla" })],
+            }));
+          } else {
+            paragraphs.push(new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 40, after: 40, line: 360 },
+              children: [new TextRun({ text: cleanText, size: 24, font: "Sakkal Majalla" })],
+            }));
+          }
         }
+
+        if (inTable) flushTable();
 
         const doc = new Document({
           sections: [{
             properties: {
               page: {
-                margin: { top: 720, right: 720, bottom: 720, left: 720 },
+                margin: { top: 567, right: 680, bottom: 567, left: 680 },
+                size: { width: 11906, height: 16838 }, // A4
               },
             },
-            children: paragraphs,
+            children: paragraphs as any[],
           }],
         });
 

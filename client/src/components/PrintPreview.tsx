@@ -24,45 +24,60 @@ interface PrintPreviewProps {
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-// A4 at 96dpi
 const A4_W = 794;
 const A4_H = 1123;
-const MARGIN = 76; // ~20mm
+const MARGIN = 56; // ~15mm for more content space
 
-// ─── Markdown → HTML converter ─────────────────────────────────────────────────
+// ─── Markdown → HTML converter (Tunisian exam style) ───────────────────────────
 
 function mdToHtml(md: string): string {
   let html = md
     // Tables: detect lines with | separators
     .replace(/^(\|.+\|)\n(\|[-:| ]+\|)\n((?:\|.+\|\n?)+)/gm, (_match, headerRow: string, _sep: string, bodyRows: string) => {
-      const headers = headerRow.split("|").filter((c: string) => c.trim()).map((c: string) => `<th style="border:1px solid #333;padding:6px 10px;background:#f0f0f0;font-weight:700;text-align:center;">${c.trim()}</th>`).join("");
+      const headers = headerRow.split("|").filter((c: string) => c.trim()).map((c: string) =>
+        `<th style="border:2px solid #333;padding:8px 12px;background:#f5f5f5;font-weight:700;text-align:center;font-size:13px;">${c.trim()}</th>`
+      ).join("");
       const rows = bodyRows.trim().split("\n").map((row: string) => {
-        const cells = row.split("|").filter((c: string) => c.trim()).map((c: string) => `<td style="border:1px solid #666;padding:5px 10px;text-align:center;">${c.trim()}</td>`).join("");
+        const cells = row.split("|").filter((c: string) => c.trim()).map((c: string) =>
+          `<td style="border:1.5px solid #555;padding:10px 12px;text-align:center;font-size:13px;min-height:30px;">${c.trim() || '&nbsp;'}</td>`
+        ).join("");
         return `<tr>${cells}</tr>`;
       }).join("");
-      return `<table style="width:100%;border-collapse:collapse;margin:14px 0;font-size:12px;"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+      return `<table style="width:100%;border-collapse:collapse;margin:12px 0;border:2px solid #333;"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
     })
-    // Headers
-    .replace(/^#### (.+)$/gm, '<h4 style="font-size:13px;font-weight:700;margin:10px 0 4px;color:#333;">$1</h4>')
-    .replace(/^### (.+)$/gm, '<h3 style="font-size:14px;font-weight:700;margin:12px 0 6px;color:#222;border-right:3px solid #0066cc;padding-right:8px;">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 style="font-size:15px;font-weight:700;margin:14px 0 8px;border-bottom:1px solid #ccc;padding-bottom:4px;">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 style="font-size:17px;font-weight:700;margin:16px 0 10px;text-align:center;">$1</h1>')
+    // "السند" headers - large and prominent like the sample
+    .replace(/^## (السند \d+)/gm, '<div style="font-size:18px;font-weight:700;margin:20px 0 10px;padding:6px 14px;background:#f0f4ff;border:2px solid #333;border-radius:4px;display:inline-block;">$1</div>')
+    // "جدول إسناد الأعداد" header
+    .replace(/^## (جدول إسناد الأعداد)/gm, '<div style="font-size:16px;font-weight:700;margin:24px 0 12px;padding:8px 16px;background:#f9f9f9;border:2px solid #333;text-align:center;">$1</div>')
+    // Other ## headers
+    .replace(/^## (.+)$/gm, '<h2 style="font-size:16px;font-weight:700;margin:16px 0 8px;border-bottom:2px solid #333;padding-bottom:4px;">$1</h2>')
+    // "التعليمة" headers - bold with criteria badge
+    .replace(/^### (التعليمة \d+)\s*(\(مع\d+ [أ-ي]\))?/gm, (_m: string, title: string, criteria: string) => {
+      const badge = criteria ? `<span style="display:inline-block;background:#e8e8e8;border:1px solid #999;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;margin-right:8px;">${criteria.replace(/[()]/g, '')}</span>` : '';
+      return `<div style="font-size:16px;font-weight:700;margin:14px 0 8px;color:#111;">${title} ${badge}</div>`;
+    })
+    // Other ### headers
+    .replace(/^### (.+)$/gm, '<h3 style="font-size:15px;font-weight:700;margin:12px 0 6px;color:#222;">$1</h3>')
+    .replace(/^#### (.+)$/gm, '<h4 style="font-size:14px;font-weight:700;margin:10px 0 4px;color:#333;">$1</h4>')
     // Bold / Italic
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Criteria badges
-    .replace(/\(مع(\d)\)/g, '<span style="display:inline-block;background:#e0e0e0;border-radius:3px;padding:0 5px;font-size:10px;font-weight:700;margin:0 2px;">مع$1</span>')
+    // Criteria badges inline (مع1 أ) etc
+    .replace(/\(مع(\d+)\s*([أ-ي]?)\)/g, '<span style="display:inline-block;background:#e8e8e8;border:1px solid #aaa;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;margin:0 3px;">مع$1 $2</span>')
+    // Dotted lines for answers (........)
+    .replace(/(\.{5,})/g, '<span style="display:inline-block;border-bottom:1.5px dotted #333;min-width:150px;margin:0 4px;">&nbsp;</span>')
+    // Image placeholders [رسم: ...]
+    .replace(/\[رسم:\s*([^\]]*)\]/g, '<div style="border:2px dashed #888;padding:30px 20px;text-align:center;margin:14px auto;color:#555;border-radius:6px;background:#fafafa;max-width:80%;font-size:13px;"><span style="font-size:24px;display:block;margin-bottom:6px;">🎨</span>رسم توضيحي: $1</div>')
+    .replace(/\[رسم[^\]]*\]/g, '<div style="border:2px dashed #888;padding:30px 20px;text-align:center;margin:14px auto;color:#555;border-radius:6px;background:#fafafa;max-width:80%;font-size:13px;"><span style="font-size:24px;display:block;margin-bottom:6px;">🎨</span>$&</div>')
+    .replace(/\[صورة[^\]]*\]/g, '<div style="border:2px dashed #888;padding:30px 20px;text-align:center;margin:14px auto;color:#555;border-radius:6px;background:#fafafa;max-width:80%;font-size:13px;"><span style="font-size:24px;display:block;margin-bottom:6px;">📷</span>$&</div>')
     // Unordered list
-    .replace(/^[-•] (.+)$/gm, '<div style="padding-right:18px;margin:3px 0;position:relative;"><span style="position:absolute;right:4px;">•</span> $1</div>')
+    .replace(/^[-•] (.+)$/gm, '<div style="padding-right:20px;margin:4px 0;position:relative;font-size:14px;"><span style="position:absolute;right:4px;">•</span> $1</div>')
     // Ordered list
-    .replace(/^(\d+)\. (.+)$/gm, '<div style="padding-right:18px;margin:3px 0;">$1. $2</div>')
-    // Image placeholders
-    .replace(/\[رسم[^\]]*\]/g, '<div style="border:2px dashed #999;padding:24px;text-align:center;margin:12px 0;color:#666;border-radius:6px;background:#fafafa;">$&</div>')
-    .replace(/\[صورة[^\]]*\]/g, '<div style="border:2px dashed #999;padding:24px;text-align:center;margin:12px 0;color:#666;border-radius:6px;background:#fafafa;">$&</div>')
+    .replace(/^(\d+)\. (.+)$/gm, '<div style="padding-right:20px;margin:4px 0;font-size:14px;">$1. $2</div>')
     // Horizontal rule
-    .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid #ccc;margin:12px 0;"/>')
+    .replace(/^---+$/gm, '<hr style="border:none;border-top:2px solid #333;margin:16px 0;"/>')
     // Paragraphs
-    .replace(/\n\n/g, '<div style="height:10px;"></div>')
+    .replace(/\n\n/g, '<div style="height:12px;"></div>')
     .replace(/\n/g, '<br/>');
   return html;
 }
@@ -88,37 +103,29 @@ function generatePrintHTML(opts: {
 
   const headerHTML = (pageNum: number) => `
     <div class="page-header">
-      <div class="header-row">
-        <div class="header-right">
-          <div class="header-title-gov">الجمهورية التونسية</div>
-          <div>وزارة التربية</div>
-          <div>المندوبية الجهوية للتربية</div>
-          <div>المدرسة: ${schoolName}</div>
-        </div>
-        <div class="header-center">
-          <div class="doc-title">${title}</div>
-          ${subject ? `<div class="doc-subject">المادة: ${subject}</div>` : ""}
-          ${duration ? `<div class="doc-subject">المدة: ${duration}</div>` : ""}
-        </div>
-        <div class="header-left">
-          <div>السنة الدراسية: ${schoolYear}</div>
-          ${level ? `<div>المستوى: ${level}</div>` : ""}
-          ${trimester ? `<div>الثلاثي: ${trimester}</div>` : ""}
-          ${totalScore ? `<div>المجموع: /${totalScore}</div>` : ""}
-        </div>
-      </div>
-      ${studentName && pageNum === 1 ? `
-        <div class="student-info">
-          <span>الاسم واللقب: ..................................</span>
-          <span>القسم: ............</span>
-          <span>العدد: ......../${totalScore || 20}</span>
-        </div>` : ""}
-    </div>`;
-
-  const footerHTML = (pageNum: number, total: number) => `
-    <div class="page-footer">
-      <span>صفحة ${pageNum} / ${total}</span>
-      <span class="footer-brand">Leader Academy — ${type === "exam" ? "اختبار" : type === "lesson" ? "جذاذة" : "وثيقة"}</span>
+      <table class="header-table">
+        <tr>
+          <td class="header-cell header-right">
+            <div class="school-name">${schoolName}</div>
+            <div class="school-sub">المدرسة الابتدائيّة</div>
+          </td>
+          <td class="header-cell header-center">
+            <div class="exam-title">${title}</div>
+          </td>
+          <td class="header-cell header-left">
+            <div>الاسم</div>
+            <div>واللقب:..................</div>
+            <div>.................................</div>
+          </td>
+        </tr>
+      </table>
+      <table class="header-table header-row2">
+        <tr>
+          <td class="header-cell" style="text-align:left;font-weight:700;">${schoolYear}</td>
+          <td class="header-cell" style="text-align:center;font-weight:700;text-decoration:underline;">المادّة: ${subject}</td>
+          <td class="header-cell" style="text-align:right;font-weight:700;">${level} ${trimester ? '| ' + trimester : ''}</td>
+        </tr>
+      </table>
     </div>`;
 
   const imagesHTML = images.length > 0 ? `
@@ -134,7 +141,10 @@ function generatePrintHTML(opts: {
     <div class="a4-page">
       ${headerHTML(i + 1)}
       <div class="page-content ${grayscale ? "grayscale" : ""}">${mdToHtml(content)}${i === pages.length - 1 ? imagesHTML : ""}</div>
-      ${footerHTML(i + 1, pages.length)}
+      <div class="page-footer">
+        <span>صفحة ${i + 1} / ${pages.length}</span>
+        <span class="footer-brand">Leader Academy</span>
+      </div>
     </div>`).join("");
 
   return `<!DOCTYPE html>
@@ -142,50 +152,81 @@ function generatePrintHTML(opts: {
 <head>
   <meta charset="utf-8">
   <title>${title}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Noto Kufi Arabic', 'Cairo', 'Tahoma', sans-serif; direction: rtl; background: #525659; }
+    body { font-family: 'Noto Kufi Arabic', 'Amiri', 'Tahoma', sans-serif; direction: rtl; background: #525659; }
 
     .a4-page {
       width: 210mm; min-height: 297mm;
-      padding: 20mm;
+      padding: 15mm 18mm;
       background: white;
       margin: 0 auto;
       position: relative;
       display: flex; flex-direction: column;
+      border: 2px solid #333;
     }
 
-    /* ── Header ── */
+    /* ── Header (matching Tunisian sample) ── */
     .page-header {
-      border-bottom: 2.5px solid #222;
-      padding-bottom: 10px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
-    .header-row {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      margin-bottom: 6px;
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 2px solid #333;
     }
-    .header-right, .header-left { font-size: 10pt; line-height: 1.7; }
-    .header-right { text-align: right; }
-    .header-left { text-align: left; }
-    .header-center { text-align: center; flex: 1; }
-    .header-title-gov { font-weight: 700; font-size: 12pt; }
-    .doc-title { font-weight: 700; font-size: 15pt; margin-bottom: 2px; }
-    .doc-subject { font-size: 11pt; }
-    .student-info {
-      display: flex; gap: 30px; font-size: 11pt;
-      border-top: 1px solid #999; padding-top: 8px; margin-top: 4px;
+    .header-cell {
+      border: 1.5px solid #333;
+      padding: 6px 10px;
+      font-size: 12pt;
+      line-height: 1.5;
+      vertical-align: middle;
+    }
+    .header-right { text-align: right; width: 30%; }
+    .header-center { text-align: center; width: 40%; }
+    .header-left { text-align: right; width: 30%; }
+    .school-name { font-weight: 700; font-size: 13pt; }
+    .school-sub { font-size: 11pt; }
+    .exam-title { font-weight: 700; font-size: 14pt; }
+    .header-row2 { border-top: none; }
+    .header-row2 td { border-top: none; font-size: 12pt; }
+
+    /* ── Scoring boxes on the right margin ── */
+    .scoring-box {
+      position: absolute;
+      right: 6mm;
+      border: 1.5px solid #333;
+      width: 28px;
+      text-align: center;
+      font-size: 9px;
+      font-weight: 700;
+    }
+    .scoring-box-label {
+      border-bottom: 1px solid #333;
+      padding: 2px;
+      background: #f5f5f5;
+    }
+    .scoring-box-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+    .scoring-box-grid div {
+      border: 0.5px solid #999;
+      height: 14px;
     }
 
     /* ── Content ── */
     .page-content {
       flex: 1;
-      font-size: 12pt; line-height: 1.9;
-      padding: 8px 0;
+      font-size: 14pt;
+      line-height: 2;
+      padding: 4px 0;
     }
     .page-content.grayscale { filter: grayscale(100%) contrast(1.15); }
     .page-content img { max-width: 100%; }
+    .page-content table { font-size: 13pt; }
 
     /* ── Footer ── */
     .page-footer {
@@ -215,9 +256,10 @@ function generatePrintHTML(opts: {
       body { background: white; }
       .a4-page {
         page-break-after: always;
-        margin: 0; padding: 20mm;
+        margin: 0; padding: 15mm 18mm;
         box-shadow: none;
         width: 100%; min-height: auto;
+        border: none;
       }
       .a4-page:last-child { page-break-after: auto; }
       .no-print { display: none !important; }
@@ -262,7 +304,6 @@ export default function PrintPreview({
   const [pages, setPages] = useState<string[]>([]);
 
   const exportWordMutation = trpc.edugpt.exportExamWord.useMutation();
-  // PDF export uses browser print-to-PDF (no server endpoint needed)
 
   // ── Paginate content ──
   useEffect(() => {
@@ -270,19 +311,18 @@ export default function PrintPreview({
     const pagesArr: string[] = [];
     let currentPage = "";
     let estimatedHeight = 0;
-    // Approximate content area height in "line units" (~35 lines per A4 page with headers)
-    const MAX_LINES = 38;
+    const MAX_LINES = 32; // Fewer lines per page for larger font
 
     for (const line of lines) {
-      // Estimate line weight
       let weight = 1;
       if (line.startsWith("# ")) weight = 2.5;
-      else if (line.startsWith("## ")) weight = 2;
-      else if (line.startsWith("### ")) weight = 1.7;
-      else if (line.startsWith("|")) weight = 1.3;
-      else if (line.trim() === "") weight = 0.5;
-      else if (line.startsWith("---")) weight = 0.8;
-      else if (line.length > 80) weight = Math.ceil(line.length / 70);
+      else if (line.startsWith("## ")) weight = 2.2;
+      else if (line.startsWith("### ")) weight = 1.8;
+      else if (line.startsWith("|")) weight = 1.5;
+      else if (line.trim() === "") weight = 0.6;
+      else if (line.startsWith("---")) weight = 1;
+      else if (line.includes("[رسم")) weight = 4; // Image placeholders take more space
+      else if (line.length > 60) weight = Math.ceil(line.length / 50);
 
       if (estimatedHeight + weight > MAX_LINES && currentPage.trim()) {
         pagesArr.push(currentPage);
@@ -297,40 +337,44 @@ export default function PrintPreview({
     setPages(pagesArr.length > 0 ? pagesArr : [content]);
   }, [content]);
 
-  // ── Header renderer ──
+  // ── Header renderer (Tunisian table-style) ──
   const renderHeader = (pageNum: number) => (
-    <div style={{
-      borderBottom: "2.5px solid #222",
-      paddingBottom: 10,
-      marginBottom: 14,
-      fontFamily: "'Noto Kufi Arabic', 'Cairo', sans-serif",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-        <div style={{ textAlign: "right", fontSize: 10, lineHeight: 1.7 }}>
-          <div style={{ fontWeight: 700, fontSize: 12 }}>الجمهورية التونسية</div>
-          <div>وزارة التربية</div>
-          <div>المندوبية الجهوية للتربية</div>
-          <div>المدرسة: {schoolName}</div>
-        </div>
-        <div style={{ textAlign: "center", flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>{title}</div>
-          {subject && <div style={{ fontSize: 11 }}>المادة: {subject}</div>}
-          {duration && <div style={{ fontSize: 11 }}>المدة: {duration}</div>}
-        </div>
-        <div style={{ textAlign: "left", fontSize: 10, lineHeight: 1.7 }}>
-          <div>السنة الدراسية: {schoolYear}</div>
-          {level && <div>المستوى: {level}</div>}
-          {trimester && <div>الثلاثي: {trimester}</div>}
-          {totalScore > 0 && <div>المجموع: /{totalScore}</div>}
-        </div>
-      </div>
-      {studentName && pageNum === 1 && (
-        <div style={{ display: "flex", gap: 30, fontSize: 11, borderTop: "1px solid #999", paddingTop: 8, marginTop: 4 }}>
-          <span>الاسم واللقب: ..................................</span>
-          <span>القسم: ............</span>
-          <span>العدد: ......../{totalScore || 20}</span>
-        </div>
-      )}
+    <div style={{ marginBottom: 14 }}>
+      {/* Main header table */}
+      <table style={{ width: "100%", borderCollapse: "collapse", border: "2px solid #333" }}>
+        <tbody>
+          <tr>
+            <td style={{ border: "1.5px solid #333", padding: "6px 10px", textAlign: "right", width: "30%", verticalAlign: "middle" }}>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{schoolName}</div>
+              <div style={{ fontSize: 11 }}>المدرسة الابتدائيّة</div>
+            </td>
+            <td style={{ border: "1.5px solid #333", padding: "6px 10px", textAlign: "center", width: "40%", verticalAlign: "middle" }}>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>{title}</div>
+            </td>
+            <td style={{ border: "1.5px solid #333", padding: "6px 10px", textAlign: "right", width: "30%", verticalAlign: "middle" }}>
+              <div>الاسم</div>
+              <div>واللقب:..................</div>
+              <div>.................................</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {/* Second row */}
+      <table style={{ width: "100%", borderCollapse: "collapse", border: "2px solid #333", borderTop: "none" }}>
+        <tbody>
+          <tr>
+            <td style={{ border: "1.5px solid #333", borderTop: "none", padding: "4px 10px", textAlign: "left", fontWeight: 700, fontSize: 12 }}>
+              {schoolYear}
+            </td>
+            <td style={{ border: "1.5px solid #333", borderTop: "none", padding: "4px 10px", textAlign: "center", fontWeight: 700, fontSize: 12, textDecoration: "underline" }}>
+              المادّة: {subject}
+            </td>
+            <td style={{ border: "1.5px solid #333", borderTop: "none", padding: "4px 10px", textAlign: "right", fontWeight: 700, fontSize: 12 }}>
+              {level} {trimester ? `| ${trimester}` : ''}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 
@@ -347,7 +391,7 @@ export default function PrintPreview({
       marginTop: "auto",
     }}>
       <span>صفحة {pageNum} / {total}</span>
-      <span style={{ fontSize: 8 }}>Leader Academy — {type === "exam" ? "اختبار" : type === "lesson" ? "جذاذة" : "وثيقة"}</span>
+      <span style={{ fontSize: 8 }}>Leader Academy</span>
     </div>
   );
 
@@ -366,7 +410,6 @@ export default function PrintPreview({
       }
       printWindow.document.write(printHTML);
       printWindow.document.close();
-      // Wait for fonts to load
       setTimeout(() => {
         printWindow.focus();
         printWindow.print();
@@ -435,7 +478,7 @@ export default function PrintPreview({
       a.download = result.filename;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("تم تحميل ملف Word ✅");
+      toast.success("تم تحميل ملف Word");
     } catch (err) {
       console.error("Word export error:", err);
       toast.error("خطأ أثناء تصدير Word");
@@ -462,7 +505,7 @@ export default function PrintPreview({
       <div className="bg-white border-b shadow-md px-3 sm:px-5 py-2.5 flex items-center justify-between flex-wrap gap-2 no-print">
         <div className="flex items-center gap-2">
           <Eye className="w-5 h-5 text-blue-600" />
-          <h3 className="font-bold text-gray-800 text-sm sm:text-base">معاينة الطباعة</h3>
+          <h3 className="font-bold text-gray-800 text-sm sm:text-base">معاينة الطباعة — النموذج التونسي</h3>
           <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
             {pages.length} {pages.length === 1 ? "صفحة" : "صفحات"} · A4
           </span>
@@ -501,7 +544,7 @@ export default function PrintPreview({
             className="bg-red-600 hover:bg-red-700 text-white text-xs h-8 px-3"
           >
             <FileText className="w-3.5 h-3.5 ml-1" />
-            {isExporting === "pdf" ? "جارٍ..." : "تحميل بصيغة PDF"}
+            {isExporting === "pdf" ? "جارٍ..." : "تحميل PDF"}
           </Button>
 
           {/* Word */}
@@ -512,7 +555,7 @@ export default function PrintPreview({
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 px-3"
           >
             <Download className="w-3.5 h-3.5 ml-1" />
-            {isExporting === "word" ? "جارٍ..." : "تحميل بصيغة Word"}
+            {isExporting === "word" ? "جارٍ..." : "تحميل Word"}
           </Button>
 
           {/* Direct print */}
@@ -552,15 +595,16 @@ export default function PrintPreview({
                 minHeight: A4_H,
                 padding: MARGIN,
                 boxSizing: "border-box",
-                fontFamily: "'Noto Kufi Arabic', 'Cairo', sans-serif",
+                fontFamily: "'Noto Kufi Arabic', 'Amiri', sans-serif",
                 direction: "rtl",
                 display: "flex",
                 flexDirection: "column",
                 boxShadow: "0 4px 30px rgba(0,0,0,0.35)",
                 borderRadius: 2,
+                border: "2px solid #333",
               }}
             >
-              {/* Page number indicator (visual only) */}
+              {/* Page number indicator */}
               <div style={{
                 position: "absolute", top: 8, left: 8,
                 background: "#333", color: "#fff",
@@ -577,9 +621,9 @@ export default function PrintPreview({
               <div
                 style={{
                   flex: 1,
-                  fontSize: 13,
-                  lineHeight: 1.9,
-                  padding: "8px 0",
+                  fontSize: 14,
+                  lineHeight: 2,
+                  padding: "4px 0",
                   filter: grayscale ? "grayscale(100%) contrast(1.15)" : "none",
                   transition: "filter 0.3s ease",
                 }}
@@ -613,11 +657,11 @@ export default function PrintPreview({
         </div>
       </div>
 
-      {/* ── Print CSS (injected globally) ── */}
+      {/* ── Print CSS ── */}
       <style>{`
         @page {
           size: A4;
-          margin: 20mm;
+          margin: 15mm 18mm;
         }
         @media print {
           body > *:not(.print-preview-root) { display: none !important; }
