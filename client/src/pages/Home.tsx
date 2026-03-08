@@ -34,6 +34,7 @@ const LANGUAGES: { code: AppLanguage; label: string; flag: string }[] = [
 const NAV_LINKS = [
   { href: "/", labelAr: "الرئيسية", labelFr: "Accueil", labelEn: "Home" },
   { href: "/assistant", labelAr: "EDUGPT", labelFr: "EDUGPT", labelEn: "EDUGPT" },
+  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector" },
   { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment" },
   { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs" },
   { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About" },

@@ -33,6 +33,7 @@ import EvaluationLibrary from "@/pages/EvaluationLibrary";
 // import InfographicGenerator from "@/pages/InfographicGenerator";
 import Contact from "@/pages/Contact";
 import EduGPT from "@/pages/EduGPT";
+import Inspector from "@/pages/Inspector";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -67,6 +68,7 @@ function Router() {
       {/* <Route path="/infographic-generator" component={InfographicGenerator} /> */}
       <Route path="/contact" component={Contact} />
       <Route path="/edugpt" component={EduGPT} />
+      <Route path="/inspector" component={Inspector} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
