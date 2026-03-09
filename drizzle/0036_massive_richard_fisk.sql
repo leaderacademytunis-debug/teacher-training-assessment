@@ -1,0 +1,22 @@
+CREATE TABLE `digitized_documents` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`title` varchar(255) NOT NULL,
+	`originalImageUrl` text NOT NULL,
+	`originalFileName` varchar(255),
+	`mimeType` varchar(100),
+	`extractedText` mediumtext,
+	`ocrLanguage` varchar(20) DEFAULT 'ar+fr',
+	`formattedContent` mediumtext,
+	`formatType` enum('lesson_plan','exam','evaluation','annual_plan','other') NOT NULL DEFAULT 'lesson_plan',
+	`structuredData` json,
+	`wordExportUrl` text,
+	`pdfExportUrl` text,
+	`subject` varchar(100),
+	`level` varchar(100),
+	`schoolYear` varchar(20),
+	`status` enum('uploaded','ocr_done','formatted','saved') NOT NULL DEFAULT 'uploaded',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `digitized_documents_id` PRIMARY KEY(`id`)
+);

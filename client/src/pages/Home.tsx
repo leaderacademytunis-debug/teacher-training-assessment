@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings,
+  Megaphone, Settings, ScanLine,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -41,6 +41,7 @@ const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: strin
   { href: "/exam-builder", labelAr: "بناء الاختبار", labelFr: "Créer un examen", labelEn: "Exam Builder", icon: FileEdit, descAr: "توليد اختبارات مع الرسومات وجدول التقييم", descFr: "Générer des examens avec illustrations et barème", descEn: "Generate exams with illustrations and grading" },
   { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio", icon: Palette, descAr: "توليد صور تعليمية وإنفوغرافيك بالذكاء الاصطناعي", descFr: "Générer des images éducatives et infographies", descEn: "Generate educational images and infographics" },
   { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment", icon: BarChart3, descAr: "تقييم مستوى المشاركين وتحليل النتائج", descFr: "Évaluer le niveau des participants et analyser les résultats", descEn: "Evaluate participant level and analyze results" },
+  { href: "/legacy-digitizer", labelAr: "Legacy Digitizer — رقمنة الوثائق", labelFr: "Legacy Digitizer — Numérisation", labelEn: "Legacy Digitizer", icon: ScanLine, descAr: "مسح ورقمنة الوثائق التعليمية القديمة بالذكاء الاصطناعي", descFr: "Numériser les anciens documents pédagogiques avec l'IA", descEn: "Scan and digitize old educational documents with AI" },
 ];
 
 // Certificate links grouped in a dropdown

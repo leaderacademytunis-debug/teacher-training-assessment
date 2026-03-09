@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments } from "../drizzle/schema";
 import { eq, desc, and, sql, count, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -5816,6 +5816,393 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
       });
       return { success: true };
     }),
+  }),
+
+  // ============================================
+  // Legacy Digitizer — رقمنة الوثائق التعليمية
+  // ============================================
+  legacyDigitizer: router({
+    // Step 1: Upload image and run OCR
+    uploadAndOCR: protectedProcedure
+      .input(z.object({
+        base64Data: z.string(),
+        fileName: z.string(),
+        mimeType: z.string(),
+        title: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        const { invokeLLM } = await import("./_core/llm");
+
+        // 1. Upload image to S3
+        const buffer = Buffer.from(input.base64Data, "base64");
+        const uniqueId = Date.now();
+        const ext = input.fileName.split(".").pop() || "jpg";
+        const fileKey = `legacy-digitizer/${ctx.user.id}/${uniqueId}.${ext}`;
+        const { url: imageUrl } = await storagePut(fileKey, buffer, input.mimeType);
+
+        // 2. Run OCR via Vision API (optimized for Arabic/French handwriting)
+        const base64Url = `data:${input.mimeType};base64,${input.base64Data}`;
+        const ocrResponse = await invokeLLM({
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: { url: base64Url, detail: "high" },
+                },
+                {
+                  type: "text",
+                  text: `أنت نظام OCR متقدم متخصص في استخراج النصوص من الوثائق التعليمية التونسية (مكتوبة بخط اليد أو مطبوعة).
+
+مهمتك:
+1. استخرج كل النص الموجود في هذه الصورة بدقة عالية
+2. حافظ على الهيكل الأصلي للوثيقة (عناوين، فقرات، جداول، قوائم)
+3. إذا كان النص بالعربية، اكتبه بالعربية. إذا كان بالفرنسية، اكتبه بالفرنسية
+4. إذا كانت هناك جداول، أعد تمثيلها بتنسيق Markdown
+5. إذا كانت هناك أجزاء غير واضحة، ضعها بين [غير واضح: ...]
+6. حافظ على ترتيب المحتوى كما يظهر في الصورة
+
+أعد النص المستخرج فقط دون أي تعليق إضافي.`,
+                },
+              ],
+            },
+          ],
+        });
+
+        const extractedText = typeof ocrResponse?.choices?.[0]?.message?.content === "string"
+          ? ocrResponse.choices[0].message.content
+          : JSON.stringify(ocrResponse?.choices?.[0]?.message?.content || "");
+
+        // 3. Save to database
+        const doc = await db.createDigitizedDocument({
+          userId: ctx.user.id,
+          title: input.title || `وثيقة مرقمنة - ${new Date().toLocaleDateString("ar-TN")}`,
+          originalImageUrl: imageUrl,
+          originalFileName: input.fileName,
+          mimeType: input.mimeType,
+          extractedText,
+          ocrLanguage: "ar+fr",
+          status: "ocr_done",
+          formatType: "lesson_plan",
+        });
+
+        return { id: doc.id, imageUrl, extractedText };
+      }),
+
+    // Step 2: AI Format the extracted text into a Tunisian lesson plan
+    formatWithAI: protectedProcedure
+      .input(z.object({
+        documentId: z.number(),
+        extractedText: z.string(),
+        formatType: z.enum(["lesson_plan", "exam", "evaluation", "annual_plan", "other"]).default("lesson_plan"),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        additionalInstructions: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { invokeLLM } = await import("./_core/llm");
+
+        // Verify ownership
+        const doc = await db.getDigitizedDocumentById(input.documentId, ctx.user.id);
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
+
+        // Build format-specific system prompt
+        const formatPrompts: Record<string, string> = {
+          lesson_plan: `أنت "المكوّن البيداغوجي الخبير" لمنصة Leader Academy — متفقد تونسي أول متخصص في إعداد الجذاذات وفق البرامج الرسمية التونسية 2025-2026 والمقاربة بالكفايات (APC).
+
+مهمتك: تحويل النص المستخرج من وثيقة قديمة إلى جذاذة بيداغوجية رسمية تونسية احترافية.
+
+الهيكل الإلزامي للجذاذة:
+1. **الترويسة الإدارية**: نوع المخطط، الدرجة، المدرسة، السنة الدراسية، المادة، المستوى، عنوان الدرس، المدة
+2. **المرجعية البيداغوجية**: الكفاية الختامية للمجال، الكفاية الختامية للمادة، مكوّن الكفاية، هدف الحصة
+3. **سيرورة الدرس** (جدول بـ 4 أعمدة: المرحلة | نشاط المعلم | نشاط المتعلم | المدة):
+   - مرحلة الاستكشاف (Exploration)
+   - مرحلة البناء (Construction)
+   - مرحلة التطبيق (Application)
+   - مرحلة الإدماج (Intégration)
+4. **التقييم والإدماج**: سند + تعليمة بنظام المعايير (مع1، مع2، مع3)
+5. **المعالجة**: صعوبات متوقعة + معايير الحد الأدنى
+6. **ملاحظات المعلم**
+
+استخدم المعايير الفرعية: مع1 أ، مع1 ب، مع2 أ، مع2 ب، مع3
+أضف جدول إسناد الأعداد في النهاية بنظام (---/+++)
+
+أعد الجذاذة المنسّقة بتنسيق Markdown واضح ومنظم.`,
+
+          exam: `أنت "المتفقد المميز للتربية" بوزارة التربية التونسية. مهمتك تحويل النص المستخرج من وثيقة قديمة إلى اختبار رسمي تونسي احترافي.
+
+الهيكل الإلزامي:
+1. **الترويسة**: جدول يتضمن (المدرسة، المستوى، المادة، الثلاثي، الاسم واللقب)
+2. **الوضعيات**: لكل وضعية:
+   - السند (Sened): وضعية قصصية محفزة
+   - التعليمة (Ta'lima): سؤال إجرائي مرتبط بالسند مع رمز المعيار (مع1، مع2، مع3)
+3. **التدرج في المعايير**:
+   - مع1: أسئلة الربط والاختيار البسيط
+   - مع2: أسئلة التطبيق والتوظيف
+   - مع3: أسئلة الإصلاح والتبرير والتميز
+4. **جدول إسناد الأعداد**: جدول بأعمدة المقاييس (مع1، مع2، مع3) وأسطر مستويات التملك (+++، ++، +، 0)
+
+أعد الاختبار المنسّق بتنسيق Markdown واضح ومنظم.`,
+
+          evaluation: `أنت خبير تربوي تونسي متخصص في إعداد أوراق التقييم وفق القالب الرسمي SC2M223.
+حوّل النص المستخرج إلى ورقة تقييم رسمية بالهيكل التونسي المعتمد.
+أعد ورقة التقييم بتنسيق Markdown واضح.`,
+
+          annual_plan: `أنت خبير بيداغوجي تونسي متخصص في إعداد المخططات السنوية.
+حوّل النص المستخرج إلى مخطط سنوي منظم وفق البرامج الرسمية التونسية.
+أعد المخطط بتنسيق Markdown واضح مع جداول.`,
+
+          other: `أنت خبير تربوي تونسي. حوّل النص المستخرج إلى وثيقة تعليمية منسّقة واحترافية.
+حافظ على المحتوى الأصلي مع تحسين التنسيق والهيكلة.
+أعد الوثيقة بتنسيق Markdown واضح.`,
+        };
+
+        const systemPrompt = formatPrompts[input.formatType] || formatPrompts.other;
+        const contextInfo = [
+          input.subject ? `المادة: ${input.subject}` : "",
+          input.level ? `المستوى: ${input.level}` : "",
+          input.additionalInstructions ? `تعليمات إضافية: ${input.additionalInstructions}` : "",
+        ].filter(Boolean).join("\n");
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: `حوّل النص التالي المستخرج من وثيقة تعليمية قديمة إلى وثيقة رسمية منسّقة:\n\n${contextInfo ? contextInfo + "\n\n" : ""}--- النص المستخرج ---\n${input.extractedText}\n--- نهاية النص ---\n\nأعد الوثيقة المنسّقة بتنسيق Markdown احترافي.`,
+            },
+          ],
+        });
+
+        const formattedContent = typeof response?.choices?.[0]?.message?.content === "string"
+          ? response.choices[0].message.content
+          : JSON.stringify(response?.choices?.[0]?.message?.content || "");
+
+        // Update document in database
+        await db.updateDigitizedDocument(input.documentId, ctx.user.id, {
+          formattedContent,
+          formatType: input.formatType,
+          subject: input.subject || undefined,
+          level: input.level || undefined,
+          status: "formatted",
+        });
+
+        return { formattedContent };
+      }),
+
+    // Step 3: Save finalized document to library
+    save: protectedProcedure
+      .input(z.object({
+        documentId: z.number(),
+        title: z.string().optional(),
+        formattedContent: z.string().optional(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        schoolYear: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const doc = await db.getDigitizedDocumentById(input.documentId, ctx.user.id);
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
+
+        await db.updateDigitizedDocument(input.documentId, ctx.user.id, {
+          title: input.title || doc.title,
+          formattedContent: input.formattedContent || doc.formattedContent || undefined,
+          subject: input.subject || doc.subject || undefined,
+          level: input.level || doc.level || undefined,
+          schoolYear: input.schoolYear || doc.schoolYear || undefined,
+          status: "saved",
+        });
+
+        return { success: true };
+      }),
+
+    // Step 4: Export to Word
+    exportWord: protectedProcedure
+      .input(z.object({ documentId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const doc = await db.getDigitizedDocumentById(input.documentId, ctx.user.id);
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
+        if (!doc.formattedContent) throw new TRPCError({ code: "BAD_REQUEST", message: "لم يتم تنسيق الوثيقة بعد" });
+
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = await import("docx");
+
+        // Parse markdown content into Word paragraphs
+        const lines = doc.formattedContent.split("\n");
+        const paragraphs: any[] = [];
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            paragraphs.push(new Paragraph({ text: "", spacing: { after: 100 } }));
+            continue;
+          }
+
+          // Headings
+          if (trimmed.startsWith("### ")) {
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.replace(/^### /, ""), bold: true, size: 24, font: "Traditional Arabic" })],
+              heading: HeadingLevel.HEADING_3,
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 200, after: 100 },
+            }));
+          } else if (trimmed.startsWith("## ")) {
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.replace(/^## /, ""), bold: true, size: 28, font: "Traditional Arabic" })],
+              heading: HeadingLevel.HEADING_2,
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 300, after: 150 },
+              border: { bottom: { color: "1B4F72", space: 1, style: BorderStyle.SINGLE, size: 6 } },
+            }));
+          } else if (trimmed.startsWith("# ")) {
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.replace(/^# /, ""), bold: true, size: 32, font: "Traditional Arabic" })],
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 400, after: 200 },
+            }));
+          } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+            // Bullet points
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: "• " + trimmed.replace(/^[-*] /, ""), size: 24, font: "Traditional Arabic" })],
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 50, after: 50 },
+              indent: { left: 400 },
+            }));
+          } else if (trimmed.startsWith("**") && trimmed.endsWith("**")) {
+            // Bold line
+            paragraphs.push(new Paragraph({
+              children: [new TextRun({ text: trimmed.replace(/\*\*/g, ""), bold: true, size: 24, font: "Traditional Arabic" })],
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 100, after: 100 },
+            }));
+          } else if (trimmed.startsWith("|")) {
+            // Table row — render as tab-separated text
+            const cells = trimmed.split("|").filter(c => c.trim() && !c.trim().match(/^[-:]+$/));
+            if (cells.length > 0) {
+              paragraphs.push(new Paragraph({
+                children: [new TextRun({ text: cells.map(c => c.trim()).join("  |  "), size: 22, font: "Traditional Arabic" })],
+                alignment: AlignmentType.RIGHT,
+                spacing: { before: 50, after: 50 },
+              }));
+            }
+          } else {
+            // Normal text — handle inline bold
+            const parts = trimmed.split(/(\*\*[^*]+\*\*)/);
+            const runs = parts.map(part => {
+              if (part.startsWith("**") && part.endsWith("**")) {
+                return new TextRun({ text: part.replace(/\*\*/g, ""), bold: true, size: 24, font: "Traditional Arabic" });
+              }
+              return new TextRun({ text: part, size: 24, font: "Traditional Arabic" });
+            });
+            paragraphs.push(new Paragraph({
+              children: runs,
+              alignment: AlignmentType.RIGHT,
+              spacing: { before: 80, after: 80 },
+            }));
+          }
+        }
+
+        const wordDoc = new Document({
+          sections: [{
+            properties: { page: { margin: { top: 1000, right: 1200, bottom: 1000, left: 1200 } } },
+            children: paragraphs,
+          }],
+        });
+
+        const wordBuffer = await Packer.toBuffer(wordDoc);
+        const { storagePut } = await import("./storage");
+        const wordKey = `legacy-digitizer/${ctx.user.id}/exports/${doc.id}-${Date.now()}.docx`;
+        const { url: wordUrl } = await storagePut(wordKey, Buffer.from(wordBuffer), "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+        await db.updateDigitizedDocument(input.documentId, ctx.user.id, { wordExportUrl: wordUrl });
+
+        return { url: wordUrl };
+      }),
+
+    // Step 5: Export to PDF
+    exportPDF: protectedProcedure
+      .input(z.object({ documentId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const doc = await db.getDigitizedDocumentById(input.documentId, ctx.user.id);
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
+        if (!doc.formattedContent) throw new TRPCError({ code: "BAD_REQUEST", message: "لم يتم تنسيق الوثيقة بعد" });
+
+        // Convert markdown to HTML then to PDF
+        const { default: markdownIt } = await import("markdown-it");
+        const md = markdownIt();
+        const htmlContent = md.render(doc.formattedContent);
+
+        const fullHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+    body { font-family: 'Cairo', 'Traditional Arabic', sans-serif; direction: rtl; padding: 2cm; font-size: 14pt; line-height: 1.8; color: #000; }
+    h1 { text-align: center; font-size: 20pt; color: #1B4F72; border-bottom: 3px solid #F39C12; padding-bottom: 10px; }
+    h2 { font-size: 16pt; color: #1B4F72; border-bottom: 2px solid #2E86C1; padding-bottom: 5px; margin-top: 20px; }
+    h3 { font-size: 14pt; color: #2E86C1; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { border: 1px solid #333; padding: 8px 12px; text-align: right; font-size: 12pt; }
+    th { background-color: #1B4F72; color: white; font-weight: bold; }
+    ul, ol { padding-right: 30px; }
+    li { margin-bottom: 5px; }
+    strong { color: #1B4F72; }
+    .header-info { text-align: center; margin-bottom: 20px; }
+    @media print { body { padding: 1cm; } }
+  </style>
+</head>
+<body>${htmlContent}</body>
+</html>`;
+
+        const { default: puppeteer } = await import("puppeteer");
+        let browser;
+        try {
+          browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+          const page = await browser.newPage();
+          await page.setContent(fullHtml, { waitUntil: "networkidle0" });
+          const pdfBuffer = await page.pdf({
+            format: "A4",
+            margin: { top: "2cm", right: "2cm", bottom: "2cm", left: "2cm" },
+            printBackground: true,
+          });
+
+          const { storagePut } = await import("./storage");
+          const pdfKey = `legacy-digitizer/${ctx.user.id}/exports/${doc.id}-${Date.now()}.pdf`;
+          const { url: pdfUrl } = await storagePut(pdfKey, Buffer.from(pdfBuffer), "application/pdf");
+
+          await db.updateDigitizedDocument(input.documentId, ctx.user.id, { pdfExportUrl: pdfUrl });
+
+          return { url: pdfUrl };
+        } finally {
+          if (browser) await browser.close();
+        }
+      }),
+
+    // List user's digitized documents
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getDigitizedDocumentsByUser(ctx.user.id);
+    }),
+
+    // Get single document
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const doc = await db.getDigitizedDocumentById(input.id, ctx.user.id);
+        if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
+        return doc;
+      }),
+
+    // Delete document
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const success = await db.deleteDigitizedDocument(input.id, ctx.user.id);
+        if (!success) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
+        return { success: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

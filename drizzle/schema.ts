@@ -863,3 +863,44 @@ export const pricingPlans = mysqlTable("pricing_plans", {
 });
 export type PricingPlan = typeof pricingPlans.$inferSelect;
 export type InsertPricingPlan = typeof pricingPlans.$inferInsert;
+
+
+// ===== DIGITIZED DOCUMENTS (رقمنة الوثائق التعليمية - Legacy Digitizer) =====
+export const digitizedDocuments = mysqlTable("digitized_documents", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+
+  // Original document info
+  title: varchar("title", { length: 255 }).notNull(),
+  originalImageUrl: text("originalImageUrl").notNull(), // S3 URL of uploaded image
+  originalFileName: varchar("originalFileName", { length: 255 }),
+  mimeType: varchar("mimeType", { length: 100 }),
+
+  // OCR extracted text
+  extractedText: mediumtext("extractedText"),
+  ocrLanguage: varchar("ocrLanguage", { length: 20 }).default("ar+fr"), // detected/used language
+
+  // AI-formatted output
+  formattedContent: mediumtext("formattedContent"), // AI-formatted lesson plan / exam
+  formatType: mysqlEnum("formatType", ["lesson_plan", "exam", "evaluation", "annual_plan", "other"]).default("lesson_plan").notNull(),
+
+  // Structured data (JSON of the formatted content for re-editing)
+  structuredData: json("structuredData").$type<Record<string, unknown>>(),
+
+  // Export URLs
+  wordExportUrl: text("wordExportUrl"),
+  pdfExportUrl: text("pdfExportUrl"),
+
+  // Context metadata
+  subject: varchar("subject", { length: 100 }),
+  level: varchar("level", { length: 100 }),
+  schoolYear: varchar("schoolYear", { length: 20 }),
+
+  // Status
+  status: mysqlEnum("status", ["uploaded", "ocr_done", "formatted", "saved"]).default("uploaded").notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DigitizedDocument = typeof digitizedDocuments.$inferSelect;
+export type InsertDigitizedDocument = typeof digitizedDocuments.$inferInsert;

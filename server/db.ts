@@ -1391,3 +1391,54 @@ export async function deletePedagogicalEvaluation(id: number, userId: number): P
     .where(sql`${savedEvaluations.id} = ${id} AND ${savedEvaluations.userId} = ${userId}`);
   return true;
 }
+
+
+// ============================================
+// Digitized Documents - رقمنة الوثائق التعليمية (Legacy Digitizer)
+// ============================================
+
+import { digitizedDocuments, DigitizedDocument, InsertDigitizedDocument } from "../drizzle/schema";
+
+export async function createDigitizedDocument(data: InsertDigitizedDocument): Promise<DigitizedDocument> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [doc] = await db.insert(digitizedDocuments).values(data).$returningId();
+  const [result] = await db.select().from(digitizedDocuments).where(eq(digitizedDocuments.id, doc.id));
+  return result;
+}
+
+export async function getDigitizedDocumentsByUser(userId: number): Promise<DigitizedDocument[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(digitizedDocuments)
+    .where(eq(digitizedDocuments.userId, userId))
+    .orderBy(desc(digitizedDocuments.createdAt));
+}
+
+export async function getDigitizedDocumentById(id: number, userId: number): Promise<DigitizedDocument | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [doc] = await db.select().from(digitizedDocuments)
+    .where(sql`${digitizedDocuments.id} = ${id} AND ${digitizedDocuments.userId} = ${userId}`)
+    .limit(1);
+  return doc || null;
+}
+
+export async function updateDigitizedDocument(id: number, userId: number, data: Partial<InsertDigitizedDocument>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(digitizedDocuments).set(data)
+    .where(sql`${digitizedDocuments.id} = ${id} AND ${digitizedDocuments.userId} = ${userId}`);
+}
+
+export async function deleteDigitizedDocument(id: number, userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(digitizedDocuments)
+    .where(sql`${digitizedDocuments.id} = ${id} AND ${digitizedDocuments.userId} = ${userId}`);
+  return true;
+}
