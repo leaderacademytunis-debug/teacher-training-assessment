@@ -7,10 +7,11 @@ import {
   MessageSquare, ClipboardCheck, Globe, Brain, Sparkles,
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
-  BadgeCheck, ShieldCheck, type LucideIcon,
+  BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
+  Megaphone, Settings,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ChatAssistant } from "@/components/ChatAssistant";
@@ -42,14 +43,18 @@ const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: strin
   { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment", icon: BarChart3, descAr: "تقييم مستوى المشاركين وتحليل النتائج", descFr: "Évaluer le niveau des participants et analyser les résultats", descEn: "Evaluate participant level and analyze results" },
 ];
 
-const NAV_LINKS = [
-  { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false, authOnly: false },
-  { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false, authOnly: false },
-  { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false, authOnly: false },
-  { href: "/my-certificates", labelAr: "شهاداتي", labelFr: "Mes certificats", labelEn: "My Certificates", adminOnly: false, authOnly: true },
-  { href: "/verify", labelAr: "التحقق من الشهادات", labelFr: "Vérifier certificat", labelEn: "Verify Certificate", adminOnly: false, authOnly: false },
-  { href: "/dashboard", labelAr: "لوحة التحكم بالدورات", labelFr: "Gestion formations", labelEn: "Course Dashboard", adminOnly: false, authOnly: true },
-  { href: "/admin", labelAr: "لوحة الإدارة", labelFr: "Admin", labelEn: "Admin", adminOnly: true, authOnly: false },
+// Certificate links grouped in a dropdown
+const CERT_LINKS: { href: string; labelAr: string; labelFr: string; labelEn: string; icon: LucideIcon; descAr: string; descFr: string; descEn: string; authOnly: boolean }[] = [
+  { href: "/my-certificates", labelAr: "شهاداتي", labelFr: "Mes certificats", labelEn: "My Certificates", icon: BadgeCheck, descAr: "عرض وتحميل شهاداتك المكتسبة", descFr: "Voir et télécharger vos certificats", descEn: "View and download your certificates", authOnly: true },
+  { href: "/verify", labelAr: "التحقق من شهادة", labelFr: "Vérifier un certificat", labelEn: "Verify Certificate", icon: ShieldCheck, descAr: "التحقق من صحة شهادة برقمها", descFr: "Vérifier l'authenticité d'un certificat", descEn: "Verify a certificate by its number", authOnly: false },
+];
+
+const NAV_LINKS: { href: string; labelAr: string; labelFr: string; labelEn: string; adminOnly: boolean; authOnly: boolean; icon: LucideIcon }[] = [
+  { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false, authOnly: false, icon: Megaphone },
+  { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false, authOnly: false, icon: Info },
+  { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false, authOnly: false, icon: DollarSign },
+  { href: "/dashboard", labelAr: "لوحة التحكم بالدورات", labelFr: "Gestion formations", labelEn: "Course Dashboard", adminOnly: false, authOnly: true, icon: LayoutDashboard },
+  { href: "/admin", labelAr: "لوحة الإدارة", labelFr: "Admin", labelEn: "Admin", adminOnly: true, authOnly: false, icon: Settings },
 ];
 
 const FEATURES = [
@@ -207,6 +212,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
+  const [location] = useLocation();
   const { data: courses, isLoading } = trpc.courses.list.useQuery();
   const { data: enrollments } = trpc.enrollments.myEnrollments.useQuery(undefined, {
     enabled: !!user,
@@ -290,13 +296,58 @@ export default function Home() {
                 if (link.adminOnly && user?.role !== "admin") return false;
                 if (link.authOnly && !user) return false;
                 return true;
-              }).map((link) => (
-                <Link key={link.href} href={link.href}>
-                  <button className="text-blue-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap">
-                    {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
-                  </button>
-                </Link>
-              ))}
+              }).map((link) => {
+                const isActive = location === link.href || (link.href !== "/" && link.href !== "/#programs" && location.startsWith(link.href));
+                return (
+                  <Link key={link.href} href={link.href}>
+                    <button className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                      isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+                    }`}>
+                      {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
+                      {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-orange-400 rounded-full" />}
+                    </button>
+                  </Link>
+                );
+              })}
+
+              {/* Certificates Dropdown - hover activated */}
+              <div className="relative group/cert">
+                <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                  ['/my-certificates', '/verify'].includes(location) ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+                }`}>
+                  <Award className="w-4 h-4" />
+                  {t("الشهادات", "Certificats", "Certificates")}
+                  <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/cert:rotate-180" />
+                  {['/my-certificates', '/verify'].includes(location) && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-orange-400 rounded-full" />}
+                </button>
+                {/* Hover dropdown */}
+                <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/cert:opacity-100 group-hover/cert:visible transition-all duration-200 z-50" style={{ minWidth: "280px" }}>
+                  <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
+                    <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                      <p className="text-white font-bold text-sm flex items-center gap-2">
+                        <Award className="w-4 h-4 text-orange-300" />
+                        {t("الشهادات والتحقق", "Certificats & Vérification", "Certificates & Verification")}
+                      </p>
+                    </div>
+                    {CERT_LINKS.filter(cl => !cl.authOnly || user).map((cl, idx) => {
+                      const CIcon = cl.icon;
+                      return (
+                        <Link key={cl.href} href={cl.href}>
+                          <div className={`flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${idx < CERT_LINKS.filter(c => !c.authOnly || user).length - 1 ? "border-b border-gray-50" : ""}`}>
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                              <CIcon className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm text-gray-900">{language === "fr" ? cl.labelFr : language === "en" ? cl.labelEn : cl.labelAr}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{language === "fr" ? cl.descFr : language === "en" ? cl.descEn : cl.descAr}</p>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             </nav>
 
             {/* Right actions */}
@@ -391,21 +442,55 @@ export default function Home() {
                 </div>
               </div>
               <div className="border-t border-white/10 my-2" />
-              {/* Other Links */}
+              {/* Other Links with icons */}
               {NAV_LINKS.filter(link => {
                 if (link.adminOnly && user?.role !== "admin") return false;
                 if (link.authOnly && !user) return false;
                 return true;
-              }).map((link) => (
-                <Link key={link.href} href={link.href}>
-                  <button
-                    className="block w-full text-right text-blue-100 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
-                  </button>
-                </Link>
-              ))}
+              }).map((link) => {
+                const NavIcon = link.icon;
+                const isActive = location === link.href || (link.href !== "/" && link.href !== "/#programs" && location.startsWith(link.href));
+                return (
+                  <Link key={link.href} href={link.href}>
+                    <button
+                      className={`flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                        isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+                      }`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <NavIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-orange-300" : ""}`} />
+                      {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
+                    </button>
+                  </Link>
+                );
+              })}
+              {/* Certificates section in mobile */}
+              <div className="border-t border-white/10 my-2" />
+              <div className="px-4 py-2">
+                <p className="text-orange-300 font-bold text-xs flex items-center gap-2 mb-2">
+                  <Award className="w-3.5 h-3.5" />
+                  {t("الشهادات", "Certificats", "Certificates")}
+                </p>
+                <div className="space-y-1 mr-4">
+                  {CERT_LINKS.filter(cl => !cl.authOnly || user).map((cl) => {
+                    const CIcon = cl.icon;
+                    const isActive = location === cl.href;
+                    return (
+                      <Link key={cl.href} href={cl.href}>
+                        <button
+                          className={`flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+                          }`}
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <CIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-orange-300" : ""}`} />
+                          {language === "fr" ? cl.labelFr : language === "en" ? cl.labelEn : cl.labelAr}
+                        </button>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
               {/* Quick actions */}
               <div className="flex gap-2 px-4 pt-2">
                 <Link href="/assistant" className="flex-1">
