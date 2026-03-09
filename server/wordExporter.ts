@@ -523,7 +523,7 @@ export async function exportLessonSheetToWord(data: LessonSheetInput): Promise<B
   const s = data.sheet as Record<string, unknown>;
   const sections: (Paragraph | Table)[] = [];
 
-  // ── الترويسة ──────────────────────────────────────────────────────────────
+  // ── الترويسة الرسمية ──────────────────────────────────────────────────────
   sections.push(
     new Paragraph({
       children: [arabicText("الجمهورية التونسية — وزارة التربية", { bold: true, size: 11, color: COLORS.secondary })],
@@ -545,33 +545,44 @@ export async function exportLessonSheetToWord(data: LessonSheetInput): Promise<B
     }),
   );
 
-  // ── المعطيات العامة ────────────────────────────────────────────────────────
-  sections.push(sectionTitle("أولاً — المعطيات العامة"));
+  // ══════════════════════════════════════════════════════════════════════════
+  // القسم 1 — الترويسة الإدارية
+  // ══════════════════════════════════════════════════════════════════════════
+  sections.push(sectionTitle("أولاً — الترويسة الإدارية"));
+  const adminRows = [
+    twoColRow("المخطط", String(s.planType || s.period || "شهري")),
+    twoColRow("المادة", String(s.subject || "")),
+    twoColRow("المستوى", String(s.level || "")),
+    twoColRow("الدرجة", String(s.degree || "")),
+    twoColRow("الثلاثي", String(s.trimester || "")),
+    twoColRow("الفترة / الوحدة", String(s.period || "")),
+    twoColRow("المدة", String(s.duration || "45 دقيقة")),
+    twoColRow("المدرسة", data.schoolName || "—"),
+    twoColRow("المدرس/ة", data.teacherName || "—"),
+    twoColRow("السنة الدراسية", data.schoolYear || "2025-2026"),
+  ];
   sections.push(
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        twoColRow("المادة", String(s.subject || "")),
-        twoColRow("المستوى", String(s.level || "")),
-        twoColRow("الثلاثي", String(s.trimester || "")),
-        twoColRow("الفترة / الوحدة", String(s.period || "")),
-        twoColRow("المدة", String(s.duration || "45 دقيقة")),
-        twoColRow("المدرسة", data.schoolName || "—"),
-        twoColRow("المدرس/ة", data.teacherName || "—"),
-        twoColRow("السنة الدراسية", data.schoolYear || "2025-2026"),
-      ],
+      rows: adminRows,
     }),
   );
 
-  // ── الكفاية والأهداف ───────────────────────────────────────────────────────
-  sections.push(sectionTitle("ثانياً — الكفاية والأهداف"));
+  // ══════════════════════════════════════════════════════════════════════════
+  // القسم 2 — المرجعية البيداغوجية
+  // ══════════════════════════════════════════════════════════════════════════
+  sections.push(sectionTitle("ثانياً — المرجعية البيداغوجية"));
+  const pedRows = [
+    twoColRow("كفاية المجال", String(s.domainCompetency || s.finalCompetency || "")),
+    twoColRow("الكفاية النهائية للمادة", String(s.subjectFinalCompetency || s.finalCompetency || "")),
+    twoColRow("مكوّن الكفاية", String(s.competencyComponent || "")),
+    twoColRow("الهدف المميز", String(s.distinguishedObjective || "")),
+    twoColRow("هدف الحصة", String(s.sessionObjective || "")),
+  ];
   sections.push(
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        twoColRow("الكفاية الختامية", String(s.finalCompetency || "")),
-        twoColRow("الهدف المميز", String(s.distinguishedObjective || "")),
-      ],
+      rows: pedRows,
     }),
   );
 
@@ -591,6 +602,22 @@ export async function exportLessonSheetToWord(data: LessonSheetInput): Promise<B
     });
   }
 
+  // المكتسبات القبلية
+  const prerequisites = Array.isArray(s.prerequisites) ? s.prerequisites : [];
+  if (prerequisites.length > 0) {
+    sections.push(
+      new Paragraph({
+        children: [arabicText("المكتسبات القبلية:", { bold: true, size: 12, color: COLORS.primary })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 150, after: 60 },
+        bidirectional: true,
+      }),
+    );
+    prerequisites.forEach((p, i) => {
+      sections.push(bodyParagraph(`${i + 1}. ${String(p)}`));
+    });
+  }
+
   // الوسائل
   const materials = Array.isArray(s.materials) ? s.materials : [];
   if (materials.length > 0) {
@@ -604,100 +631,213 @@ export async function exportLessonSheetToWord(data: LessonSheetInput): Promise<B
     );
   }
 
-  // ── مراحل الحصة ───────────────────────────────────────────────────────────
-  sections.push(sectionTitle("ثالثاً — مراحل الحصة"));
+  // ══════════════════════════════════════════════════════════════════════════
+  // القسم 3 — التمشي البيداغوجي (مراحل الحصة)
+  // ══════════════════════════════════════════════════════════════════════════
+  sections.push(sectionTitle("ثالثاً — التمشي البيداغوجي"));
 
-  // مرحلة الانطلاق
-  const launch = (s.launchPhase as Record<string, string>) || {};
-  sections.push(
-    new Paragraph({
-      children: [arabicText(`أ) وضعية الانطلاق / التهيئة (${launch.duration || "10 دقائق"})`, { bold: true, size: 12, color: COLORS.secondary })],
-      alignment: AlignmentType.RIGHT,
-      spacing: { before: 150, after: 60 },
-      bidirectional: true,
-    }),
-  );
-  if (launch.problemSituation) {
+  // Helper to render a phase block
+  const renderPhaseBlock = (title: string, phase: Record<string, unknown> | undefined, letter: string) => {
+    if (!phase) return;
+    const p = phase as Record<string, string>;
     sections.push(
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        rows: [
-          twoColRow("وضعية المشكلة", launch.problemSituation),
-          twoColRow("نشاط المعلم", launch.teacherActivity || ""),
-          twoColRow("نشاط المتعلم", launch.learnerActivity || ""),
-        ],
+      new Paragraph({
+        children: [arabicText(`${letter}) ${title} (${p.duration || ""})`, { bold: true, size: 12, color: COLORS.secondary })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 150, after: 60 },
+        bidirectional: true,
       }),
+    );
+    const phaseRows: TableRow[] = [];
+    if (p.problemSituation || p.situation) {
+      phaseRows.push(twoColRow("الوضعية", String(p.problemSituation || p.situation || "")));
+    }
+    if (p.teacherActivity || p.teacherRole) {
+      phaseRows.push(twoColRow("دور المعلم", String(p.teacherActivity || p.teacherRole || "")));
+    }
+    if (p.learnerActivity || p.studentRole) {
+      phaseRows.push(twoColRow("نشاط المتعلم", String(p.learnerActivity || p.studentRole || "")));
+    }
+    if (p.tools || p.media) {
+      phaseRows.push(twoColRow("الوسائل والوسائط", String(p.tools || p.media || "")));
+    }
+    if (phaseRows.length > 0) {
+      sections.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: phaseRows }));
+    }
+  };
+
+  // مرحلة الاستكشاف
+  renderPhaseBlock(
+    "مرحلة الاستكشاف",
+    (s.explorationPhase || s.launchPhase) as Record<string, unknown> | undefined,
+    "أ"
+  );
+
+  // مرحلة البناء (المرحلة الرئيسية)
+  const mainPhase = (s.constructionPhase || s.mainPhase) as Record<string, unknown> | undefined;
+  if (mainPhase) {
+    sections.push(
+      new Paragraph({
+        children: [arabicText(`ب) مرحلة البناء (${String((mainPhase as any).duration || "25 دقائق")})`, { bold: true, size: 12, color: COLORS.secondary })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 150, after: 60 },
+        bidirectional: true,
+      }),
+    );
+    // situation
+    const mp = mainPhase as Record<string, unknown>;
+    if (mp.problemSituation || mp.situation) {
+      sections.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [twoColRow("وضعية المشكل الدالة", String(mp.problemSituation || mp.situation || ""))],
+        }),
+      );
+    }
+    // steps table
+    const steps = Array.isArray(mp.steps) ? mp.steps : [];
+    if (steps.length > 0) {
+      const stepHeaderRow = new TableRow({
+        children: [
+          new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("الخطوة", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
+          new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("دور المعلم", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
+          new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("نشاط المتعلم", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
+          new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("الوسائل", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
+        ],
+        tableHeader: true,
+      });
+      const stepRows = steps.map((step: unknown, i: number) => {
+        const st = step as Record<string, string>;
+        const bgColor = i % 2 === 0 ? COLORS.light : COLORS.white;
+        return new TableRow({
+          children: [
+            new TableCell({ width: { size: 15, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.SOLID, color: bgColor, fill: bgColor }, children: [new Paragraph({ children: [arabicText(st.step || st.name || "", { bold: true, size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })] }),
+            new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.SOLID, color: bgColor, fill: bgColor }, children: [new Paragraph({ children: [arabicText(st.teacherActivity || st.teacherRole || "", { size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })] }),
+            new TableCell({ width: { size: 35, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.SOLID, color: bgColor, fill: bgColor }, children: [new Paragraph({ children: [arabicText(st.learnerActivity || st.studentRole || "", { size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })] }),
+            new TableCell({ width: { size: 20, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.SOLID, color: bgColor, fill: bgColor }, children: [new Paragraph({ children: [arabicText(st.tools || st.media || "", { size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })] }),
+          ],
+        });
+      });
+      sections.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [stepHeaderRow, ...stepRows] }));
+    }
+  }
+
+  // مرحلة التطبيق
+  renderPhaseBlock(
+    "مرحلة التطبيق",
+    (s.applicationPhase || s.consolidationPhase) as Record<string, unknown> | undefined,
+    "ج"
+  );
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // القسم 4 — الإدماج والتقييم
+  // ══════════════════════════════════════════════════════════════════════════
+  sections.push(sectionTitle("رابعاً — الإدماج والتقييم"));
+  const integrationPhase = (s.integrationPhase || s.evaluationPhase) as Record<string, string> | undefined;
+  if (integrationPhase) {
+    const intRows = [
+      twoColRow("السند", String(integrationPhase.context || integrationPhase.situation || "")),
+      twoColRow("التعليمة", String(integrationPhase.instruction || integrationPhase.question || "")),
+      twoColRow("معيار النجاح", String(integrationPhase.successCriteria || "")),
+    ];
+    sections.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: intRows }));
+  }
+  // Conclusion
+  if (s.conclusion) {
+    sections.push(
+      new Paragraph({
+        children: [arabicText("الاستنتاج:", { bold: true, size: 12, color: COLORS.primary })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 120, after: 60 },
+        bidirectional: true,
+      }),
+      bodyParagraph(String(s.conclusion)),
+    );
+  }
+  if (s.summativeEvaluation) {
+    sections.push(
+      new Paragraph({
+        children: [arabicText("التقييم الختامي (وضعية إدماجية):", { bold: true, size: 12, color: COLORS.primary })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 120, after: 60 },
+        bidirectional: true,
+      }),
+      bodyParagraph(String(s.summativeEvaluation)),
     );
   }
 
-  // المرحلة الرئيسية
-  const main = (s.mainPhase as Record<string, unknown>) || {};
-  sections.push(
-    new Paragraph({
-      children: [arabicText(`ب) بناء التعلمات / النشاط الرئيسي (${String(main.duration || "25 دقائق")})`, { bold: true, size: 12, color: COLORS.secondary })],
-      alignment: AlignmentType.RIGHT,
-      spacing: { before: 150, after: 60 },
-      bidirectional: true,
-    }),
-  );
-  const steps = Array.isArray(main.steps) ? main.steps : [];
-  if (steps.length > 0) {
-    const stepRows = steps.map((step: unknown) => {
-      const st = step as Record<string, string>;
-      return new TableRow({
-        children: [
-          new TableCell({
-            width: { size: 20, type: WidthType.PERCENTAGE },
-            shading: { type: ShadingType.SOLID, color: COLORS.light, fill: COLORS.light },
-            children: [new Paragraph({ children: [arabicText(st.step || "", { bold: true, size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
-          }),
-          new TableCell({
-            width: { size: 40, type: WidthType.PERCENTAGE },
-            children: [new Paragraph({ children: [arabicText(st.teacherActivity || "", { size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
-          }),
-          new TableCell({
-            width: { size: 40, type: WidthType.PERCENTAGE },
-            children: [new Paragraph({ children: [arabicText(st.learnerActivity || "", { size: 10 })], alignment: AlignmentType.RIGHT, bidirectional: true })],
-          }),
-        ],
-      });
-    });
-    const headerRow = new TableRow({
-      children: [
-        new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("الخطوة", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
-        new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("نشاط المعلم", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
-        new TableCell({ shading: { type: ShadingType.SOLID, color: COLORS.primary, fill: COLORS.primary }, children: [new Paragraph({ children: [arabicText("نشاط المتعلم", { bold: true, size: 10, color: COLORS.white })], alignment: AlignmentType.CENTER, bidirectional: true })] }),
-      ],
-      tableHeader: true,
-    });
-    sections.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...stepRows] }));
+  // ══════════════════════════════════════════════════════════════════════════
+  // القسم 5 — الدعم والعلاج
+  // ══════════════════════════════════════════════════════════════════════════
+  const remediation = (s.remediation || s.remediationPhase) as Record<string, unknown> | undefined;
+  if (remediation) {
+    sections.push(sectionTitle("خامساً — الدعم والعلاج"));
+    const rem = remediation as Record<string, unknown>;
+    if (rem.anticipatedDifficulties || rem.difficulties) {
+      sections.push(
+        new Paragraph({
+          children: [arabicText("الصعوبات المتوقعة:", { bold: true, size: 12, color: COLORS.primary })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 120, after: 60 },
+          bidirectional: true,
+        }),
+      );
+      const diffs = Array.isArray(rem.anticipatedDifficulties) ? rem.anticipatedDifficulties : (Array.isArray(rem.difficulties) ? rem.difficulties : [String(rem.anticipatedDifficulties || rem.difficulties || "")]);
+      diffs.forEach((d: unknown) => sections.push(bodyParagraph(`• ${String(d)}`)));
+    }
+    if (rem.remediationActivities || rem.activities) {
+      sections.push(
+        new Paragraph({
+          children: [arabicText("أنشطة المعالجة:", { bold: true, size: 12, color: COLORS.primary })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 120, after: 60 },
+          bidirectional: true,
+        }),
+      );
+      const acts = Array.isArray(rem.remediationActivities) ? rem.remediationActivities : (Array.isArray(rem.activities) ? rem.activities : [String(rem.remediationActivities || rem.activities || "")]);
+      acts.forEach((a: unknown) => sections.push(bodyParagraph(`• ${String(a)}`)));
+    }
+    if (rem.minimumCriteria) {
+      sections.push(
+        new Paragraph({
+          children: [arabicText("معايير الحد الأدنى:", { bold: true, size: 12, color: COLORS.primary })],
+          alignment: AlignmentType.RIGHT,
+          spacing: { before: 120, after: 60 },
+          bidirectional: true,
+        }),
+        bodyParagraph(String(rem.minimumCriteria)),
+      );
+    }
   }
 
-  // مرحلة الاستثمار
-  const consol = (s.consolidationPhase as Record<string, string>) || {};
-  sections.push(
-    new Paragraph({
-      children: [arabicText(`ج) الاستثمار والتقييم (${consol.duration || "10 دقائق"})`, { bold: true, size: 12, color: COLORS.secondary })],
-      alignment: AlignmentType.RIGHT,
-      spacing: { before: 150, after: 60 },
-      bidirectional: true,
-    }),
-  );
-  if (consol.exercise) {
-    sections.push(bodyParagraph(`التمرين (${consol.exerciseType || "تقييمي"}): ${consol.exercise}`));
+  // ══════════════════════════════════════════════════════════════════════════
+  // القسم 6 — ملاحظات المعلم
+  // ══════════════════════════════════════════════════════════════════════════
+  sections.push(sectionTitle("سادساً — ملاحظات المعلم"));
+  if (s.teacherNotes) {
+    sections.push(bodyParagraph(String(s.teacherNotes)));
+  } else {
+    sections.push(
+      new Paragraph({
+        children: [arabicText("...........................................................................................................................", { size: 11, color: "AAAAAA" })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 60, after: 60 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText("...........................................................................................................................", { size: 11, color: "AAAAAA" })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 60, after: 60 },
+        bidirectional: true,
+      }),
+      new Paragraph({
+        children: [arabicText("...........................................................................................................................", { size: 11, color: "AAAAAA" })],
+        alignment: AlignmentType.RIGHT,
+        spacing: { before: 60, after: 60 },
+        bidirectional: true,
+      }),
+    );
   }
-
-  // ── الاستنتاج والتقييم الختامي ────────────────────────────────────────────
-  sections.push(sectionTitle("رابعاً — الاستنتاج والتقييم الختامي"));
-  sections.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        twoColRow("الاستنتاج", String(s.conclusion || "")),
-        twoColRow("التقييم الختامي (وضعية إدماجية)", String(s.summativeEvaluation || "")),
-      ],
-    }),
-  );
 
   // ── التذييل ───────────────────────────────────────────────────────────────
   sections.push(
