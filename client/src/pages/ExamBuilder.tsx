@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import PrintPreview from "@/components/PrintPreview";
+import ImageOverlayEditor from "@/components/ImageOverlayEditor";
+import EducationalImageLibrary from "@/components/EducationalImageLibrary";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -224,6 +226,9 @@ export default function ExamBuilder() {
   const [draggedImage, setDraggedImage] = useState<{url: string; caption?: string} | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [schoolLogo, setSchoolLogo] = useState<string>("");
+  const [showImageLibrary, setShowImageLibrary] = useState(false);
+  const [overlayEditorImage, setOverlayEditorImage] = useState<{url: string; caption?: string} | null>(null);
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
 
   // tRPC hooks
   const utils = trpc.useUtils();
@@ -358,6 +363,70 @@ export default function ExamBuilder() {
     if (newImages.length > 0) {
       toast.success(`تم توليد ${newImages.length} صورة توضيحية`);
     }
+  };
+
+  // Regenerate a single image
+  const handleRegenerateImage = async (idx: number) => {
+    const img = examImages[idx];
+    if (!img?.caption) return;
+    setRegeneratingIndex(idx);
+    try {
+      const result = await generateLineArt.mutateAsync({
+        prompt: img.caption,
+        style: "bw_lineart",
+        subject,
+        level,
+        source: "exam-builder",
+      });
+      if (result.url) {
+        setExamImages(prev => prev.map((item, i) => i === idx ? { ...item, url: result.url } : item));
+        toast.success("تم إعادة توليد الصورة بنجاح");
+      }
+    } catch (err: any) {
+      toast.error("فشل إعادة توليد الصورة");
+    }
+    setRegeneratingIndex(null);
+  };
+
+  // Handle image selected from library
+  const handleLibraryImageSelect = (image: { url: string; caption: string }) => {
+    setExamImages(prev => [...prev, image]);
+    toast.success(`تم إضافة صورة: ${image.caption}`);
+  };
+
+  // Handle library generate request (for images not yet generated)
+  const handleLibraryGenerateRequest = async (prompt: string) => {
+    if (isFreeAccount) {
+      toast.error("ميزة توليد الرسومات متاحة فقط للحسابات المدفوعة (PRO/Premium)");
+      return;
+    }
+    setGeneratingImages(true);
+    try {
+      const result = await generateLineArt.mutateAsync({
+        prompt,
+        style: "bw_lineart",
+        subject: subject || "الإيقاظ العلمي",
+        level: level || "السنة الخامسة ابتدائي",
+        source: "exam-builder",
+      });
+      if (result.url) {
+        setExamImages(prev => [...prev, { url: result.url, caption: prompt }]);
+        toast.success(`تم توليد وإضافة صورة: ${prompt}`);
+      }
+    } catch (err: any) {
+      toast.error(`فشل توليد صورة: ${prompt}`);
+    }
+    setGeneratingImages(false);
+  };
+
+  // Handle overlay save - replace image with overlaid version
+  const handleOverlaySave = (dataUrl: string) => {
+    if (!overlayEditorImage) return;
+    setExamImages(prev => prev.map(img => 
+      img.url === overlayEditorImage.url ? { ...img, url: dataUrl } : img
+    ));
+    setOverlayEditorImage(null);
+    toast.success("تم حفظ الصورة مع التسميات العربية");
   };
 
   const handleCopy = (text: string) => {
@@ -652,6 +721,10 @@ export default function ExamBuilder() {
                       className="bg-violet-700/60 hover:bg-violet-600/60 text-white text-xs h-7 px-2">
                       🖌️ الاستوديو
                     </Button>
+                    <Button size="sm" onClick={() => setShowImageLibrary(true)}
+                      className="bg-teal-700 hover:bg-teal-600 text-white text-xs h-7 px-2">
+                      🖼️ مكتبة الصور
+                    </Button>
                   </div>
                 )}
               </div>
@@ -786,17 +859,41 @@ export default function ExamBuilder() {
                         <div className="absolute top-1 right-1 bg-violet-600/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity z-10" title="اسحب لإدراج في الاختبار">
                           ✥
                         </div>
-                        <img
-                          src={img.url}
-                          alt={img.caption || `صورة ${idx + 1}`}
-                          className="w-full h-28 object-contain bg-white p-1"
-                          style={{ filter: "grayscale(100%) contrast(1.2)" }}
-                        />
+                        {regeneratingIndex === idx ? (
+                          <div className="w-full h-28 flex items-center justify-center bg-white/10">
+                            <span className="animate-spin text-2xl">⏳</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={img.url}
+                            alt={img.caption || `صورة ${idx + 1}`}
+                            className="w-full h-28 object-contain bg-white p-1"
+                            style={{ filter: "grayscale(100%) contrast(1.2)" }}
+                          />
+                        )}
                         {img.caption && (
                           <div className="p-1.5 text-[10px] text-white/60 text-center truncate">
                             {img.caption}
                           </div>
                         )}
+                        {/* Action buttons */}
+                        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleRegenerateImage(idx); }}
+                            disabled={regeneratingIndex !== null}
+                            className="bg-blue-600/90 text-white rounded px-1.5 py-0.5 text-[10px] hover:bg-blue-500 disabled:opacity-50"
+                            title="إعادة توليد"
+                          >
+                            🔄 إعادة
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setOverlayEditorImage(img); }}
+                            className="bg-green-600/90 text-white rounded px-1.5 py-0.5 text-[10px] hover:bg-green-500"
+                            title="إضافة تسميات"
+                          >
+                            ✏️ تسميات
+                          </button>
+                        </div>
                         <button
                           onClick={() => setExamImages(prev => prev.filter((_, i) => i !== idx))}
                           className="absolute top-1 left-1 bg-red-600/80 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
@@ -807,7 +904,7 @@ export default function ExamBuilder() {
                     ))}
                   </div>
                   <p className="text-[10px] text-white/40 mt-1.5">
-                    ✥ اسحب الصورة وأفلتها في منطقة الاختبار لإدراجها في النص
+                    ✥ اسحب الصورة وأفلتها في منطقة الاختبار | 🔄 إعادة توليد صورة محددة | ✏️ إضافة تسميات عربية
                   </p>
                 </div>
               )}
@@ -862,6 +959,25 @@ export default function ExamBuilder() {
           onClose={() => setShowPrintPreview(false)}
           images={examImages.length > 0 ? examImages : undefined}
           schoolLogo={schoolLogo || userSchoolLogo || undefined}
+        />
+      )}
+
+      {/* Educational Image Library */}
+      <EducationalImageLibrary
+        open={showImageLibrary}
+        onClose={() => setShowImageLibrary(false)}
+        onSelect={handleLibraryImageSelect}
+        onGenerateRequest={handleLibraryGenerateRequest}
+      />
+
+      {/* Image Overlay Editor */}
+      {overlayEditorImage && (
+        <ImageOverlayEditor
+          imageUrl={overlayEditorImage.url}
+          caption={overlayEditorImage.caption}
+          open={!!overlayEditorImage}
+          onClose={() => setOverlayEditorImage(null)}
+          onSave={handleOverlaySave}
         />
       )}
     </div>

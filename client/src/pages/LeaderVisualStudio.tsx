@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { LockedFeature, usePermissions } from "@/components/LockedFeature";
+import ImageOverlayEditor from "@/components/ImageOverlayEditor";
+import EducationalImageLibrary from "@/components/EducationalImageLibrary";
 import {
   Paintbrush, Download, Trash2, Eraser, Image as ImageIcon,
   Loader2, Sparkles, Palette, PenLine, BarChart3, BookOpen,
-  AlertCircle, Crown, ChevronDown, ChevronUp, X
+  AlertCircle, Crown, ChevronDown, ChevronUp, X, Type, Library
 } from "lucide-react";
 
 const STYLES = [
@@ -40,6 +42,8 @@ export default function LeaderVisualStudio() {
   const [level, setLevel] = useState("");
   const [generatedImage, setGeneratedImage] = useState<{ url: string; prompt: string; style: string } | null>(null);
   const [showGallery, setShowGallery] = useState(false);
+  const [showOverlayEditor, setShowOverlayEditor] = useState(false);
+  const [showImageLibrary, setShowImageLibrary] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).slice(2)}`);
 
   // tRPC queries/mutations
@@ -273,11 +277,12 @@ export default function LeaderVisualStudio() {
               </CardContent>
             </Card>
 
-            {/* Generate button */}
+            {/* Buttons */}
+            <div className="flex gap-2">
             <Button
               onClick={handleGenerate}
               disabled={!prompt.trim() || isGenerating || (usage?.remaining === 0 && usage?.tier !== "pro")}
-              className="w-full h-12 text-base bg-gradient-to-l from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-lg"
+              className="flex-1 h-12 text-base bg-gradient-to-l from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl shadow-lg"
             >
               {isGenerating ? (
                 <>
@@ -291,6 +296,15 @@ export default function LeaderVisualStudio() {
                 </>
               )}
             </Button>
+            <Button
+              onClick={() => setShowImageLibrary(true)}
+              variant="outline"
+              className="h-12 px-4 rounded-xl border-teal-300 text-teal-700 hover:bg-teal-50"
+            >
+              <Library className="w-5 h-5 ml-1" />
+              مكتبة
+            </Button>
+            </div>
 
             {usage?.remaining === 0 && usage?.tier !== "pro" && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800 flex items-start gap-2">
@@ -336,6 +350,15 @@ export default function LeaderVisualStudio() {
                         <Eraser className="w-3 h-3 ml-1" />
                       )}
                       إزالة الخلفية
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowOverlayEditor(true)}
+                      className="text-xs h-7"
+                    >
+                      <Type className="w-3 h-3 ml-1" />
+                      تسميات عربية
                     </Button>
                     <Button
                       size="sm"
@@ -439,6 +462,34 @@ export default function LeaderVisualStudio() {
           </div>
         </div>
       </div>
+
+      {/* Educational Image Library */}
+      <EducationalImageLibrary
+        open={showImageLibrary}
+        onClose={() => setShowImageLibrary(false)}
+        onSelect={(image) => {
+          setGeneratedImage({ url: image.url, prompt: image.caption, style: "library" });
+          setShowImageLibrary(false);
+        }}
+        onGenerateRequest={(p) => {
+          setPrompt(p);
+          setShowImageLibrary(false);
+        }}
+      />
+
+      {/* Image Overlay Editor */}
+      {showOverlayEditor && generatedImage && (
+        <ImageOverlayEditor
+          imageUrl={generatedImage.url}
+          caption={generatedImage.prompt}
+          open={showOverlayEditor}
+          onClose={() => setShowOverlayEditor(false)}
+          onSave={(dataUrl) => {
+            setGeneratedImage({ ...generatedImage, url: dataUrl });
+            setShowOverlayEditor(false);
+          }}
+        />
+      )}
     </div>
   );
 }
