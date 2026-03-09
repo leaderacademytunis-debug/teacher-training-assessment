@@ -173,18 +173,9 @@ function ExamContentWithImages({ content, images }: { content: string; images: A
 // ─── Main Component ────────────────────────────────────────────────────────────────────────────
 
 export default function ExamBuilder() {
+  // ── ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURN ──
   const { hasEdugpt, isAdmin, isLoading: permLoading, tier } = usePermissions();
   const isFreeAccount = tier === "free" && !isAdmin;
-
-  if (!permLoading && !hasEdugpt && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-        <LockedFeature requiredService="accessEdugpt" featureName="بناء الاختبار">
-          <div />
-        </LockedFeature>
-      </div>
-    );
-  }
 
   // Auth & school name
   const { user, refresh: refreshAuth } = useAuth();
@@ -209,15 +200,6 @@ export default function ExamBuilder() {
 
   // Initialize schoolLogo from user profile
   const userSchoolLogo = (user as any)?.schoolLogo || "";
-  useEffect(() => {
-    if (userSchoolLogo && !schoolLogo) setSchoolLogo(userSchoolLogo);
-  }, [userSchoolLogo]);
-
-  const handleSaveSchoolName = () => {
-    if (schoolNameInput.trim()) {
-      updateProfile.mutate({ schoolName: schoolNameInput.trim() });
-    }
-  };
 
   // Form state
   const [subject, setSubject] = useState("");
@@ -276,7 +258,6 @@ export default function ExamBuilder() {
       setAnswerKey(data.answerKey);
       setActiveTab("answer");
       toast.success("تم إنشاء نموذج الإجابة النموذجية ✅");
-      // Auto-update in DB if already saved
     },
     onError: (err) => toast.error(`خطأ: ${err.message}`),
   });
@@ -292,6 +273,31 @@ export default function ExamBuilder() {
   const { data: savedExams, isLoading: loadingExams } = trpc.edugpt.listExams.useQuery(undefined, {
     enabled: showLibrary,
   });
+
+  // Auto-generate Line Art images from [رسم: ...] placeholders
+  const generateLineArt = trpc.visualStudio.generateEducationalImage.useMutation();
+
+  // useEffect for schoolLogo initialization
+  useEffect(() => {
+    if (userSchoolLogo && !schoolLogo) setSchoolLogo(userSchoolLogo);
+  }, [userSchoolLogo]);
+
+  // ── EARLY RETURN FOR LOCKED FEATURE (after all hooks) ──
+  if (!permLoading && !hasEdugpt && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <LockedFeature requiredService="accessEdugpt" featureName="بناء الاختبار">
+          <div />
+        </LockedFeature>
+      </div>
+    );
+  }
+
+  const handleSaveSchoolName = () => {
+    if (schoolNameInput.trim()) {
+      updateProfile.mutate({ schoolName: schoolNameInput.trim() });
+    }
+  };
 
   // Handlers
   const handleGenerate = () => {
@@ -317,9 +323,6 @@ export default function ExamBuilder() {
   const handleExportWord = (content: string) => {
     exportWord.mutate({ subject, level, trimester, duration, totalScore, examContent: content, schoolName: schoolNameInput || undefined, schoolYear: "2025-2026", schoolLogoUrl: schoolLogo || undefined });
   };
-
-  // Auto-generate Line Art images from [رسم: ...] placeholders
-  const generateLineArt = trpc.visualStudio.generateEducationalImage.useMutation();
 
   const handleAutoGenerateImages = async () => {
     if (!generatedExam) return;
