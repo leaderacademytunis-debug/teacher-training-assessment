@@ -144,6 +144,19 @@ export async function updateCourse(id: number, updates: Partial<InsertCourse>) {
   await db.update(courses).set(updates).where(eq(courses.id, id));
 }
 
+export async function deleteCourse(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Soft delete by setting isActive to false
+  await db.update(courses).set({ isActive: false }).where(eq(courses.id, id));
+}
+
+export async function getAllCoursesIncludingInactive() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(courses).orderBy(courses.createdAt);
+}
+
 // ========== ENROLLMENTS ==========
 
 export async function enrollUserInCourse(userId: number, courseId: number) {

@@ -159,6 +159,24 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getCourseStatistics(input.courseId);
       }),
+
+    listAll: adminProcedure.query(async () => {
+      return await db.getAllCoursesIncludingInactive();
+    }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteCourse(input.id);
+        return { success: true };
+      }),
+
+    restore: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateCourse(input.id, { isActive: true });
+        return { success: true };
+      }),
   }),
 
   enrollments: router({
