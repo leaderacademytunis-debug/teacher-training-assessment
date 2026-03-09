@@ -6,6 +6,8 @@ import {
   BookOpen, GraduationCap, Users, Award, Loader2, UserPlus,
   MessageSquare, ClipboardCheck, Globe, Brain, Sparkles,
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
+  Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
+  BadgeCheck, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link } from "wouter";
@@ -13,7 +15,7 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ChatAssistant } from "@/components/ChatAssistant";
 import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 
 const courseIcons: Record<string, typeof BookOpen> = {
   primary_teachers: GraduationCap,
@@ -32,19 +34,22 @@ const LANGUAGES: { code: AppLanguage; label: string; flag: string }[] = [
 ];
 
 // AI tools grouped under EDUGPT dropdown
-const AI_TOOLS = [
-  { href: "/assistant", labelAr: "EDUGPT — المساعد البيداغوجي", labelFr: "EDUGPT — Assistant pédagogique", labelEn: "EDUGPT — Pedagogical Assistant", icon: "🤖" },
-  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector", icon: "👨‍🏫" },
-  { href: "/exam-builder", labelAr: "بناء الاختبار", labelFr: "Créer un examen", labelEn: "Exam Builder", icon: "📝" },
-  { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio", icon: "🎨" },
-  { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment", icon: "📊" },
+const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: string; icon: LucideIcon; descAr: string; descFr: string; descEn: string }[] = [
+  { href: "/assistant", labelAr: "EDUGPT — المساعد البيداغوجي", labelFr: "EDUGPT — Assistant pédagogique", labelEn: "EDUGPT — Pedagogical Assistant", icon: Bot, descAr: "إعداد الجذاذات والمخططات بالذكاء الاصطناعي", descFr: "Préparer fiches et plannings avec l'IA", descEn: "Prepare lesson plans with AI" },
+  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector", icon: Search, descAr: "تحليل وتقييم الوثائق وفق المعايير الرسمية", descFr: "Analyser les documents selon les normes officielles", descEn: "Analyze documents per official standards" },
+  { href: "/exam-builder", labelAr: "بناء الاختبار", labelFr: "Créer un examen", labelEn: "Exam Builder", icon: FileEdit, descAr: "توليد اختبارات مع الرسومات وجدول التقييم", descFr: "Générer des examens avec illustrations et barème", descEn: "Generate exams with illustrations and grading" },
+  { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio", icon: Palette, descAr: "توليد صور تعليمية وإنفوغرافيك بالذكاء الاصطناعي", descFr: "Générer des images éducatives et infographies", descEn: "Generate educational images and infographics" },
+  { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment", icon: BarChart3, descAr: "تقييم مستوى المشاركين وتحليل النتائج", descFr: "Évaluer le niveau des participants et analyser les résultats", descEn: "Evaluate participant level and analyze results" },
 ];
 
 const NAV_LINKS = [
-  { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false },
-  { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false },
-  { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false },
-  { href: "/admin", labelAr: "لوحة التحكم", labelFr: "Admin", labelEn: "Admin", adminOnly: true },
+  { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false, authOnly: false },
+  { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false, authOnly: false },
+  { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false, authOnly: false },
+  { href: "/my-certificates", labelAr: "شهاداتي", labelFr: "Mes certificats", labelEn: "My Certificates", adminOnly: false, authOnly: true },
+  { href: "/verify", labelAr: "التحقق من الشهادات", labelFr: "Vérifier certificat", labelEn: "Verify Certificate", adminOnly: false, authOnly: false },
+  { href: "/dashboard", labelAr: "لوحة التحكم بالدورات", labelFr: "Gestion formations", labelEn: "Course Dashboard", adminOnly: false, authOnly: true },
+  { href: "/admin", labelAr: "لوحة الإدارة", labelFr: "Admin", labelEn: "Admin", adminOnly: true, authOnly: false },
 ];
 
 const FEATURES = [
@@ -242,31 +247,52 @@ export default function Home() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              {/* EDUGPT Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1 text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.4)" }}>
+              {/* EDUGPT Dropdown - hover activated */}
+              <div className="relative group">
+                <Link href="/assistant">
+                  <button className="flex items-center gap-1.5 text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.4)" }}>
                     <Sparkles className="w-4 h-4 text-orange-300" />
                     EDUGPT
-                    <ChevronDown className="w-3.5 h-3.5 text-orange-300" />
+                    <ChevronDown className="w-3.5 h-3.5 text-orange-300 transition-transform group-hover:rotate-180" />
                   </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  {AI_TOOLS.map((tool) => (
-                    <Link key={tool.href} href={tool.href}>
-                      <DropdownMenuItem className="gap-2 cursor-pointer text-right py-3 px-4">
-                        <span className="text-lg">{tool.icon}</span>
-                        <span className="font-medium">{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</span>
-                      </DropdownMenuItem>
-                    </Link>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </Link>
+                {/* Hover dropdown */}
+                <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
+                  <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
+                    <div className="px-4 py-3 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                      <p className="text-white font-bold text-sm flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-orange-300" />
+                        {t("أدوات الذكاء الاصطناعي التربوي", "Outils IA éducatifs", "Educational AI Tools")}
+                      </p>
+                    </div>
+                    {AI_TOOLS.map((tool, idx) => {
+                      const IconComp = tool.icon;
+                      return (
+                        <Link key={tool.href} href={tool.href}>
+                          <div className={`flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${idx < AI_TOOLS.length - 1 ? "border-b border-gray-50" : ""}`}>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                              <IconComp className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm text-gray-900">{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{language === "fr" ? tool.descFr : language === "en" ? tool.descEn : tool.descAr}</p>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
 
               {/* Other nav links */}
-              {NAV_LINKS.filter(link => !link.adminOnly || user?.role === "admin").map((link) => (
+              {NAV_LINKS.filter(link => {
+                if (link.adminOnly && user?.role !== "admin") return false;
+                if (link.authOnly && !user) return false;
+                return true;
+              }).map((link) => (
                 <Link key={link.href} href={link.href}>
-                  <button className="text-blue-100 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap">
+                  <button className="text-blue-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap">
                     {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
                   </button>
                 </Link>
@@ -343,22 +369,34 @@ export default function Home() {
                   {t("أدوات الذكاء الاصطناعي", "Outils IA", "AI Tools")}
                 </p>
                 <div className="space-y-1 mr-4">
-                  {AI_TOOLS.map((tool) => (
-                    <Link key={tool.href} href={tool.href}>
-                      <button
-                        className="flex items-center gap-2 w-full text-right text-blue-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <span>{tool.icon}</span>
-                        <span>{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</span>
-                      </button>
-                    </Link>
-                  ))}
+                  {AI_TOOLS.map((tool) => {
+                    const IconComp = tool.icon;
+                    return (
+                      <Link key={tool.href} href={tool.href}>
+                        <button
+                          className="flex items-center gap-3 w-full text-right text-blue-100 hover:text-white hover:bg-white/10 px-3 py-2.5 rounded-lg text-sm font-medium"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,109,0,0.2)" }}>
+                            <IconComp className="w-4 h-4 text-orange-300" />
+                          </div>
+                          <div>
+                            <span className="block">{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</span>
+                            <span className="block text-xs text-blue-300 mt-0.5">{language === "fr" ? tool.descFr : language === "en" ? tool.descEn : tool.descAr}</span>
+                          </div>
+                        </button>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
               <div className="border-t border-white/10 my-2" />
               {/* Other Links */}
-              {NAV_LINKS.filter(link => !link.adminOnly || user?.role === "admin").map((link) => (
+              {NAV_LINKS.filter(link => {
+                if (link.adminOnly && user?.role !== "admin") return false;
+                if (link.authOnly && !user) return false;
+                return true;
+              }).map((link) => (
                 <Link key={link.href} href={link.href}>
                   <button
                     className="block w-full text-right text-blue-100 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium"
