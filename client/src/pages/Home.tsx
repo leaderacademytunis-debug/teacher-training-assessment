@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import {
   BookOpen, GraduationCap, Users, Award, Loader2, UserPlus,
   MessageSquare, ClipboardCheck, Globe, Brain, Sparkles,
-  ChevronLeft, Star, Zap, Shield, ArrowLeft, Menu, X,
+  ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link } from "wouter";
@@ -31,13 +31,16 @@ const LANGUAGES: { code: AppLanguage; label: string; flag: string }[] = [
   { code: "en", label: "English", flag: "🇬🇧" },
 ];
 
+// AI tools grouped under EDUGPT dropdown
+const AI_TOOLS = [
+  { href: "/assistant", labelAr: "EDUGPT — المساعد البيداغوجي", labelFr: "EDUGPT — Assistant pédagogique", labelEn: "EDUGPT — Pedagogical Assistant", icon: "🤖" },
+  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector", icon: "👨‍🏫" },
+  { href: "/exam-builder", labelAr: "بناء الاختبار", labelFr: "Créer un examen", labelEn: "Exam Builder", icon: "📝" },
+  { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio", icon: "🎨" },
+  { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment", icon: "📊" },
+];
+
 const NAV_LINKS = [
-  { href: "/", labelAr: "الرئيسية", labelFr: "Accueil", labelEn: "Home", adminOnly: false },
-  { href: "/assistant", labelAr: "EDUGPT", labelFr: "EDUGPT", labelEn: "EDUGPT", adminOnly: false },
-  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector", adminOnly: false },
-  { href: "/exam-builder", labelAr: "بناء الاختبار", labelFr: "Créer un examen", labelEn: "Exam Builder", adminOnly: false },
-  { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio", adminOnly: false },
-  { href: "/evaluate-fiche", labelAr: "تقييم المكتسبات", labelFr: "Évaluation", labelEn: "Assessment", adminOnly: false },
   { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false },
   { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false },
   { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false },
@@ -239,6 +242,28 @@ export default function Home() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
+              {/* EDUGPT Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1 text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.4)" }}>
+                    <Sparkles className="w-4 h-4 text-orange-300" />
+                    EDUGPT
+                    <ChevronDown className="w-3.5 h-3.5 text-orange-300" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  {AI_TOOLS.map((tool) => (
+                    <Link key={tool.href} href={tool.href}>
+                      <DropdownMenuItem className="gap-2 cursor-pointer text-right py-3 px-4">
+                        <span className="text-lg">{tool.icon}</span>
+                        <span className="font-medium">{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Other nav links */}
               {NAV_LINKS.filter(link => !link.adminOnly || user?.role === "admin").map((link) => (
                 <Link key={link.href} href={link.href}>
                   <button className="text-blue-100 hover:text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap">
@@ -311,6 +336,28 @@ export default function Home() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="lg:hidden border-t border-white/20 py-3 space-y-1">
+              {/* EDUGPT Section */}
+              <div className="px-4 py-2">
+                <p className="text-orange-300 font-bold text-sm flex items-center gap-2 mb-2">
+                  <Sparkles className="w-4 h-4" />
+                  {t("أدوات الذكاء الاصطناعي", "Outils IA", "AI Tools")}
+                </p>
+                <div className="space-y-1 mr-4">
+                  {AI_TOOLS.map((tool) => (
+                    <Link key={tool.href} href={tool.href}>
+                      <button
+                        className="flex items-center gap-2 w-full text-right text-blue-100 hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <span>{tool.icon}</span>
+                        <span>{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</span>
+                      </button>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-white/10 my-2" />
+              {/* Other Links */}
               {NAV_LINKS.filter(link => !link.adminOnly || user?.role === "admin").map((link) => (
                 <Link key={link.href} href={link.href}>
                   <button
