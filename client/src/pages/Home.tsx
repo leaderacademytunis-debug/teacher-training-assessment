@@ -297,7 +297,26 @@ export default function Home() {
                 if (link.authOnly && !user) return false;
                 return true;
               }).map((link) => {
-                const isActive = location === link.href || (link.href !== "/" && link.href !== "/#programs" && location.startsWith(link.href));
+                const isActive = location === link.href || (link.href !== "/" && !link.href.startsWith("/#") && location.startsWith(link.href));
+                const isAnchor = link.href.startsWith("/#");
+                const handleAnchorClick = (e: React.MouseEvent) => {
+                  e.preventDefault();
+                  const anchorId = link.href.replace("/#", "");
+                  if (location === "/") {
+                    document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth" });
+                  } else {
+                    window.location.href = link.href;
+                  }
+                };
+                if (isAnchor) {
+                  return (
+                    <a key={link.href} href={link.href} onClick={handleAnchorClick}>
+                      <button className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap text-blue-100 hover:text-white hover:bg-white/10`}>
+                        {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
+                      </button>
+                    </a>
+                  );
+                }
                 return (
                   <Link key={link.href} href={link.href}>
                     <button className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
@@ -449,7 +468,30 @@ export default function Home() {
                 return true;
               }).map((link) => {
                 const NavIcon = link.icon;
-                const isActive = location === link.href || (link.href !== "/" && link.href !== "/#programs" && location.startsWith(link.href));
+                const isAnchor = link.href.startsWith("/#");
+                const isActive = !isAnchor && (location === link.href || (link.href !== "/" && location.startsWith(link.href)));
+                const handleMobileAnchorClick = (e: React.MouseEvent) => {
+                  e.preventDefault();
+                  setMobileMenuOpen(false);
+                  const anchorId = link.href.replace("/#", "");
+                  if (location === "/") {
+                    setTimeout(() => document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth" }), 300);
+                  } else {
+                    window.location.href = link.href;
+                  }
+                };
+                if (isAnchor) {
+                  return (
+                    <a key={link.href} href={link.href} onClick={handleMobileAnchorClick}>
+                      <button
+                        className="flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-blue-100 hover:text-white hover:bg-white/10"
+                      >
+                        <NavIcon className="w-4 h-4 flex-shrink-0" />
+                        {language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}
+                      </button>
+                    </a>
+                  );
+                }
                 return (
                   <Link key={link.href} href={link.href}>
                     <button
