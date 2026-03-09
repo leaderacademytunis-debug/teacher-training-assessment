@@ -2830,7 +2830,7 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
           comparison: "مقارنة بين عناصر مختلفة",
         };
         
-        const prompt = `Create a professional infographic in Arabic about "${input.title}". Subject: ${input.subject}. ${input.description ? `Content: ${input.description}.` : ""} Style: ${styleDescriptions[input.style] || input.style}. Use vibrant colors, clear icons, and well-organized layout. Include title in Arabic at the top. Make it visually appealing and educational.`;
+        const prompt = `Create a professional infographic about "${input.title}". Subject: ${input.subject}. ${input.description ? `Content: ${input.description}.` : ""} Style: ${styleDescriptions[input.style] || input.style}. Use vibrant colors, clear icons, and well-organized layout. CRITICAL: Do NOT include any Arabic text or Arabic letters in the image. Use only visual elements, icons, numbers, and arrows. No written text or labels. Make it visually appealing and educational.`;
         
         const { url } = await generateImage({
           prompt,
@@ -2862,7 +2862,7 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
       .mutation(async ({ input, ctx }) => {
         const { generateImage } = await import("./_core/imageGeneration");
         
-        const prompt = `Create a colorful mind map in Arabic with "${input.centralTopic}" as the central topic. ${input.description ? `Include these branches and elements: ${input.description}.` : "Generate relevant branches automatically."} Use different colors for each branch, clear connections, and icons. Make it visually organized and easy to understand. Professional educational style.`;
+        const prompt = `Create a colorful mind map with "${input.centralTopic}" as the central topic. ${input.description ? `Include these branches and elements: ${input.description}.` : "Generate relevant branches automatically."} Use different colors for each branch, clear connections, and icons. CRITICAL: Do NOT include any Arabic text or Arabic letters in the image. Use only visual elements, icons, numbers, and simple symbols. Make it visually organized and easy to understand. Professional educational style.`;
         
         const { url } = await generateImage({
           prompt,
@@ -5098,7 +5098,7 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         const { invokeLLM } = await import("./_core/llm");
         const resp = await invokeLLM({
           messages: [
-            { role: "system", content: `You are an expert educational illustrator for Tunisian primary schools. Given exam or lesson content, suggest exactly 3 image prompts that would help students understand the material. Each prompt should describe a clear, simple educational illustration suitable for printing on school papers (black & white friendly). Return JSON array of 3 objects with fields: prompt_ar (Arabic description), prompt_en (English prompt for image AI), type (one of: diagram, illustration, scene). Subject: ${input.subject || "general"}, Level: ${input.level || "primary"}.` },
+            { role: "system", content: `You are an expert educational illustrator for Tunisian primary schools. Given exam or lesson content, suggest exactly 3 image prompts that would help students understand the material. Each prompt should describe a clear, simple educational illustration suitable for printing on school papers (black & white friendly). IMPORTANT: The prompt_en field must describe ONLY visual elements (objects, animals, people, scenes, diagrams). It must explicitly state "no text, no labels, no letters, no words" because AI image generators cannot render Arabic text correctly. Return JSON array of 3 objects with fields: prompt_ar (Arabic description for the teacher to understand), prompt_en (English prompt for image AI - must include "no text, no labels, no Arabic text" instruction), type (one of: diagram, illustration, scene). Subject: ${input.subject || "general"}, Level: ${input.level || "primary"}.` },
             { role: "user", content: input.content.substring(0, 2000) },
           ],
           response_format: {
@@ -5173,12 +5173,27 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
           minimalist: "Minimalist illustration, very simple shapes, limited colors (max 2), clean design, suitable for black and white printing, educational",
           cartoon: "Cute cartoon illustration, colorful, child-friendly, educational, simple shapes, bright colors, suitable for primary school textbook",
           realistic: "Photorealistic educational image, high quality, clear details, suitable for classroom use",
-          diagram: "Clean educational diagram/chart, labeled in Arabic, clear lines, professional infographic, white background, organized layout",
+          diagram: "Clean educational diagram/chart, clear lines, professional infographic, white background, organized layout. Use numbers and arrows instead of text labels",
           coloring: "Black and white coloring page for children, simple outlines, no shading, suitable for printing and coloring, educational theme",
         };
         const styleLabel = stylePrompts[input.style] || stylePrompts.bw_lineart;
         const contextInfo = input.subject && input.level ? `Context: ${input.subject} lesson for ${input.level} students in Tunisia. ` : "";
-        const fullPrompt = `${contextInfo}${input.prompt}. Style: ${styleLabel}. The image must be educational and appropriate for school use.`;
+
+        // Translate Arabic prompt to English using LLM to avoid broken Arabic text in generated images
+        let translatedPrompt = input.prompt;
+        try {
+          const { invokeLLM } = await import("./_core/llm");
+          const translationResp = await invokeLLM({
+            messages: [
+              { role: "system", content: "You are a translator. Translate the following Arabic text to English. The text describes an educational illustration for a Tunisian primary school exam. Output ONLY the English translation, nothing else. Keep it concise and descriptive." },
+              { role: "user", content: input.prompt },
+            ],
+          });
+          const translated = typeof translationResp.choices[0].message.content === "string" ? translationResp.choices[0].message.content.trim() : input.prompt;
+          if (translated && translated.length > 3) translatedPrompt = translated;
+        } catch { /* fallback to original prompt */ }
+
+        const fullPrompt = `${contextInfo}${translatedPrompt}. Style: ${styleLabel}. CRITICAL: Do NOT include any Arabic text, Arabic letters, or any written text/labels/words in the image. The image must contain ONLY visual elements (drawings, objects, animals, people, scenes) with NO text whatsoever. The image must be educational and appropriate for school use.`;
         const result = await generateImage({ prompt: fullPrompt });
         if (!result.url) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "\u0641\u0634\u0644 \u0641\u064a \u062a\u0648\u0644\u064a\u062f \u0627\u0644\u0635\u0648\u0631\u0629" });
 
