@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios } from "../drizzle/schema";
 import { eq, desc, and, sql, count, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -6202,6 +6202,215 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         const success = await db.deleteDigitizedDocument(input.id, ctx.user.id);
         if (!success) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
         return { success: true };
+      }),
+  }),
+
+  // ===== TEACHER PORTFOLIO =====
+  portfolio2: router({
+    // Get or create portfolio for current user
+    getMyPortfolio: protectedProcedure.query(async ({ ctx }) => {
+      const portfolio = await db.getOrCreatePortfolio(ctx.user.id);
+      return portfolio;
+    }),
+
+    // Compute live stats
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      const stats = await db.computePortfolioStats(ctx.user.id);
+      // Also update cached stats in portfolio
+      await db.updatePortfolio(ctx.user.id, {
+        totalLessonPlans: stats.totalLessonPlans,
+        totalExams: stats.totalExams,
+        totalImages: stats.totalImages,
+        totalCertificates: stats.totalCertificates,
+        totalEvaluations: stats.totalEvaluations,
+        totalDigitizedDocs: stats.totalDigitizedDocs,
+        totalConversations: stats.totalConversations,
+        subjectBreakdown: stats.subjectBreakdown,
+      });
+      return stats;
+    }),
+
+    // Update portfolio profile
+    updateProfile: protectedProcedure
+      .input(z.object({
+        bio: z.string().optional(),
+        specializations: z.array(z.string()).optional(),
+        yearsOfExperience: z.number().optional(),
+        currentSchool: z.string().optional(),
+        region: z.string().optional(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await db.getOrCreatePortfolio(ctx.user.id);
+        await db.updatePortfolio(ctx.user.id, input);
+        return { success: true };
+      }),
+
+    // Toggle public visibility
+    togglePublic: protectedProcedure
+      .input(z.object({ isPublic: z.boolean() }))
+      .mutation(async ({ input, ctx }) => {
+        const portfolio = await db.getOrCreatePortfolio(ctx.user.id);
+        await db.updatePortfolio(ctx.user.id, { isPublic: input.isPublic });
+        return { isPublic: input.isPublic, publicToken: portfolio.publicToken };
+      }),
+
+    // Get public portfolio by token (no auth required)
+    getPublicPortfolio: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .query(async ({ input }) => {
+        const portfolio = await db.getPortfolioByToken(input.token);
+        if (!portfolio) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "الملف المهني غير موجود أو غير عام" });
+        }
+        return portfolio;
+      }),
+
+    // Export PDF
+    exportPDF: protectedProcedure.mutation(async ({ ctx }) => {
+      const portfolio = await db.getOrCreatePortfolio(ctx.user.id);
+      const stats = await db.computePortfolioStats(ctx.user.id);
+      const user = ctx.user;
+
+      // Generate PDF HTML
+      const subjectLabels = Object.keys(stats.subjectBreakdown);
+      const subjectValues = Object.values(stats.subjectBreakdown);
+      const maxVal = Math.max(...subjectValues, 1);
+
+      const subjectBarsHtml = subjectLabels.map((label, i) => {
+        const pct = Math.round((subjectValues[i] / maxVal) * 100);
+        return `<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span>${label}</span><span>${subjectValues[i]}</span></div><div style="background:#e5e7eb;border-radius:4px;height:12px;"><div style="background:#2563eb;border-radius:4px;height:12px;width:${pct}%;"></div></div></div>`;
+      }).join("");
+
+      const dateStr = new Date().toLocaleDateString("ar-TN", { year: "numeric", month: "long", day: "numeric" });
+
+      const html = `<!DOCTYPE html><html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"><style>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+body{font-family:'Amiri',serif;margin:0;padding:40px;color:#1e293b;direction:rtl;}
+.header{text-align:center;border-bottom:3px solid #2563eb;padding-bottom:20px;margin-bottom:30px;}
+.header h1{color:#2563eb;font-size:28px;margin:0;}
+.header .subtitle{color:#64748b;font-size:14px;margin-top:5px;}
+.seal{display:inline-block;border:2px solid #f59e0b;border-radius:50%;padding:8px 16px;color:#f59e0b;font-weight:bold;font-size:12px;margin-top:10px;}
+.section{margin-bottom:25px;}
+.section h2{color:#2563eb;font-size:20px;border-bottom:1px solid #e5e7eb;padding-bottom:8px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
+.info-item{background:#f8fafc;border-radius:8px;padding:15px;}
+.info-item .label{color:#64748b;font-size:13px;}
+.info-item .value{color:#1e293b;font-size:22px;font-weight:bold;margin-top:5px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.stat-card{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;padding:15px;text-align:center;}
+.stat-card .num{font-size:28px;font-weight:bold;color:#2563eb;}
+.stat-card .lbl{font-size:12px;color:#64748b;margin-top:4px;}
+.footer{text-align:center;margin-top:40px;padding-top:20px;border-top:2px solid #e5e7eb;color:#94a3b8;font-size:12px;}
+</style></head><body>
+<div class="header">
+  <h1>Leader Academy</h1>
+  <div class="subtitle">المساعد البيداغوجي الذكي - نسخة تونس 2026</div>
+  <div class="seal">✦ ملف مهني معتمد ✦</div>
+</div>
+
+<div class="section">
+  <h2>المعلومات الشخصية</h2>
+  <div class="info-grid">
+    <div class="info-item"><div class="label">الاسم</div><div class="value">${user.arabicName || user.name || "—"}</div></div>
+    <div class="info-item"><div class="label">البريد الإلكتروني</div><div class="value" style="font-size:16px;">${user.email}</div></div>
+    <div class="info-item"><div class="label">المؤسسة</div><div class="value" style="font-size:16px;">${portfolio.currentSchool || user.schoolName || "—"}</div></div>
+    <div class="info-item"><div class="label">سنوات الخبرة</div><div class="value">${portfolio.yearsOfExperience || "—"}</div></div>
+  </div>
+</div>
+
+${portfolio.bio ? `<div class="section"><h2>نبذة مهنية</h2><p>${portfolio.bio}</p></div>` : ""}
+
+<div class="section">
+  <h2>إحصائيات النشاط الرقمي</h2>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="num">${stats.totalLessonPlans}</div><div class="lbl">جذاذة بيداغوجية</div></div>
+    <div class="stat-card"><div class="num">${stats.totalExams}</div><div class="lbl">اختبار</div></div>
+    <div class="stat-card"><div class="num">${stats.totalImages}</div><div class="lbl">صورة تعليمية</div></div>
+    <div class="stat-card"><div class="num">${stats.totalCertificates}</div><div class="lbl">شهادة</div></div>
+  </div>
+  <div style="margin-top:12px;">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="num">${stats.totalEvaluations}</div><div class="lbl">تقييم</div></div>
+    <div class="stat-card"><div class="num">${stats.totalDigitizedDocs}</div><div class="lbl">وثيقة مرقمنة</div></div>
+    <div class="stat-card"><div class="num">${stats.totalConversations}</div><div class="lbl">محادثة ذكية</div></div>
+    <div class="stat-card"><div class="num">${subjectLabels.length}</div><div class="lbl">مادة تعليمية</div></div>
+  </div>
+  </div>
+</div>
+
+${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط حسب المادة</h2>${subjectBarsHtml}</div>` : ""}
+
+<div class="footer">
+  <p>تم إنشاء هذا الملف المهني بواسطة Leader Academy - المساعد البيداغوجي الذكي</p>
+  <p>تاريخ الإصدار: ${dateStr}</p>
+</div>
+</body></html>`;
+
+      // Generate PDF using puppeteer
+      try {
+        const puppeteer = await import("puppeteer");
+        const browser = await puppeteer.default.launch({
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: "networkidle0" });
+        const pdfBuffer = await page.pdf({
+          format: "A4",
+          margin: { top: "20mm", bottom: "20mm", left: "20mm", right: "20mm" },
+          printBackground: true,
+        });
+        await browser.close();
+
+        // Upload to S3
+        const { storagePut } = await import("./storage");
+        const fileName = `portfolios/${ctx.user.id}/portfolio-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileName, Buffer.from(pdfBuffer), "application/pdf");
+
+        // Update cached URL
+        await db.updatePortfolio(ctx.user.id, {
+          lastPdfExportUrl: url,
+          lastPdfExportAt: new Date(),
+        });
+
+        return { url };
+      } catch (err) {
+        console.error("[Portfolio PDF] Generation failed:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في إنشاء ملف PDF" });
+      }
+    }),
+
+    // Get user's certificates for portfolio display
+    getCertificates: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const { certificates, courses } = await import("../drizzle/schema");
+      const certs = await database.select({
+        id: certificates.id,
+        certificateNumber: certificates.certificateNumber,
+        issuedAt: certificates.issuedAt,
+        pdfUrl: certificates.pdfUrl,
+        courseTitle: courses.titleAr,
+      }).from(certificates)
+        .leftJoin(courses, eq(certificates.courseId, courses.id))
+        .where(eq(certificates.userId, ctx.user.id))
+        .orderBy(desc(certificates.issuedAt));
+      return certs;
+    }),
+
+    // Get recent AI activity for timeline
+    getRecentActivity: protectedProcedure
+      .input(z.object({ limit: z.number().default(20) }))
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) return [];
+        const activities = await database.select().from(aiActivityLog)
+          .where(eq(aiActivityLog.userId, ctx.user.id))
+          .orderBy(desc(aiActivityLog.createdAt))
+          .limit(input.limit);
+        return activities;
       }),
   }),
 });

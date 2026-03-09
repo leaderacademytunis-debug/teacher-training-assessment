@@ -411,6 +411,11 @@ export default function Home() {
                       {t("دوراتي", "Mes cours", "My Courses")}
                     </Button>
                   </Link>
+                  <Link href="/my-portfolio">
+                    <Button size="sm" variant="outline" className="h-8 px-3 text-xs border-white/30 text-white hover:bg-white/10 bg-transparent">
+                      {t("ملفي المهني", "Mon portfolio", "My Portfolio")}
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <a href={getLoginUrl()}>

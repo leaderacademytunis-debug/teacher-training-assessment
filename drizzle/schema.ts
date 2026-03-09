@@ -904,3 +904,44 @@ export const digitizedDocuments = mysqlTable("digitized_documents", {
 });
 export type DigitizedDocument = typeof digitizedDocuments.$inferSelect;
 export type InsertDigitizedDocument = typeof digitizedDocuments.$inferInsert;
+
+
+// ===== TEACHER PORTFOLIOS (الملف المهني للمعلم) =====
+export const teacherPortfolios = mysqlTable("teacher_portfolios", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+
+  // Public sharing
+  isPublic: boolean("isPublic").default(false).notNull(),
+  publicToken: varchar("publicToken", { length: 64 }).unique(), // Unique share link token
+  publicSlug: varchar("publicSlug", { length: 100 }).unique(), // Custom slug for URL
+
+  // Profile customization
+  bio: text("bio"), // Short professional bio
+  specializations: json("specializations").$type<string[]>(), // e.g., ["اللغة العربية", "الرياضيات"]
+  yearsOfExperience: int("yearsOfExperience"),
+  currentSchool: varchar("currentSchool", { length: 255 }),
+  region: varchar("region", { length: 100 }), // Tunisian region/governorate
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]),
+
+  // Cached analytics (updated periodically)
+  totalLessonPlans: int("totalLessonPlans").default(0).notNull(),
+  totalExams: int("totalExams").default(0).notNull(),
+  totalImages: int("totalImages").default(0).notNull(),
+  totalCertificates: int("totalCertificates").default(0).notNull(),
+  totalEvaluations: int("totalEvaluations").default(0).notNull(),
+  totalDigitizedDocs: int("totalDigitizedDocs").default(0).notNull(),
+  totalConversations: int("totalConversations").default(0).notNull(),
+
+  // Subject breakdown for radar chart (JSON map: subject -> count)
+  subjectBreakdown: json("subjectBreakdown").$type<Record<string, number>>(),
+
+  // PDF export URL (cached last export)
+  lastPdfExportUrl: text("lastPdfExportUrl"),
+  lastPdfExportAt: timestamp("lastPdfExportAt"),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TeacherPortfolio = typeof teacherPortfolios.$inferSelect;
+export type InsertTeacherPortfolio = typeof teacherPortfolios.$inferInsert;

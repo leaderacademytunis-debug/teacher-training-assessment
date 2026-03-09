@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, like } from "drizzle-orm";
+import { eq, and, desc, sql, like, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -1441,4 +1441,181 @@ export async function deleteDigitizedDocument(id: number, userId: number): Promi
   await db.delete(digitizedDocuments)
     .where(sql`${digitizedDocuments.id} = ${id} AND ${digitizedDocuments.userId} = ${userId}`);
   return true;
+}
+
+
+// ===== TEACHER PORTFOLIO HELPERS =====
+import { teacherPortfolios, InsertTeacherPortfolio, TeacherPortfolio, generatedImages, sharedEvaluations } from "../drizzle/schema";
+
+export async function getOrCreatePortfolio(userId: number): Promise<TeacherPortfolio> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [existing] = await db.select().from(teacherPortfolios)
+    .where(eq(teacherPortfolios.userId, userId))
+    .limit(1);
+
+  if (existing) return existing;
+
+  // Create new portfolio with a unique public token
+  const { nanoid } = await import("nanoid");
+  const publicToken = nanoid(32);
+
+  await db.insert(teacherPortfolios).values({
+    userId,
+    publicToken,
+    isPublic: false,
+    totalLessonPlans: 0,
+    totalExams: 0,
+    totalImages: 0,
+    totalCertificates: 0,
+    totalEvaluations: 0,
+    totalDigitizedDocs: 0,
+    totalConversations: 0,
+  });
+
+  const [created] = await db.select().from(teacherPortfolios)
+    .where(eq(teacherPortfolios.userId, userId))
+    .limit(1);
+
+  return created;
+}
+
+export async function updatePortfolio(userId: number, data: Partial<InsertTeacherPortfolio>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(teacherPortfolios).set(data)
+    .where(eq(teacherPortfolios.userId, userId));
+}
+
+export async function getPortfolioByToken(token: string): Promise<(TeacherPortfolio & { userName: string | null; userEmail: string }) | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const [result] = await db.select({
+    portfolio: teacherPortfolios,
+    userName: users.name,
+    userEmail: users.email,
+    arabicName: users.arabicName,
+    schoolName: users.schoolName,
+  }).from(teacherPortfolios)
+    .innerJoin(users, eq(teacherPortfolios.userId, users.id))
+    .where(and(
+      eq(teacherPortfolios.publicToken, token),
+      eq(teacherPortfolios.isPublic, true),
+    ))
+    .limit(1);
+
+  if (!result) return null;
+
+  return {
+    ...result.portfolio,
+    userName: result.arabicName || result.userName,
+    userEmail: result.userEmail,
+  };
+}
+
+export async function computePortfolioStats(userId: number): Promise<{
+  totalLessonPlans: number;
+  totalExams: number;
+  totalImages: number;
+  totalCertificates: number;
+  totalEvaluations: number;
+  totalDigitizedDocs: number;
+  totalConversations: number;
+  subjectBreakdown: Record<string, number>;
+  lessonPlansBySubject: Record<string, number>;
+  examsBySubject: Record<string, number>;
+}> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Count lesson plans (pedagogicalSheets + aiSuggestions)
+  const [sheetsCount] = await db.select({ count: count() }).from(pedagogicalSheets)
+    .where(eq(pedagogicalSheets.createdBy, userId));
+  const [suggestionsCount] = await db.select({ count: count() }).from(aiSuggestions)
+    .where(eq(aiSuggestions.userId, userId));
+  const totalLessonPlans = (sheetsCount?.count || 0) + (suggestionsCount?.count || 0);
+
+  // Count exams (teacherExams + savedEvaluations)
+  const [teacherExamsCount] = await db.select({ count: count() }).from(teacherExams)
+    .where(eq(teacherExams.createdBy, userId));
+  const [savedEvalsCount] = await db.select({ count: count() }).from(savedEvaluations)
+    .where(eq(savedEvaluations.userId, userId));
+  const totalExams = (teacherExamsCount?.count || 0) + (savedEvalsCount?.count || 0);
+
+  // Count generated images
+  const [imagesCount] = await db.select({ count: count() }).from(generatedImages)
+    .where(eq(generatedImages.userId, userId));
+  const totalImages = imagesCount?.count || 0;
+
+  // Count certificates
+  const [certsCount] = await db.select({ count: count() }).from(certificates)
+    .where(eq(certificates.userId, userId));
+  const totalCertificates = certsCount?.count || 0;
+
+  // Count evaluations (shared evaluations)
+  const [sharedEvalsCount] = await db.select({ count: count() }).from(sharedEvaluations)
+    .where(eq(sharedEvaluations.userId, userId));
+  const totalEvaluations = sharedEvalsCount?.count || 0;
+
+  // Count digitized documents
+  const [digiDocsCount] = await db.select({ count: count() }).from(digitizedDocuments)
+    .where(eq(digitizedDocuments.userId, userId));
+  const totalDigitizedDocs = digiDocsCount?.count || 0;
+
+  // Count conversations
+  const [convsCount] = await db.select({ count: count() }).from(conversations)
+    .where(eq(conversations.userId, userId));
+  const totalConversations = convsCount?.count || 0;
+
+  // Subject breakdown from lesson plans
+  const lessonPlansBySubject: Record<string, number> = {};
+  const sheets = await db.select({ subject: pedagogicalSheets.subject }).from(pedagogicalSheets)
+    .where(eq(pedagogicalSheets.createdBy, userId));
+  for (const s of sheets) {
+    if (s.subject) {
+      lessonPlansBySubject[s.subject] = (lessonPlansBySubject[s.subject] || 0) + 1;
+    }
+  }
+  const suggestions = await db.select({ subject: aiSuggestions.subject }).from(aiSuggestions)
+    .where(eq(aiSuggestions.userId, userId));
+  for (const s of suggestions) {
+    if (s.subject) {
+      lessonPlansBySubject[s.subject] = (lessonPlansBySubject[s.subject] || 0) + 1;
+    }
+  }
+
+  // Subject breakdown from exams
+  const examsBySubject: Record<string, number> = {};
+  const tExams = await db.select({ subject: teacherExams.subject }).from(teacherExams)
+    .where(eq(teacherExams.createdBy, userId));
+  for (const e of tExams) {
+    if (e.subject) {
+      examsBySubject[e.subject] = (examsBySubject[e.subject] || 0) + 1;
+    }
+  }
+
+  // Merge subject breakdown
+  const subjectBreakdown: Record<string, number> = {};
+  for (const [subj, cnt] of Object.entries(lessonPlansBySubject)) {
+    subjectBreakdown[subj] = (subjectBreakdown[subj] || 0) + cnt;
+  }
+  for (const [subj, cnt] of Object.entries(examsBySubject)) {
+    subjectBreakdown[subj] = (subjectBreakdown[subj] || 0) + cnt;
+  }
+
+  return {
+    totalLessonPlans,
+    totalExams,
+    totalImages,
+    totalCertificates,
+    totalEvaluations,
+    totalDigitizedDocs,
+    totalConversations,
+    subjectBreakdown,
+    lessonPlansBySubject,
+    examsBySubject,
+  };
 }

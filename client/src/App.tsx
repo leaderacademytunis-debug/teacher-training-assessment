@@ -39,6 +39,8 @@ import LeaderVisualStudio from "@/pages/LeaderVisualStudio";
 import AdminDashboard from "@/pages/AdminDashboard";
 import Pricing from "@/pages/Pricing";
 import LegacyDigitizer from "@/pages/LegacyDigitizer";
+import TeacherPortfolio from "@/pages/TeacherPortfolio";
+import PublicPortfolio from "@/pages/PublicPortfolio";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -79,6 +81,8 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/legacy-digitizer" component={LegacyDigitizer} />
+      <Route path="/my-portfolio" component={TeacherPortfolio} />
+      <Route path="/public-portfolio/:token" component={PublicPortfolio} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
