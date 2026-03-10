@@ -27,6 +27,8 @@ import {
   Type,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import { toast } from "sonner";
+import { Download, FileDown, Stethoscope, ShieldCheck, XCircle, CheckCircle2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -161,13 +163,61 @@ export default function SmartInspector() {
   const [error, setError] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [inspectionScore, setInspectionScore] = useState<number | null>(null);
+  const [missingCriteria, setMissingCriteria] = useState<string[]>([]);
+  const [presentCriteria, setPresentCriteria] = useState<string[]>([]);
+  const [remediationPlan, setRemediationPlan] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingRemediation, setIsGeneratingRemediation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Parse score and criteria from the report
+  function parseReportMetrics(report: string) {
+    // Extract score from stars or percentage
+    let score = 0;
+    const starMatch = report.match(/[⭐]+/g);
+    if (starMatch) {
+      const maxStars = starMatch.reduce((max, s) => Math.max(max, s.length), 0);
+      score = (maxStars / 5) * 100;
+    }
+    const pctMatch = report.match(/(\d{1,3})\s*[%٪]/); 
+    if (pctMatch) score = parseInt(pctMatch[1]);
+    
+    // Check for Sened/Ta'lima/Criteria presence
+    const criteriaChecks = [
+      { name: "السند (الوضعية)", patterns: ["سند", "وضعية", "sened"] },
+      { name: "التعليمة", patterns: ["تعليمة", "ta'lima", "تعليمات"] },
+      { name: "معايير التملك (مع1)", patterns: ["مع1", "مع 1", "M1", "معيار 1"] },
+      { name: "معايير التملك (مع2)", patterns: ["مع2", "مع 2", "M2", "معيار 2"] },
+      { name: "معايير التملك (مع3)", patterns: ["مع3", "مع 3", "M3", "معيار 3"] },
+      { name: "معايير التملك (مع4)", patterns: ["مع4", "مع 4", "M4", "معيار 4"] },
+      { name: "جدول التنقيط", patterns: ["جدول", "تنقيط", "إسناد الأعداد"] },
+    ];
+    const docLower = report.toLowerCase();
+    const missing: string[] = [];
+    const present: string[] = [];
+    criteriaChecks.forEach(c => {
+      const found = c.patterns.some(p => docLower.includes(p.toLowerCase()));
+      if (found) present.push(c.name);
+      else missing.push(c.name);
+    });
+    return { score, missing, present };
+  }
 
   const inspectMutation = trpc.edugpt.inspectDocument.useMutation({
     onSuccess: (data) => {
       setResult(data.report);
+      // Parse metrics from the report
+      const metrics = parseReportMetrics(data.report);
+      setInspectionScore(metrics.score);
+      setMissingCriteria(metrics.missing);
+      setPresentCriteria(metrics.present);
       setIsLoading(false);
       setError(null);
+      // Auto-generate remediation if score < 70%
+      if (metrics.score > 0 && metrics.score < 70) {
+        handleGenerateRemediation(data.report);
+      }
     },
     onError: (err) => {
       setError(err.message || "حدث خطأ أثناء التحليل. حاول مرة أخرى.");
@@ -196,11 +246,62 @@ export default function SmartInspector() {
     );
   }
 
+  // Remediation plan mutation
+  const remediationMutation = trpc.edugpt.generateRemediationPlan.useMutation({
+    onSuccess: (data) => {
+      setRemediationPlan(data.plan);
+      setIsGeneratingRemediation(false);
+    },
+    onError: () => {
+      setIsGeneratingRemediation(false);
+      toast.error("تعذّر توليد الخطة العلاجية");
+    },
+  });
+
+  // PDF export mutation
+  const exportPdfMutation = trpc.edugpt.exportInspectionPdf.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+      setIsGeneratingPdf(false);
+      toast.success("تم تصدير التقرير بنجاح");
+    },
+    onError: () => {
+      setIsGeneratingPdf(false);
+      toast.error("تعذّر تصدير التقرير");
+    },
+  });
+
+  function handleGenerateRemediation(reportText: string) {
+    setIsGeneratingRemediation(true);
+    remediationMutation.mutate({
+      inspectionReport: reportText,
+      documentType: activeTab,
+    });
+  }
+
+  function handleExportPdf() {
+    if (!result) return;
+    setIsGeneratingPdf(true);
+    exportPdfMutation.mutate({
+      report: result,
+      documentType: activeTab,
+      fileName: uploadedFile?.name || "وثيقة تربوية",
+      score: inspectionScore || 0,
+      missingCriteria,
+      presentCriteria,
+      remediationPlan: remediationPlan || undefined,
+    });
+  }
+
   function handleInspect() {
     if (!documentText.trim()) return;
     setIsLoading(true);
     setResult(null);
     setError(null);
+    setInspectionScore(null);
+    setMissingCriteria([]);
+    setPresentCriteria([]);
+    setRemediationPlan(null);
     inspectMutation.mutate({
       documentType: activeTab,
       documentText: documentText.trim(),
@@ -720,21 +821,110 @@ export default function SmartInspector() {
                   </div>
                 )}
 
+                {/* Criteria Analysis Panel */}
+                {(missingCriteria.length > 0 || presentCriteria.length > 0) && (
+                  <div className="p-4 border-t border-gray-100">
+                    <h4 className="font-bold text-sm text-gray-800 mb-3 flex items-center gap-2" dir="rtl">
+                      <ShieldCheck className="w-4 h-4 text-blue-600" />
+                      تحليل المعايير الرسمية
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" dir="rtl">
+                      {presentCriteria.map((c, i) => (
+                        <div key={`p-${i}`} className="criteria-present flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                          {c}
+                        </div>
+                      ))}
+                      {missingCriteria.map((c, i) => (
+                        <div key={`m-${i}`} className="missing-criteria flex items-center gap-2 text-xs">
+                          <XCircle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
+                          <span>غائب: {c}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {inspectionScore !== null && inspectionScore > 0 && (
+                      <div className="mt-3 flex items-center gap-3" dir="rtl">
+                        <span className="text-xs text-gray-500">التقييم العام:</span>
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${inspectionScore >= 70 ? 'bg-green-500' : inspectionScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                            style={{ width: `${inspectionScore}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-bold ${inspectionScore >= 70 ? 'text-green-600' : inspectionScore >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          {inspectionScore}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Remediation Plan */}
+                {remediationPlan && (
+                  <div className="p-4 border-t border-gray-100">
+                    <div className="remediation-plan" dir="rtl">
+                      <h3 className="text-base font-bold mb-3 flex items-center gap-2">
+                        <Stethoscope className="w-5 h-5" />
+                        خطة علاجية مقترحة
+                      </h3>
+                      <div className="prose prose-sm max-w-none text-gray-700">
+                        <Streamdown>{remediationPlan}</Streamdown>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {isGeneratingRemediation && (
+                  <div className="p-4 border-t border-gray-100">
+                    <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl" dir="rtl">
+                      <Loader2 className="w-5 h-5 text-amber-600 animate-spin flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">جارٍ توليد الخطة العلاجية...</p>
+                        <p className="text-xs text-amber-500 mt-0.5">التقييم أقل من 70% — يتم إعداد خطة علاجية تلقائياً</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Footer actions */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-3">
-                  <button
-                    onClick={() => { setResult(null); setDocumentText(""); setUploadedFile(null); }}
-                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5"
-                  >
-                    <FileText className="w-4 h-4" />
-                    تقييم وثيقة جديدة
-                  </button>
-                  <Link href="/assistant">
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50">
-                      <BookOpen className="w-3.5 h-3.5" />
-                      إنشاء مذكرة في EDUGPT
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setResult(null); setDocumentText(""); setUploadedFile(null); setInspectionScore(null); setMissingCriteria([]); setPresentCriteria([]); setRemediationPlan(null); }}
+                      className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5"
+                    >
+                      <FileText className="w-4 h-4" />
+                      تقييم وثيقة جديدة
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs gap-1.5 border-green-200 text-green-700 hover:bg-green-50"
+                      onClick={handleExportPdf}
+                      disabled={isGeneratingPdf}
+                    >
+                      {isGeneratingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+                      تصدير PDF رسمي
                     </Button>
-                  </Link>
+                    {inspectionScore !== null && inspectionScore < 70 && !remediationPlan && !isGeneratingRemediation && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50"
+                        onClick={() => handleGenerateRemediation(result!)}
+                      >
+                        <Stethoscope className="w-3.5 h-3.5" />
+                        خطة علاجية
+                      </Button>
+                    )}
+                    <Link href="/assistant">
+                      <Button variant="outline" size="sm" className="text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        إنشاء مذكرة في EDUGPT
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}

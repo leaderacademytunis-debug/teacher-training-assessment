@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles } from "lucide-react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles, BookOpen, ClipboardCheck } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -1299,7 +1299,7 @@ export default function EduGPTAssistantEnhanced() {
                     ))}
                   </div>
                 )}
-                <div className="prose prose-sm max-w-none">
+                <div className="prose prose-sm max-w-none" dir="rtl">
                   <Streamdown>{message.content}</Streamdown>
                 </div>
               </Card>
@@ -1318,6 +1318,41 @@ export default function EduGPTAssistantEnhanced() {
           )}
         </div>
 
+        {/* Quick Action Buttons */}
+        <div className="border-t border-gray-100 bg-gradient-to-l from-blue-50 to-white px-2 sm:px-4 pt-2 pb-0 shrink-0">
+          <div className="quick-actions-bar">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-400 rounded-full px-4 h-8 text-xs font-semibold"
+              onClick={() => { setInput("أعدّ لي جذاذة درس مفصّلة وفق المعايير التونسية الرسمية"); }}
+              disabled={isLoading}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              تحضير جذاذة
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-400 rounded-full px-4 h-8 text-xs font-semibold"
+              onClick={() => { setInput("أنشئ اختباراً رسمياً بالسندات والتعليمات ومعايير التملك (مع1-مع4) وجدول التنقيط"); }}
+              disabled={isLoading}
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              إنشاء اختبار
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-400 rounded-full px-4 h-8 text-xs font-semibold"
+              onClick={() => { setInput("أنشئ سيناريو مسرحي تعليمي (دراما تربوية) لمدة 10 دقائق مع توزيع الأدوار"); }}
+              disabled={isLoading}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              سيناريو دراما
+            </Button>
+          </div>
+        </div>
         {/* Input Area */}
         <div className="border-t border-gray-200 bg-white p-2 sm:p-4 shrink-0">
           {attachedFiles.length > 0 && (
