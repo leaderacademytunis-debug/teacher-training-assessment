@@ -8,7 +8,7 @@ import {
   CheckCircle2, Clock, AlertCircle, BarChart3, ChevronDown,
   ChevronUp, Sparkles, FileText, Users, Shield, Star,
   TrendingUp, TrendingDown, Loader2, X, Download, PieChart,
-  FileDown, Target, Award, Percent
+  FileDown, Target, Award, Percent, Navigation, MessageCircle, AlertTriangle
 } from "lucide-react";
 
 // Tunisian mastery level colors
@@ -127,6 +127,12 @@ export default function BlindGrading() {
       utils.grading.getSession.invalidate({ sessionId: selectedSessionId! });
     },
   });
+
+  // GPS Context query - auto-detect current lesson
+  const gpsQuery = trpc.grading.getGPSContext.useQuery(
+    { subject: newSubject || undefined, grade: newGrade || undefined },
+    { enabled: !!user && showCreateForm && !!newSubject && !!newGrade }
+  );
 
   // Statistics query
   const statsQuery = trpc.grading.classStatistics.useQuery(
@@ -294,6 +300,25 @@ export default function BlindGrading() {
                     <CheckCircle2 className="w-4 h-4" />
                     تم نقل مفتاح الإصلاح تلقائياً من بناء الاختبار
                   </div>
+                </div>
+              )}
+              {/* GPS Context - Auto-detect current lesson */}
+              {gpsQuery.data?.currentTopic && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-center gap-2 text-blue-700 text-sm font-bold mb-2">
+                    <Navigation className="w-4 h-4" />
+                    بوصلة المنهج — الدرس الحالي
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <p className="font-semibold text-gray-800">{gpsQuery.data.currentTopic.title}</p>
+                    {gpsQuery.data.currentTopic.competency && (
+                      <p className="text-xs text-gray-500 mt-1">الكفاية: {gpsQuery.data.currentTopic.competency}</p>
+                    )}
+                    {gpsQuery.data.period && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{gpsQuery.data.period}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">سيتم ربط هذه الجلسة تلقائياً بالدرس الحالي في المنهج</p>
                 </div>
               )}
               <div className="flex gap-3 mt-6">
@@ -705,6 +730,21 @@ export default function BlindGrading() {
                 </div>
               )}
 
+              {/* Encouragement Note */}
+              {(sub as any)?.encouragementNote && (
+                <div className="bg-gradient-to-l from-purple-50 to-indigo-50 rounded-2xl shadow-sm border border-purple-200 p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-purple-600 mb-0.5">ملاحظة تشجيعية للتلميذ</p>
+                      <p className="text-base font-bold text-purple-800 leading-relaxed">{(sub as any).encouragementNote}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Pedagogical Feedback */}
               {(sub?.feedbackStrengths || sub?.feedbackImprovements) && (
                 <div className="bg-white rounded-2xl shadow-sm border p-6">
@@ -888,6 +928,38 @@ export default function BlindGrading() {
                   })}
                 </div>
               </div>
+
+              {/* Criteria Weakness Alert */}
+              {stats.criteriaAnalysis.length > 0 && (() => {
+                const weakCriteria = stats.criteriaAnalysis.filter((c: any) => c.successRate < 50);
+                return weakCriteria.length > 0 ? (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <h3 className="font-bold text-red-800">تنبيه: معايير تحتاج معالجة</h3>
+                    </div>
+                    <p className="text-sm text-red-700 mb-3">الفصل يعاني من ضعف في المعايير التالية (نسبة نجاح أقل من 50%):</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {weakCriteria.map((c: any) => (
+                        <div key={c.code} className="bg-white rounded-xl p-3 border border-red-100">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-sm font-bold">{c.code}</span>
+                              <span className="text-sm font-medium text-gray-800">{c.label}</span>
+                            </div>
+                            <span className="text-red-600 font-bold text-sm">{c.successRate}%</span>
+                          </div>
+                          <div className="w-full bg-red-100 rounded-full h-2 mt-1">
+                            <div className="bg-red-500 h-2 rounded-full" style={{ width: `${c.successRate}%` }} />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">المعدل: {c.average}/{c.maxScore} | أدنى: {c.min} | أعلى: {c.max}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-red-600 mt-3 font-medium">مقترح: خصص حصة علاجية لهذه المعايير قبل الانتقال للدرس الموالي</p>
+                  </div>
+                ) : null;
+              })()}
 
               {/* Per-Criteria Analysis */}
               {stats.criteriaAnalysis.length > 0 && (

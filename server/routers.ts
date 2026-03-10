@@ -6,7 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
 import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams } from "../drizzle/schema";
-import { eq, desc, and, sql, count, like, or, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
@@ -7505,6 +7505,8 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
 
         // Build AI prompt for criteria-based grading
         const { invokeLLM } = await import("./_core/llm");
+        const { getGlossaryContext } = await import("../shared/tunisian-glossary");
+        const glossaryHint = getGlossaryContext();
         const criteriaDesc = criteria.map((c: any) => 
           `- ${c.code} (${c.label}): \u0627\u0644\u062f\u0631\u062c\u0629 \u0627\u0644\u0642\u0635\u0648\u0649 ${c.maxScore} - ${c.description}${c.expectedAnswer ? ` | \u0627\u0644\u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u0645\u0646\u062a\u0638\u0631\u0629: ${c.expectedAnswer}` : ""}`
         ).join("\n");
@@ -7513,7 +7515,7 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
           messages: [
             {
               role: "system",
-              content: `\u0623\u0646\u062a \u0645\u0633\u0627\u0639\u062f \u062a\u0635\u062d\u064a\u062d \u0630\u0643\u064a \u0645\u062a\u062e\u0635\u0635 \u0641\u064a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0631\u0628\u0648\u064a \u0627\u0644\u062a\u0648\u0646\u0633\u064a. \u0642\u0645 \u0628\u062a\u0635\u062d\u064a\u062d \u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0645\u064a\u0630 \u062d\u0633\u0628 \u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0645\u062d\u062f\u062f\u0629.\n\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u062a\u0648\u0646\u0633\u064a:\n+++ = \u062a\u0645\u0644\u0643 \u0645\u0645\u062a\u0627\u0632 (90%+)\n++ = \u062a\u0645\u0644\u0643 \u062c\u064a\u062f (75-89%)\n+ = \u062a\u0645\u0644\u0643 \u0645\u0642\u0628\u0648\u0644 (60-74%)\n- = \u063a\u064a\u0631 \u0643\u0627\u0641 (40-59%)\n-- = \u063a\u064a\u0631 \u0643\u0627\u0641 \u062c\u062f\u0627 (20-39%)\n--- = \u063a\u064a\u0631 \u0645\u062a\u0645\u0644\u0643 (0-19%)`,
+              content: `\u0623\u0646\u062a \u0645\u0633\u0627\u0639\u062f \u062a\u0635\u062d\u064a\u062d \u0630\u0643\u064a \u0645\u062a\u062e\u0635\u0635 \u0641\u064a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0631\u0628\u0648\u064a \u0627\u0644\u062a\u0648\u0646\u0633\u064a. \u0642\u0645 \u0628\u062a\u0635\u062d\u064a\u062d \u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0645\u064a\u0630 \u062d\u0633\u0628 \u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0645\u062d\u062f\u062f\u0629.\n\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u062a\u0648\u0646\u0633\u064a:\n+++ = \u062a\u0645\u0644\u0643 \u0645\u0645\u062a\u0627\u0632 (90%+)\n++ = \u062a\u0645\u0644\u0643 \u062c\u064a\u062f (75-89%)\n+ = \u062a\u0645\u0644\u0643 \u0645\u0642\u0628\u0648\u0644 (60-74%)\n- = \u063a\u064a\u0631 \u0643\u0627\u0641 (40-59%)\n-- = \u063a\u064a\u0631 \u0643\u0627\u0641 \u062c\u062f\u0627 (20-39%)\n--- = \u063a\u064a\u0631 \u0645\u062a\u0645\u0644\u0643 (0-19%)\n\n\u0627\u0644\u0645\u0627\u062f\u0629: ${session.subject} | \u0627\u0644\u0645\u0633\u062a\u0648\u0649: ${session.grade}\n\u0645\u0635\u0637\u0644\u062d\u0627\u062a \u0628\u064a\u062f\u0627\u063a\u0648\u062c\u064a\u0629 \u0645\u0631\u062c\u0639\u064a\u0629: ${glossaryHint}\n\n\u0642\u0648\u0627\u0639\u062f \u0627\u0644\u062a\u0635\u062d\u064a\u062d:\n- \u0635\u062d\u062d \u0643\u0644 \u0645\u0639\u064a\u0627\u0631 \u0628\u0634\u0643\u0644 \u0645\u0633\u062a\u0642\u0644\n- \u0627\u0639\u0637 \u062a\u0628\u0631\u064a\u0631\u0627\u064b \u0648\u0627\u0636\u062d\u0627\u064b \u0644\u0643\u0644 \u062f\u0631\u062c\u0629\n- \u0627\u0643\u062a\u0628 \u0645\u0644\u0627\u062d\u0638\u0629 \u062a\u0634\u062c\u064a\u0639\u064a\u0629 \u0642\u0635\u064a\u0631\u0629 (\u062c\u0645\u0644\u0629 \u0648\u0627\u062d\u062f\u0629) \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0644\u0644\u062a\u0644\u0645\u064a\u0630`,
             },
             {
               role: "user",
@@ -7548,8 +7550,9 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
                   overallMasteryLevel: { type: "string" },
                   feedbackStrengths: { type: "string" },
                   feedbackImprovements: { type: "string" },
+                  encouragementNote: { type: "string", description: "\u0645\u0644\u0627\u062d\u0638\u0629 \u062a\u0634\u062c\u064a\u0639\u064a\u0629 \u0642\u0635\u064a\u0631\u0629 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0644\u0644\u062a\u0644\u0645\u064a\u0630 (\u062c\u0645\u0644\u0629 \u0648\u0627\u062d\u062f\u0629)" },
                 },
-                required: ["criteriaScores", "totalScore", "overallMasteryLevel", "feedbackStrengths", "feedbackImprovements"],
+                required: ["criteriaScores", "totalScore", "overallMasteryLevel", "feedbackStrengths", "feedbackImprovements", "encouragementNote"],
                 additionalProperties: false,
               },
             },
@@ -7570,6 +7573,7 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
           finalScore: cs.suggestedScore,
         }));
 
+        const encouragementNote = parsed.encouragementNote || "\u0623\u062d\u0633\u0646\u062a! \u0648\u0627\u0635\u0644 \u0627\u0644\u0639\u0645\u0644 \u0627\u0644\u062c\u064a\u062f.";
         await db.updateStudentSubmission(input.submissionId, {
           criteriaScores,
           totalSuggestedScore: parsed.totalScore,
@@ -7577,6 +7581,7 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
           overallMasteryLevel: parsed.overallMasteryLevel,
           feedbackStrengths: parsed.feedbackStrengths,
           feedbackImprovements: parsed.feedbackImprovements,
+          encouragementNote,
           status: "ai_graded",
         });
 
@@ -7590,6 +7595,7 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
           overallMasteryLevel: parsed.overallMasteryLevel,
           feedbackStrengths: parsed.feedbackStrengths,
           feedbackImprovements: parsed.feedbackImprovements,
+          encouragementNote,
         };
       }),
 
@@ -8116,6 +8122,235 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
           gradedStudents: 0,
         });
         return session;
+      }),
+
+    // GPS Integration: Auto-detect current lesson/exam based on curriculum
+    getGPSContext: protectedProcedure
+      .input(z.object({ subject: z.string().optional(), grade: z.string().optional() }))
+      .query(async ({ input, ctx }) => {
+        // Find matching curriculum plans for the teacher
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const conditions: any[] = [eq(curriculumPlans.createdBy, ctx.user.id), eq(curriculumPlans.isActive, true)];
+        if (input.subject) conditions.push(like(curriculumPlans.subject, `%${input.subject}%`));
+        if (input.grade) conditions.push(like(curriculumPlans.grade, `%${input.grade}%`));
+        const plans = await database.select().from(curriculumPlans)
+          .where(and(...conditions))
+          .orderBy(desc(curriculumPlans.createdAt))
+          .limit(5);
+        if (plans.length === 0) return { activePlan: null, currentTopic: null, period: null };
+        const plan = plans[0];
+        // Get topics for this plan
+        const topics = await database.select().from(curriculumTopics)
+          .where(eq(curriculumTopics.planId, plan.id))
+          .orderBy(asc(curriculumTopics.orderIndex));
+        // Calculate current week of school year
+        const now = new Date();
+        const schoolYearStart = new Date(now.getFullYear(), 8, 15); // Sept 15
+        if (now < schoolYearStart) schoolYearStart.setFullYear(schoolYearStart.getFullYear() - 1);
+        const weeksSinceStart = Math.floor((now.getTime() - schoolYearStart.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+        // Find current topic based on week or first uncompleted
+        const progress = await database.select().from(teacherCurriculumProgress)
+          .where(and(
+            eq(teacherCurriculumProgress.userId, ctx.user.id),
+            eq(teacherCurriculumProgress.planId, plan.id),
+          ));
+        const completedIds = new Set(progress.filter((p: any) => p.status === "completed").map((p: any) => p.topicId));
+        let currentTopic = topics.find((t: any) => t.weekNumber && t.weekNumber >= weeksSinceStart && !completedIds.has(t.id))
+          || topics.find((t: any) => !completedIds.has(t.id))
+          || topics[topics.length - 1];
+        const currentPeriod = currentTopic ? currentTopic.periodName || `الفترة ${currentTopic.periodNumber}` : null;
+        return {
+          activePlan: { id: plan.id, title: plan.planTitle, subject: plan.subject, grade: plan.grade },
+          currentTopic: currentTopic ? {
+            id: currentTopic.id,
+            title: currentTopic.topicTitle,
+            competency: currentTopic.competency,
+            competencyCode: currentTopic.competencyCode,
+            weekNumber: currentTopic.weekNumber,
+            periodNumber: currentTopic.periodNumber,
+          } : null,
+          period: currentPeriod,
+          currentWeek: weeksSinceStart,
+          totalTopics: topics.length,
+          completedTopics: completedIds.size,
+        };
+      }),
+
+    // Enhanced OCR for student handwriting with glossary correction
+    enhancedOCR: protectedProcedure
+      .input(z.object({
+        sessionId: z.number(),
+        submissionId: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const submission = await db.getSubmissionById(input.submissionId);
+        if (!submission) throw new TRPCError({ code: "NOT_FOUND" });
+        const session = await db.getGradingSessionById(submission.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        // Re-run OCR with enhanced student handwriting prompt
+        const { invokeLLM } = await import("./_core/llm");
+        const { correctOCRText, getGlossaryContext } = await import("../shared/tunisian-glossary");
+        const glossaryContext = getGlossaryContext();
+        // Get the image from S3
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "image_url", image_url: { url: submission.imageUrl, detail: "high" } },
+                {
+                  type: "text",
+                  text: `أنت متخصص في قراءة الخط اليدوي للتلاميذ التونسيين (المرحلة الابتدائية). استخرج كل النص المكتوب بدقة.\n\nقواعد خاصة:\n- الخط اليدوي للأطفال قد يكون غير منتظم، حاول قراءة السياق لفهم الكلمات\n- المادة: ${session.subject} | المستوى: ${session.grade}\n- المصطلحات البيداغوجية المتوقعة: ${glossaryContext}\n- انتبه للأرقام والعمليات الحسابية إن وجدت\n- افصل بين الإجابات المختلفة بعلامة [---]\n- أعد النص كما كتبه التلميذ دون تصحيح لغوي`,
+                },
+              ],
+            },
+          ],
+        });
+        let rawText = response?.choices?.[0]?.message?.content || "";
+        if (typeof rawText !== "string") rawText = JSON.stringify(rawText);
+        // Apply glossary correction
+        const { correctedText, corrections } = correctOCRText(rawText);
+        const confidence = correctedText.length > 100 ? "high" : correctedText.length > 30 ? "medium" : "low";
+        // Update submission
+        await db.updateStudentSubmission(input.submissionId, {
+          extractedText: correctedText,
+          ocrConfidence: confidence,
+          status: "ocr_done",
+        });
+        return {
+          extractedText: correctedText,
+          rawText,
+          corrections,
+          confidence,
+        };
+      }),
+
+    // Generate encouragement note for student
+    generateEncouragement: protectedProcedure
+      .input(z.object({ submissionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const submission = await db.getSubmissionById(input.submissionId);
+        if (!submission) throw new TRPCError({ code: "NOT_FOUND" });
+        const session = await db.getGradingSessionById(submission.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        const correctionKey = session.correctionKey as any;
+        const totalPoints = correctionKey?.totalPoints || 20;
+        const score = submission.totalFinalScore ?? submission.totalSuggestedScore ?? 0;
+        const pct = totalPoints > 0 ? Math.round((score / totalPoints) * 100) : 0;
+        const level = submission.overallMasteryLevel || "+";
+        const { invokeLLM } = await import("./_core/llm");
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت معلم تونسي حنون. اكتب ملاحظة تشجيعية قصيرة (جملة واحدة) بالعربية لتلميذ ابتدائي.\nالقواعد:\n- جملة واحدة فقط (15-30 كلمة)\n- استخدم لغة بسيطة مناسبة للأطفال\n- إذا كان الأداء ممتازاً: امدح وشجع على الاستمرار\n- إذا كان متوسطاً: شجع وأشر للتحسن\n- إذا كان ضعيفاً: كن لطيفاً ومحفزاً\n- لا تذكر الدرجة الرقمية أبداً\n- أعد الملاحظة فقط دون أي تعليق إضافي`,
+            },
+            {
+              role: "user",
+              content: `المادة: ${session.subject} | المستوى: ${session.grade}\nمستوى التملك: ${level} (${pct}%)\nنقاط القوة: ${submission.feedbackStrengths || "غير محدد"}\nنقاط التحسين: ${submission.feedbackImprovements || "غير محدد"}`,
+            },
+          ],
+        });
+        const note = typeof response?.choices?.[0]?.message?.content === "string"
+          ? response.choices[0].message.content.trim()
+          : "أحسنت! واصل العمل الجيد.";
+        // Save to submission
+        await db.updateStudentSubmission(input.submissionId, { encouragementNote: note });
+        return { note };
+      }),
+
+    // Enhanced class statistics with criteria weakness analysis
+    enhancedClassStats: protectedProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+        const submissions = await db.getSubmissionsBySession(input.sessionId);
+        const correctionKey = session.correctionKey as any;
+        const criteria = correctionKey?.criteria || [];
+        const totalPoints = correctionKey?.totalPoints || 20;
+        const gradedSubs = submissions.filter(s => s.totalFinalScore != null);
+        if (gradedSubs.length === 0) return { hasData: false, weakestCriteria: [], strongestCriteria: [], recommendations: [], criteriaHeatmap: [] };
+        // Criteria analysis with weakness detection
+        const criteriaStats = criteria.map((c: any) => {
+          const scores: number[] = [];
+          const masteryLevels: string[] = [];
+          gradedSubs.forEach(s => {
+            const cs = (s.criteriaScores as any[])?.find((x: any) => x.criterionCode === c.code);
+            if (cs) {
+              scores.push(cs.finalScore ?? cs.suggestedScore ?? 0);
+              masteryLevels.push(cs.masteryLevel || "");
+            }
+          });
+          const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+          const successRate = scores.length > 0 ? Math.round((scores.filter(s => s >= c.maxScore * 0.6).length / scores.length) * 100) : 0;
+          const failRate = scores.length > 0 ? Math.round((scores.filter(s => s < c.maxScore * 0.4).length / scores.length) * 100) : 0;
+          const excellenceRate = scores.length > 0 ? Math.round((scores.filter(s => s >= c.maxScore * 0.9).length / scores.length) * 100) : 0;
+          // Count mastery distribution per criterion
+          const masteryDist: Record<string, number> = { "+++": 0, "++": 0, "+": 0, "-": 0, "--": 0, "---": 0 };
+          masteryLevels.forEach(m => { if (masteryDist[m] !== undefined) masteryDist[m]++; });
+          return {
+            code: c.code,
+            label: c.label,
+            maxScore: c.maxScore,
+            average: Math.round(avg * 100) / 100,
+            percentage: c.maxScore > 0 ? Math.round((avg / c.maxScore) * 100) : 0,
+            successRate,
+            failRate,
+            excellenceRate,
+            masteryDistribution: masteryDist,
+            status: successRate >= 80 ? "strong" : successRate >= 50 ? "moderate" : "weak",
+          };
+        });
+        // Sort by weakness
+        const weakest = [...criteriaStats].sort((a, b) => a.successRate - b.successRate);
+        const strongest = [...criteriaStats].sort((a, b) => b.successRate - a.successRate);
+        // Generate recommendations
+        const recommendations: Array<{ criterion: string; issue: string; suggestion: string; priority: string }> = [];
+        weakest.forEach(c => {
+          if (c.failRate > 50) {
+            recommendations.push({
+              criterion: `${c.code} (${c.label})`,
+              issue: `${c.failRate}% من التلاميذ لم يتملكوا هذا المعيار`,
+              suggestion: `ينصح بإعادة شرح ${c.label} بطريقة مختلفة مع تمارين تطبيقية إضافية`,
+              priority: c.failRate > 70 ? "critical" : "high",
+            });
+          } else if (c.successRate < 60) {
+            recommendations.push({
+              criterion: `${c.code} (${c.label})`,
+              issue: `نسبة النجاح ${c.successRate}% فقط`,
+              suggestion: `تخصيص حصة دعم وعلاج لتعزيز ${c.label}`,
+              priority: "medium",
+            });
+          }
+        });
+        // Heatmap data: student x criterion
+        const criteriaHeatmap = gradedSubs.map(s => {
+          const studentLabel = session.hideStudentNames ? `تلميذ ${s.studentNumber}` : (s.studentName || `تلميذ ${s.studentNumber}`);
+          const scores: Record<string, { score: number; max: number; level: string }> = {};
+          (s.criteriaScores as any[])?.forEach((cs: any) => {
+            scores[cs.criterionCode] = {
+              score: cs.finalScore ?? cs.suggestedScore ?? 0,
+              max: cs.maxScore,
+              level: cs.masteryLevel || "",
+            };
+          });
+          return { student: studentLabel, studentNumber: s.studentNumber, totalScore: s.totalFinalScore, scores };
+        });
+        return {
+          hasData: true,
+          weakestCriteria: weakest.slice(0, 3),
+          strongestCriteria: strongest.slice(0, 3),
+          recommendations,
+          criteriaHeatmap,
+          criteriaStats,
+          summary: {
+            totalStudents: gradedSubs.length,
+            classAverage: Math.round((gradedSubs.reduce((a, s) => a + (s.totalFinalScore || 0), 0) / gradedSubs.length) * 100) / 100,
+            passRate: Math.round((gradedSubs.filter(s => (s.totalFinalScore || 0) >= totalPoints * 0.5).length / gradedSubs.length) * 100),
+          },
+        };
       }),
   }),
 

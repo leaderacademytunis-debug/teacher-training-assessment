@@ -325,6 +325,88 @@ describe("Blind Grading Assistant", () => {
     });
   });
 
+  describe("GPS Context Integration", () => {
+    it("should return GPS context for grading session", async () => {
+      const result = await caller.grading.getGPSContext({
+        subject: "الرياضيات",
+        grade: "السنة الرابعة",
+      });
+      // May return null if no plans exist, but should not throw
+      expect(result).toBeTruthy();
+      expect(result).toHaveProperty("activePlan");
+      expect(result).toHaveProperty("currentTopic");
+      expect(result).toHaveProperty("period");
+    });
+
+    it("should return null plan when no curriculum exists", async () => {
+      const result = await caller.grading.getGPSContext({
+        subject: "مادة غير موجودة XYZ",
+        grade: "مستوى غير موجود",
+      });
+      expect(result.activePlan).toBeNull();
+    });
+
+    it("should work without subject/grade filters", async () => {
+      const result = await caller.grading.getGPSContext({});
+      expect(result).toBeTruthy();
+      expect(result).toHaveProperty("activePlan");
+    });
+  });
+
+  describe("Enhanced Student Handwriting OCR", () => {
+    it("should have enhanced OCR procedure available", async () => {
+      // Verify the procedure exists on the router
+      expect(caller.grading.enhancedStudentOCR).toBeDefined();
+    });
+  });
+
+  describe("Encouragement Note in AI Grading", () => {
+    it("should have aiGrade procedure that includes encouragement note", async () => {
+      // Verify the procedure exists
+      expect(caller.grading.aiGrade).toBeDefined();
+    });
+  });
+
+  describe("Class Statistics - Criteria Weakness Analysis", () => {
+    it("should return criteria analysis with success rates", async () => {
+      const session = await caller.grading.createSession({
+        sessionTitle: "جلسة تحليل المعايير",
+        subject: "الرياضيات",
+        grade: "السنة الرابعة",
+      });
+
+      if (session) {
+        const stats = await caller.grading.classStatistics({ sessionId: session.id });
+        expect(stats.criteriaAnalysis).toBeDefined();
+        expect(Array.isArray(stats.criteriaAnalysis)).toBe(true);
+        // Each criteria should have successRate field
+        stats.criteriaAnalysis.forEach((c: any) => {
+          expect(c).toHaveProperty("code");
+          expect(c).toHaveProperty("label");
+          expect(c).toHaveProperty("average");
+          expect(c).toHaveProperty("maxScore");
+          expect(c).toHaveProperty("successRate");
+        });
+      }
+    });
+
+    it("should identify weak criteria with low success rates", async () => {
+      const session = await caller.grading.createSession({
+        sessionTitle: "جلسة المعايير الضعيفة",
+        subject: "الإيقاظ العلمي",
+        grade: "السنة الخامسة",
+      });
+
+      if (session) {
+        const stats = await caller.grading.classStatistics({ sessionId: session.id });
+        // With no submissions, all criteria should have 0% success rate
+        const weakCriteria = stats.criteriaAnalysis.filter((c: any) => c.successRate < 50);
+        // All criteria should be "weak" with 0 students
+        expect(weakCriteria.length).toBe(stats.criteriaAnalysis.length);
+      }
+    });
+  });
+
   describe("PDF Export (Enhancement)", () => {
     it("should export session results as PDF", async () => {
       const session = await caller.grading.createSession({

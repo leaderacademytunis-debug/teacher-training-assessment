@@ -1048,6 +1048,10 @@ export const gradingSessions = mysqlTable("gradingSessions", {
   // Linked exam (optional - from Exam Builder)
   linkedExamId: int("linkedExamId"),
   
+  // Linked curriculum (optional - from Curriculum GPS)
+  linkedPlanId: int("linkedPlanId"),
+  linkedTopicId: int("linkedTopicId"),
+  
   // Correction key - the expected answers and criteria
   correctionKey: json("correctionKey").$type<{
     criteria: Array<{
@@ -1120,6 +1124,7 @@ export const studentSubmissions = mysqlTable("studentSubmissions", {
   // Pedagogical feedback
   feedbackStrengths: text("feedbackStrengths"),
   feedbackImprovements: text("feedbackImprovements"),
+  encouragementNote: text("encouragementNote"),
   
   // Status
   status: mysqlEnum("status", ["uploaded", "ocr_done", "ai_graded", "teacher_reviewed", "finalized"]).default("uploaded").notNull(),
