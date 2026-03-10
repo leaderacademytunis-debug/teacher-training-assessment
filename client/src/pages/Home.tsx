@@ -267,29 +267,31 @@ export default function Home() {
                 </Link>
                 {/* Hover dropdown */}
                 <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
-                  <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
-                    <div className="px-4 py-3 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                      <p className="text-white font-bold text-sm flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-orange-300" />
+                  <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl" style={{ maxHeight: "calc(100vh - 60px)" }}>
+                    <div className="px-3 py-2 border-b border-gray-100 sticky top-0 z-10" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                      <p className="text-white font-bold text-xs flex items-center gap-2">
+                        <Sparkles className="w-3 h-3 text-orange-300" />
                         {t("أدوات الذكاء الاصطناعي التربوي", "Outils IA éducatifs", "Educational AI Tools")}
                       </p>
                     </div>
+                    <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 100px)" }}>
                     {AI_TOOLS.map((tool, idx) => {
                       const IconComp = tool.icon;
                       return (
                         <Link key={tool.href} href={tool.href}>
-                          <div className={`flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${idx < AI_TOOLS.length - 1 ? "border-b border-gray-50" : ""}`}>
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                              <IconComp className="w-5 h-5 text-white" />
+                          <div className={`flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 cursor-pointer transition-colors ${idx < AI_TOOLS.length - 1 ? "border-b border-gray-50" : ""}`}>
+                            <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                              <IconComp className="w-3.5 h-3.5 text-white" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-bold text-sm text-gray-900">{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</p>
-                              <p className="text-xs text-gray-500 mt-0.5">{language === "fr" ? tool.descFr : language === "en" ? tool.descEn : tool.descAr}</p>
+                              <p className="font-bold text-xs text-gray-900 leading-tight">{language === "fr" ? tool.labelFr : language === "en" ? tool.labelEn : tool.labelAr}</p>
+                              <p className="text-[10px] text-gray-500 leading-tight">{language === "fr" ? tool.descFr : language === "en" ? tool.descEn : tool.descAr}</p>
                             </div>
                           </div>
                         </Link>
                       );
                     })}
+                    </div>
                   </div>
                 </div>
               </div>
