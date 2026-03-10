@@ -6413,14 +6413,95 @@ ${getGlossaryContext()}
       const stats = await db.computePortfolioStats(ctx.user.id);
       const user = ctx.user;
 
-      // Generate PDF HTML
+      // ===== Fetch Skill Radar data =====
+      const database = await getDb();
+      const subjectExpertise: Record<string, number> = {};
+      const goldenContributions: Array<{ title: string; type: string; subject: string; date: string }> = [];
+      if (database) {
+        const sheets = await database.select({ subject: pedagogicalSheets.subject, title: pedagogicalSheets.lessonTitle, createdAt: pedagogicalSheets.createdAt }).from(pedagogicalSheets).where(eq(pedagogicalSheets.createdBy, ctx.user.id)).orderBy(desc(pedagogicalSheets.createdAt)).limit(100);
+        for (const s of sheets) { if (s.subject) subjectExpertise[s.subject] = (subjectExpertise[s.subject] || 0) + 2; }
+        const exams = await database.select({ subject: teacherExams.subject, title: teacherExams.examTitle, createdAt: teacherExams.createdAt }).from(teacherExams).where(eq(teacherExams.createdBy, ctx.user.id)).orderBy(desc(teacherExams.createdAt)).limit(100);
+        for (const e of exams) { if (e.subject) subjectExpertise[e.subject] = (subjectExpertise[e.subject] || 0) + 3; }
+        const digiDocs = await database.select({ subject: digitizedDocuments.subject, title: digitizedDocuments.title, status: digitizedDocuments.status, createdAt: digitizedDocuments.createdAt }).from(digitizedDocuments).where(eq(digitizedDocuments.userId, ctx.user.id)).orderBy(desc(digitizedDocuments.createdAt)).limit(100);
+        for (const d of digiDocs) { if (d.subject) subjectExpertise[d.subject] = (subjectExpertise[d.subject] || 0) + (d.status === "formatted" || d.status === "saved" ? 4 : 1); }
+        const mItems = await database.select({ subject: marketplaceItems.subject, title: marketplaceItems.title, status: marketplaceItems.status, createdAt: marketplaceItems.createdAt }).from(marketplaceItems).where(eq(marketplaceItems.publishedBy, ctx.user.id)).orderBy(desc(marketplaceItems.createdAt)).limit(100);
+        for (const m of mItems) { if (m.subject && m.status === "approved") subjectExpertise[m.subject] = (subjectExpertise[m.subject] || 0) + 5; }
+        // Build golden contributions (top 10 most recent)
+        const allItems = [
+          ...sheets.slice(0, 5).map(s => ({ title: s.title || "جذاذة درس", type: "جذاذة", subject: s.subject || "", date: s.createdAt })),
+          ...exams.slice(0, 5).map(e => ({ title: e.title || "اختبار", type: "اختبار", subject: e.subject || "", date: e.createdAt })),
+          ...digiDocs.filter(d => d.status === "saved" || d.status === "formatted").slice(0, 5).map(d => ({ title: d.title || "وثيقة مرقمنة", type: "وثيقة مرقمنة", subject: d.subject || "", date: d.createdAt })),
+          ...mItems.filter(m => m.status === "approved").slice(0, 5).map(m => ({ title: m.title, type: "منشور في السوق", subject: m.subject || "", date: m.createdAt })),
+        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+        for (const item of allItems) {
+          goldenContributions.push({ ...item, date: new Date(item.date).toLocaleDateString("ar-TN", { year: "numeric", month: "short", day: "numeric" }) });
+        }
+      }
+      const totalScore = Object.values(subjectExpertise).reduce((s, v) => s + v, 0);
+      let level = "مبتدئ";
+      if (totalScore >= 100) level = "خبير متميز";
+      else if (totalScore >= 60) level = "خبير";
+      else if (totalScore >= 30) level = "متقدم";
+      else if (totalScore >= 10) level = "متوسط";
+
+      // ===== Build subject bars =====
       const subjectLabels = Object.keys(stats.subjectBreakdown);
       const subjectValues = Object.values(stats.subjectBreakdown);
       const maxVal = Math.max(...subjectValues, 1);
-
       const subjectBarsHtml = subjectLabels.map((label, i) => {
         const pct = Math.round((subjectValues[i] / maxVal) * 100);
-        return `<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span>${label}</span><span>${subjectValues[i]}</span></div><div style="background:#e5e7eb;border-radius:4px;height:12px;"><div style="background:#2563eb;border-radius:4px;height:12px;width:${pct}%;"></div></div></div>`;
+        return `<div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:14px;"><span style="font-weight:bold;">${label}</span><span style="color:#6b7280;">${subjectValues[i]} نشاط</span></div><div style="background:#e5e7eb;border-radius:6px;height:14px;"><div style="background:linear-gradient(90deg,#1e40af,#3b82f6);border-radius:6px;height:14px;width:${pct}%;"></div></div></div>`;
+      }).join("");
+
+      // ===== Build Skill Radar SVG =====
+      const radarLabels = Object.keys(subjectExpertise);
+      const radarValues = Object.values(subjectExpertise);
+      const radarMax = Math.max(...radarValues, 1);
+      const radarSize = 200;
+      const radarCenter = radarSize / 2;
+      const radarRadius = 80;
+      let radarSvg = "";
+      if (radarLabels.length >= 3) {
+        const n = radarLabels.length;
+        // Grid circles
+        let gridCircles = "";
+        for (let r = 1; r <= 4; r++) {
+          gridCircles += `<circle cx="${radarCenter}" cy="${radarCenter}" r="${(radarRadius * r) / 4}" fill="none" stroke="#e5e7eb" stroke-width="0.5"/>`;
+        }
+        // Grid lines
+        let gridLines = "";
+        for (let i = 0; i < n; i++) {
+          const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+          const x = radarCenter + radarRadius * Math.cos(angle);
+          const y = radarCenter + radarRadius * Math.sin(angle);
+          gridLines += `<line x1="${radarCenter}" y1="${radarCenter}" x2="${x}" y2="${y}" stroke="#e5e7eb" stroke-width="0.5"/>`;
+        }
+        // Data polygon
+        const points = radarLabels.map((_, i) => {
+          const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+          const val = (radarValues[i] / radarMax) * radarRadius;
+          return `${radarCenter + val * Math.cos(angle)},${radarCenter + val * Math.sin(angle)}`;
+        }).join(" ");
+        // Labels
+        let labelsHtml = "";
+        for (let i = 0; i < n; i++) {
+          const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+          const lx = radarCenter + (radarRadius + 20) * Math.cos(angle);
+          const ly = radarCenter + (radarRadius + 20) * Math.sin(angle);
+          labelsHtml += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="9" fill="#374151" font-family="Amiri">${radarLabels[i]}</text>`;
+        }
+        radarSvg = `<svg width="${radarSize}" height="${radarSize}" viewBox="0 0 ${radarSize} ${radarSize}" style="margin:0 auto;display:block;">
+          ${gridCircles}${gridLines}
+          <polygon points="${points}" fill="rgba(37,99,235,0.2)" stroke="#2563eb" stroke-width="1.5"/>
+          ${labelsHtml}
+        </svg>`;
+      }
+
+      // ===== Build Golden Contributions table =====
+      const typeColors: Record<string, string> = { "جذاذة": "#2563eb", "اختبار": "#7c3aed", "وثيقة مرقمنة": "#059669", "منشور في السوق": "#d97706" };
+      const contribRows = goldenContributions.map(c => {
+        const color = typeColors[c.type] || "#6b7280";
+        return `<tr><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;"><span style="display:inline-block;background:${color};color:white;padding:2px 8px;border-radius:4px;font-size:11px;">${c.type}</span></td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-weight:bold;">${c.title}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#6b7280;">${c.subject}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#6b7280;font-size:12px;">${c.date}</td></tr>`;
       }).join("");
 
       const dateStr = new Date().toLocaleDateString("ar-TN", { year: "numeric", month: "long", day: "numeric" });
@@ -6428,40 +6509,62 @@ ${getGlossaryContext()}
       const html = `<!DOCTYPE html><html dir="rtl" lang="ar">
 <head><meta charset="UTF-8"><style>
 @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
-body{font-family:'Amiri',serif;margin:0;padding:40px;color:#1e293b;direction:rtl;}
-.header{text-align:center;border-bottom:3px solid #2563eb;padding-bottom:20px;margin-bottom:30px;}
-.header h1{color:#2563eb;font-size:28px;margin:0;}
-.header .subtitle{color:#64748b;font-size:14px;margin-top:5px;}
-.seal{display:inline-block;border:2px solid #f59e0b;border-radius:50%;padding:8px 16px;color:#f59e0b;font-weight:bold;font-size:12px;margin-top:10px;}
-.section{margin-bottom:25px;}
-.section h2{color:#2563eb;font-size:20px;border-bottom:1px solid #e5e7eb;padding-bottom:8px;}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;}
-.info-item{background:#f8fafc;border-radius:8px;padding:15px;}
-.info-item .label{color:#64748b;font-size:13px;}
-.info-item .value{color:#1e293b;font-size:22px;font-weight:bold;margin-top:5px;}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-.stat-card{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:10px;padding:15px;text-align:center;}
-.stat-card .num{font-size:28px;font-weight:bold;color:#2563eb;}
-.stat-card .lbl{font-size:12px;color:#64748b;margin-top:4px;}
-.footer{text-align:center;margin-top:40px;padding-top:20px;border-top:2px solid #e5e7eb;color:#94a3b8;font-size:12px;}
+body{font-family:'Amiri',serif;margin:0;padding:0;color:#1e293b;direction:rtl;background:white;}
+.page{padding:35px 40px;}
+.header{text-align:center;padding:25px 0;margin-bottom:25px;border-bottom:3px double #1e40af;position:relative;}
+.header::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#f59e0b,#2563eb,#1e40af);}
+.header h1{color:#1e40af;font-size:32px;margin:0;letter-spacing:1px;}
+.header .subtitle{color:#64748b;font-size:15px;margin-top:6px;}
+.header .seal-row{margin-top:12px;display:flex;justify-content:center;align-items:center;gap:20px;}
+.seal{display:inline-block;border:2px solid #f59e0b;border-radius:50%;padding:6px 14px;color:#f59e0b;font-weight:bold;font-size:11px;}
+.level-badge{display:inline-block;background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:6px 18px;border-radius:20px;font-size:13px;font-weight:bold;}
+.section{margin-bottom:22px;page-break-inside:avoid;}
+.section h2{color:#1e40af;font-size:19px;border-right:4px solid #f59e0b;padding-right:12px;margin-bottom:12px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.info-item{background:linear-gradient(135deg,#f8fafc,#eff6ff);border:1px solid #e2e8f0;border-radius:10px;padding:14px;}
+.info-item .label{color:#64748b;font-size:12px;}
+.info-item .value{color:#1e293b;font-size:20px;font-weight:bold;margin-top:4px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.stat-card{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;border-radius:10px;padding:14px;text-align:center;}
+.stat-card .num{font-size:26px;font-weight:bold;color:#1e40af;}
+.stat-card .lbl{font-size:11px;color:#64748b;margin-top:3px;}
+.radar-section{display:flex;gap:20px;align-items:flex-start;}
+.radar-chart{flex:0 0 220px;}
+.radar-legend{flex:1;}
+.radar-legend-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;}
+.contrib-table{width:100%;border-collapse:collapse;font-size:13px;}
+.contrib-table th{background:#1e40af;color:white;padding:10px 12px;text-align:right;font-size:12px;}
+.contrib-table tr:nth-child(even) td{background:#f8fafc;}
+.score-bar{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.score-bar-track{flex:1;height:10px;background:#e5e7eb;border-radius:5px;}
+.score-bar-fill{height:10px;border-radius:5px;background:linear-gradient(90deg,#f59e0b,#2563eb);}
+.footer{text-align:center;margin-top:30px;padding-top:15px;border-top:2px solid #e5e7eb;color:#94a3b8;font-size:11px;}
+.footer .flag{font-size:16px;}
+.page-break{page-break-before:always;}
 </style></head><body>
+<div class="page">
 <div class="header">
   <h1>Leader Academy</h1>
   <div class="subtitle">المساعد البيداغوجي الذكي - نسخة تونس 2026</div>
-  <div class="seal">✦ ملف مهني معتمد ✦</div>
+  <div class="seal-row">
+    <div class="seal">✦ ملف مهني معتمد ✦</div>
+    <div class="level-badge">المستوى: ${level} (${totalScore} نقطة)</div>
+  </div>
 </div>
 
 <div class="section">
   <h2>المعلومات الشخصية</h2>
   <div class="info-grid">
-    <div class="info-item"><div class="label">الاسم</div><div class="value">${user.arabicName || user.name || "—"}</div></div>
-    <div class="info-item"><div class="label">البريد الإلكتروني</div><div class="value" style="font-size:16px;">${user.email}</div></div>
-    <div class="info-item"><div class="label">المؤسسة</div><div class="value" style="font-size:16px;">${portfolio.currentSchool || user.schoolName || "—"}</div></div>
-    <div class="info-item"><div class="label">سنوات الخبرة</div><div class="value">${portfolio.yearsOfExperience || "—"}</div></div>
+    <div class="info-item"><div class="label">الاسم الكامل</div><div class="value">${user.arabicName || user.name || "—"}</div></div>
+    <div class="info-item"><div class="label">البريد الإلكتروني</div><div class="value" style="font-size:15px;">${user.email}</div></div>
+    <div class="info-item"><div class="label">المؤسسة التربوية</div><div class="value" style="font-size:15px;">${portfolio.currentSchool || user.schoolName || "—"}</div></div>
+    <div class="info-item"><div class="label">سنوات الخبرة</div><div class="value">${portfolio.yearsOfExperience || "—"} ${portfolio.yearsOfExperience ? "سنة" : ""}</div></div>
+    ${portfolio.region ? `<div class="info-item"><div class="label">الجهة</div><div class="value" style="font-size:15px;">${portfolio.region}</div></div>` : ""}
+    ${portfolio.educationLevel ? `<div class="info-item"><div class="label">المرحلة التعليمية</div><div class="value" style="font-size:15px;">${portfolio.educationLevel === "primary" ? "ابتدائي" : portfolio.educationLevel === "middle" ? "إعدادي" : "ثانوي"}</div></div>` : ""}
   </div>
 </div>
 
-${portfolio.bio ? `<div class="section"><h2>نبذة مهنية</h2><p>${portfolio.bio}</p></div>` : ""}
+${portfolio.bio ? `<div class="section"><h2>نبذة مهنية</h2><p style="line-height:1.8;font-size:15px;color:#374151;">${portfolio.bio}</p></div>` : ""}
 
 <div class="section">
   <h2>إحصائيات النشاط الرقمي</h2>
@@ -6471,7 +6574,7 @@ ${portfolio.bio ? `<div class="section"><h2>نبذة مهنية</h2><p>${portfol
     <div class="stat-card"><div class="num">${stats.totalImages}</div><div class="lbl">صورة تعليمية</div></div>
     <div class="stat-card"><div class="num">${stats.totalCertificates}</div><div class="lbl">شهادة</div></div>
   </div>
-  <div style="margin-top:12px;">
+  <div style="margin-top:10px;">
   <div class="stats-grid">
     <div class="stat-card"><div class="num">${stats.totalEvaluations}</div><div class="lbl">تقييم</div></div>
     <div class="stat-card"><div class="num">${stats.totalDigitizedDocs}</div><div class="lbl">وثيقة مرقمنة</div></div>
@@ -6479,13 +6582,44 @@ ${portfolio.bio ? `<div class="section"><h2>نبذة مهنية</h2><p>${portfol
     <div class="stat-card"><div class="num">${subjectLabels.length}</div><div class="lbl">مادة تعليمية</div></div>
   </div>
   </div>
+  <div class="score-bar">
+    <span style="font-size:12px;color:#6b7280;">النقاط الإجمالية:</span>
+    <div class="score-bar-track"><div class="score-bar-fill" style="width:${Math.min(totalScore, 100)}%;"></div></div>
+    <span style="font-weight:bold;color:#1e40af;">${totalScore}/100</span>
+  </div>
 </div>
+
+${radarLabels.length >= 3 ? `<div class="section">
+  <h2>مخطط رادار الخبرة حسب المادة</h2>
+  <div class="radar-section">
+    <div class="radar-chart">${radarSvg}</div>
+    <div class="radar-legend">
+      ${radarLabels.map((label, i) => {
+        const pct = Math.round((radarValues[i] / radarMax) * 100);
+        return `<div class="radar-legend-item"><span style="font-weight:bold;">${label}</span><span style="color:#1e40af;font-weight:bold;">${radarValues[i]} نقطة (${pct}%)</span></div>`;
+      }).join("")}
+    </div>
+  </div>
+</div>` : ""}
 
 ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط حسب المادة</h2>${subjectBarsHtml}</div>` : ""}
 
+</div><!-- end page 1 -->
+
+${goldenContributions.length > 0 ? `<div class="page page-break">
+<div class="section">
+  <h2>المساهمات الذهبية (أحدث الأعمال)</h2>
+  <table class="contrib-table">
+    <thead><tr><th>النوع</th><th>العنوان</th><th>المادة</th><th>التاريخ</th></tr></thead>
+    <tbody>${contribRows}</tbody>
+  </table>
+</div>
+</div>` : ""}
+
 <div class="footer">
-  <p>تم إنشاء هذا الملف المهني بواسطة Leader Academy - المساعد البيداغوجي الذكي</p>
-  <p>تاريخ الإصدار: ${dateStr}</p>
+  <p class="flag">🇹🇳</p>
+  <p>تم إنشاء هذا الملف المهني الرقمي بواسطة <strong>Leader Academy</strong> - المساعد البيداغوجي الذكي</p>
+  <p>تاريخ الإصدار: ${dateStr} | وثيقة رسمية صالحة للتقديم للمتفقدين والإدارة التربوية</p>
 </div>
 </body></html>`;
 
@@ -6500,7 +6634,7 @@ ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط �
         await page.setContent(html, { waitUntil: "networkidle0" });
         const pdfBuffer = await page.pdf({
           format: "A4",
-          margin: { top: "20mm", bottom: "20mm", left: "20mm", right: "20mm" },
+          margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" },
           printBackground: true,
         });
         await browser.close();
@@ -7070,6 +7204,112 @@ ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط �
           .set({ isOfficial: input.isOfficial })
           .where(eq(curriculumPlans.id, input.planId));
         return { success: true };
+      }),
+
+    // ===== CURRICULUM GPS: Progress Bar + Current Lesson =====
+    getCurriculumGPS: protectedProcedure
+      .input(z.object({ planId: z.number() }).optional())
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) return { plans: [], activePlan: null, progress: null, currentLesson: null, nextLessons: [] };
+        const userId = ctx.user.id;
+
+        // Get all user plans + official plans
+        const allPlans = await database.select().from(curriculumPlans)
+          .where(and(
+            eq(curriculumPlans.isActive, true),
+            or(
+              eq(curriculumPlans.createdBy, userId),
+              eq(curriculumPlans.isOfficial, true),
+            ),
+          ))
+          .orderBy(desc(curriculumPlans.createdAt));
+
+        if (allPlans.length === 0) return { plans: [], activePlan: null, progress: null, currentLesson: null, nextLessons: [] };
+
+        // Use specified plan or first available
+        const activePlan = input?.planId ? allPlans.find(p => p.id === input.planId) || allPlans[0] : allPlans[0];
+
+        // Get coverage stats
+        const coverageStats = await db.getCoverageStats(userId, activePlan.id);
+
+        // Get all topics ordered
+        const allTopics = await database.select().from(curriculumTopics)
+          .where(eq(curriculumTopics.planId, activePlan.id))
+          .orderBy(curriculumTopics.periodNumber, curriculumTopics.orderIndex);
+
+        // Get user progress for this plan
+        const userProgress = await database.select().from(teacherCurriculumProgress)
+          .where(and(
+            eq(teacherCurriculumProgress.userId, userId),
+            eq(teacherCurriculumProgress.planId, activePlan.id),
+          ));
+        const progressMap = new Map(userProgress.map(p => [p.topicId, p]));
+
+        // ===== Calculate Current Lesson based on date =====
+        // Tunisian school year: Sept 15 to June 30 (~38 weeks)
+        const now = new Date();
+        const yearStr = activePlan.schoolYear; // e.g., "2025-2026"
+        const startYear = parseInt(yearStr.split("-")[0]) || now.getFullYear();
+        const schoolStart = new Date(startYear, 8, 15); // Sept 15
+        const schoolEnd = new Date(startYear + 1, 5, 30); // June 30
+
+        // Calculate current week number in school year
+        let currentWeek = 1;
+        if (now >= schoolStart && now <= schoolEnd) {
+          const diffMs = now.getTime() - schoolStart.getTime();
+          currentWeek = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)) + 1;
+        } else if (now > schoolEnd) {
+          currentWeek = 38; // End of year
+        }
+
+        // Find current lesson: first uncompleted topic whose weekNumber <= currentWeek
+        // Or fallback to the first uncompleted topic by order
+        let currentLesson = null;
+        const uncompletedTopics = allTopics.filter(t => {
+          const prog = progressMap.get(t.id);
+          return !prog || prog.status !== "completed";
+        });
+
+        // Try week-based matching first
+        const weekBasedMatch = uncompletedTopics.find(t => t.weekNumber && t.weekNumber <= currentWeek + 1 && t.weekNumber >= currentWeek - 1);
+        if (weekBasedMatch) {
+          currentLesson = weekBasedMatch;
+        } else if (uncompletedTopics.length > 0) {
+          // Fallback: estimate based on position in plan
+          const topicIndex = Math.min(Math.floor((currentWeek / 38) * allTopics.length), allTopics.length - 1);
+          // Find nearest uncompleted topic to the estimated position
+          currentLesson = uncompletedTopics.reduce((closest, topic) => {
+            const topicPos = allTopics.indexOf(topic);
+            const closestPos = allTopics.indexOf(closest);
+            return Math.abs(topicPos - topicIndex) < Math.abs(closestPos - topicIndex) ? topic : closest;
+          }, uncompletedTopics[0]);
+        }
+
+        // Get next 3 lessons after current
+        const currentIdx = currentLesson ? allTopics.indexOf(currentLesson) : 0;
+        const nextLessons = allTopics.slice(currentIdx + 1, currentIdx + 4).map(t => ({
+          ...t,
+          status: progressMap.get(t.id)?.status || "not_started",
+        }));
+
+        // Period breakdown for progress bar
+        const periodBreakdown = await db.getCoverageByCurriculumPeriod(userId, activePlan.id);
+
+        return {
+          plans: allPlans.map(p => ({ id: p.id, planTitle: p.planTitle, subject: p.subject, grade: p.grade, schoolYear: p.schoolYear })),
+          activePlan,
+          progress: {
+            ...coverageStats,
+            currentWeek,
+            periodBreakdown,
+          },
+          currentLesson: currentLesson ? {
+            ...currentLesson,
+            status: progressMap.get(currentLesson.id)?.status || "not_started",
+          } : null,
+          nextLessons,
+        };
       }),
   }),
 

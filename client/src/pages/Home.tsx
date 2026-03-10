@@ -8,11 +8,11 @@ import {
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings, ScanLine, FileCheck, Store,
+  Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ChatAssistant } from "@/components/ChatAssistant";
 import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
@@ -186,6 +186,153 @@ function FeaturedContentSection({ t }: { t: (ar: string, fr: string, en: string)
             </button>
           </Link>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function CurriculumGPSSection({ t }: { t: (ar: string, fr: string, en: string) => string }) {
+  const { user } = useAuth();
+  const gpsQuery = trpc.curriculum.getCurriculumGPS.useQuery(undefined, { enabled: !!user });
+  const [, navigate] = useLocation();
+
+  if (!user || !gpsQuery.data?.activePlan) return null;
+
+  const { activePlan, progress, currentLesson, nextLessons, plans } = gpsQuery.data;
+  const pct = progress?.percentage || 0;
+  const currentWeek = progress?.currentWeek || 1;
+
+  const statusColors: Record<string, string> = {
+    completed: "#059669",
+    in_progress: "#f59e0b",
+    not_started: "#94a3b8",
+  };
+
+  return (
+    <section className="py-16" dir="rtl" style={{ background: "linear-gradient(135deg, #0D1B5E 0%, #1A237E 60%, #1565C0 100%)" }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-4" style={{ background: "rgba(255,255,255,0.15)", color: "#fbbf24" }}>
+            <Navigation className="w-4 h-4" />
+            {t("بوصلة المنهج الذكية", "GPS du Programme", "Curriculum GPS")}
+          </span>
+          <h2 className="text-3xl lg:text-4xl font-black text-white mb-2" style={{ fontFamily: "Cairo, sans-serif" }}>
+            {activePlan.planTitle}
+          </h2>
+          <p className="text-blue-200 text-lg">
+            {activePlan.subject} • {activePlan.grade} • {t(`الأسبوع ${currentWeek}`, `Semaine ${currentWeek}`, `Week ${currentWeek}`)}
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="max-w-3xl mx-auto mb-10">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-white font-bold text-lg">{t("تقدم المنهج", "Progression", "Progress")}</span>
+            <span className="text-2xl font-black" style={{ color: "#fbbf24" }}>{pct}%</span>
+          </div>
+          <div className="h-4 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.15)" }}>
+            <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #fbbf24, #f59e0b)" }} />
+          </div>
+          <div className="flex items-center justify-between mt-2 text-sm text-blue-200">
+            <span>{progress?.completed || 0} {t("درس مكتمل", "le\u00e7ons compl\u00e9t\u00e9es", "completed")} / {progress?.total || 0}</span>
+            <span>{progress?.inProgress || 0} {t("قيد الإنجاز", "en cours", "in progress")}</span>
+          </div>
+        </div>
+
+        {/* Period breakdown mini-bars */}
+        {progress?.periodBreakdown && progress.periodBreakdown.length > 0 && (
+          <div className="max-w-3xl mx-auto mb-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {progress.periodBreakdown.map((period: any) => (
+              <div key={period.periodNumber} className="rounded-xl p-3 text-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="text-xs text-blue-200 mb-1">{period.periodName}</div>
+                <div className="text-lg font-bold text-white">{period.percentage}%</div>
+                <div className="h-1.5 rounded-full mt-1" style={{ background: "rgba(255,255,255,0.15)" }}>
+                  <div className="h-full rounded-full" style={{ width: `${period.percentage}%`, background: period.percentage === 100 ? "#059669" : "#fbbf24" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Current Lesson Card */}
+        {currentLesson && (
+          <div className="max-w-3xl mx-auto">
+            <div className="rounded-2xl p-6 border" style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(251,191,36,0.3)" }}>
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #fbbf24, #f59e0b)" }}>
+                  <Target className="w-7 h-7 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: "rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                      {t("الدرس الحالي", "Le\u00e7on actuelle", "Current Lesson")}
+                    </span>
+                    {currentLesson.weekNumber && (
+                      <span className="text-xs text-blue-300">
+                        <Clock className="w-3 h-3 inline ml-1" />
+                        {t(`الأسبوع ${currentLesson.weekNumber}`, `Semaine ${currentLesson.weekNumber}`, `Week ${currentLesson.weekNumber}`)}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-1" style={{ fontFamily: "Cairo, sans-serif" }}>
+                    {currentLesson.topicTitle}
+                  </h3>
+                  {currentLesson.competency && (
+                    <p className="text-blue-200 text-sm mb-1">
+                      {currentLesson.competencyCode && <span className="font-bold text-yellow-300 ml-2">{currentLesson.competencyCode}</span>}
+                      {currentLesson.competency}
+                    </p>
+                  )}
+                  {currentLesson.textbookName && (
+                    <p className="text-blue-300 text-xs">
+                      {currentLesson.textbookName} {currentLesson.textbookPages && `• ${currentLesson.textbookPages}`}
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => navigate(`/edugpt?subject=${encodeURIComponent(activePlan.subject)}&grade=${encodeURIComponent(activePlan.grade)}&lesson=${encodeURIComponent(currentLesson.topicTitle)}`)}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:scale-105"
+                      style={{ background: "linear-gradient(135deg, #fbbf24, #f59e0b)" }}
+                    >
+                      <Play className="w-4 h-4" />
+                      {t("حضّر هذا الدرس الآن", "Pr\u00e9parer cette le\u00e7on", "Prepare this lesson")}
+                    </button>
+                    <Link href="/curriculum-map">
+                      <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105" style={{ background: "rgba(255,255,255,0.1)", color: "white" }}>
+                        <MapPin className="w-4 h-4" />
+                        {t("عرض خريطة المنهج", "Voir la carte", "View Curriculum Map")}
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Lessons Preview */}
+            {nextLessons.length > 0 && (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                {nextLessons.map((lesson: any, i: number) => (
+                  <div key={lesson.id} className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.06)" }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: statusColors[lesson.status] || "#94a3b8", color: "white" }}>
+                        {i + 1}
+                      </div>
+                      <span className="text-xs text-blue-300">
+                        {lesson.status === "completed" ? t("مكتمل", "Termin\u00e9", "Done") : lesson.status === "in_progress" ? t("جاري", "En cours", "In progress") : t("قادم", "\u00c0 venir", "Upcoming")}
+                      </span>
+                    </div>
+                    <h4 className="text-white font-bold text-sm line-clamp-2" style={{ fontFamily: "Cairo, sans-serif" }}>
+                      {lesson.topicTitle}
+                    </h4>
+                    {lesson.competencyCode && (
+                      <span className="text-xs text-yellow-300 mt-1 inline-block">{lesson.competencyCode}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -952,6 +1099,9 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* ===== CURRICULUM GPS ===== */}
+      <CurriculumGPSSection t={t} />
 
       {/* ===== FEATURED CONTENT OF THE WEEK ===== */}
       <FeaturedContentSection t={t} />

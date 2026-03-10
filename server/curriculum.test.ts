@@ -386,4 +386,115 @@ describe("curriculum router", () => {
       }
     });
   });
+
+  describe("getCurriculumGPS", () => {
+    it("requires authentication", async () => {
+      const caller = appRouter.createCaller(createUnauthContext());
+      await expect(caller.curriculum.getCurriculumGPS()).rejects.toThrow();
+    });
+
+    it("returns GPS structure for user", async () => {
+      const caller = appRouter.createCaller(createAuthContext({ id: 500 }));
+      const gps = await caller.curriculum.getCurriculumGPS();
+      expect(gps).toHaveProperty("plans");
+      expect(gps).toHaveProperty("activePlan");
+      expect(gps).toHaveProperty("currentLesson");
+      expect(gps).toHaveProperty("nextLessons");
+      expect(Array.isArray(gps.plans)).toBe(true);
+      expect(Array.isArray(gps.nextLessons)).toBe(true);
+    });
+
+    it("returns GPS data with progress and current lesson", async () => {
+      const caller = appRouter.createCaller(createAuthContext({ id: 501 }));
+      
+      // Create a plan
+      const plan = await caller.curriculum.createPlan({
+        schoolYear: "2025-2026",
+        educationLevel: "primary",
+        grade: "السنة الخامسة ابتدائي",
+        subject: "الرياضيات",
+        planTitle: "GPS Test Plan",
+        totalPeriods: 2,
+      });
+
+      if (plan) {
+        // Add topics
+        await caller.curriculum.addTopics({
+          planId: plan.id,
+          topics: [
+            { periodNumber: 1, periodName: "الفترة الأولى", topicTitle: "الأعداد ذات 5 أرقام", competency: "حل وضعيات مشكل", competencyCode: "ك.م.1", orderIndex: 1, sessionCount: 2, sessionDuration: 45, weekNumber: 1 },
+            { periodNumber: 1, periodName: "الفترة الأولى", topicTitle: "الجمع والطرح", competency: "حل وضعيات مشكل", competencyCode: "ك.م.1", orderIndex: 2, sessionCount: 2, sessionDuration: 45, weekNumber: 3 },
+            { periodNumber: 2, periodName: "الفترة الثانية", topicTitle: "الضرب", competency: "حل وضعيات مشكل", competencyCode: "ك.م.2", orderIndex: 3, sessionCount: 2, sessionDuration: 45, weekNumber: 8 },
+          ],
+        });
+
+        const gps = await caller.curriculum.getCurriculumGPS({ planId: plan.id });
+        
+        expect(gps.activePlan).toBeTruthy();
+        expect(gps.activePlan!.id).toBe(plan.id);
+        expect(gps.progress).toBeTruthy();
+        expect(gps.progress!.total).toBe(3);
+        expect(gps.progress!.currentWeek).toBeGreaterThanOrEqual(1);
+        expect(gps.progress!.periodBreakdown).toBeDefined();
+        expect(Array.isArray(gps.progress!.periodBreakdown)).toBe(true);
+        // Should have a current lesson
+        expect(gps.currentLesson).toBeTruthy();
+        expect(gps.currentLesson!.topicTitle).toBeTruthy();
+        // Should have next lessons
+        expect(Array.isArray(gps.nextLessons)).toBe(true);
+      }
+    });
+
+    it("updates current lesson after marking progress", async () => {
+      const caller = appRouter.createCaller(createAuthContext({ id: 502 }));
+      
+      const plan = await caller.curriculum.createPlan({
+        schoolYear: "2025-2026",
+        educationLevel: "primary",
+        grade: "السنة الرابعة ابتدائي",
+        subject: "العلوم",
+        planTitle: "GPS Progress Test",
+        totalPeriods: 1,
+      });
+
+      if (plan) {
+        const topics = await caller.curriculum.addTopics({
+          planId: plan.id,
+          topics: [
+            { periodNumber: 1, periodName: "الفترة 1", topicTitle: "الجهاز التنفسي", orderIndex: 1, sessionCount: 1, sessionDuration: 45 },
+            { periodNumber: 1, periodName: "الفترة 1", topicTitle: "الجهاز الهضمي", orderIndex: 2, sessionCount: 1, sessionDuration: 45 },
+          ],
+        });
+
+        // Mark first topic as completed
+        if (topics.length > 0) {
+          await caller.curriculum.updateProgress({
+            planId: plan.id,
+            topicId: topics[0].id,
+            status: "completed",
+          });
+
+          const gps = await caller.curriculum.getCurriculumGPS({ planId: plan.id });
+          expect(gps.progress!.completed).toBe(1);
+          expect(gps.progress!.percentage).toBe(50);
+        }
+      }
+    });
+  });
+});
+
+// ===== Portfolio PDF Export Tests =====
+describe("portfolio2 exportPDF", () => {
+  it("requires authentication", async () => {
+    const caller = appRouter.createCaller(createUnauthContext());
+    await expect(caller.portfolio2.exportPDF()).rejects.toThrow();
+  });
+
+  it("returns PDF URL", async () => {
+    const caller = appRouter.createCaller(createAuthContext({ id: 600, name: "Test Teacher" }));
+    const result = await caller.portfolio2.exportPDF();
+    expect(result).toHaveProperty("url");
+    expect(typeof result.url).toBe("string");
+    expect(result.url.length).toBeGreaterThan(10);
+  }, 15000);
 });

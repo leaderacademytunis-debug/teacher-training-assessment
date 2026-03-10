@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +42,22 @@ export default function EduGPT() {
   const [level, setLevel] = useState("");
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
+
+  // Pre-fill from URL params (e.g., from Curriculum GPS "Prepare this lesson" button)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlSubject = params.get("subject");
+    const urlGrade = params.get("grade");
+    const urlLesson = params.get("lesson");
+    if (urlSubject) setSubject(urlSubject);
+    if (urlLesson) setTopic(urlLesson);
+    if (urlGrade) {
+      const gradeLower = urlGrade.toLowerCase();
+      if (gradeLower.includes("ابتدائي") || gradeLower.includes("primary")) setLevel("ابتدائي");
+      else if (gradeLower.includes("إعدادي") || gradeLower.includes("middle")) setLevel("إعدادي");
+      else if (gradeLower.includes("ثانوي") || gradeLower.includes("secondary")) setLevel("ثانوي");
+    }
+  }, []);
   const [objectives, setObjectives] = useState("");
   const [result, setResult] = useState("");
   const [copied, setCopied] = useState(false);
