@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, openId, name, email, role FROM users WHERE email LIKE '%leaderacademy%' OR role = 'admin' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, openId, name, email, role FROM users WHERE email LIKE '%leaderacademy%' OR role = 'admin' LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "fBMf5LUnkonfwxp7ThKPtB",
+      "name": "Ali Saadallah",
+      "email": "leaderacademytunis@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "2400105",
+      "openId": "5bhnGQB9xGnujGmNfdp2oy",
+      "name": "ALI SAADALLAH",
+      "email": "alisaadallah@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "2880001",
+      "openId": "QXaynMVhCgKcU6CDstMdWy",
+      "name": "Leader Academy",
+      "email": "leaderacademy216@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "4980669",
+      "openId": "LXEm9dPg6B87yA3m8ZoMoH",
+      "name": "Leader Academy",
+      "email": "leaderacademy.school@hotmail.com",
+      "role": "user"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\trole\n1\tfBMf5LUnkonfwxp7ThKPtB\tAli Saadallah\tleaderacademytunis@gmail.com\tadmin\n2400105\t5bhnGQB9xGnujGmNfdp2oy\tALI SAADALLAH\talisaadallah@gmail.com\tadmin\n2880001\tQXaynMVhCgKcU6CDstMdWy\tLeader Academy\tleaderacademy216@gmail.com\tadmin\n4980669\tLXEm9dPg6B87yA3m8ZoMoH\tLeader Academy\tleaderacademy.school@hotmail.com\tuser\n",
+  "stderr": "",
+  "execution_time_ms": 125
+}

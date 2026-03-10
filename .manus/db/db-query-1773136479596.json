@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, openId, name, email, role FROM users ORDER BY id LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, openId, name, email, role FROM users ORDER BY id LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "fBMf5LUnkonfwxp7ThKPtB",
+      "name": "Ali Saadallah",
+      "email": "leaderacademytunis@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "690058",
+      "openId": "N9LFMxCKb8BCPaxygw9NVC",
+      "name": "Roshan Business",
+      "email": "roshneteller@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "1710246",
+      "openId": "erVgWjGMfXfL8yEC9Simse",
+      "name": "Sarra Benbelgassem",
+      "email": "benbelgassemsarra0@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "1710347",
+      "openId": "XAMNsSCiLJGyxkyXanWUds",
+      "name": "awatef saadallah",
+      "email": "awatefsaadallah@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "2400105",
+      "openId": "5bhnGQB9xGnujGmNfdp2oy",
+      "name": "ALI SAADALLAH",
+      "email": "alisaadallah@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "2820012",
+      "openId": "mDPkLXAYrvshuBaWRinK3v",
+      "name": "JAZI SAMI",
+      "email": "nomjazisami@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "2880001",
+      "openId": "QXaynMVhCgKcU6CDstMdWy",
+      "name": "Leader Academy",
+      "email": "leaderacademy216@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "3360001",
+      "openId": "4F2JKsb7TZGMye2nXHgJgV",
+      "name": "Oussema Dhaouadi",
+      "email": "ycemadxay@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "3360021",
+      "openId": "5W9DmWvdRnXPvvYsid8gWQ",
+      "name": "ycema polini",
+      "email": "poliniycema@gmail.com",
+      "role": "user"
+    },
+    {
+      "id": "3600001",
+      "openId": "Xyz944isK86UP3UPvuqcSJ",
+      "name": "Ahmed Assadi",
+      "email": "assadiahmed999@gmail.com",
+      "role": "user"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\trole\n1\tfBMf5LUnkonfwxp7ThKPtB\tAli Saadallah\tleaderacademytunis@gmail.com\tadmin\n690058\tN9LFMxCKb8BCPaxygw9NVC\tRoshan Business\troshneteller@gmail.com\tuser\n1710246\terVgWjGMfXfL8yEC9Simse\tSarra Benbelgassem\tbenbelgassemsarra0@gmail.com\tuser\n1710347\tXAMNsSCiLJGyxkyXanWUds\tawatef saadallah\tawatefsaadallah@gmail.com\tuser\n2400105\t5bhnGQB9xGnujGmNfdp2oy\tALI SAADALLAH\talisaadallah@gmail.com\tadmin\n2820012\tmDPkLXAYrvshuBaWRinK3v\tJAZI SAMI\tnomjazisami@gmail.com\tuser\n2880001\tQXaynMVhCgKcU6CDstMdWy\tLeader Academy\tleaderacademy216@gmail.com\tadmin\n3360001\t4F2JKsb7TZGMye2nXHgJgV\tOussema Dhaouadi\tycemadxay@gmail.com\tuser\n3360021\t5W9DmWvdRnXPvvYsid8gWQ\tycema polini\tpoliniycema@gmail.com\tuser\n3600001\tXyz944isK86UP3UPvuqcSJ\tAhmed Assadi\tassadiahmed999@gmail.com\tuser\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

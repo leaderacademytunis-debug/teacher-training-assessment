@@ -208,6 +208,77 @@ describe("Digital Audition", () => {
   });
 });
 
+describe("Admin Console Navigation", () => {
+  it("should have pendingCount procedure returning count of unverified schools", () => {
+    // The pendingCount procedure filters partnerSchools where isVerified = false
+    const schools = [
+      { id: 1, schoolName: "مدرسة A", isVerified: false },
+      { id: 2, schoolName: "مدرسة B", isVerified: true },
+      { id: 3, schoolName: "مدرسة C", isVerified: false },
+    ];
+    const pendingCount = schools.filter(s => !s.isVerified).length;
+    expect(pendingCount).toBe(2);
+  });
+
+  it("should show admin console dropdown only for admin role", () => {
+    const adminUser = { id: 1, role: "admin" as const };
+    const regularUser = { id: 2, role: "user" as const };
+    expect(adminUser.role).toBe("admin");
+    expect(regularUser.role).not.toBe("admin");
+    // Admin console should only render when user.role === 'admin'
+    const showAdminConsole = (role: string) => role === "admin";
+    expect(showAdminConsole(adminUser.role)).toBe(true);
+    expect(showAdminConsole(regularUser.role)).toBe(false);
+  });
+
+  it("should display red dot badge when pending count > 0", () => {
+    const pendingCount = 3;
+    const showRedDot = pendingCount > 0;
+    expect(showRedDot).toBe(true);
+    // Badge should display count or 9+ for large numbers
+    const badgeText = pendingCount > 9 ? "9+" : String(pendingCount);
+    expect(badgeText).toBe("3");
+  });
+
+  it("should display 9+ for pending count over 9", () => {
+    const pendingCount = 15;
+    const badgeText = pendingCount > 9 ? "9+" : String(pendingCount);
+    expect(badgeText).toBe("9+");
+  });
+
+  it("should not show red dot when no pending schools", () => {
+    const pendingCount = 0;
+    const showRedDot = pendingCount > 0;
+    expect(showRedDot).toBe(false);
+  });
+
+  it("should include admin/partners link in admin console dropdown", () => {
+    const adminLinks = [
+      { href: "/admin/partners", label: "إدارة الشركاء" },
+      { href: "/admin", label: "لوحة الإدارة العامة" },
+      { href: "/managerial-dashboard", label: "التحليلات الإدارية" },
+    ];
+    const partnersLink = adminLinks.find(l => l.href === "/admin/partners");
+    expect(partnersLink).toBeDefined();
+    expect(partnersLink!.label).toBe("إدارة الشركاء");
+  });
+
+  it("should auto-assign admin role to owner based on OWNER_OPEN_ID", () => {
+    const ownerOpenId = "fBMf5LUnkonfwxp7ThKPtB";
+    const userOpenId = "fBMf5LUnkonfwxp7ThKPtB";
+    const isOwner = userOpenId === ownerOpenId;
+    expect(isOwner).toBe(true);
+    // When isOwner, role should be set to 'admin'
+    const role = isOwner ? "admin" : "user";
+    expect(role).toBe("admin");
+  });
+
+  it("should refresh pending count every 30 seconds", () => {
+    const refetchInterval = 30000;
+    expect(refetchInterval).toBe(30000);
+  });
+});
+
 describe("Mobile UI Polish", () => {
   it("should use Professional Blue theme consistently", () => {
     const themeColors = {

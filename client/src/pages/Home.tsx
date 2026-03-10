@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater,
+  Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -442,6 +442,122 @@ function NewsletterSection() {
   );
 }
 
+// Admin Console Dropdown for desktop nav
+function AdminConsoleDropdown({ language, t, location }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; location: string }) {
+  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000 });
+  const pendingCount = pendingCountQuery.data?.count || 0;
+
+  const ADMIN_LINKS = [
+    { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion partenaires", labelEn: "Partner Management", icon: Building2, descAr: "اعتماد ورفض طلبات المدارس الشريكة", descFr: "Approuver/rejeter les demandes d'écoles", descEn: "Approve/reject school partner requests" },
+    { href: "/admin", labelAr: "لوحة الإدارة العامة", labelFr: "Tableau de bord admin", labelEn: "Admin Dashboard", icon: Settings, descAr: "إدارة المستخدمين والدورات والإعدادات", descFr: "Gérer utilisateurs, cours et paramètres", descEn: "Manage users, courses and settings" },
+    { href: "/managerial-dashboard", labelAr: "التحليلات الإدارية", labelFr: "Analyses managériales", labelEn: "Managerial Analytics", icon: BarChart3, descAr: "تقارير الأداء والإحصائيات التفصيلية", descFr: "Rapports de performance et statistiques", descEn: "Performance reports and statistics" },
+  ];
+
+  return (
+    <div className="relative group/admin">
+      <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+        ['/admin', '/admin/partners', '/managerial-dashboard'].some(p => location.startsWith(p)) ? "text-white bg-white/15" : "text-red-200 hover:text-white hover:bg-white/10"
+      }`} style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)" }}>
+        <Shield className="w-4 h-4 text-red-300" />
+        {t("وحدة التحكم", "Console", "Console")}
+        {pendingCount > 0 && (
+          <span className="relative flex h-5 w-5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-bold">
+              {pendingCount > 9 ? "9+" : pendingCount}
+            </span>
+          </span>
+        )}
+        <ChevronDown className="w-3.5 h-3.5 text-red-300 transition-transform group-hover/admin:rotate-180" />
+      </button>
+      {/* Hover dropdown */}
+      <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "300px" }}>
+        <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
+          <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #991B1B, #DC2626)" }}>
+            <p className="text-white font-bold text-sm flex items-center gap-2">
+              <Shield className="w-4 h-4 text-red-200" />
+              {t("وحدة التحكم الإدارية", "Console d'administration", "Admin Console")}
+              {pendingCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-red-600">
+                  {pendingCount} {t("طلب معلق", "en attente", "pending")}
+                </span>
+              )}
+            </p>
+          </div>
+          {ADMIN_LINKS.map((link, idx) => {
+            const IconComp = link.icon;
+            const isPartners = link.href === "/admin/partners";
+            return (
+              <Link key={link.href} href={link.href}>
+                <div className={`flex items-start gap-3 px-4 py-3 hover:bg-red-50 cursor-pointer transition-colors ${idx < ADMIN_LINKS.length - 1 ? "border-b border-gray-50" : ""}`}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: isPartners ? "linear-gradient(135deg, #DC2626, #EF4444)" : "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                    <IconComp className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm text-gray-900">{language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}</p>
+                      {isPartners && pendingCount > 0 && (
+                        <span className="flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-red-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">{language === "fr" ? link.descFr : language === "en" ? link.descEn : link.descAr}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Admin mobile link with red dot badge
+function AdminMobileLink({ setMobileMenuOpen, location, language, t }: { setMobileMenuOpen: (v: boolean) => void; location: string; language: AppLanguage; t: (ar: string, fr: string, en: string) => string }) {
+  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000 });
+  const pendingCount = pendingCountQuery.data?.count || 0;
+
+  const links = [
+    { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion partenaires", labelEn: "Partner Management", icon: Building2 },
+    { href: "/admin", labelAr: "لوحة الإدارة العامة", labelFr: "Tableau de bord admin", labelEn: "Admin Dashboard", icon: Settings },
+    { href: "/managerial-dashboard", labelAr: "التحليلات الإدارية", labelFr: "Analyses managériales", labelEn: "Managerial Analytics", icon: BarChart3 },
+  ];
+
+  return (
+    <>
+      {links.map((link) => {
+        const IconComp = link.icon;
+        const isActive = location === link.href || location.startsWith(link.href + "/");
+        const isPartners = link.href === "/admin/partners";
+        return (
+          <Link key={link.href} href={link.href}>
+            <button
+              className={`flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <IconComp className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-red-300" : ""}`} />
+              <span className="flex-1">{language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}</span>
+              {isPartners && pendingCount > 0 && (
+                <span className="flex h-5 w-5 items-center justify-center">
+                  <span className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-bold">
+                    {pendingCount > 9 ? "9+" : pendingCount}
+                  </span>
+                </span>
+              )}
+            </button>
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -604,6 +720,11 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+
+              {/* Admin Console Dropdown - admin only */}
+              {user?.role === "admin" && (
+                <AdminConsoleDropdown language={language} t={t} location={location} />
+              )}
             </nav>
 
             {/* Right actions */}
@@ -775,6 +896,21 @@ export default function Home() {
                   })}
                 </div>
               </div>
+              {/* Admin Console section in mobile */}
+              {user?.role === "admin" && (
+                <>
+                  <div className="border-t border-white/10 my-2" />
+                  <div className="px-4 py-2">
+                    <p className="text-red-300 font-bold text-xs flex items-center gap-2 mb-2">
+                      <Shield className="w-3.5 h-3.5" />
+                      {t("وحدة التحكم الإدارية", "Console Admin", "Admin Console")}
+                    </p>
+                    <div className="space-y-1 mr-4">
+                      <AdminMobileLink setMobileMenuOpen={setMobileMenuOpen} location={location} language={language} t={t} />
+                    </div>
+                  </div>
+                </>
+              )}
               {/* Quick actions */}
               <div className="flex gap-2 px-4 pt-2">
                 <Link href="/assistant" className="flex-1">

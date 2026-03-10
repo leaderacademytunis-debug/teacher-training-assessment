@@ -10630,6 +10630,12 @@ ${input.lessonContent}
       await database.update(jobPostings).set({ isActive: input.isActive }).where(eq(jobPostings.id, input.jobId));
       return { success: true };
     }),
+    pendingCount: adminProcedure.query(async () => {
+      const database = await getDb();
+      if (!database) return { count: 0 };
+      const pending = await database.select({ cnt: count() }).from(partnerSchools).where(eq(partnerSchools.isVerified, false));
+      return { count: pending[0]?.cnt || 0 };
+    }),
     getStats: adminProcedure.query(async () => {
       const database = await getDb();
       if (!database) return { totalSchools: 0, pendingSchools: 0, approvedSchools: 0, totalJobs: 0, activeJobs: 0 };

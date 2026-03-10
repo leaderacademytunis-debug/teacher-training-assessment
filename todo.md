@@ -1988,3 +1988,8 @@
 ### Global
 - [x] كتابة اختبارات Vitest (24 اختبار ناجح)
 - [x] اختبار شامل وحفظ checkpoint
+
+## Fix: Admin Partners Dashboard Accessibility
+- [x] Add Admin Console section in sidebar with link to /admin/partners labeled 'إدارة الشركاء'
+- [x] Verify admin role for owner account (leaderacademy216@gmail.com)
+- [x] Add red dot notification badge on sidebar link for pending school requests
