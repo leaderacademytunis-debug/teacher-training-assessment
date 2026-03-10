@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -10330,8 +10330,306 @@ ${input.lessonContent}
         await database.delete(goldenSamples).where(and(eq(goldenSamples.id, input.sampleId), eq(goldenSamples.userId, ctx.user.id)));
         return { success: true };
       }),
+    // ===== CUSTOM SLUG (enhanced) =====
+    updateCustomSlug: protectedProcedure
+    .input(z.object({ slug: z.string().min(3).max(60).regex(/^[a-z0-9-]+$/, "يجب أن يحتوي الرابط على أحرف لاتينية صغيرة وأرقام وشرطات فقط") }))
+    .mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const reserved = ["admin", "login", "register", "api", "showcase", "school", "partner", "search"];
+      if (reserved.includes(input.slug)) throw new TRPCError({ code: "BAD_REQUEST", message: "هذا الرابط محجوز" });
+      const [existing] = await database.select({ id: teacherPortfolios.id }).from(teacherPortfolios)
+        .where(and(eq(teacherPortfolios.publicSlug, input.slug), sql`${teacherPortfolios.userId} != ${ctx.user.id}`)).limit(1);
+      if (existing) throw new TRPCError({ code: "CONFLICT", message: "هذا الرابط مستخدم بالفعل" });
+      await database.update(teacherPortfolios).set({ publicSlug: input.slug }).where(eq(teacherPortfolios.userId, ctx.user.id));
+      return { success: true, slug: input.slug };
+    }),
+    // ===== TALENT DIRECTORY =====
+    talentDirectory: publicProcedure
+    .input(z.object({
+      subject: z.string().optional(),
+      region: z.string().optional(),
+      grade: z.string().optional(),
+      minScore: z.number().optional(),
+      page: z.number().default(1),
+      limit: z.number().default(12),
+    }))
+    .query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) return { teachers: [], total: 0 };
+      const conditions: any[] = [eq(teacherPortfolios.isPublic, true)];
+      if (input.region) conditions.push(eq(teacherPortfolios.region, input.region));
+      if (input.grade) conditions.push(eq(teacherPortfolios.educationLevel, input.grade as any));
+      const portfolios = await database.select({
+        portfolio: teacherPortfolios,
+        userName: users.name,
+        arabicName: users.arabicName,
+        firstNameAr: users.firstNameAr,
+        lastNameAr: users.lastNameAr,
+        schoolName: users.schoolName,
+      }).from(teacherPortfolios)
+        .innerJoin(users, eq(users.id, teacherPortfolios.userId))
+        .where(and(...conditions))
+        .limit(input.limit + 20)
+        .offset((input.page - 1) * input.limit);
+      const [totalResult] = await database.select({ count: count() }).from(teacherPortfolios).where(and(...conditions));
+      const enriched = [];
+      for (const row of portfolios) {
+        const userId = row.portfolio.userId;
+        const displayName = row.arabicName || (row.firstNameAr && row.lastNameAr ? `${row.firstNameAr} ${row.lastNameAr}` : row.userName) || "معلم";
+        const subjectBreakdown = row.portfolio.subjectBreakdown || {};
+        const totalScore = Object.values(subjectBreakdown).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+        if (input.minScore && totalScore < input.minScore) continue;
+        if (input.subject) {
+          const hasSubject = Object.keys(subjectBreakdown).some(k => k.includes(input.subject!));
+          if (!hasSubject && !row.portfolio.specializations?.some((s: string) => s.includes(input.subject!))) continue;
+        }
+        const [certCount] = await database.select({ count: count() }).from(certificates).where(eq(certificates.userId, userId));
+        const isVerified = (certCount?.count || 0) > 0;
+        let level = "مبتدئ";
+        if (totalScore >= 100) level = "خبير متميز";
+        else if (totalScore >= 60) level = "خبير";
+        else if (totalScore >= 30) level = "متقدم";
+        else if (totalScore >= 10) level = "متوسط";
+        enriched.push({
+          userId, displayName, schoolName: row.schoolName || row.portfolio.currentSchool,
+          region: row.portfolio.region, educationLevel: row.portfolio.educationLevel,
+          specializations: row.portfolio.specializations || [],
+          bio: row.portfolio.bio, yearsOfExperience: row.portfolio.yearsOfExperience,
+          totalScore, level, isVerified,
+          slug: row.portfolio.publicSlug || row.portfolio.publicToken,
+          stats: {
+            lessonPlans: row.portfolio.totalLessonPlans,
+            exams: row.portfolio.totalExams,
+            certificates: row.portfolio.totalCertificates,
+          },
+        });
+        if (enriched.length >= input.limit) break;
+      }
+      return { teachers: enriched, total: totalResult?.count || 0 };
+    }),
+    // ===== DIGITAL CV DOWNLOAD =====
+    generateDigitalCV: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .mutation(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const findPortfolio = async (cond: any) => {
+        const [r] = await database.select({
+          portfolio: teacherPortfolios, userName: users.name, arabicName: users.arabicName,
+          firstNameAr: users.firstNameAr, lastNameAr: users.lastNameAr, schoolName: users.schoolName, email: users.email,
+        }).from(teacherPortfolios).innerJoin(users, eq(users.id, teacherPortfolios.userId)).where(cond).limit(1);
+        return r;
+      };
+      let result = await findPortfolio(eq(teacherPortfolios.publicSlug, input.slug));
+      if (!result) result = await findPortfolio(eq(teacherPortfolios.publicToken, input.slug));
+      if (!result || !result.portfolio.isPublic) throw new TRPCError({ code: "NOT_FOUND", message: "الملف غير موجود" });
+      const showcaseData = await buildShowcaseData(database, result);
+      const { invokeLLM } = await import("./_core/llm");
+      const cvResponse = await invokeLLM({
+        messages: [
+          { role: "system", content: "أنت مصمم سير ذاتية محترف. أنشئ سيرة ذاتية مكثفة بصفحة واحدة بتنسيق HTML مع CSS مدمج. استخدم خط Cairo. التصميم يجب أن يكون أنيقاً واحترافياً مع ألوان Leader Academy (أزرق #1e40af، برتقالي #f97316). اكتب بالعربية. لا تستخدم صوراً خارجية. أنشئ رادار المهارات كجدول بسيط. أضف شارة 'معتمد من Leader Academy' إذا كان المعلم معتمداً. أعد HTML كاملاً فقط بدون أي نص إضافي." },
+          { role: "user", content: `أنشئ سيرة ذاتية رقمية لهذا المعلم:\nالاسم: ${showcaseData.displayName}\nالمدرسة: ${showcaseData.schoolName || 'غير محدد'}\nالمنطقة: ${showcaseData.region || 'غير محدد'}\nالسيرة: ${showcaseData.bio || 'معلم محترف'}\nالتخصصات: ${showcaseData.specializations?.join(', ') || 'غير محدد'}\nسنوات الخبرة: ${showcaseData.yearsOfExperience || 'غير محدد'}\nالمستوى: ${showcaseData.level}\nالنقاط: ${showcaseData.totalScore}\nمعتمد من Leader Academy: ${showcaseData.isVerified ? 'نعم' : 'لا'}\nالإحصائيات: ${JSON.stringify(showcaseData.stats)}\nالخبرات حسب المادة: ${JSON.stringify(showcaseData.subjectExpertise)}` },
+        ],
+      });
+      const htmlContent = cvResponse.choices?.[0]?.message?.content || "<p>خطأ في التوليد</p>";
+      return { html: htmlContent, displayName: showcaseData.displayName };
+    }),
   }),
+  // ===== SCHOOL PORTAL (بوابة المدارس الشريكة) =====
+  schoolPortal: router({
+  registerSchool: protectedProcedure
+    .input(z.object({
+      schoolName: z.string().min(2),
+      schoolNameAr: z.string().optional(),
+      schoolType: z.enum(["private", "public", "international", "other"]),
+      region: z.string().min(2),
+      address: z.string().optional(),
+      phone: z.string().optional(),
+      email: z.string().email().optional(),
+      website: z.string().optional(),
+      description: z.string().optional(),
+      contactPersonName: z.string().optional(),
+      contactPersonRole: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [existing] = await database.select({ id: partnerSchools.id }).from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
+      if (existing) throw new TRPCError({ code: "CONFLICT", message: "لديك مدرسة مسجلة بالفعل" });
+      await database.insert(partnerSchools).values({ ...input, userId: ctx.user.id });
+      const { notifyOwner } = await import("./_core/notification");
+      await notifyOwner({ title: "مدرسة شريكة جديدة", content: `${input.schoolName} - ${input.region} - تحتاج للتحقق` });
+      return { success: true };
+    }),
+  getMySchool: protectedProcedure.query(async ({ ctx }) => {
+    const database = await getDb();
+    if (!database) return null;
+    const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
+    return school || null;
+  }),
+  postJob: protectedProcedure
+    .input(z.object({
+      title: z.string().min(5),
+      description: z.string().min(10),
+      subject: z.string().min(2),
+      grade: z.string().optional(),
+      region: z.string().min(2),
+      contractType: z.enum(["full_time", "part_time", "temporary", "freelance"]).default("full_time"),
+      salaryRange: z.string().optional(),
+      requirements: z.string().optional(),
+      requiredSkills: z.array(z.string()).optional(),
+      applicationDeadline: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
+      if (!school) throw new TRPCError({ code: "FORBIDDEN", message: "يجب تسجيل مدرستك أولاً" });
+      if (!school.isVerified) throw new TRPCError({ code: "FORBIDDEN", message: "مدرستك لم يتم التحقق منها بعد" });
+      const matchedIds = await smartMatchTeachers(database, input.subject, input.region, input.grade);
+      await database.insert(jobPostings).values({
+        schoolId: school.id, postedByUserId: ctx.user.id,
+        title: input.title, description: input.description,
+        subject: input.subject, grade: input.grade || null,
+        region: input.region, contractType: input.contractType,
+        salaryRange: input.salaryRange || null,
+        requirements: input.requirements || null,
+        requiredSkills: input.requiredSkills || null,
+        applicationDeadline: input.applicationDeadline ? new Date(input.applicationDeadline) : null,
+        matchedTeacherIds: matchedIds,
+      });
+      if (matchedIds.length > 0) {
+        const { sendEmail } = await import("./emailService");
+        const matchedUsers = await database.select({ id: users.id, email: users.email, arabicName: users.arabicName, name: users.name })
+          .from(users).where(inArray(users.id, matchedIds));
+        for (const teacher of matchedUsers) {
+          const teacherName = teacher.arabicName || teacher.name || "معلم";
+          await sendEmail({
+            to: teacher.email,
+            subject: `فرصة عمل جديدة من ${school.schoolName} - ${input.title}`,
+            html: `<div dir="rtl" style="font-family:Cairo,sans-serif;max-width:600px;margin:0 auto;padding:20px;"><h2 style="color:#1e40af;">فرصة عمل تناسب ملفك المهني</h2><p>مرحباً ${teacherName}،</p><p>نشرت مدرسة <strong>${school.schoolName}</strong> في <strong>${input.region}</strong> عرض عمل يتوافق مع مهاراتك:</p><div style="background:#f0f9ff;padding:15px;border-radius:8px;margin:15px 0;"><h3 style="color:#1e40af;margin:0 0 8px;">${input.title}</h3><p style="margin:4px 0;">المادة: ${input.subject}</p><p style="margin:4px 0;">المنطقة: ${input.region}</p></div><p style="color:#6b7280;font-size:14px;">هذا الإشعار من Leader Academy Career Hub</p></div>`,
+          });
+        }
+      }
+      return { success: true, matchedCount: matchedIds.length };
+    }),
+  getMyJobs: protectedProcedure.query(async ({ ctx }) => {
+    const database = await getDb();
+    if (!database) return [];
+    const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
+    if (!school) return [];
+    return database.select().from(jobPostings).where(eq(jobPostings.schoolId, school.id)).orderBy(desc(jobPostings.createdAt));
+  }),
+  getActiveJobs: publicProcedure
+    .input(z.object({ subject: z.string().optional(), region: z.string().optional(), page: z.number().default(1) }))
+    .query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) return { jobs: [], total: 0 };
+      const conditions: any[] = [eq(jobPostings.isActive, true)];
+      if (input.subject) conditions.push(like(jobPostings.subject, `%${input.subject}%`));
+      if (input.region) conditions.push(eq(jobPostings.region, input.region));
+      const jobs = await database.select({
+        job: jobPostings,
+        schoolName: partnerSchools.schoolName,
+        schoolNameAr: partnerSchools.schoolNameAr,
+        schoolRegion: partnerSchools.region,
+        schoolType: partnerSchools.schoolType,
+        schoolLogo: partnerSchools.logoUrl,
+        isVerified: partnerSchools.isVerified,
+      }).from(jobPostings)
+        .innerJoin(partnerSchools, eq(partnerSchools.id, jobPostings.schoolId))
+        .where(and(...conditions))
+        .orderBy(desc(jobPostings.createdAt))
+        .limit(20).offset((input.page - 1) * 20);
+      const [totalResult] = await database.select({ count: count() }).from(jobPostings).where(and(...conditions));
+      return { jobs, total: totalResult?.count || 0 };
+    }),
+  getSmartMatch: protectedProcedure
+    .input(z.object({ jobId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
+      if (!school) throw new TRPCError({ code: "FORBIDDEN" });
+      const [job] = await database.select().from(jobPostings).where(and(eq(jobPostings.id, input.jobId), eq(jobPostings.schoolId, school.id))).limit(1);
+      if (!job) throw new TRPCError({ code: "NOT_FOUND" });
+      const matchedIds = job.matchedTeacherIds || [];
+      if (matchedIds.length === 0) return [];
+      const matched = [];
+      for (const teacherId of matchedIds.slice(0, 5)) {
+        const [row] = await database.select({
+          portfolio: teacherPortfolios, userName: users.name, arabicName: users.arabicName,
+          firstNameAr: users.firstNameAr, lastNameAr: users.lastNameAr, schoolName: users.schoolName,
+        }).from(teacherPortfolios).innerJoin(users, eq(users.id, teacherPortfolios.userId))
+          .where(and(eq(teacherPortfolios.userId, teacherId), eq(teacherPortfolios.isPublic, true))).limit(1);
+        if (row) {
+          const displayName = row.arabicName || (row.firstNameAr && row.lastNameAr ? `${row.firstNameAr} ${row.lastNameAr}` : row.userName) || "معلم";
+          const subjectBreakdown = row.portfolio.subjectBreakdown || {};
+          const totalScore = Object.values(subjectBreakdown).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+          const [certCount] = await database.select({ count: count() }).from(certificates).where(eq(certificates.userId, teacherId));
+          matched.push({
+            userId: teacherId, displayName, schoolName: row.schoolName || row.portfolio.currentSchool,
+            region: row.portfolio.region, specializations: row.portfolio.specializations || [],
+            totalScore, isVerified: (certCount?.count || 0) > 0,
+            slug: row.portfolio.publicSlug || row.portfolio.publicToken,
+          });
+        }
+      }
+      return matched;
+    }),
+  verifySchool: adminProcedure
+    .input(z.object({ schoolId: z.number(), verified: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await database.update(partnerSchools).set({ isVerified: input.verified }).where(eq(partnerSchools.id, input.schoolId));
+      return { success: true };
+    }),
+  listSchools: adminProcedure.query(async () => {
+    const database = await getDb();
+    if (!database) return [];
+    return database.select().from(partnerSchools).orderBy(desc(partnerSchools.createdAt));
+  }),
+}),
 });
+
+// Helper: Smart match teachers for a job posting
+async function smartMatchTeachers(database: any, subject: string, region: string, grade?: string | null): Promise<number[]> {
+  const conditions: any[] = [eq(teacherPortfolios.isPublic, true)];
+  const portfolios = await database.select({
+    userId: teacherPortfolios.userId,
+    region: teacherPortfolios.region,
+    educationLevel: teacherPortfolios.educationLevel,
+    specializations: teacherPortfolios.specializations,
+    subjectBreakdown: teacherPortfolios.subjectBreakdown,
+  }).from(teacherPortfolios).where(and(...conditions)).limit(100);
+  const scored: { userId: number; score: number }[] = [];
+  for (const p of portfolios) {
+    let score = 0;
+    const breakdown = p.subjectBreakdown || {};
+    // Subject match
+    for (const [key, val] of Object.entries(breakdown)) {
+      if (key.includes(subject)) score += Number(val) || 0;
+    }
+    if (p.specializations?.some((s: string) => s.includes(subject))) score += 20;
+    // Region match
+    if (p.region && p.region === region) score += 15;
+    // Grade match
+    if (grade && p.educationLevel) {
+      const gradeMap: Record<string, string> = { "ابتدائي": "primary", "إعدادي": "middle", "ثانوي": "secondary" };
+      if (p.educationLevel === grade || p.educationLevel === gradeMap[grade]) score += 10;
+    }
+    // Verified bonus
+    if (score > 0) {
+      const [certCount] = await database.select({ count: count() }).from(certificates).where(eq(certificates.userId, p.userId));
+      if ((certCount?.count || 0) > 0) score += 25;
+    }
+    if (score > 0) scored.push({ userId: p.userId, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 3).map(s => s.userId);
+}
 
 // Helper: Build showcase data for public profile
 async function buildShowcaseData(database: any, result: any) {

@@ -1387,3 +1387,49 @@ export const goldenSamples = mysqlTable("golden_samples", {
 });
 export type GoldenSample = typeof goldenSamples.$inferSelect;
 export type InsertGoldenSample = typeof goldenSamples.$inferInsert;
+
+// ===== PARTNER SCHOOLS (المدارس الشريكة - Recruitment Portal) =====
+export const partnerSchools = mysqlTable("partner_schools", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(), // Links to users table (school admin account)
+  schoolName: varchar("schoolName", { length: 255 }).notNull(),
+  schoolNameAr: varchar("schoolNameAr", { length: 255 }),
+  schoolType: mysqlEnum("schoolType", ["private", "public", "international", "other"]).default("private").notNull(),
+  region: varchar("region", { length: 100 }).notNull(),
+  address: text("address"),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 320 }),
+  website: varchar("website", { length: 500 }),
+  logoUrl: text("logoUrl"),
+  description: text("description"),
+  isVerified: boolean("isVerified").default(false).notNull(),
+  contactPersonName: varchar("contactPersonName", { length: 200 }),
+  contactPersonRole: varchar("contactPersonRole", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PartnerSchool = typeof partnerSchools.$inferSelect;
+export type InsertPartnerSchool = typeof partnerSchools.$inferInsert;
+
+// ===== JOB POSTINGS (عروض العمل - School Job Offers) =====
+export const jobPostings = mysqlTable("job_postings", {
+  id: int("id").primaryKey().autoincrement(),
+  schoolId: int("schoolId").notNull(),
+  postedByUserId: int("postedByUserId").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description").notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  grade: varchar("grade", { length: 50 }),
+  region: varchar("region", { length: 100 }).notNull(),
+  contractType: mysqlEnum("contractType", ["full_time", "part_time", "temporary", "freelance"]).default("full_time").notNull(),
+  salaryRange: varchar("salaryRange", { length: 100 }),
+  requirements: text("requirements"),
+  requiredSkills: json("requiredSkills").$type<string[]>(),
+  isActive: boolean("isActive").default(true).notNull(),
+  applicationDeadline: timestamp("applicationDeadline"),
+  matchedTeacherIds: json("matchedTeacherIds").$type<number[]>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type JobPosting = typeof jobPostings.$inferSelect;
+export type InsertJobPosting = typeof jobPostings.$inferInsert;

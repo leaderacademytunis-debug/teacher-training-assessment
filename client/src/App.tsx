@@ -50,6 +50,8 @@ import ManagerialDashboard from "@/pages/ManagerialDashboard";
 import MarketplaceSearch from "@/pages/MarketplaceSearch";
 import TeacherShowcase from "@/pages/TeacherShowcase";
 import ConnectionRequests from "@/pages/ConnectionRequests";
+import TalentDirectory from "@/pages/TalentDirectory";
+import SchoolPortal from "@/pages/SchoolPortal";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -99,8 +101,10 @@ function Router() {
       <Route path="/drama-engine" component={DramaEngine} />
       <Route path="/managerial-dashboard" component={ManagerialDashboard} />
       <Route path="/marketplace/search" component={MarketplaceSearch} />
+      <Route path="/showcase" component={TalentDirectory} />
       <Route path="/showcase/:slug" component={TeacherShowcase} />
       <Route path="/connection-requests" component={ConnectionRequests} />
+      <Route path="/school-portal" component={SchoolPortal} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

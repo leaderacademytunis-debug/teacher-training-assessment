@@ -16,7 +16,7 @@ import {
   ArrowRight, Loader2, Copy, Check, User, Briefcase,
   MapPin, School, ChevronLeft, BookOpen, TrendingUp,
   Calendar, ExternalLink, Store, Zap, Filter, Target,
-  Inbox, ShieldCheck, Sparkles, Link2,
+  Inbox, ShieldCheck, Sparkles, Link2, Users,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -706,13 +706,25 @@ export default function TeacherPortfolio() {
                     </Button>
                   </a>
                 </div>
-                <Link href="/connection-requests">
-                  <Button variant="outline" className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50">
-                    <Inbox className="w-4 h-4" />
-                    إدارة طلبات التوظيف
-                    <ArrowRight className="w-4 h-4 mr-auto" />
-                  </Button>
-                </Link>
+                {/* Custom Slug Editor */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-600">تخصيص رابط العرض (Slug)</label>
+                  <CustomSlugEditor currentSlug={portfolio?.publicSlug || ''} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Link href="/connection-requests">
+                    <Button variant="outline" className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50">
+                      <Inbox className="w-4 h-4" />
+                      إدارة طلبات التوظيف
+                    </Button>
+                  </Link>
+                  <Link href="/showcase">
+                    <Button variant="outline" className="w-full gap-2 border-blue-300 text-blue-700 hover:bg-blue-50">
+                      <Users className="w-4 h-4" />
+                      دليل المواهب
+                    </Button>
+                  </Link>
+                </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
                   <ShieldCheck className="w-4 h-4 text-gray-400 shrink-0" />
                   <span>درع الخصوصية نشط: معلومات الاتصال مخفية حتى توافق على طلب التواصل</span>
@@ -727,6 +739,56 @@ export default function TeacherPortfolio() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+// Custom Slug Editor Component
+function CustomSlugEditor({ currentSlug }: { currentSlug: string }) {
+  const [editing, setEditing] = useState(false);
+  const [newSlug, setNewSlug] = useState(currentSlug);
+  const [saved, setSaved] = useState(false);
+  const utils = trpc.useUtils();
+
+  const updateSlugMutation = trpc.careerHub.updateSlug.useMutation({
+    onSuccess: () => {
+      setSaved(true);
+      setEditing(false);
+      utils.portfolio2.getMyPortfolio.invalidate();
+      setTimeout(() => setSaved(false), 2000);
+    },
+    onError: (err: any) => {
+      alert(err.message || "خطأ في تحديث الرابط");
+    },
+  });
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <code className="text-xs text-amber-700 bg-white border border-amber-200 rounded px-2 py-1 flex-1" dir="ltr">
+          {currentSlug || "غير مخصص"}
+        </code>
+        <Button variant="ghost" size="sm" onClick={() => { setNewSlug(currentSlug); setEditing(true); }}>
+          <Edit3 className="w-3.5 h-3.5" />
+        </Button>
+        {saved && <Check className="w-4 h-4 text-green-500" />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Input
+        value={newSlug}
+        onChange={e => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+        className="text-xs h-8"
+        dir="ltr"
+        placeholder="my-custom-slug"
+      />
+      <Button size="sm" className="h-8 bg-amber-600 hover:bg-amber-700" onClick={() => updateSlugMutation.mutate({ slug: newSlug })} disabled={updateSlugMutation.isPending}>
+        {updateSlugMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "حفظ"}
+      </Button>
+      <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditing(false)}>إلغاء</Button>
     </div>
   );
 }

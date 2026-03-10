@@ -1,0 +1,41 @@
+CREATE TABLE `job_postings` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`schoolId` int NOT NULL,
+	`postedByUserId` int NOT NULL,
+	`title` varchar(500) NOT NULL,
+	`description` text NOT NULL,
+	`subject` varchar(100) NOT NULL,
+	`grade` varchar(50),
+	`region` varchar(100) NOT NULL,
+	`contractType` enum('full_time','part_time','temporary','freelance') NOT NULL DEFAULT 'full_time',
+	`salaryRange` varchar(100),
+	`requirements` text,
+	`requiredSkills` json,
+	`isActive` boolean NOT NULL DEFAULT true,
+	`applicationDeadline` timestamp,
+	`matchedTeacherIds` json,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `job_postings_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `partner_schools` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`schoolName` varchar(255) NOT NULL,
+	`schoolNameAr` varchar(255),
+	`schoolType` enum('private','public','international','other') NOT NULL DEFAULT 'private',
+	`region` varchar(100) NOT NULL,
+	`address` text,
+	`phone` varchar(30),
+	`email` varchar(320),
+	`website` varchar(500),
+	`logoUrl` text,
+	`description` text,
+	`isVerified` boolean NOT NULL DEFAULT false,
+	`contactPersonName` varchar(200),
+	`contactPersonRole` varchar(100),
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `partner_schools_id` PRIMARY KEY(`id`)
+);

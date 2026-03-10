@@ -13,7 +13,7 @@ import {
   FileText, GraduationCap, Image, Award, BarChart3, ScanLine,
   MessageSquare, BookOpen, Loader2, User, School, MapPin,
   Briefcase, TrendingUp, ShieldCheck, Star, Send, CheckCircle2,
-  Sparkles, Globe, Mail, Phone, Building2, UserCheck, Lock,
+  Sparkles, Globe, Mail, Phone, Building2, UserCheck, Lock, Download,
 } from "lucide-react";
 
 // Radar Chart Component
@@ -328,6 +328,7 @@ export default function TeacherShowcase() {
             <LevelBadge level={showcase.level} totalScore={showcase.totalScore} />
             <div className="flex-1" />
             <HireMeDialog teacherSlug={slug} teacherName={showcase.displayName} />
+            <DownloadCVButton slug={slug} />
           </div>
         </div>
       </div>
@@ -473,5 +474,48 @@ export default function TeacherShowcase() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Download Digital CV Button
+function DownloadCVButton({ slug }: { slug: string }) {
+  const [generating, setGenerating] = useState(false);
+  const generateCV = trpc.careerHub.generateDigitalCV.useMutation({
+    onSuccess: (data) => {
+      // Create a downloadable HTML file
+      const blob = new Blob([String(data.html)], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${data.displayName || "teacher"}-cv.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تحميل السيرة الذاتية الرقمية بنجاح");
+      setGenerating(false);
+    },
+    onError: (err) => {
+      toast.error(err.message || "خطأ في توليد السيرة الذاتية");
+      setGenerating(false);
+    },
+  });
+
+  const handleDownload = () => {
+    setGenerating(true);
+    generateCV.mutate({ slug });
+  };
+
+  return (
+    <Button
+      size="lg"
+      variant="outline"
+      className="bg-white/10 border-white/30 text-white hover:bg-white/20 gap-2 text-base px-6 py-6 rounded-xl backdrop-blur-sm"
+      onClick={handleDownload}
+      disabled={generating}
+    >
+      {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+      {generating ? "جاري التوليد..." : "تحميل السيرة الذاتية"}
+    </Button>
   );
 }
