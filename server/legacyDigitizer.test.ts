@@ -168,4 +168,59 @@ describe("legacyDigitizer", () => {
       ).rejects.toThrow();
     });
   });
+
+  describe("matchCompetencies", () => {
+    it("returns matches and suggestions arrays for authenticated user", async () => {
+      const ctx = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      const result = await caller.legacyDigitizer.matchCompetencies({
+        extractedText: "الأعداد ذات 5 أرقام الرياضيات السنة الرابعة",
+        subject: "الرياضيات",
+        level: "السنة الرابعة ابتدائي",
+      });
+      expect(result).toHaveProperty("matches");
+      expect(result).toHaveProperty("suggestions");
+      expect(Array.isArray(result.matches)).toBe(true);
+      expect(Array.isArray(result.suggestions)).toBe(true);
+    });
+
+    it("returns empty arrays when no curriculum plans exist", async () => {
+      const ctx = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      const result = await caller.legacyDigitizer.matchCompetencies({
+        extractedText: "random text with no curriculum match xyz123",
+      });
+      expect(result.matches).toEqual([]);
+      // suggestions may or may not be empty depending on AI
+    });
+
+    it("throws UNAUTHORIZED for unauthenticated user", async () => {
+      const ctx = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.legacyDigitizer.matchCompetencies({
+          extractedText: "test",
+        })
+      ).rejects.toThrow();
+    });
+
+    it("validates input schema - requires extractedText", async () => {
+      const ctx = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        (caller.legacyDigitizer.matchCompetencies as any)({})
+      ).rejects.toThrow();
+    });
+
+    it("handles optional subject and level parameters", async () => {
+      const ctx = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      // Should not throw even without subject/level
+      const result = await caller.legacyDigitizer.matchCompetencies({
+        extractedText: "تعلم القراءة والكتابة",
+      });
+      expect(result).toHaveProperty("matches");
+      expect(result).toHaveProperty("suggestions");
+    });
+  });
 });

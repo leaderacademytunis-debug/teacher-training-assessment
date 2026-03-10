@@ -110,6 +110,21 @@ export default function LegacyDigitizer() {
   const exportWord = trpc.legacyDigitizer.exportWord.useMutation();
   const exportPDF = trpc.legacyDigitizer.exportPDF.useMutation();
   const deleteMutation = trpc.legacyDigitizer.delete.useMutation();
+  const matchCompetencies = trpc.legacyDigitizer.matchCompetencies.useMutation();
+
+  // Competency matches state
+  const [competencyMatches, setCompetencyMatches] = useState<Array<{
+    topicId: number;
+    topicTitle: string;
+    competency: string | null;
+    competencyCode: string | null;
+    objectives: string | null;
+    periodName: string | null;
+    textbookRef: string | null;
+    matchScore: number;
+    matchedKeywords: string[];
+  }>>([]);
+  const [competencySuggestions, setCompetencySuggestions] = useState<string[]>([]);
 
   // Queries
   const { data: documents, refetch: refetchDocs } = trpc.legacyDigitizer.list.useQuery(
@@ -172,10 +187,26 @@ export default function LegacyDigitizer() {
       setCurrentStep(2);
       toast.success("تم استخراج النص بنجاح!", { id: "ocr" });
       refetchDocs();
+
+      // Auto-match competencies in background
+      try {
+        const matchResult = await matchCompetencies.mutateAsync({
+          extractedText: result.extractedText,
+          subject: subject || undefined,
+          level: level || undefined,
+        });
+        if (matchResult.matches.length > 0) {
+          setCompetencyMatches(matchResult.matches);
+          toast.info(`تم العثور على ${matchResult.matches.length} كفاية مرتبطة بالمنهج`);
+        }
+        if (matchResult.suggestions.length > 0) {
+          setCompetencySuggestions(matchResult.suggestions);
+        }
+      } catch { /* non-critical */ }
     } catch (error: any) {
       toast.error(error.message || "فشل في استخراج النص", { id: "ocr" });
     }
-  }, [selectedFile, documentTitle, uploadOCR, refetchDocs]);
+  }, [selectedFile, documentTitle, uploadOCR, refetchDocs, matchCompetencies, subject, level]);
 
   const handleFormatWithAI = useCallback(async () => {
     if (!documentId || !extractedText) return;
@@ -292,6 +323,8 @@ export default function LegacyDigitizer() {
     setLevel("");
     setAdditionalInstructions("");
     setEditingText(false);
+    setCompetencyMatches([]);
+    setCompetencySuggestions([]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
@@ -604,6 +637,106 @@ export default function LegacyDigitizer() {
                             تنسيق بالذكاء الاصطناعي
                           </>
                         )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Competency Matches Panel */}
+              {(competencyMatches.length > 0 || competencySuggestions.length > 0) && (
+                <Card className="border-amber-200 bg-amber-50/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      <span className="text-amber-800">الكفايات المرتبطة من خريطة المنهج</span>
+                      {matchCompetencies.isPending && <Loader2 className="w-3 h-3 animate-spin text-amber-600" />}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {competencyMatches.length > 0 && (
+                      <div className="space-y-2">
+                        {competencyMatches.slice(0, 5).map((match, idx) => (
+                          <div key={match.topicId} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-amber-100">
+                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                              <span className="text-xs font-bold text-amber-700">{idx + 1}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm text-gray-900">{match.topicTitle}</span>
+                                {match.competencyCode && (
+                                  <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                                    {match.competencyCode}
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">
+                                  تطابق {Math.min(Math.round(match.matchScore * 10), 100)}%
+                                </Badge>
+                              </div>
+                              {match.competency && (
+                                <p className="text-xs text-gray-600 mt-1">الكفاية: {match.competency}</p>
+                              )}
+                              {match.periodName && (
+                                <p className="text-xs text-gray-500 mt-0.5">الفترة: {match.periodName}</p>
+                              )}
+                              {match.textbookRef && (
+                                <p className="text-xs text-gray-500 mt-0.5">المرجع: {match.textbookRef}</p>
+                              )}
+                              {match.matchedKeywords.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {match.matchedKeywords.slice(0, 6).map(kw => (
+                                    <span key={kw} className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
+                                      {kw}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {competencyMatches.length === 0 && competencySuggestions.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-amber-700 mb-2">لم يتم العثور على تطابق مباشر في خريطة المنهج. اقتراحات الذكاء الاصطناعي:</p>
+                        {competencySuggestions.map((s, i) => (
+                          <div key={i} className="flex items-center gap-2 p-2 bg-white rounded border border-amber-100">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            <span className="text-xs text-gray-700">{s}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                        onClick={async () => {
+                          if (!extractedText) return;
+                          try {
+                            const result = await matchCompetencies.mutateAsync({
+                              extractedText,
+                              subject: subject || undefined,
+                              level: level || undefined,
+                            });
+                            setCompetencyMatches(result.matches);
+                            setCompetencySuggestions(result.suggestions);
+                            if (result.matches.length === 0 && result.suggestions.length === 0) {
+                              toast.info("لم يتم العثور على كفايات مرتبطة");
+                            }
+                          } catch {
+                            toast.error("فشل في البحث عن الكفايات");
+                          }
+                        }}
+                        disabled={matchCompetencies.isPending}
+                      >
+                        {matchCompetencies.isPending ? (
+                          <Loader2 className="w-3 h-3 ml-1 animate-spin" />
+                        ) : (
+                          <RotateCcw className="w-3 h-3 ml-1" />
+                        )}
+                        إعادة البحث
                       </Button>
                     </div>
                   </CardContent>

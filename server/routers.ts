@@ -6,7 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
 import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams } from "../drizzle/schema";
-import { eq, desc, and, sql, count, like, or } from "drizzle-orm";
+import { eq, desc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
@@ -6202,6 +6202,136 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         const success = await db.deleteDigitizedDocument(input.id, ctx.user.id);
         if (!success) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
         return { success: true };
+      }),
+
+    // Intelligence Integration: Match extracted text keywords to curriculum competencies
+    matchCompetencies: protectedProcedure
+      .input(z.object({
+        extractedText: z.string(),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return { matches: [], suggestions: [] };
+
+        // 1. Find relevant curriculum plans for this user (or official ones)
+        const conditions: any[] = [eq(curriculumPlans.isActive, true)];
+        if (input.subject) conditions.push(eq(curriculumPlans.subject, input.subject));
+        if (input.level) conditions.push(eq(curriculumPlans.grade, input.level));
+
+        const plans = await dbConn.select().from(curriculumPlans)
+          .where(and(...conditions))
+          .limit(10);
+
+        if (plans.length === 0) return { matches: [], suggestions: [] };
+
+        // 2. Get all topics from matching plans
+        const planIds = plans.map(p => p.id);
+        const allTopics = await dbConn.select({
+          id: curriculumTopics.id,
+          planId: curriculumTopics.planId,
+          topicTitle: curriculumTopics.topicTitle,
+          competency: curriculumTopics.competency,
+          competencyCode: curriculumTopics.competencyCode,
+          objectives: curriculumTopics.objectives,
+          periodNumber: curriculumTopics.periodNumber,
+          periodName: curriculumTopics.periodName,
+          textbookName: curriculumTopics.textbookName,
+          textbookPages: curriculumTopics.textbookPages,
+        }).from(curriculumTopics)
+          .where(inArray(curriculumTopics.planId, planIds));
+
+        // 3. Extract keywords from the text (simple keyword extraction)
+        const textLower = input.extractedText.toLowerCase();
+        const textNormalized = input.extractedText
+          .replace(/[\u064B-\u065F]/g, "") // Remove Arabic diacritics
+          .replace(/[^\u0600-\u06FF\u0750-\u077F\w\s]/g, " "); // Keep Arabic + Latin + spaces
+
+        // 4. Match topics by keyword overlap
+        const matches: Array<{
+          topicId: number;
+          topicTitle: string;
+          competency: string | null;
+          competencyCode: string | null;
+          objectives: string | null;
+          periodName: string | null;
+          textbookRef: string | null;
+          matchScore: number;
+          matchedKeywords: string[];
+        }> = [];
+
+        for (const topic of allTopics) {
+          const titleNormalized = (topic.topicTitle || "")
+            .replace(/[\u064B-\u065F]/g, "")
+            .replace(/[^\u0600-\u06FF\u0750-\u077F\w\s]/g, " ");
+          const titleWords = titleNormalized.split(/\s+/).filter(w => w.length > 2);
+          const competencyWords = ((topic.competency || "") + " " + (topic.objectives || ""))
+            .replace(/[\u064B-\u065F]/g, "")
+            .split(/\s+/).filter(w => w.length > 2);
+
+          const allKeywords = Array.from(new Set([...titleWords, ...competencyWords]));
+          const matchedKeywords: string[] = [];
+
+          for (const kw of allKeywords) {
+            if (textNormalized.includes(kw)) {
+              matchedKeywords.push(kw);
+            }
+          }
+
+          // Title match is weighted more heavily
+          let score = 0;
+          for (const tw of titleWords) {
+            if (textNormalized.includes(tw)) score += 3;
+          }
+          for (const cw of competencyWords) {
+            if (textNormalized.includes(cw)) score += 1;
+          }
+
+          if (score >= 3) {
+            matches.push({
+              topicId: topic.id,
+              topicTitle: topic.topicTitle,
+              competency: topic.competency,
+              competencyCode: topic.competencyCode,
+              objectives: topic.objectives,
+              periodName: topic.periodName,
+              textbookRef: topic.textbookName && topic.textbookPages
+                ? `${topic.textbookName} - ${topic.textbookPages}`
+                : topic.textbookName || null,
+              matchScore: score,
+              matchedKeywords: Array.from(new Set(matchedKeywords)),
+            });
+          }
+        }
+
+        // Sort by score descending
+        matches.sort((a, b) => b.matchScore - a.matchScore);
+
+        // 5. If no keyword matches found, use AI to suggest competencies
+        let suggestions: string[] = [];
+        if (matches.length === 0 && input.extractedText.length > 50) {
+          try {
+            const { invokeLLM } = await import("./_core/llm");
+            const resp = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: `أنت خبير بيداغوجي تونسي. استخرج الكفايات والمواضيع الرئيسية من هذا النص التعليمي. أعد قائمة بالكفايات فقط (كل كفاية في سطر منفصل).`,
+                },
+                { role: "user", content: input.extractedText.substring(0, 2000) },
+              ],
+            });
+            const content = typeof resp?.choices?.[0]?.message?.content === "string"
+              ? resp.choices[0].message.content : "";
+            suggestions = content.split("\n").map(s => s.trim()).filter(s => s.length > 5).slice(0, 5);
+          } catch { /* AI suggestion failure is non-critical */ }
+        }
+
+        return {
+          matches: matches.slice(0, 10),
+          suggestions,
+        };
       }),
   }),
 
