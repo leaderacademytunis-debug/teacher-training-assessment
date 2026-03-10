@@ -224,3 +224,113 @@ describe("legacyDigitizer", () => {
     });
   });
 });
+
+// ===== GLOSSARY TESTS =====
+describe("tunisian-glossary", () => {
+  it("exports TUNISIAN_GLOSSARY with pedagogical terms", async () => {
+    const { TUNISIAN_GLOSSARY } = await import("../shared/tunisian-glossary");
+    expect(TUNISIAN_GLOSSARY).toBeDefined();
+    expect(TUNISIAN_GLOSSARY.length).toBeGreaterThan(0);
+  });
+
+  it("each glossary entry has required fields", async () => {
+    const { TUNISIAN_GLOSSARY } = await import("../shared/tunisian-glossary");
+    for (const entry of TUNISIAN_GLOSSARY) {
+      expect(entry).toHaveProperty("term");
+      expect(entry).toHaveProperty("category");
+      expect(entry).toHaveProperty("aliases");
+      expect(Array.isArray(entry.aliases)).toBe(true);
+    }
+  });
+
+  it("exports correctOCRText function", async () => {
+    const { correctOCRText } = await import("../shared/tunisian-glossary");
+    expect(typeof correctOCRText).toBe("function");
+  });
+
+  it("correctOCRText returns corrected text and corrections array", async () => {
+    const { correctOCRText } = await import("../shared/tunisian-glossary");
+    const result = correctOCRText("معيار التقييم");
+    expect(result).toHaveProperty("correctedText");
+    expect(result).toHaveProperty("corrections");
+    expect(typeof result.correctedText).toBe("string");
+    expect(Array.isArray(result.corrections)).toBe(true);
+  });
+
+  it("exports getGlossaryContext function", async () => {
+    const { getGlossaryContext } = await import("../shared/tunisian-glossary");
+    expect(typeof getGlossaryContext).toBe("function");
+    const context = getGlossaryContext();
+    expect(typeof context).toBe("string");
+    expect(context.length).toBeGreaterThan(0);
+  });
+
+  it("exports extractPedagogicalKeywords function", async () => {
+    const { extractPedagogicalKeywords } = await import("../shared/tunisian-glossary");
+    expect(typeof extractPedagogicalKeywords).toBe("function");
+    const keywords = extractPedagogicalKeywords("المعيار الأول للكفاية في الجذاذة");
+    expect(Array.isArray(keywords)).toBe(true);
+  });
+
+  it("exports buildCorrectionMap function", async () => {
+    const { buildCorrectionMap } = await import("../shared/tunisian-glossary");
+    expect(typeof buildCorrectionMap).toBe("function");
+    const map = buildCorrectionMap();
+    expect(map instanceof Map).toBe(true);
+    expect(map.size).toBeGreaterThan(0);
+  });
+});
+
+// ===== PORTFOLIO TESTS =====
+describe("portfolio2", () => {
+  describe("getMyContributions", () => {
+    it("returns contributions for authenticated user", async () => {
+      const ctx = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      const result = await caller.portfolio2.getMyContributions({ filter: "all" });
+      expect(result).toHaveProperty("items");
+      expect(result).toHaveProperty("total");
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(typeof result.total).toBe("number");
+    });
+
+    it("supports filter parameter", async () => {
+      const ctx = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      const filters = ["all", "lesson_plan", "exam", "digitized", "marketplace"] as const;
+      for (const filter of filters) {
+        const result = await caller.portfolio2.getMyContributions({ filter });
+        expect(result).toHaveProperty("items");
+        expect(result).toHaveProperty("total");
+      }
+    });
+
+    it("throws UNAUTHORIZED for unauthenticated user", async () => {
+      const ctx = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.portfolio2.getMyContributions({ filter: "all" })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe("getSkillRadar", () => {
+    it("returns skill radar data for authenticated user", async () => {
+      const ctx = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      const result = await caller.portfolio2.getSkillRadar();
+      expect(result).toHaveProperty("subjectExpertise");
+      expect(result).toHaveProperty("documentTypeBreakdown");
+      expect(result).toHaveProperty("totalScore");
+      expect(result).toHaveProperty("level");
+      expect(typeof result.totalScore).toBe("number");
+      expect(typeof result.level).toBe("string");
+    });
+
+    it("throws UNAUTHORIZED for unauthenticated user", async () => {
+      const ctx = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(caller.portfolio2.getSkillRadar()).rejects.toThrow();
+    });
+  });
+});

@@ -11,6 +11,7 @@ import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
 import { parseTextQuestions, parseCSVQuestions, parseGoogleFormsCSV } from "./questionParser";
+import { correctOCRText, getGlossaryContext, extractPedagogicalKeywords } from "../shared/tunisian-glossary";
 
 // Admin/Trainer procedure - only for admin, trainer, or supervisor roles
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -5856,6 +5857,8 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
                   type: "text",
                   text: `أنت نظام OCR متقدم متخصص في استخراج النصوص من الوثائق التعليمية التونسية (مكتوبة بخط اليد أو مطبوعة).
 
+${getGlossaryContext()}
+
 مهمتك:
 1. استخرج كل النص الموجود في هذه الصورة بدقة عالية
 2. حافظ على الهيكل الأصلي للوثيقة (عناوين، فقرات، جداول، قوائم)
@@ -5863,6 +5866,8 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
 4. إذا كانت هناك جداول، أعد تمثيلها بتنسيق Markdown
 5. إذا كانت هناك أجزاء غير واضحة، ضعها بين [غير واضح: ...]
 6. حافظ على ترتيب المحتوى كما يظهر في الصورة
+7. استخدم المصطلحات البيداغوجية التونسية الصحيحة من القاموس أعلاه عند التعرف على كلمات مشابهة
+8. استخدم 'تفقد' وليس 'تفتيش' في السياق التونسي
 
 أعد النص المستخرج فقط دون أي تعليق إضافي.`,
                 },
@@ -5871,9 +5876,15 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
           ],
         });
 
-        const extractedText = typeof ocrResponse?.choices?.[0]?.message?.content === "string"
+        const rawExtractedText = typeof ocrResponse?.choices?.[0]?.message?.content === "string"
           ? ocrResponse.choices[0].message.content
           : JSON.stringify(ocrResponse?.choices?.[0]?.message?.content || "");
+
+        // 2b. Post-process with Tunisian Pedagogical Glossary correction
+        const { correctedText: extractedText, corrections } = correctOCRText(rawExtractedText);
+        if (corrections.length > 0) {
+          console.log(`[OCR Glossary] Applied ${corrections.length} corrections for user ${ctx.user.id}`);
+        }
 
         // 3. Save to database
         const doc = await db.createDigitizedDocument({
@@ -6542,6 +6553,206 @@ ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط �
           .limit(input.limit);
         return activities;
       }),
+
+    // ===== MY CONTRIBUTIONS (مساهماتي) =====
+    getMyContributions: protectedProcedure
+      .input(z.object({
+        type: z.enum(["all", "lesson_plan", "exam", "digitized", "image", "marketplace"]).default("all"),
+        limit: z.number().default(50),
+        offset: z.number().default(0),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) return { items: [], total: 0 };
+        const filter = input?.type || "all";
+        const limit = input?.limit || 50;
+        const offset = input?.offset || 0;
+        const userId = ctx.user.id;
+
+        type ContributionItem = {
+          id: number;
+          type: "lesson_plan" | "exam" | "digitized" | "image" | "marketplace";
+          title: string;
+          subject: string | null;
+          level: string | null;
+          createdAt: Date;
+          status: string;
+          previewUrl?: string | null;
+        };
+
+        const items: ContributionItem[] = [];
+
+        // Lesson Plans (from pedagogicalSheets + aiSuggestions)
+        if (filter === "all" || filter === "lesson_plan") {
+          const sheets = await database.select({
+            id: pedagogicalSheets.id,
+            lessonTitle: pedagogicalSheets.lessonTitle,
+            subject: pedagogicalSheets.subject,
+            grade: pedagogicalSheets.grade,
+            createdAt: pedagogicalSheets.createdAt,
+          }).from(pedagogicalSheets)
+            .where(eq(pedagogicalSheets.createdBy, userId))
+            .orderBy(desc(pedagogicalSheets.createdAt))
+            .limit(limit);
+          for (const s of sheets) {
+            items.push({
+              id: s.id,
+              type: "lesson_plan",
+              title: s.lessonTitle || "جذاذة درس",
+              subject: s.subject,
+              level: s.grade,
+              createdAt: s.createdAt,
+              status: "saved",
+            });
+          }
+        }
+
+        // Exams
+        if (filter === "all" || filter === "exam") {
+          const exams = await database.select({
+            id: teacherExams.id,
+            examTitle: teacherExams.examTitle,
+            subject: teacherExams.subject,
+            grade: teacherExams.grade,
+            createdAt: teacherExams.createdAt,
+          }).from(teacherExams)
+            .where(eq(teacherExams.createdBy, userId))
+            .orderBy(desc(teacherExams.createdAt))
+            .limit(limit);
+          for (const e of exams) {
+            items.push({
+              id: e.id,
+              type: "exam",
+              title: e.examTitle || "اختبار",
+              subject: e.subject,
+              level: e.grade,
+              createdAt: e.createdAt,
+              status: "saved",
+            });
+          }
+        }
+
+        // Digitized Documents
+        if (filter === "all" || filter === "digitized") {
+          const docs = await database.select({
+            id: digitizedDocuments.id,
+            title: digitizedDocuments.title,
+            subject: digitizedDocuments.subject,
+            level: digitizedDocuments.level,
+            createdAt: digitizedDocuments.createdAt,
+            status: digitizedDocuments.status,
+            formatType: digitizedDocuments.formatType,
+          }).from(digitizedDocuments)
+            .where(eq(digitizedDocuments.userId, userId))
+            .orderBy(desc(digitizedDocuments.createdAt))
+            .limit(limit);
+          for (const d of docs) {
+            items.push({
+              id: d.id,
+              type: "digitized",
+              title: d.title || "وثيقة مرقمنة",
+              subject: d.subject,
+              level: d.level,
+              createdAt: d.createdAt,
+              status: d.status,
+            });
+          }
+        }
+
+        // Marketplace items
+        if (filter === "all" || filter === "marketplace") {
+          const mItems = await database.select({
+            id: marketplaceItems.id,
+            title: marketplaceItems.title,
+            subject: marketplaceItems.subject,
+            grade: marketplaceItems.grade,
+            createdAt: marketplaceItems.createdAt,
+            status: marketplaceItems.status,
+          }).from(marketplaceItems)
+            .where(eq(marketplaceItems.publishedBy, userId))
+            .orderBy(desc(marketplaceItems.createdAt))
+            .limit(limit);
+          for (const m of mItems) {
+            items.push({
+              id: m.id,
+              type: "marketplace",
+              title: m.title,
+              subject: m.subject,
+              level: m.grade,
+              createdAt: m.createdAt,
+              status: m.status,
+            });
+          }
+        }
+
+        // Sort all items by date descending
+        items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const total = items.length;
+        const paged = items.slice(offset, offset + limit);
+
+        return { items: paged, total };
+      }),
+
+    // ===== SKILL RADAR CHART (مخطط رادار المهارات) =====
+    getSkillRadar: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return { subjectExpertise: {}, documentTypeBreakdown: {}, totalScore: 0, level: "مبتدئ" };
+      const userId = ctx.user.id;
+
+      // Count by subject across all content types
+      const subjectExpertise: Record<string, number> = {};
+
+      // Lesson plans by subject
+      const sheets = await database.select({ subject: pedagogicalSheets.subject }).from(pedagogicalSheets)
+        .where(eq(pedagogicalSheets.createdBy, userId));
+      for (const s of sheets) {
+        if (s.subject) subjectExpertise[s.subject] = (subjectExpertise[s.subject] || 0) + 2; // 2 points per lesson plan
+      }
+
+      // Exams by subject
+      const exams = await database.select({ subject: teacherExams.subject }).from(teacherExams)
+        .where(eq(teacherExams.createdBy, userId));
+      for (const e of exams) {
+        if (e.subject) subjectExpertise[e.subject] = (subjectExpertise[e.subject] || 0) + 3; // 3 points per exam
+      }
+
+      // Digitized docs by subject (bonus for digitizing legacy content)
+      const digiDocs = await database.select({ subject: digitizedDocuments.subject, status: digitizedDocuments.status }).from(digitizedDocuments)
+        .where(eq(digitizedDocuments.userId, userId));
+      for (const d of digiDocs) {
+        if (d.subject) {
+          const points = d.status === "formatted" || d.status === "saved" ? 4 : 1; // 4 points for fully digitized
+          subjectExpertise[d.subject] = (subjectExpertise[d.subject] || 0) + points;
+        }
+      }
+
+      // Marketplace contributions by subject
+      const mItems = await database.select({ subject: marketplaceItems.subject, status: marketplaceItems.status }).from(marketplaceItems)
+        .where(eq(marketplaceItems.publishedBy, userId));
+      for (const m of mItems) {
+        if (m.subject && m.status === "approved") {
+          subjectExpertise[m.subject] = (subjectExpertise[m.subject] || 0) + 5; // 5 points for marketplace contribution
+        }
+      }
+
+      // Document type breakdown for secondary chart
+      const documentTypeBreakdown: Record<string, number> = {
+        "جذاذات": sheets.length,
+        "اختبارات": exams.length,
+        "وثائق مرقمنة": digiDocs.length,
+        "منشورات السوق": mItems.filter(m => m.status === "approved").length,
+      };
+
+      // Calculate total score and level
+      const totalScore = Object.values(subjectExpertise).reduce((sum, v) => sum + v, 0);
+      let level = "مبتدئ";
+      if (totalScore >= 100) level = "خبير متميز";
+      else if (totalScore >= 60) level = "خبير";
+      else if (totalScore >= 30) level = "متقدم";
+      else if (totalScore >= 10) level = "متوسط";
+
+      return { subjectExpertise, documentTypeBreakdown, totalScore, level };
+    }),
   }),
 
   // ===== CURRICULUM MAP (خريطة المنهج الذكية) =====

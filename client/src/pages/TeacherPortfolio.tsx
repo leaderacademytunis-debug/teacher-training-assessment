@@ -15,8 +15,9 @@ import {
   MessageSquare, Download, Share2, Edit3, Globe, Lock,
   ArrowRight, Loader2, Copy, Check, User, Briefcase,
   MapPin, School, ChevronLeft, BookOpen, TrendingUp,
-  Calendar, ExternalLink,
+  Calendar, ExternalLink, Store, Zap, Filter, Target,
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ===== RADAR CHART COMPONENT (SVG) =====
 function RadarChart({ data, size = 280 }: { data: Record<string, number>; size?: number }) {
@@ -152,6 +153,14 @@ export default function TeacherPortfolio() {
   const statsQuery = trpc.portfolio2.getStats.useQuery(undefined, { enabled: !!user });
   const certsQuery = trpc.portfolio2.getCertificates.useQuery(undefined, { enabled: !!user });
   const activityQuery = trpc.portfolio2.getRecentActivity.useQuery({ limit: 10 }, { enabled: !!user });
+
+  // New: Contributions & Skill Radar
+  const [contribFilter, setContribFilter] = useState<"all" | "lesson_plan" | "exam" | "digitized" | "image" | "marketplace">("all");
+  const contributionsQuery = trpc.portfolio2.getMyContributions.useQuery(
+    { type: contribFilter, limit: 50 },
+    { enabled: !!user }
+  );
+  const skillRadarQuery = trpc.portfolio2.getSkillRadar.useQuery(undefined, { enabled: !!user });
 
   // Mutations
   const updateProfile = trpc.portfolio2.updateProfile.useMutation({
@@ -397,24 +406,57 @@ export default function TeacherPortfolio() {
           )}
         </div>
 
-        {/* Two columns: Radar Chart + Certificates */}
+        {/* Two columns: Skill Radar + Certificates */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Competency Radar Chart */}
-          <Card>
+          {/* Enhanced Skill Radar Chart */}
+          <Card className="border-blue-200">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
-                مخطط الكفاءات حسب المادة
+                <Target className="w-5 h-5 text-blue-600" />
+                مخطط رادار المهارات
+                {skillRadarQuery.data && (
+                  <Badge variant="outline" className="mr-auto text-xs">
+                    <Zap className="w-3 h-3 ml-1" />
+                    {skillRadarQuery.data.level} • {skillRadarQuery.data.totalScore} نقطة
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {stats?.subjectBreakdown && Object.keys(stats.subjectBreakdown).length >= 3 ? (
-                <RadarChart data={stats.subjectBreakdown} />
+              {skillRadarQuery.isLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+              ) : skillRadarQuery.data && Object.keys(skillRadarQuery.data.subjectExpertise).length >= 3 ? (
+                <div>
+                  <RadarChart data={skillRadarQuery.data.subjectExpertise} />
+                  {/* Document Type Breakdown */}
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {Object.entries(skillRadarQuery.data.documentTypeBreakdown).map(([type, count]) => (
+                      <div key={type} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-xs">
+                        <span className="font-medium text-gray-700">{type}</span>
+                        <Badge variant="secondary" className="mr-auto text-xs">{count as number}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Level Progress Bar */}
+                  <div className="mt-4">
+                    <div className="flex justify-between text-xs text-gray-500 mb-1">
+                      <span>المستوى: {skillRadarQuery.data.level}</span>
+                      <span>{skillRadarQuery.data.totalScore} / {skillRadarQuery.data.totalScore >= 100 ? 100 : skillRadarQuery.data.totalScore >= 60 ? 100 : skillRadarQuery.data.totalScore >= 30 ? 60 : skillRadarQuery.data.totalScore >= 10 ? 30 : 10}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-l from-blue-600 to-indigo-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, (skillRadarQuery.data.totalScore / (skillRadarQuery.data.totalScore >= 100 ? 100 : skillRadarQuery.data.totalScore >= 60 ? 100 : skillRadarQuery.data.totalScore >= 30 ? 60 : skillRadarQuery.data.totalScore >= 10 ? 30 : 10)) * 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">مبتدئ (0) → متوسط (10) → متقدم (30) → خبير (60) → خبير متميز (100+)</p>
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-8 text-gray-400">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <Target className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p className="text-sm">يتطلب نشاطاً في 3 مواد على الأقل</p>
-                  <p className="text-xs mt-1">ابدأ بإنشاء جذاذات واختبارات لمواد مختلفة</p>
+                  <p className="text-xs mt-1">ابدأ بإنشاء جذاذات واختبارات ورقمنة وثائق لمواد مختلفة</p>
                 </div>
               )}
             </CardContent>
@@ -466,6 +508,79 @@ export default function TeacherPortfolio() {
             </CardContent>
           </Card>
         </div>
+
+        {/* ===== MY CONTRIBUTIONS (مساهماتي) ===== */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                مساهماتي
+                {contributionsQuery.data && (
+                  <Badge variant="secondary" className="text-xs">{contributionsQuery.data.total}</Badge>
+                )}
+              </CardTitle>
+              <Select value={contribFilter} onValueChange={(v) => setContribFilter(v as typeof contribFilter)}>
+                <SelectTrigger className="w-40 h-8 text-xs">
+                  <Filter className="w-3 h-3 ml-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="lesson_plan">جذاذات</SelectItem>
+                  <SelectItem value="exam">اختبارات</SelectItem>
+                  <SelectItem value="digitized">وثائق مرقمنة</SelectItem>
+                  <SelectItem value="marketplace">منشورات السوق</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {contributionsQuery.isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+            ) : contributionsQuery.data && contributionsQuery.data.items.length > 0 ? (
+              <div className="space-y-2">
+                {contributionsQuery.data.items.map((item) => {
+                  const typeConfig: Record<string, { icon: typeof FileText; color: string; label: string }> = {
+                    lesson_plan: { icon: BookOpen, color: "text-blue-600 bg-blue-100", label: "جذاذة" },
+                    exam: { icon: FileText, color: "text-purple-600 bg-purple-100", label: "اختبار" },
+                    digitized: { icon: ScanLine, color: "text-emerald-600 bg-emerald-100", label: "مرقمنة" },
+                    image: { icon: Image, color: "text-pink-600 bg-pink-100", label: "صورة" },
+                    marketplace: { icon: Store, color: "text-amber-600 bg-amber-100", label: "سوق" },
+                  };
+                  const cfg = typeConfig[item.type] || typeConfig.digitized;
+                  const ItemIcon = cfg.icon;
+                  return (
+                    <div key={`${item.type}-${item.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${cfg.color}`}>
+                        <ItemIcon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">{cfg.label}</Badge>
+                          {item.subject && <span>{item.subject}</span>}
+                          {item.level && <><span>•</span><span>{item.level}</span></>}
+                          <span>•</span>
+                          <span>{new Date(item.createdAt).toLocaleDateString("ar-TN")}</span>
+                        </div>
+                      </div>
+                      <Badge variant={item.status === "saved" || item.status === "approved" ? "default" : "secondary"} className="text-[10px]">
+                        {item.status === "saved" ? "محفوظ" : item.status === "approved" ? "منشور" : item.status === "formatted" ? "منسّق" : item.status}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">لا توجد مساهمات بعد</p>
+                <p className="text-xs mt-1">ابدأ بإنشاء جذاذات أو اختبارات أو رقمنة وثائق</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Recent Activity Timeline */}
         <Card>

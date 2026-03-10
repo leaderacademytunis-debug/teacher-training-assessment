@@ -20,7 +20,9 @@ import {
   Loader2, ArrowLeft, Trash2, Eye, RotateCcw, Download, ChevronRight,
   BookOpen, ClipboardCheck, Calendar, FileQuestion, Sparkles,
   X, Check, AlertCircle, History, PanelLeftClose, PanelLeftOpen,
+  FolderUp, CheckCircle2, XCircle, Clock,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 // ===== CONSTANTS =====
 const SUBJECTS = [
@@ -111,6 +113,21 @@ export default function LegacyDigitizer() {
   const exportPDF = trpc.legacyDigitizer.exportPDF.useMutation();
   const deleteMutation = trpc.legacyDigitizer.delete.useMutation();
   const matchCompetencies = trpc.legacyDigitizer.matchCompetencies.useMutation();
+
+  // Batch upload state
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchFiles, setBatchFiles] = useState<Array<{
+    file: File;
+    previewUrl: string;
+    status: "pending" | "processing" | "done" | "error";
+    title: string;
+    documentId?: number;
+    extractedText?: string;
+    error?: string;
+  }>>([]);
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState(0);
+  const batchInputRef = useRef<HTMLInputElement>(null);
 
   // Competency matches state
   const [competencyMatches, setCompetencyMatches] = useState<Array<{
@@ -309,6 +326,103 @@ export default function LegacyDigitizer() {
     }
   }, [deleteMutation, refetchDocs, documentId]);
 
+  // ===== BATCH UPLOAD HANDLERS =====
+  const handleBatchFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(f => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024);
+    if (validFiles.length === 0) {
+      toast.error("لم يتم العثور على صور صالحة");
+      return;
+    }
+    if (validFiles.length < files.length) {
+      toast.warning(`تم تجاهل ${files.length - validFiles.length} ملف غير صالح`);
+    }
+    const newBatchFiles = validFiles.map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      status: "pending" as const,
+      title: file.name.replace(/\.[^.]+$/, ""),
+    }));
+    setBatchFiles(prev => [...prev, ...newBatchFiles]);
+    toast.success(`تم إضافة ${validFiles.length} صورة للدفعة`);
+  }, []);
+
+  const removeBatchFile = useCallback((index: number) => {
+    setBatchFiles(prev => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[index].previewUrl);
+      updated.splice(index, 1);
+      return updated;
+    });
+  }, []);
+
+  const processBatch = useCallback(async () => {
+    if (batchFiles.length === 0) return;
+    setBatchProcessing(true);
+    setBatchProgress(0);
+
+    for (let i = 0; i < batchFiles.length; i++) {
+      const item = batchFiles[i];
+      if (item.status === "done") {
+        setBatchProgress(((i + 1) / batchFiles.length) * 100);
+        continue;
+      }
+
+      setBatchFiles(prev => {
+        const updated = [...prev];
+        updated[i] = { ...updated[i], status: "processing" };
+        return updated;
+      });
+
+      try {
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(item.file);
+        });
+
+        const result = await uploadOCR.mutateAsync({
+          base64Data: base64,
+          fileName: item.file.name,
+          mimeType: item.file.type,
+          title: item.title || `وثيقة دفعة ${i + 1}`,
+        });
+
+        setBatchFiles(prev => {
+          const updated = [...prev];
+          updated[i] = {
+            ...updated[i],
+            status: "done",
+            documentId: result.id,
+            extractedText: result.extractedText,
+          };
+          return updated;
+        });
+      } catch (error: any) {
+        setBatchFiles(prev => {
+          const updated = [...prev];
+          updated[i] = {
+            ...updated[i],
+            status: "error",
+            error: error.message || "فشل في المعالجة",
+          };
+          return updated;
+        });
+      }
+
+      setBatchProgress(((i + 1) / batchFiles.length) * 100);
+    }
+
+    setBatchProcessing(false);
+    refetchDocs();
+    const doneCount = batchFiles.filter(f => f.status === "done" || f.status === "pending").length;
+    toast.success(`تم معالجة ${doneCount} وثيقة بنجاح`);
+  }, [batchFiles, uploadOCR, refetchDocs]);
+
   const resetAll = useCallback(() => {
     setCurrentStep(1);
     setSelectedFile(null);
@@ -382,7 +496,16 @@ export default function LegacyDigitizer() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={resetAll}>
+            <Button
+              variant={batchMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setBatchMode(!batchMode); if (!batchMode) { resetAll(); } }}
+              className={batchMode ? "bg-amber-600 hover:bg-amber-700" : ""}
+            >
+              <FolderUp className="w-4 h-4 ml-1" />
+              {batchMode ? "وضع الدفعة" : "رفع جماعي"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { resetAll(); setBatchMode(false); setBatchFiles([]); }}>
               <RotateCcw className="w-4 h-4 ml-1" />
               جديد
             </Button>
@@ -465,8 +588,185 @@ export default function LegacyDigitizer() {
         <main className="flex-1 min-w-0">
           <StepIndicator currentStep={currentStep} />
 
+          {/* Batch Upload Mode */}
+          {batchMode && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              <Card className="border-amber-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FolderUp className="w-5 h-5 text-amber-600" />
+                    رفع جماعي — رقمنة فصل دراسي كامل
+                    <Badge variant="outline" className="mr-auto text-xs">{batchFiles.length} صورة</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Drop zone for multiple files */}
+                  <div
+                    className="border-2 border-dashed border-amber-300 rounded-xl p-8 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition-all"
+                    onClick={() => batchInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
+                      if (files.length > 0) {
+                        const newFiles = files.filter(f => f.size <= 10 * 1024 * 1024).map(file => ({
+                          file,
+                          previewUrl: URL.createObjectURL(file),
+                          status: "pending" as const,
+                          title: file.name.replace(/\.[^.]+$/, ""),
+                        }));
+                        setBatchFiles(prev => [...prev, ...newFiles]);
+                        toast.success(`تم إضافة ${newFiles.length} صورة`);
+                      }
+                    }}
+                  >
+                    <input
+                      ref={batchInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handleBatchFileSelect}
+                    />
+                    <div className="space-y-3">
+                      <div className="w-16 h-16 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
+                        <FolderUp className="w-8 h-8 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-700">اسحب عدة صور هنا أو اضغط للاختيار</p>
+                        <p className="text-sm text-gray-500 mt-1">يمكنك رفع جميع جذاذات واختبارات الفصل الدراسي دفعة واحدة</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Batch file list */}
+                  {batchFiles.length > 0 && (
+                    <div className="space-y-3">
+                      {batchProcessing && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">جاري المعالجة...</span>
+                            <span className="font-medium">{Math.round(batchProgress)}%</span>
+                          </div>
+                          <Progress value={batchProgress} className="h-2" />
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {batchFiles.map((item, idx) => (
+                          <div key={idx} className={`relative rounded-lg border p-3 transition-all ${
+                            item.status === "done" ? "border-green-200 bg-green-50/50" :
+                            item.status === "error" ? "border-red-200 bg-red-50/50" :
+                            item.status === "processing" ? "border-blue-200 bg-blue-50/50 animate-pulse" :
+                            "border-gray-200"
+                          }`}>
+                            <div className="flex items-start gap-3">
+                              <img src={item.previewUrl} alt="" className="w-16 h-16 object-cover rounded-md flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <Input
+                                  value={item.title}
+                                  onChange={(e) => {
+                                    setBatchFiles(prev => {
+                                      const updated = [...prev];
+                                      updated[idx] = { ...updated[idx], title: e.target.value };
+                                      return updated;
+                                    });
+                                  }}
+                                  className="text-xs h-7 mb-1"
+                                  placeholder="عنوان الوثيقة"
+                                  disabled={item.status !== "pending"}
+                                />
+                                <div className="flex items-center gap-1">
+                                  {item.status === "pending" && (
+                                    <Badge variant="outline" className="text-[10px]"><Clock className="w-3 h-3 ml-0.5" />في الانتظار</Badge>
+                                  )}
+                                  {item.status === "processing" && (
+                                    <Badge className="bg-blue-100 text-blue-700 text-[10px]"><Loader2 className="w-3 h-3 ml-0.5 animate-spin" />جاري...</Badge>
+                                  )}
+                                  {item.status === "done" && (
+                                    <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle2 className="w-3 h-3 ml-0.5" />تم</Badge>
+                                  )}
+                                  {item.status === "error" && (
+                                    <Badge className="bg-red-100 text-red-700 text-[10px]"><XCircle className="w-3 h-3 ml-0.5" />فشل</Badge>
+                                  )}
+                                </div>
+                                {item.error && <p className="text-[10px] text-red-500 mt-1">{item.error}</p>}
+                              </div>
+                              {item.status === "pending" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-red-400 hover:text-red-600"
+                                  onClick={() => removeBatchFile(idx)}
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Batch actions */}
+                      <div className="flex items-center gap-3 pt-2">
+                        <Button
+                          className="bg-amber-600 hover:bg-amber-700 flex-1"
+                          size="lg"
+                          onClick={processBatch}
+                          disabled={batchProcessing || batchFiles.every(f => f.status === "done")}
+                        >
+                          {batchProcessing ? (
+                            <><Loader2 className="w-5 h-5 ml-2 animate-spin" />جاري معالجة {batchFiles.length} وثيقة...</>
+                          ) : batchFiles.every(f => f.status === "done") ? (
+                            <><CheckCircle2 className="w-5 h-5 ml-2" />تم معالجة الجميع!</>
+                          ) : (
+                            <><ScanLine className="w-5 h-5 ml-2" />بدء الرقمنة الجماعية ({batchFiles.filter(f => f.status === "pending").length} وثيقة)</>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => { setBatchFiles([]); setBatchProgress(0); }}
+                          disabled={batchProcessing}
+                        >
+                          <Trash2 className="w-4 h-4 ml-1" />
+                          مسح الكل
+                        </Button>
+                      </div>
+
+                      {/* Summary after processing */}
+                      {!batchProcessing && batchFiles.some(f => f.status === "done") && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            <span className="font-medium text-green-800">
+                              تم رقمنة {batchFiles.filter(f => f.status === "done").length} وثيقة بنجاح
+                            </span>
+                          </div>
+                          <p className="text-sm text-green-700">
+                            يمكنك الآن العودة للوضع العادي وفتح كل وثيقة من الشريط الجانبي لتنسيقها بالذكاء الاصطناعي وتصديرها.
+                          </p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => { setBatchMode(false); setBatchFiles([]); setBatchProgress(0); }}
+                          >
+                            <ArrowLeft className="w-4 h-4 ml-1" />
+                            العودة للوضع العادي
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {/* Step 1: Upload */}
-          {currentStep === 1 && !extractedText && (
+          {!batchMode && currentStep === 1 && !extractedText && (
             <div className="max-w-2xl mx-auto space-y-6">
               <Card>
                 <CardHeader>
