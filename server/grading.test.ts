@@ -260,4 +260,85 @@ describe("Blind Grading Assistant", () => {
       }
     });
   });
+
+  describe("Class Statistics (Enhancement)", () => {
+    it("should return class statistics for a session", async () => {
+      const session = await caller.grading.createSession({
+        sessionTitle: "جلسة الإحصائيات",
+        subject: "الرياضيات",
+        grade: "السنة الرابعة",
+      });
+
+      if (session) {
+        const stats = await caller.grading.classStatistics({ sessionId: session.id });
+        expect(stats.session).toBeTruthy();
+        expect(stats.session.title).toBe("جلسة الإحصائيات");
+        expect(stats.overview).toBeTruthy();
+        expect(stats.overview.totalStudents).toBe(0);
+        expect(stats.overview.gradedStudents).toBe(0);
+        expect(stats.overview.average).toBe(0);
+        expect(stats.overview.passRate).toBe(0);
+        expect(stats.overview.excellenceRate).toBe(0);
+        expect(Array.isArray(stats.scoreBuckets)).toBe(true);
+        expect(stats.scoreBuckets).toHaveLength(4);
+        expect(Array.isArray(stats.masteryLevels)).toBe(true);
+        expect(stats.masteryLevels).toHaveLength(6);
+        expect(Array.isArray(stats.criteriaAnalysis)).toBe(true);
+        expect(Array.isArray(stats.studentResults)).toBe(true);
+      }
+    });
+
+    it("should have correct score bucket labels", async () => {
+      const session = await caller.grading.createSession({
+        sessionTitle: "جلسة الدلاء",
+        subject: "العربية",
+        grade: "السنة الثانية",
+      });
+
+      if (session) {
+        const stats = await caller.grading.classStatistics({ sessionId: session.id });
+        const labels = stats.scoreBuckets.map((b: any) => b.label);
+        expect(labels).toContain("0-4");
+        expect(labels).toContain("5-9");
+        expect(labels).toContain("10-14");
+        expect(labels).toContain("15-20");
+      }
+    });
+
+    it("should have correct mastery level symbols", async () => {
+      const session = await caller.grading.createSession({
+        sessionTitle: "جلسة المستويات",
+        subject: "الإيقاظ العلمي",
+        grade: "السنة الخامسة",
+      });
+
+      if (session) {
+        const stats = await caller.grading.classStatistics({ sessionId: session.id });
+        const symbols = stats.masteryLevels.map((l: any) => l.symbol);
+        expect(symbols).toContain("+++");
+        expect(symbols).toContain("++");
+        expect(symbols).toContain("+");
+        expect(symbols).toContain("-");
+        expect(symbols).toContain("--");
+        expect(symbols).toContain("---");
+      }
+    });
+  });
+
+  describe("PDF Export (Enhancement)", () => {
+    it("should export session results as PDF", async () => {
+      const session = await caller.grading.createSession({
+        sessionTitle: "جلسة PDF",
+        subject: "الرياضيات",
+        grade: "السنة الرابعة",
+      });
+
+      if (session) {
+        const result = await caller.grading.exportPDF({ sessionId: session.id });
+        expect(result.url).toBeTruthy();
+        expect(typeof result.url).toBe("string");
+        expect(result.url.length).toBeGreaterThan(0);
+      }
+    }, 30000);
+  });
 });

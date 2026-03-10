@@ -7161,6 +7161,381 @@ ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط �
           },
         };
       }),
+
+    // Class statistics with full analysis
+    classStatistics: protectedProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        const submissions = await db.getSubmissionsBySession(input.sessionId);
+        const correctionKey = session.correctionKey as any;
+        const totalPoints = correctionKey?.totalPoints || 20;
+        const criteria = correctionKey?.criteria || [];
+
+        // Score distribution (buckets: 0-4, 5-9, 10-14, 15-20)
+        const scoreBuckets = [
+          { label: "0-4", min: 0, max: 4, count: 0 },
+          { label: "5-9", min: 5, max: 9, count: 0 },
+          { label: "10-14", min: 10, max: 14, count: 0 },
+          { label: "15-20", min: 15, max: 20, count: 0 },
+        ];
+        const gradedSubs = submissions.filter(s => s.totalFinalScore != null);
+        const scores = gradedSubs.map(s => s.totalFinalScore!);
+        scores.forEach(score => {
+          const bucket = scoreBuckets.find(b => score >= b.min && score <= b.max);
+          if (bucket) bucket.count++;
+        });
+
+        // Mastery level distribution
+        const masteryLevels = [
+          { symbol: "+++", label: "\u062a\u0645\u0644\u0643 \u0645\u0645\u062a\u0627\u0632", count: 0, color: "#10b981" },
+          { symbol: "++", label: "\u062a\u0645\u0644\u0643 \u062c\u064a\u062f", count: 0, color: "#22c55e" },
+          { symbol: "+", label: "\u062a\u0645\u0644\u0643 \u0645\u0642\u0628\u0648\u0644", count: 0, color: "#eab308" },
+          { symbol: "-", label: "\u063a\u064a\u0631 \u0643\u0627\u0641", count: 0, color: "#f97316" },
+          { symbol: "--", label: "\u063a\u064a\u0631 \u0643\u0627\u0641 \u062c\u062f\u0627", count: 0, color: "#ef4444" },
+          { symbol: "---", label: "\u063a\u064a\u0631 \u0645\u062a\u0645\u0644\u0643", count: 0, color: "#dc2626" },
+        ];
+        gradedSubs.forEach(s => {
+          const level = masteryLevels.find(m => m.symbol === s.overallMasteryLevel);
+          if (level) level.count++;
+        });
+
+        // Per-criteria analysis
+        const criteriaAnalysis = criteria.map((c: any) => {
+          const criterionScores: number[] = [];
+          gradedSubs.forEach(s => {
+            const cs = (s.criteriaScores as any[])?.find((x: any) => x.criterionCode === c.code);
+            if (cs) criterionScores.push(cs.finalScore ?? cs.suggestedScore ?? 0);
+          });
+          const avg = criterionScores.length > 0 ? criterionScores.reduce((a, b) => a + b, 0) / criterionScores.length : 0;
+          const max = criterionScores.length > 0 ? Math.max(...criterionScores) : 0;
+          const min = criterionScores.length > 0 ? Math.min(...criterionScores) : 0;
+          const successRate = criterionScores.length > 0 ? (criterionScores.filter(s => s >= c.maxScore * 0.6).length / criterionScores.length) * 100 : 0;
+          return {
+            code: c.code,
+            label: c.label,
+            maxScore: c.maxScore,
+            average: Math.round(avg * 100) / 100,
+            max,
+            min,
+            successRate: Math.round(successRate),
+          };
+        });
+
+        // Overall stats
+        const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        const passRate = scores.length > 0 ? (scores.filter(s => s >= totalPoints * 0.5).length / scores.length) * 100 : 0;
+        const excellenceRate = scores.length > 0 ? (scores.filter(s => s >= totalPoints * 0.9).length / scores.length) * 100 : 0;
+        const median = scores.length > 0 ? [...scores].sort((a, b) => a - b)[Math.floor(scores.length / 2)] : 0;
+
+        return {
+          session: {
+            title: session.sessionTitle,
+            subject: session.subject,
+            grade: session.grade,
+            examType: session.examType,
+            totalPoints,
+          },
+          overview: {
+            totalStudents: submissions.length,
+            gradedStudents: gradedSubs.length,
+            average: Math.round(avg * 100) / 100,
+            median,
+            max: scores.length > 0 ? Math.max(...scores) : 0,
+            min: scores.length > 0 ? Math.min(...scores) : 0,
+            passRate: Math.round(passRate),
+            excellenceRate: Math.round(excellenceRate),
+          },
+          scoreBuckets,
+          masteryLevels,
+          criteriaAnalysis,
+          studentResults: gradedSubs.map(s => ({
+            studentNumber: s.studentNumber,
+            studentName: session.hideStudentNames ? `\u062a\u0644\u0645\u064a\u0630 ${s.studentNumber}` : (s.studentName || `\u062a\u0644\u0645\u064a\u0630 ${s.studentNumber}`),
+            totalScore: s.totalFinalScore,
+            masteryLevel: s.overallMasteryLevel,
+            criteriaScores: s.criteriaScores,
+          })),
+        };
+      }),
+
+    // Export PDF report for session
+    exportPDF: protectedProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        const submissions = await db.getSubmissionsBySession(input.sessionId);
+        const correctionKey = session.correctionKey as any;
+        const criteria = correctionKey?.criteria || [];
+        const totalPoints = correctionKey?.totalPoints || 20;
+        const gradedSubs = submissions.filter(s => s.totalFinalScore != null);
+        const scores = gradedSubs.map(s => s.totalFinalScore!);
+        const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        const passRate = scores.length > 0 ? (scores.filter(s => s >= totalPoints * 0.5).length / scores.length) * 100 : 0;
+
+        // Build HTML for PDF
+        const html = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans Arabic', sans-serif; direction: rtl; padding: 30px; color: #1a1a2e; font-size: 12px; }
+  .header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #4338ca; padding-bottom: 15px; }
+  .header h1 { font-size: 22px; color: #4338ca; margin-bottom: 5px; }
+  .header h2 { font-size: 16px; color: #6366f1; margin-bottom: 3px; }
+  .header p { font-size: 11px; color: #64748b; }
+  .badge { display: inline-block; background: #4338ca; color: white; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+  .info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+  .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
+  .info-card .value { font-size: 20px; font-weight: 700; color: #4338ca; }
+  .info-card .label { font-size: 9px; color: #64748b; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th { background: #4338ca; color: white; padding: 8px 6px; font-size: 11px; font-weight: 600; }
+  td { padding: 7px 6px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .mastery { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .mastery-excellent { background: #d1fae5; color: #065f46; }
+  .mastery-good { background: #dcfce7; color: #166534; }
+  .mastery-acceptable { background: #fef9c3; color: #854d0e; }
+  .mastery-insufficient { background: #fed7aa; color: #9a3412; }
+  .mastery-very-insufficient { background: #fecaca; color: #991b1b; }
+  .mastery-not-acquired { background: #fca5a5; color: #7f1d1d; }
+  .section-title { font-size: 14px; font-weight: 700; color: #1e1b4b; margin: 15px 0 8px; padding-bottom: 5px; border-bottom: 2px solid #e2e8f0; }
+  .criteria-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+  .criteria-fill { height: 100%; background: #6366f1; border-radius: 4px; }
+  .footer { text-align: center; margin-top: 25px; padding-top: 10px; border-top: 2px solid #e2e8f0; font-size: 9px; color: #94a3b8; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>\u062a\u0642\u0631\u064a\u0631 \u0646\u062a\u0627\u0626\u062c \u0627\u0644\u062a\u0635\u062d\u064a\u062d</h1>
+    <h2>${session.sessionTitle}</h2>
+    <p>${session.subject} | ${session.grade} | ${session.examType === "summative" ? "\u062e\u062a\u0627\u0645\u064a" : session.examType === "formative" ? "\u062a\u0643\u0648\u064a\u0646\u064a" : "\u062a\u0634\u062e\u064a\u0635\u064a"}</p>
+    <p style="margin-top:5px;">\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u062a\u0642\u0631\u064a\u0631: ${new Date().toLocaleDateString("ar-TN")}</p>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card"><div class="value">${gradedSubs.length}</div><div class="label">\u0639\u062f\u062f \u0627\u0644\u062a\u0644\u0627\u0645\u064a\u0630</div></div>
+    <div class="info-card"><div class="value">${Math.round(avg * 100) / 100}</div><div class="label">\u0627\u0644\u0645\u0639\u062f\u0644 \u0627\u0644\u0639\u0627\u0645</div></div>
+    <div class="info-card"><div class="value">${Math.round(passRate)}%</div><div class="label">\u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d</div></div>
+    <div class="info-card"><div class="value">${totalPoints}</div><div class="label">\u0627\u0644\u0645\u062c\u0645\u0648\u0639 \u0627\u0644\u0643\u0644\u064a</div></div>
+  </div>
+
+  <div class="section-title">\u062c\u062f\u0648\u0644 \u0625\u0633\u0646\u0627\u062f \u0627\u0644\u0623\u0639\u062f\u0627\u062f</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>\u0627\u0644\u062a\u0644\u0645\u064a\u0630</th>
+        ${criteria.map((c: any) => `<th>${c.code}</th>`).join("")}
+        <th>\u0627\u0644\u0645\u062c\u0645\u0648\u0639</th>
+        <th>\u0645\u0633\u062a\u0648\u0649 \u0627\u0644\u062a\u0645\u0644\u0643</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${gradedSubs.map((s, i) => {
+        const cs = (s.criteriaScores as any[]) || [];
+        const getMasteryClass = (level: string) => {
+          if (level === "+++") return "mastery-excellent";
+          if (level === "++") return "mastery-good";
+          if (level === "+") return "mastery-acceptable";
+          if (level === "-") return "mastery-insufficient";
+          if (level === "--") return "mastery-very-insufficient";
+          return "mastery-not-acquired";
+        };
+        return `<tr>
+          <td>${i + 1}</td>
+          <td>${session.hideStudentNames ? `\u062a\u0644\u0645\u064a\u0630 ${s.studentNumber}` : (s.studentName || `\u062a\u0644\u0645\u064a\u0630 ${s.studentNumber}`)}</td>
+          ${criteria.map((c: any) => {
+            const score = cs.find((x: any) => x.criterionCode === c.code);
+            return `<td style="text-align:center;">${score ? `${score.finalScore ?? score.suggestedScore}/${c.maxScore}` : "-"}</td>`;
+          }).join("")}
+          <td style="text-align:center;font-weight:700;">${s.totalFinalScore}/${totalPoints}</td>
+          <td style="text-align:center;"><span class="mastery ${getMasteryClass(s.overallMasteryLevel || "")}">${s.overallMasteryLevel || "-"}</span></td>
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+
+  <div class="section-title">\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631</div>
+  <table>
+    <thead>
+      <tr><th>\u0627\u0644\u0645\u0639\u064a\u0627\u0631</th><th>\u0627\u0644\u0645\u0639\u062f\u0644</th><th>\u0623\u0639\u0644\u0649</th><th>\u0623\u062f\u0646\u0649</th><th>\u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d</th><th>\u0627\u0644\u0645\u0633\u062a\u0648\u0649</th></tr>
+    </thead>
+    <tbody>
+      ${criteria.map((c: any) => {
+        const criterionScores: number[] = [];
+        gradedSubs.forEach(s => {
+          const cs = (s.criteriaScores as any[])?.find((x: any) => x.criterionCode === c.code);
+          if (cs) criterionScores.push(cs.finalScore ?? cs.suggestedScore ?? 0);
+        });
+        const cAvg = criterionScores.length > 0 ? criterionScores.reduce((a: number, b: number) => a + b, 0) / criterionScores.length : 0;
+        const cMax = criterionScores.length > 0 ? Math.max(...criterionScores) : 0;
+        const cMin = criterionScores.length > 0 ? Math.min(...criterionScores) : 0;
+        const cPass = criterionScores.length > 0 ? Math.round((criterionScores.filter(s => s >= c.maxScore * 0.6).length / criterionScores.length) * 100) : 0;
+        const pct = c.maxScore > 0 ? Math.round((cAvg / c.maxScore) * 100) : 0;
+        return `<tr>
+          <td><strong>${c.code}</strong> - ${c.label}</td>
+          <td style="text-align:center;">${Math.round(cAvg * 100) / 100}/${c.maxScore}</td>
+          <td style="text-align:center;">${cMax}</td>
+          <td style="text-align:center;">${cMin}</td>
+          <td style="text-align:center;">${cPass}%</td>
+          <td><div class="criteria-bar"><div class="criteria-fill" style="width:${pct}%"></div></div></td>
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+
+  <div class="section-title">\u062a\u0648\u0632\u064a\u0639 \u0645\u0633\u062a\u0648\u064a\u0627\u062a \u0627\u0644\u062a\u0645\u0644\u0643</div>
+  <table>
+    <thead>
+      <tr><th>\u0627\u0644\u0631\u0645\u0632</th><th>\u0627\u0644\u0645\u0633\u062a\u0648\u0649</th><th>\u0627\u0644\u0639\u062f\u062f</th><th>\u0627\u0644\u0646\u0633\u0628\u0629</th></tr>
+    </thead>
+    <tbody>
+      ${["+++","++","+","-","--","---"].map(sym => {
+        const cnt = gradedSubs.filter(s => s.overallMasteryLevel === sym).length;
+        const pct = gradedSubs.length > 0 ? Math.round((cnt / gradedSubs.length) * 100) : 0;
+        const labels: Record<string, string> = { "+++": "\u062a\u0645\u0644\u0643 \u0645\u0645\u062a\u0627\u0632", "++": "\u062a\u0645\u0644\u0643 \u062c\u064a\u062f", "+": "\u062a\u0645\u0644\u0643 \u0645\u0642\u0628\u0648\u0644", "-": "\u063a\u064a\u0631 \u0643\u0627\u0641", "--": "\u063a\u064a\u0631 \u0643\u0627\u0641 \u062c\u062f\u0627", "---": "\u063a\u064a\u0631 \u0645\u062a\u0645\u0644\u0643" };
+        return `<tr><td style="text-align:center;font-weight:700;">${sym}</td><td>${labels[sym]}</td><td style="text-align:center;">${cnt}</td><td style="text-align:center;">${pct}%</td></tr>`;
+      }).join("")}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <p>\u062a\u0642\u0631\u064a\u0631 \u0645\u0648\u0644\u062f \u0628\u0648\u0627\u0633\u0637\u0629 \u0645\u0633\u0627\u0639\u062f \u0627\u0644\u062a\u0635\u062d\u064a\u062d \u0627\u0644\u0623\u0639\u0645\u0649 - Leader Academy</p>
+    <p>\u0647\u0630\u0627 \u0627\u0644\u062a\u0642\u0631\u064a\u0631 \u0644\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0627\u0644\u0625\u062f\u0627\u0631\u064a \u0641\u0642\u0637</p>
+  </div>
+</body>
+</html>`;
+
+        // Convert HTML to PDF using Puppeteer
+        const puppeteer = await import("puppeteer");
+        const browser = await puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: "networkidle0" });
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: "15mm", bottom: "15mm", left: "10mm", right: "10mm" } });
+        await browser.close();
+
+        // Upload to S3
+        const { storagePut } = await import("./storage");
+        const fileKey = `grading-reports/${ctx.user.id}/${input.sessionId}/report-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileKey, Buffer.from(pdfBuffer), "application/pdf");
+
+        return { url, fileName: `${session.sessionTitle}-\u062a\u0642\u0631\u064a\u0631.pdf` };
+      }),
+
+    // Create session from exam builder (auto-transfer correction key)
+    createFromExam: protectedProcedure
+      .input(z.object({
+        examId: z.number().optional(),
+        examTitle: z.string(),
+        subject: z.string(),
+        grade: z.string(),
+        examContent: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Extract criteria from exam content using AI
+        let correctionKey: any = null;
+        if (input.examContent) {
+          const { invokeLLM } = await import("./_core/llm");
+          try {
+            const response = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: "\u0623\u0646\u062a \u0645\u062d\u0644\u0644 \u0627\u062e\u062a\u0628\u0627\u0631\u0627\u062a \u062a\u0648\u0646\u0633\u064a\u0629. \u0627\u0633\u062a\u062e\u0631\u062c \u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 (\u0645\u0639 1\u060c \u0645\u0639 2\u060c \u0645\u0639 3) \u0645\u0646 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631 \u0627\u0644\u062a\u0627\u0644\u064a \u0645\u0639 \u0627\u0644\u0625\u062c\u0627\u0628\u0627\u062a \u0627\u0644\u0645\u0646\u062a\u0638\u0631\u0629 \u0644\u0643\u0644 \u0633\u0624\u0627\u0644.",
+                },
+                { role: "user", content: input.examContent },
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "exam_criteria",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      criteria: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            code: { type: "string" },
+                            label: { type: "string" },
+                            maxScore: { type: "number" },
+                            description: { type: "string" },
+                            expectedAnswer: { type: "string" },
+                          },
+                          required: ["code", "label", "maxScore", "description", "expectedAnswer"],
+                          additionalProperties: false,
+                        },
+                      },
+                      totalPoints: { type: "number" },
+                    },
+                    required: ["criteria", "totalPoints"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+            });
+            const content = response?.choices?.[0]?.message?.content;
+            const parsed = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+            correctionKey = {
+              ...parsed,
+              gradingScale: {
+                excellent: { min: 90, symbol: "+++" },
+                good: { min: 75, symbol: "++" },
+                acceptable: { min: 60, symbol: "+" },
+                insufficient: { min: 40, symbol: "-" },
+                veryInsufficient: { min: 20, symbol: "--" },
+                notAcquired: { min: 0, symbol: "---" },
+              },
+            };
+          } catch (err) {
+            console.error("Failed to extract criteria from exam:", err);
+          }
+        }
+
+        // Create session with extracted or default key
+        const session = await db.createGradingSession({
+          createdBy: ctx.user.id,
+          sessionTitle: `\u062a\u0635\u062d\u064a\u062d: ${input.examTitle}`,
+          subject: input.subject,
+          grade: input.grade,
+          examType: "summative",
+          linkedExamId: input.examId || null,
+          correctionKey: correctionKey || {
+            criteria: [
+              { code: "\u0645\u0639 1", label: "\u0627\u0644\u0631\u0628\u0637 \u0648\u0627\u0644\u0627\u062e\u062a\u064a\u0627\u0631", maxScore: 6, description: "\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u0631\u0628\u0637\u060c \u0627\u0644\u0627\u062e\u062a\u064a\u0627\u0631\u060c \u0623\u0648 \u0627\u0644\u062a\u062d\u062f\u064a\u062f \u0627\u0644\u0628\u0633\u064a\u0637" },
+              { code: "\u0645\u0639 2", label: "\u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0648\u0627\u0644\u062a\u0648\u0638\u064a\u0641", maxScore: 8, description: "\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0641\u064a \u0648\u0636\u0639\u064a\u0627\u062a \u0628\u0633\u064a\u0637\u0629" },
+              { code: "\u0645\u0639 3", label: "\u0627\u0644\u0625\u0635\u0644\u0627\u062d \u0648\u0627\u0644\u062a\u0645\u064a\u0632", maxScore: 6, description: "\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u0625\u0635\u0644\u0627\u062d\u060c \u0627\u0644\u062a\u0628\u0631\u064a\u0631\u060c \u0623\u0648 \u0627\u0644\u062a\u0645\u064a\u0632" },
+            ],
+            totalPoints: 20,
+            gradingScale: {
+              excellent: { min: 90, symbol: "+++" },
+              good: { min: 75, symbol: "++" },
+              acceptable: { min: 60, symbol: "+" },
+              insufficient: { min: 40, symbol: "-" },
+              veryInsufficient: { min: 20, symbol: "--" },
+              notAcquired: { min: 0, symbol: "---" },
+            },
+          },
+          hideStudentNames: true,
+          status: "draft",
+          totalStudents: 0,
+          gradedStudents: 0,
+        });
+        return session;
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

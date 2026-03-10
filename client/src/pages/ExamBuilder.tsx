@@ -725,6 +725,18 @@ export default function ExamBuilder() {
                       className="bg-teal-700 hover:bg-teal-600 text-white text-xs h-7 px-2">
                       🖼️ مكتبة الصور
                     </Button>
+                    <Button size="sm" onClick={() => {
+                      const params = new URLSearchParams();
+                      params.set("fromExam", "true");
+                      params.set("examTitle", `${subject} - ${level}`);
+                      params.set("subject", subject);
+                      params.set("grade", level);
+                      params.set("examContent", activeTab === "exam" ? generatedExam : answerKey);
+                      navigate(`/blind-grading?${params.toString()}`);
+                    }}
+                      className="bg-indigo-700 hover:bg-indigo-600 text-white text-xs h-7 px-2">
+                      ✅ تصحيح هذا الاختبار
+                    </Button>
                   </div>
                 )}
               </div>

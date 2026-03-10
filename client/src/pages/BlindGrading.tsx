@@ -1,13 +1,14 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   ArrowRight, Upload, FileCheck, Eye, EyeOff, Plus, Trash2,
   CheckCircle2, Clock, AlertCircle, BarChart3, ChevronDown,
   ChevronUp, Sparkles, FileText, Users, Shield, Star,
-  TrendingUp, TrendingDown, Loader2, X, Download
+  TrendingUp, TrendingDown, Loader2, X, Download, PieChart,
+  FileDown, Target, Award, Percent
 } from "lucide-react";
 
 // Tunisian mastery level colors
@@ -26,7 +27,8 @@ function getMasteryStyle(level: string) {
 
 export default function BlindGrading() {
   const { user, loading } = useAuth();
-  const [activeView, setActiveView] = useState<"sessions" | "session-detail" | "submission-detail">("sessions");
+  const [activeView, setActiveView] = useState<"sessions" | "session-detail" | "submission-detail" | "statistics">("sessions");
+  const [, navigate] = useLocation();
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -37,11 +39,25 @@ export default function BlindGrading() {
   const [newSubject, setNewSubject] = useState("");
   const [newGrade, setNewGrade] = useState("");
   const [newExamType, setNewExamType] = useState<"formative" | "summative" | "diagnostic">("summative");
+  const [fromExamContent, setFromExamContent] = useState("");
+
+  // Handle URL params from Exam Builder
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("fromExam") === "true") {
+      setNewTitle(params.get("examTitle") || "");
+      setNewSubject(params.get("subject") || "");
+      setNewGrade(params.get("grade") || "");
+      setFromExamContent(params.get("examContent") || "");
+      setShowCreateForm(true);
+    }
+  }, []);
 
   // Upload state
   const [uploading, setUploading] = useState(false);
   const [uploadStudentName, setUploadStudentName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const utils = trpc.useUtils();
   const sessionsQuery = trpc.grading.getSessions.useQuery(undefined, { enabled: !!user });
@@ -59,6 +75,7 @@ export default function BlindGrading() {
       utils.grading.getSessions.invalidate();
       setShowCreateForm(false);
       setNewTitle(""); setNewSubject(""); setNewGrade("");
+      setFromExamContent("");
     },
   });
 
@@ -109,6 +126,21 @@ export default function BlindGrading() {
     onSuccess: () => {
       utils.grading.getSession.invalidate({ sessionId: selectedSessionId! });
     },
+  });
+
+  // Statistics query
+  const statsQuery = trpc.grading.classStatistics.useQuery(
+    { sessionId: selectedSessionId! },
+    { enabled: !!selectedSessionId && activeView === "statistics" }
+  );
+
+  // PDF export mutation
+  const exportPdfMutation = trpc.grading.exportPDF.useMutation({
+    onSuccess: (data) => {
+      setExportingPdf(false);
+      window.open(data.url, "_blank");
+    },
+    onError: () => setExportingPdf(false),
   });
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -256,10 +288,21 @@ export default function BlindGrading() {
                   </select>
                 </div>
               </div>
+              {fromExamContent && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
+                    <CheckCircle2 className="w-4 h-4" />
+                    تم نقل مفتاح الإصلاح تلقائياً من بناء الاختبار
+                  </div>
+                </div>
+              )}
               <div className="flex gap-3 mt-6">
                 <button onClick={() => {
                   if (newTitle && newSubject && newGrade) {
-                    createSessionMutation.mutate({ sessionTitle: newTitle, subject: newSubject, grade: newGrade, examType: newExamType });
+                    createSessionMutation.mutate({
+                      sessionTitle: newTitle, subject: newSubject, grade: newGrade, examType: newExamType,
+                      ...(fromExamContent ? { correctionKey: fromExamContent } : {})
+                    } as any);
                   }
                 }}
                   disabled={!newTitle || !newSubject || !newGrade || createSessionMutation.isPending}
@@ -388,6 +431,26 @@ export default function BlindGrading() {
               </button>
             </div>
             <div className="flex items-center gap-3">
+              {/* PDF Export */}
+              <button
+                onClick={() => {
+                  setExportingPdf(true);
+                  exportPdfMutation.mutate({ sessionId: selectedSessionId });
+                }}
+                disabled={exportingPdf}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium bg-red-50 text-red-700 border-2 border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                title="تصدير PDF">
+                {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                تصدير PDF
+              </button>
+              {/* Statistics */}
+              <button
+                onClick={() => setActiveView("statistics")}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium bg-blue-50 text-blue-700 border-2 border-blue-200 hover:bg-blue-100 transition-all"
+                title="إحصائيات الفصل">
+                <PieChart className="w-4 h-4" />
+                إحصائيات
+              </button>
               <button onClick={() => deleteSessionMutation.mutate({ sessionId: selectedSessionId })}
                 className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
                 title="حذف الجلسة">
@@ -697,6 +760,268 @@ export default function BlindGrading() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== STATISTICS VIEW ====================
+  if (activeView === "statistics" && selectedSessionId) {
+    const stats = statsQuery.data;
+    const isLoading = statsQuery.isLoading;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
+        {/* Header */}
+        <div className="bg-gradient-to-l from-blue-600 via-indigo-600 to-purple-700 text-white">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex items-center gap-3 mb-1">
+              <button onClick={() => setActiveView("session-detail")}
+                className="text-white/80 hover:text-white transition-colors">
+                <ArrowRight className="w-6 h-6" />
+              </button>
+              <PieChart className="w-7 h-7" />
+              <h1 className="text-xl md:text-2xl font-bold">تحليل إحصائي للفصل</h1>
+            </div>
+            {stats && (
+              <p className="text-white/70 text-sm mr-10">{stats.session.title} | {stats.session.subject} | {stats.session.grade}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+          ) : stats ? (
+            <div className="space-y-6">
+              {/* Overview Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                    <Users className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-indigo-600">{stats.overview.gradedStudents}</p>
+                  <p className="text-xs text-gray-500">تلميذ مصحح</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                    <Target className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">{stats.overview.average}<span className="text-sm text-gray-400">/{stats.session.totalPoints}</span></p>
+                  <p className="text-xs text-gray-500">المعدل العام</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                    <Award className="w-6 h-6 text-green-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">{stats.overview.passRate}%</p>
+                  <p className="text-xs text-gray-500">نسبة النجاح</p>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
+                  <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                    <Star className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-amber-600">{stats.overview.excellenceRate}%</p>
+                  <p className="text-xs text-gray-500">نسبة التميز</p>
+                </div>
+              </div>
+
+              {/* Score Distribution Chart */}
+              <div className="bg-white rounded-2xl shadow-sm border p-6">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-600" />
+                  توزيع الدرجات
+                </h3>
+                <div className="grid grid-cols-4 gap-3">
+                  {stats.scoreBuckets.map((bucket: any) => {
+                    const maxCount = Math.max(...stats.scoreBuckets.map((b: any) => b.count), 1);
+                    const pct = (bucket.count / maxCount) * 100;
+                    const colors = bucket.label === "15-20" ? "bg-emerald-500" : bucket.label === "10-14" ? "bg-blue-500" : bucket.label === "5-9" ? "bg-amber-500" : "bg-red-500";
+                    return (
+                      <div key={bucket.label} className="text-center">
+                        <div className="h-40 flex items-end justify-center mb-2">
+                          <div className={`w-full max-w-[60px] ${colors} rounded-t-lg transition-all`}
+                            style={{ height: `${Math.max(pct, 5)}%` }}>
+                            <span className="text-white text-sm font-bold block pt-2">{bucket.count}</span>
+                          </div>
+                        </div>
+                        <span className="text-sm font-medium text-gray-600">{bucket.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between mt-3 text-xs text-gray-400">
+                  <span>أدنى: {stats.overview.min}</span>
+                  <span>الوسيط: {stats.overview.median}</span>
+                  <span>أعلى: {stats.overview.max}</span>
+                </div>
+              </div>
+
+              {/* Mastery Levels Distribution */}
+              <div className="bg-white rounded-2xl shadow-sm border p-6">
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-purple-600" />
+                  توزيع مستويات التملك
+                </h3>
+                <div className="space-y-3">
+                  {stats.masteryLevels.map((level: any) => {
+                    const pct = stats.overview.gradedStudents > 0 ? Math.round((level.count / stats.overview.gradedStudents) * 100) : 0;
+                    const style = getMasteryStyle(level.symbol);
+                    return (
+                      <div key={level.symbol} className="flex items-center gap-3">
+                        <div className={`w-16 text-center py-1 rounded-lg font-bold text-sm ${style.bg} ${style.text}`}>
+                          {level.symbol}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm text-gray-700">{level.label}</span>
+                            <span className="text-sm font-semibold text-gray-600">{level.count} ({pct}%)</span>
+                          </div>
+                          <div className="w-full bg-gray-100 rounded-full h-3">
+                            <div className="h-3 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: level.color }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Per-Criteria Analysis */}
+              {stats.criteriaAnalysis.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                  <div className="p-4 border-b bg-gray-50">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-blue-600" />
+                      تحليل المعايير
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-50 text-sm">
+                          <th className="text-right p-3 font-semibold text-gray-600">المعيار</th>
+                          <th className="text-center p-3 font-semibold text-gray-600">المعدل</th>
+                          <th className="text-center p-3 font-semibold text-gray-600">أعلى</th>
+                          <th className="text-center p-3 font-semibold text-gray-600">أدنى</th>
+                          <th className="text-center p-3 font-semibold text-gray-600">نسبة النجاح</th>
+                          <th className="p-3 font-semibold text-gray-600 w-40">المستوى</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {stats.criteriaAnalysis.map((c: any) => {
+                          const pct = c.maxScore > 0 ? Math.round((c.average / c.maxScore) * 100) : 0;
+                          return (
+                            <tr key={c.code} className="hover:bg-gray-50">
+                              <td className="p-3">
+                                <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-sm font-bold ml-2">{c.code}</span>
+                                <span className="text-sm text-gray-700">{c.label}</span>
+                              </td>
+                              <td className="p-3 text-center font-semibold text-indigo-600">{c.average}/{c.maxScore}</td>
+                              <td className="p-3 text-center text-green-600">{c.max}</td>
+                              <td className="p-3 text-center text-red-600">{c.min}</td>
+                              <td className="p-3 text-center">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                  c.successRate >= 75 ? "bg-green-100 text-green-700" :
+                                  c.successRate >= 50 ? "bg-yellow-100 text-yellow-700" :
+                                  "bg-red-100 text-red-700"
+                                }`}>{c.successRate}%</span>
+                              </td>
+                              <td className="p-3">
+                                <div className="w-full bg-gray-100 rounded-full h-2.5">
+                                  <div className="bg-indigo-500 h-2.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Student Results Table */}
+              {stats.studentResults.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                  <div className="p-4 border-b bg-gray-50">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-indigo-600" />
+                      نتائج التلاميذ
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-50 text-sm">
+                          <th className="text-right p-3 font-semibold text-gray-600">#</th>
+                          <th className="text-right p-3 font-semibold text-gray-600">التلميذ</th>
+                          {stats.criteriaAnalysis.map((c: any) => (
+                            <th key={c.code} className="text-center p-3 font-semibold text-gray-600">{c.code}</th>
+                          ))}
+                          <th className="text-center p-3 font-semibold text-gray-600">المجموع</th>
+                          <th className="text-center p-3 font-semibold text-gray-600">المستوى</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {stats.studentResults.map((s: any, i: number) => {
+                          const cs = (s.criteriaScores as any[]) || [];
+                          return (
+                            <tr key={s.studentNumber} className="hover:bg-gray-50">
+                              <td className="p-3 text-sm text-gray-500">{i + 1}</td>
+                              <td className="p-3 text-sm font-medium text-gray-800">{s.studentName}</td>
+                              {stats.criteriaAnalysis.map((c: any) => {
+                                const score = cs.find((x: any) => x.criterionCode === c.code);
+                                return (
+                                  <td key={c.code} className="p-3 text-center text-sm">
+                                    {score ? `${score.finalScore ?? score.suggestedScore}/${c.maxScore}` : "-"}
+                                  </td>
+                                );
+                              })}
+                              <td className="p-3 text-center font-bold text-indigo-600">{s.totalScore}/{stats.session.totalPoints}</td>
+                              <td className="p-3 text-center">
+                                {s.masteryLevel && (
+                                  <span className={`px-2 py-0.5 rounded-lg text-xs font-bold ${getMasteryStyle(s.masteryLevel).bg} ${getMasteryStyle(s.masteryLevel).text}`}>
+                                    {s.masteryLevel}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => {
+                    setExportingPdf(true);
+                    exportPdfMutation.mutate({ sessionId: selectedSessionId });
+                  }}
+                  disabled={exportingPdf}
+                  className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2">
+                  {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                  تصدير التقرير PDF
+                </button>
+                <button onClick={() => setActiveView("session-detail")}
+                  className="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 flex items-center gap-2">
+                  <ArrowRight className="w-4 h-4" />
+                  العودة للجلسة
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-20 text-gray-400">
+              <PieChart className="w-16 h-16 mx-auto mb-4 opacity-50" />
+              <p>لا توجد بيانات كافية للتحليل</p>
+            </div>
+          )}
         </div>
       </div>
     );
