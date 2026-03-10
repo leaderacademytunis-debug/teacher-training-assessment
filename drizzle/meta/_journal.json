@@ -309,6 +309,13 @@
       "when": 1773123507140,
       "tag": "0043_faulty_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "5",
+      "when": 1773127035561,
+      "tag": "0044_early_hercules",
+      "breakpoints": true
     }
   ]
 }

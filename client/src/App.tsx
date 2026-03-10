@@ -46,6 +46,8 @@ import BlindGrading from "@/pages/BlindGrading";
 import Marketplace from "@/pages/Marketplace";
 import MarketplacePublish from "@/pages/MarketplacePublish";
 import DramaEngine from "@/pages/DramaEngine";
+import ManagerialDashboard from "@/pages/ManagerialDashboard";
+import MarketplaceSearch from "@/pages/MarketplaceSearch";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -93,6 +95,8 @@ function Router() {
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/marketplace/publish" component={MarketplacePublish} />
       <Route path="/drama-engine" component={DramaEngine} />
+      <Route path="/managerial-dashboard" component={ManagerialDashboard} />
+      <Route path="/marketplace/search" component={MarketplaceSearch} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

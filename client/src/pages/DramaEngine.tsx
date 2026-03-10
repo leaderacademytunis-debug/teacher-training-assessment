@@ -9,7 +9,7 @@ import {
   Clock, BookOpen, Palette, MessageCircle, Star, Award,
   Wand2, UserPlus, Package, FileText, RefreshCw,
   Image, Save, Heart, Trash2, Store, Share2,
-  HelpCircle, CheckCircle, Library, Eye, Printer
+  HelpCircle, CheckCircle, Library, Eye, Printer, Film
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -74,6 +74,8 @@ export default function DramaEngine() {
   const [showAssessment, setShowAssessment] = useState(false);
   const [showMasks, setShowMasks] = useState(false);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [videoTeaser, setVideoTeaser] = useState<{ frames: string[]; description: string; thumbnailUrl?: string } | null>(null);
+  const [showVideoTeaser, setShowVideoTeaser] = useState(false);
   const [publishTitle, setPublishTitle] = useState("");
   const [publishDesc, setPublishDesc] = useState("");
   const [currentSavedId, setCurrentSavedId] = useState<number | null>(null);
@@ -144,6 +146,17 @@ export default function DramaEngine() {
       setAssessmentQuestions(data.questions);
       setShowAssessment(true);
       toast.success(`تم توليد ${data.questions.length} أسئلة تقييمية جاهزة`);
+    },
+  });
+
+  const generateVideoTeaserMutation = trpc.videoTeaser.generate.useMutation({
+    onSuccess: (data) => {
+      setVideoTeaser({ frames: data.frames, description: data.status || "تم توليد المعاينة", thumbnailUrl: data.thumbnailUrl });
+      setShowVideoTeaser(true);
+      toast.success("تم توليد معاينة الفيديو بنجاح!");
+    },
+    onError: () => {
+      toast.error("فشل توليد معاينة الفيديو، حاول مرة أخرى");
     },
   });
 
@@ -548,8 +561,53 @@ export default function DramaEngine() {
                   {assignRolesMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                   وزّع الأدوار
                 </button>
+                <button
+                  onClick={() => {
+                    if (!script) return;
+                    generateVideoTeaserMutation.mutate({
+                      scriptTitle: script.title,
+                      synopsis: script.synopsis,
+                      characters: script.characters.map(c => ({ name: c.name, description: c.description || "" })),
+                      scenes: script.scenes.slice(0, 3).map(s => ({ title: s.title, setting: s.setting })),
+                    });
+                  }}
+                  disabled={generateVideoTeaserMutation.isPending}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-500/30 to-pink-500/30 hover:from-purple-500/40 hover:to-pink-500/40 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 border border-purple-300/30"
+                >
+                  {generateVideoTeaserMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Film className="w-4 h-4" />}
+                  {generateVideoTeaserMutation.isPending ? "جاري التوليد..." : "معاينة فيديو AI"}
+                </button>
               </div>
             </div>
+
+            {/* AI Video Teaser Section */}
+            {showVideoTeaser && videoTeaser && (
+              <div className="bg-white rounded-2xl border border-purple-200 p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <Film className="w-5 h-5 text-purple-600" />
+                    معاينة فيديو AI (30 ثانية)
+                  </h3>
+                  <button onClick={() => setShowVideoTeaser(false)} className="text-gray-400 hover:text-gray-600 text-sm">إخفاء</button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4 bg-purple-50 rounded-lg p-3 border border-purple-100">
+                  {videoTeaser.description}
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {videoTeaser.frames.map((frame, idx) => (
+                    <div key={idx} className="relative group">
+                      <img src={frame} alt={`مشهد ${idx + 1}`} className="w-full rounded-xl border border-purple-100 shadow-sm" />
+                      <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg">
+                        مشهد {idx + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {videoTeaser.frames.length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">لم يتم توليد إطارات. حاول مرة أخرى.</p>
+                )}
+              </div>
+            )}
 
             {/* Masks Section */}
             {showMasks && masks.length > 0 && (

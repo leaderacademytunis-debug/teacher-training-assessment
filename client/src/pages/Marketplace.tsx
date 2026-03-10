@@ -25,7 +25,7 @@ import {
 import {
   Search, Star, Download, Eye, TrendingUp, BookOpen, FileText,
   GraduationCap, Filter, ArrowLeft, Award, User, ChevronDown,
-  Store, Sparkles, Clock, ThumbsUp, X, ExternalLink
+  Store, Sparkles, Clock, ThumbsUp, X, ExternalLink, MessageCircle, Send, Loader2
 } from "lucide-react";
 
 // Content type labels
@@ -76,6 +76,7 @@ export default function Marketplace() {
   const [showFilters, setShowFilters] = useState(false);
   const [ratingValue, setRatingValue] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const [peerComment, setPeerComment] = useState("");
   const [page, setPage] = useState(0);
 
   // Queries
@@ -100,6 +101,20 @@ export default function Marketplace() {
     { itemId: selectedItem! },
     { enabled: !!selectedItem }
   );
+  // Peer review comments
+  const { data: peerComments, refetch: refetchComments } = trpc.peerReview.getComments.useQuery(
+    { itemId: selectedItem! },
+    { enabled: !!selectedItem }
+  );
+  const addCommentMutation = trpc.peerReview.addComment.useMutation({
+    onSuccess: () => {
+      setPeerComment("");
+      refetchComments();
+    },
+  });
+  const voteHelpfulMutation = trpc.peerReview.voteHelpful.useMutation({
+    onSuccess: () => refetchComments(),
+  });
   const { data: contributor } = trpc.marketplace.getContributor.useQuery(
     { userId: itemDetail?.publishedBy! },
     { enabled: !!itemDetail?.publishedBy }
@@ -230,6 +245,66 @@ export default function Marketplace() {
                     </Button>
                   )}
                 </CardFooter>
+              </Card>
+
+              {/* Peer Review Comments */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5 text-blue-500" />
+                    التعليقات البيداغوجية ({peerComments?.length || 0})
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">تخضع جميع التعليقات لفلتر AI لضمان المهنية</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {user && itemDetail.publishedBy !== user.id && (
+                    <div className="bg-blue-50/50 rounded-lg p-4 space-y-3 border border-blue-100">
+                      <p className="font-medium text-sm">أضف تعليقًا بناءً:</p>
+                      <Textarea
+                        placeholder="شارك ملاحظاتك البيداغوجية حول هذا المحتوى..."
+                        value={peerComment}
+                        onChange={e => setPeerComment(e.target.value)}
+                        rows={3}
+                        dir="rtl"
+                      />
+                      <Button
+                        onClick={() => addCommentMutation.mutate({ itemId: selectedItem!, comment: peerComment })}
+                        disabled={peerComment.length < 3 || addCommentMutation.isPending}
+                        size="sm"
+                        className="gap-2"
+                      >
+                        {addCommentMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {addCommentMutation.isPending ? "جاري الفحص والإرسال..." : "إرسال التعليق"}
+                      </Button>
+                    </div>
+                  )}
+                  {peerComments && peerComments.length > 0 ? (
+                    peerComments.map((c: any) => (
+                      <div key={c.id} className="border-b pb-3 last:border-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-sm">{c.userName || "معلم"}</span>
+                          <div className="flex items-center gap-2">
+                            {c.aiFilterResult === "modified" && (
+                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">معدل AI</Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(c.createdAt).toLocaleDateString("ar-TN")}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-2" dir="rtl">{c.comment}</p>
+                        <button
+                          onClick={() => voteHelpfulMutation.mutate({ commentId: c.id })}
+                          className="text-xs text-muted-foreground hover:text-blue-600 flex items-center gap-1 transition"
+                        >
+                          <ThumbsUp className="h-3 w-3" /> مفيد ({c.helpfulCount})
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد تعليقات بعد. كن أول من يشارك ملاحظاته!</p>
+                  )}
+                </CardContent>
               </Card>
 
               {/* Ratings section */}
@@ -427,6 +502,15 @@ export default function Marketplace() {
                 className="pr-10 bg-white/10 border-white/20 text-white placeholder:text-amber-200 h-12 text-lg"
               />
             </div>
+            <Link href="/marketplace/search">
+              <Button
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10 gap-2 h-12"
+              >
+                <Sparkles className="h-5 w-5" />
+                بحث ذكي
+              </Button>
+            </Link>
             <Button
               variant="outline"
               onClick={() => setShowFilters(!showFilters)}

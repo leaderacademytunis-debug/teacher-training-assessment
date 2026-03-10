@@ -1310,3 +1310,39 @@ export const savedDramaScripts = mysqlTable("saved_drama_scripts", {
 });
 export type SavedDramaScript = typeof savedDramaScripts.$inferSelect;
 export type InsertDramaScript = typeof savedDramaScripts.$inferInsert;
+
+// ===== PEER REVIEW COMMENTS (تعليقات المراجعة بين الأقران) =====
+export const peerReviewComments = mysqlTable("peer_review_comments", {
+  id: int("id").primaryKey().autoincrement(),
+  itemId: int("itemId").notNull(), // FK to marketplace_items
+  userId: int("userId").notNull(), // FK to users
+  userName: varchar("userName", { length: 255 }),
+  comment: text("comment").notNull(),
+  isAiFiltered: boolean("isAiFiltered").default(false),
+  aiFilterResult: mysqlEnum("aiFilterResult", ["approved", "modified", "rejected"]),
+  originalComment: text("originalComment"),
+  helpfulCount: int("helpfulCount").default(0).notNull(),
+  isVisible: boolean("isVisible").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PeerReviewComment = typeof peerReviewComments.$inferSelect;
+export type InsertPeerReviewComment = typeof peerReviewComments.$inferInsert;
+
+// ===== AI VIDEO TEASERS (معاينات فيديو AI للمسرحيات) =====
+export const aiVideoTeasers = mysqlTable("ai_video_teasers", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  scriptId: int("scriptId"),
+  title: varchar("title", { length: 500 }).notNull(),
+  prompt: text("prompt").notNull(),
+  videoUrl: text("videoUrl"),
+  thumbnailUrl: text("thumbnailUrl"),
+  duration: int("duration").default(30),
+  status: mysqlEnum("status", ["pending", "generating", "completed", "failed"]).default("pending").notNull(),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AiVideoTeaser = typeof aiVideoTeasers.$inferSelect;
+export type InsertAiVideoTeaser = typeof aiVideoTeasers.$inferInsert;

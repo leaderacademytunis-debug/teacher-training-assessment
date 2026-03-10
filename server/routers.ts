@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -9711,6 +9711,449 @@ ${input.lessonContent}
         } catch (e) { /* ignore */ }
         
         return { marketplaceId, message: "\u062a\u0645 \u0646\u0634\u0631 \u0627\u0644\u0645\u0633\u0631\u062d\u064a\u0629 \u0641\u064a \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0630\u0647\u0628\u064a \u0628\u0646\u062c\u0627\u062d" };
+      }),
+  }),
+
+  // ===== MANAGERIAL ANALYTICS DASHBOARD (لوحة التحكم الإدارية) =====
+  analytics: router({
+    // Get aggregated analytics for school managers
+    getDashboard: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      // Total teachers activity
+      const allUsers = await database.select({
+        id: users.id,
+        name: users.name,
+        arabicName: users.arabicName,
+        schoolName: users.schoolName,
+        role: users.role,
+        createdAt: users.createdAt,
+      }).from(users).orderBy(desc(users.lastSignedIn)).limit(500);
+      
+      // Activity logs aggregated
+      const activityLogs = await database.select({
+        userId: aiActivityLog.userId,
+        userName: aiActivityLog.userName,
+        activityType: aiActivityLog.activityType,
+        subject: aiActivityLog.subject,
+        createdAt: aiActivityLog.createdAt,
+      }).from(aiActivityLog).orderBy(desc(aiActivityLog.createdAt)).limit(1000);
+      
+      // Aggregate by user
+      const userActivityMap: Record<number, { name: string; totalActivities: number; types: Record<string, number> }> = {};
+      activityLogs.forEach(log => {
+        if (!userActivityMap[log.userId]) {
+          userActivityMap[log.userId] = { name: log.userName || "معلم", totalActivities: 0, types: {} };
+        }
+        userActivityMap[log.userId].totalActivities++;
+        userActivityMap[log.userId].types[log.activityType] = (userActivityMap[log.userId].types[log.activityType] || 0) + 1;
+      });
+      
+      // Top teachers by marketplace ratings
+      const topContributors = await database.select({
+        publishedBy: marketplaceItems.publishedBy,
+        avgRating: sql<number>`AVG(${marketplaceItems.averageRating})`,
+        totalItems: sql<number>`COUNT(*)`,
+        totalDownloads: sql<number>`SUM(${marketplaceItems.totalDownloads})`,
+      }).from(marketplaceItems)
+        .where(eq(marketplaceItems.status, "approved"))
+        .groupBy(marketplaceItems.publishedBy)
+        .orderBy(sql`AVG(${marketplaceItems.averageRating}) DESC`)
+        .limit(20);
+      
+      // Enrich with user names
+      const topTeachers = await Promise.all(topContributors.map(async (c) => {
+        const [user] = await database.select({ name: users.name, arabicName: users.arabicName, schoolName: users.schoolName })
+          .from(users).where(eq(users.id, c.publishedBy));
+        return {
+          userId: c.publishedBy,
+          name: user?.arabicName || user?.name || "معلم",
+          school: user?.schoolName || "",
+          avgRating: Number(c.avgRating || 0),
+          totalItems: Number(c.totalItems || 0),
+          totalDownloads: Number(c.totalDownloads || 0),
+        };
+      }));
+      
+      // Common pedagogical gaps (from activity types)
+      const subjectCounts: Record<string, number> = {};
+      activityLogs.forEach(log => {
+        if (log.subject) subjectCounts[log.subject] = (subjectCounts[log.subject] || 0) + 1;
+      });
+      const topSubjects = Object.entries(subjectCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([subject, count]) => ({ subject, count }));
+      
+      // Activity type distribution
+      const activityTypeCounts: Record<string, number> = {};
+      activityLogs.forEach(log => {
+        activityTypeCounts[log.activityType] = (activityTypeCounts[log.activityType] || 0) + 1;
+      });
+      
+      // Marketplace stats
+      const [marketStats] = await database.select({
+        totalItems: sql<number>`COUNT(*)`,
+        totalDownloads: sql<number>`SUM(${marketplaceItems.totalDownloads})`,
+        totalViews: sql<number>`SUM(${marketplaceItems.totalViews})`,
+      }).from(marketplaceItems).where(eq(marketplaceItems.status, "approved"));
+      
+      return {
+        totalUsers: allUsers.length,
+        totalActivities: activityLogs.length,
+        topTeachers,
+        topSubjects,
+        activityTypeDistribution: activityTypeCounts,
+        marketplaceStats: {
+          totalItems: Number(marketStats?.totalItems || 0),
+          totalDownloads: Number(marketStats?.totalDownloads || 0),
+          totalViews: Number(marketStats?.totalViews || 0),
+        },
+        recentActivity: activityLogs.slice(0, 20).map(a => ({
+          userName: a.userName || "معلم",
+          type: a.activityType,
+          subject: a.subject,
+          createdAt: a.createdAt,
+        })),
+        userActivity: Object.entries(userActivityMap)
+          .sort((a, b) => b[1].totalActivities - a[1].totalActivities)
+          .slice(0, 30)
+          .map(([userId, data]) => ({ userId: Number(userId), ...data })),
+      };
+    }),
+    
+    // Get pedagogical gaps analysis
+    getPedagogicalGaps: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      // Analyze marketplace items by subject and content type
+      const items = await database.select({
+        subject: marketplaceItems.subject,
+        contentType: marketplaceItems.contentType,
+        grade: marketplaceItems.grade,
+        aiScore: marketplaceItems.aiInspectorScore,
+      }).from(marketplaceItems).where(eq(marketplaceItems.status, "approved"));
+      
+      // Find subjects with low AI scores (pedagogical gaps)
+      const subjectScores: Record<string, { total: number; count: number; grades: Set<string> }> = {};
+      items.forEach(item => {
+        if (!subjectScores[item.subject]) subjectScores[item.subject] = { total: 0, count: 0, grades: new Set() };
+        if (item.aiScore) {
+          subjectScores[item.subject].total += item.aiScore;
+          subjectScores[item.subject].count++;
+        }
+        subjectScores[item.subject].grades.add(item.grade);
+      });
+      
+      const gaps = Object.entries(subjectScores)
+        .map(([subject, data]) => ({
+          subject,
+          avgScore: data.count > 0 ? Math.round(data.total / data.count) : 0,
+          itemCount: data.count,
+          grades: Array.from(data.grades),
+        }))
+        .sort((a, b) => a.avgScore - b.avgScore);
+      
+      return { gaps };
+    }),
+  }),
+
+  // ===== PEER REVIEW SYSTEM (نظام المراجعة بين الأقران) =====
+  peerReview: router({
+    // Get comments for a marketplace item
+    getComments: publicProcedure
+      .input(z.object({ itemId: z.number() }))
+      .query(async ({ input }) => {
+        const database = await getDb();
+        if (!database) return [];
+        return database.select().from(peerReviewComments)
+          .where(and(eq(peerReviewComments.itemId, input.itemId), eq(peerReviewComments.isVisible, true)))
+          .orderBy(desc(peerReviewComments.createdAt));
+      }),
+    
+    // Add a comment with AI constructive feedback filter
+    addComment: protectedProcedure
+      .input(z.object({
+        itemId: z.number(),
+        comment: z.string().min(3).max(2000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        
+        // AI Constructive Feedback Filter
+        let filteredComment = input.comment;
+        let aiFilterResult: "approved" | "modified" | "rejected" = "approved";
+        let originalComment: string | null = null;
+        
+        try {
+          const { invokeLLM } = await import("./_core/llm");
+          const filterResponse = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: `أنت فلتر ذكي للتعليقات البيداغوجية. مهمتك هي تقييم التعليق والتأكد من أنه بناء ومهني.\nالقواعد:\n1. إذا كان التعليق بناءًا ومهنيًا → أعده كما هو مع action: "approved"\n2. إذا كان فيه عبارات غير لائقة لكن الفكرة جيدة → أعد صياغته بأسلوب مهني مع action: "modified"\n3. إذا كان مسيئًا أو غير بناء تمامًا → action: "rejected"\nأجب بـ JSON فقط: {"action": "approved|modified|rejected", "comment": "التعليق المعدل أو الأصلي", "reason": "السبب"}`
+              },
+              { role: "user", content: input.comment }
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "comment_filter",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    action: { type: "string", enum: ["approved", "modified", "rejected"] },
+                    comment: { type: "string" },
+                    reason: { type: "string" },
+                  },
+                  required: ["action", "comment", "reason"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          
+          const parsed = JSON.parse(String(filterResponse.choices[0].message.content) || "{}");
+          aiFilterResult = parsed.action || "approved";
+          if (aiFilterResult === "modified") {
+            originalComment = input.comment;
+            filteredComment = parsed.comment || input.comment;
+          } else if (aiFilterResult === "rejected") {
+            throw new TRPCError({ code: "BAD_REQUEST", message: `تم رفض التعليق: ${parsed.reason || "التعليق غير بناء"}` });
+          }
+        } catch (e: any) {
+          if (e.code === "BAD_REQUEST") throw e;
+          // If AI filter fails, allow the comment through
+          aiFilterResult = "approved";
+        }
+        
+        const userName = ctx.user.name || ctx.user.arabicName || "معلم";
+        const [result] = await database.insert(peerReviewComments).values({
+          itemId: input.itemId,
+          userId: ctx.user.id,
+          userName,
+          comment: filteredComment,
+          isAiFiltered: true,
+          aiFilterResult,
+          originalComment,
+        }).$returningId();
+        
+        // Notify content owner
+        try {
+          const [item] = await database.select().from(marketplaceItems).where(eq(marketplaceItems.id, input.itemId));
+          if (item && item.publishedBy !== ctx.user.id) {
+            await database.insert(notifications).values({
+              userId: item.publishedBy,
+              titleAr: `تعليق جديد على محتواك: ${item.title}`,
+              messageAr: `كتب ${userName} تعليقًا على "${item.title}": "${filteredComment.substring(0, 100)}..."`,
+              type: "marketplace_review",
+              relatedId: input.itemId,
+            });
+          }
+        } catch (e) { /* ignore */ }
+        
+        return { id: result.id, comment: filteredComment, aiFilterResult };
+      }),
+    
+    // Vote helpful on a comment
+    voteHelpful: protectedProcedure
+      .input(z.object({ commentId: z.number() }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await database.update(peerReviewComments)
+          .set({ helpfulCount: sql`${peerReviewComments.helpfulCount} + 1` })
+          .where(eq(peerReviewComments.id, input.commentId));
+        return { success: true };
+      }),
+  }),
+
+  // ===== AI VIDEO TEASER (معاينة فيديو AI للمسرحيات) =====
+  videoTeaser: router({
+    // Generate a video teaser from a drama script
+    generate: protectedProcedure
+      .input(z.object({
+        scriptTitle: z.string(),
+        synopsis: z.string(),
+        characters: z.array(z.object({ name: z.string(), description: z.string() })),
+        scenes: z.array(z.object({ title: z.string(), setting: z.string() })).max(3),
+        scriptId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        
+        // Build a cinematic prompt from the script
+        const characterList = input.characters.slice(0, 4).map(c => `${c.name}: ${c.description}`).join("\n");
+        const sceneList = input.scenes.slice(0, 3).map((s, i) => `المشهد ${i + 1}: ${s.title} - ${s.setting}`).join("\n");
+        
+        const videoPrompt = `أنشئ معاينة فيديو متحركة قصيرة (30 ثانية) لمسرحية تعليمية بعنوان: "${input.scriptTitle}"\n\nالملخص: ${input.synopsis}\n\nالشخصيات:\n${characterList}\n\nالمشاهد:\n${sceneList}\n\nالأسلوب: رسوم متحركة تعليمية ملونة ومرحة للأطفال، بألوان زاهية وحركات سلسة`;
+        
+        // Save the teaser record
+        const [result] = await database.insert(aiVideoTeasers).values({
+          userId: ctx.user.id,
+          scriptId: input.scriptId || null,
+          title: input.scriptTitle,
+          prompt: videoPrompt,
+          status: "generating",
+        }).$returningId();
+        
+        // Generate video using image generation as animated storyboard
+        try {
+          const { generateImage } = await import("./_core/imageGeneration");
+          
+          // Generate 3 key frames as storyboard
+          const frames: string[] = [];
+          for (let i = 0; i < Math.min(input.scenes.length, 3); i++) {
+            const scene = input.scenes[i];
+            const framePrompt = `Animated educational cartoon scene for children: "${scene.title}" - Setting: ${scene.setting}. Characters: ${input.characters.slice(0, 3).map(c => c.name).join(", ")}. Style: colorful, friendly, educational animation, bright colors, simple shapes, Arabic school setting. 16:9 aspect ratio.`;
+            try {
+              const result = await generateImage({ prompt: framePrompt });
+              if (result.url) frames.push(result.url);
+            } catch (e) { /* continue with other frames */ }
+          }
+          
+          if (frames.length > 0) {
+            await database.update(aiVideoTeasers).set({
+              status: "completed",
+              thumbnailUrl: frames[0],
+              videoUrl: JSON.stringify(frames), // Store frames as JSON array
+            }).where(eq(aiVideoTeasers.id, result.id));
+            
+            return { id: result.id, status: "completed", frames, thumbnailUrl: frames[0] };
+          } else {
+            await database.update(aiVideoTeasers).set({
+              status: "failed",
+              errorMessage: "فشل توليد الإطارات",
+            }).where(eq(aiVideoTeasers.id, result.id));
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل توليد معاينة الفيديو" });
+          }
+        } catch (e: any) {
+          if (e.code) throw e;
+          await database.update(aiVideoTeasers).set({
+            status: "failed",
+            errorMessage: e.message || "خطأ غير متوقع",
+          }).where(eq(aiVideoTeasers.id, result.id));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل توليد معاينة الفيديو" });
+        }
+      }),
+    
+    // Get user's video teasers
+    myTeasers: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      return database.select().from(aiVideoTeasers)
+        .where(eq(aiVideoTeasers.userId, ctx.user.id))
+        .orderBy(desc(aiVideoTeasers.createdAt))
+        .limit(20);
+    }),
+  }),
+
+  // ===== GLOBAL SEARCH & RECOMMENDATION (بحث وتوصيات ذكية) =====
+  search: router({
+    // Global search across marketplace with curriculum GPS recommendations
+    globalSearch: publicProcedure
+      .input(z.object({
+        query: z.string().optional(),
+        subject: z.string().optional(),
+        grade: z.string().optional(),
+        contentType: z.string().optional(),
+        limit: z.number().default(20),
+      }))
+      .query(async ({ input }) => {
+        const database = await getDb();
+        if (!database) return { results: [], recommendations: [] };
+        
+        const conditions = [eq(marketplaceItems.status, "approved")];
+        if (input.query) {
+          conditions.push(
+            or(
+              like(marketplaceItems.title, `%${input.query}%`),
+              like(marketplaceItems.description, `%${input.query}%`),
+              like(marketplaceItems.subject, `%${input.query}%`)
+            )!
+          );
+        }
+        if (input.subject) conditions.push(eq(marketplaceItems.subject, input.subject));
+        if (input.grade) conditions.push(eq(marketplaceItems.grade, input.grade));
+        if (input.contentType) conditions.push(eq(marketplaceItems.contentType, input.contentType as any));
+        
+        const results = await database.select().from(marketplaceItems)
+          .where(and(...conditions))
+          .orderBy(desc(marketplaceItems.rankingScore))
+          .limit(input.limit);
+        
+        return { results, recommendations: [] };
+      }),
+    
+    // Get personalized recommendations based on curriculum GPS
+    getRecommendations: protectedProcedure
+      .input(z.object({
+        subject: z.string().optional(),
+        grade: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const database = await getDb();
+        if (!database) return { trending: [], forYou: [], colleagues: [] };
+        
+        // Get user's curriculum progress to understand their position
+        const userProgress = await database.select({
+          planId: teacherCurriculumProgress.planId,
+          topicId: teacherCurriculumProgress.topicId,
+          status: teacherCurriculumProgress.status,
+        }).from(teacherCurriculumProgress)
+          .where(eq(teacherCurriculumProgress.userId, ctx.user.id));
+        
+        // Get topics the user is currently working on
+        const activeTopicIds = userProgress
+          .filter(p => p.status === "in_progress" || p.status === "not_started")
+          .map(p => p.topicId);
+        
+        // Get topic details for matching
+        let topicSubjects: string[] = [];
+        if (activeTopicIds.length > 0) {
+          const topics = await database.select({
+            title: curriculumTopics.topicTitle,
+            competency: curriculumTopics.competency,
+          }).from(curriculumTopics)
+            .where(inArray(curriculumTopics.id, activeTopicIds));
+          topicSubjects = topics.map(t => t.competency || t.title);
+        }
+        
+        // Trending items (most downloaded recently)
+        const trending = await database.select().from(marketplaceItems)
+          .where(eq(marketplaceItems.status, "approved"))
+          .orderBy(desc(marketplaceItems.totalDownloads))
+          .limit(6);
+        
+        // Personalized "For You" based on curriculum GPS
+        let forYouConditions = [eq(marketplaceItems.status, "approved")];
+        if (input?.subject) forYouConditions.push(eq(marketplaceItems.subject, input.subject));
+        if (input?.grade) forYouConditions.push(eq(marketplaceItems.grade, input.grade));
+        
+        const forYou = await database.select().from(marketplaceItems)
+          .where(and(...forYouConditions))
+          .orderBy(desc(marketplaceItems.rankingScore))
+          .limit(6);
+        
+        // "Colleagues are preparing" - recently published items matching user's subjects
+        let colleagueConditions = [eq(marketplaceItems.status, "approved")];
+        if (topicSubjects.length > 0) {
+          colleagueConditions.push(
+            or(...topicSubjects.map(s => like(marketplaceItems.title, `%${s}%`)))!
+          );
+        }
+        
+        const colleagues = await database.select().from(marketplaceItems)
+          .where(and(...colleagueConditions))
+          .orderBy(desc(marketplaceItems.createdAt))
+          .limit(6);
+        
+        return { trending, forYou, colleagues };
       }),
   }),
 });
