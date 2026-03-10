@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, like, count } from "drizzle-orm";
+import { eq, and, desc, sql, like, count, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, users, 
@@ -1618,4 +1618,254 @@ export async function computePortfolioStats(userId: number): Promise<{
     lessonPlansBySubject,
     examsBySubject,
   };
+}
+
+
+// ===== CURRICULUM MAP HELPERS =====
+import { curriculumPlans, curriculumTopics, teacherCurriculumProgress, type CurriculumPlan, type InsertCurriculumPlan, type CurriculumTopic, type InsertCurriculumTopic, type TeacherCurriculumProgress, type InsertTeacherCurriculumProgress } from "../drizzle/schema";
+
+export async function createCurriculumPlan(data: InsertCurriculumPlan): Promise<CurriculumPlan | null> {
+  const database = await getDb();
+  if (!database) return null;
+  const [inserted] = await database.insert(curriculumPlans).values(data).$returningId();
+  const [plan] = await database.select().from(curriculumPlans).where(eq(curriculumPlans.id, inserted.id));
+  return plan || null;
+}
+
+export async function getCurriculumPlansByUser(userId: number) {
+  const database = await getDb();
+  if (!database) return [];
+  return database.select().from(curriculumPlans)
+    .where(and(eq(curriculumPlans.createdBy, userId), eq(curriculumPlans.isActive, true)))
+    .orderBy(desc(curriculumPlans.createdAt));
+}
+
+export async function getCurriculumPlanById(planId: number) {
+  const database = await getDb();
+  if (!database) return null;
+  const [plan] = await database.select().from(curriculumPlans).where(eq(curriculumPlans.id, planId));
+  return plan || null;
+}
+
+export async function getOfficialPlans(grade: string, subject: string) {
+  const database = await getDb();
+  if (!database) return [];
+  return database.select().from(curriculumPlans)
+    .where(and(
+      eq(curriculumPlans.grade, grade),
+      eq(curriculumPlans.subject, subject),
+      eq(curriculumPlans.isOfficial, true),
+      eq(curriculumPlans.isActive, true),
+    ))
+    .orderBy(desc(curriculumPlans.createdAt));
+}
+
+export async function getAvailablePlans(grade?: string, subject?: string) {
+  const database = await getDb();
+  if (!database) return [];
+  const conditions = [eq(curriculumPlans.isActive, true)];
+  if (grade) conditions.push(eq(curriculumPlans.grade, grade));
+  if (subject) conditions.push(eq(curriculumPlans.subject, subject));
+  return database.select().from(curriculumPlans)
+    .where(and(...conditions))
+    .orderBy(desc(curriculumPlans.createdAt));
+}
+
+export async function addCurriculumTopics(topics: InsertCurriculumTopic[]) {
+  const database = await getDb();
+  if (!database) return [];
+  if (topics.length === 0) return [];
+  await database.insert(curriculumTopics).values(topics);
+  return database.select().from(curriculumTopics)
+    .where(eq(curriculumTopics.planId, topics[0].planId))
+    .orderBy(curriculumTopics.orderIndex);
+}
+
+export async function getTopicsByPlan(planId: number) {
+  const database = await getDb();
+  if (!database) return [];
+  return database.select().from(curriculumTopics)
+    .where(eq(curriculumTopics.planId, planId))
+    .orderBy(curriculumTopics.orderIndex);
+}
+
+export async function getTopicsByPeriod(planId: number, periodNumber: number) {
+  const database = await getDb();
+  if (!database) return [];
+  return database.select().from(curriculumTopics)
+    .where(and(
+      eq(curriculumTopics.planId, planId),
+      eq(curriculumTopics.periodNumber, periodNumber),
+    ))
+    .orderBy(curriculumTopics.orderIndex);
+}
+
+export async function findTopicByTitle(planId: number, topicTitle: string) {
+  const database = await getDb();
+  if (!database) return null;
+  const [topic] = await database.select().from(curriculumTopics)
+    .where(and(
+      eq(curriculumTopics.planId, planId),
+      like(curriculumTopics.topicTitle, `%${topicTitle}%`),
+    ));
+  return topic || null;
+}
+
+export async function getUserProgress(userId: number, planId: number) {
+  const database = await getDb();
+  if (!database) return [];
+  return database.select().from(teacherCurriculumProgress)
+    .where(and(
+      eq(teacherCurriculumProgress.userId, userId),
+      eq(teacherCurriculumProgress.planId, planId),
+    ));
+}
+
+export async function upsertProgress(data: InsertTeacherCurriculumProgress) {
+  const database = await getDb();
+  if (!database) return null;
+  // Check if progress already exists
+  const existing = await database.select().from(teacherCurriculumProgress)
+    .where(and(
+      eq(teacherCurriculumProgress.userId, data.userId),
+      eq(teacherCurriculumProgress.planId, data.planId),
+      eq(teacherCurriculumProgress.topicId, data.topicId),
+    ));
+  if (existing.length > 0) {
+    await database.update(teacherCurriculumProgress)
+      .set({
+        status: data.status,
+        linkedLessonPlanId: data.linkedLessonPlanId,
+        linkedExamId: data.linkedExamId,
+        linkedEvaluationId: data.linkedEvaluationId,
+        teacherNotes: data.teacherNotes,
+        completedAt: data.status === "completed" ? new Date() : null,
+      })
+      .where(eq(teacherCurriculumProgress.id, existing[0].id));
+    const [updated] = await database.select().from(teacherCurriculumProgress)
+      .where(eq(teacherCurriculumProgress.id, existing[0].id));
+    return updated;
+  } else {
+    const [inserted] = await database.insert(teacherCurriculumProgress).values(data).$returningId();
+    const [progress] = await database.select().from(teacherCurriculumProgress)
+      .where(eq(teacherCurriculumProgress.id, inserted.id));
+    return progress;
+  }
+}
+
+export async function getCoverageStats(userId: number, planId: number) {
+  const database = await getDb();
+  if (!database) return { total: 0, completed: 0, inProgress: 0, percentage: 0 };
+  
+  const totalTopics = await database.select({ count: count() }).from(curriculumTopics)
+    .where(eq(curriculumTopics.planId, planId));
+  
+  const completedTopics = await database.select({ count: count() }).from(teacherCurriculumProgress)
+    .where(and(
+      eq(teacherCurriculumProgress.userId, userId),
+      eq(teacherCurriculumProgress.planId, planId),
+      eq(teacherCurriculumProgress.status, "completed"),
+    ));
+  
+  const inProgressTopics = await database.select({ count: count() }).from(teacherCurriculumProgress)
+    .where(and(
+      eq(teacherCurriculumProgress.userId, userId),
+      eq(teacherCurriculumProgress.planId, planId),
+      eq(teacherCurriculumProgress.status, "in_progress"),
+    ));
+  
+  const total = totalTopics[0]?.count || 0;
+  const completed = completedTopics[0]?.count || 0;
+  const inProgress = inProgressTopics[0]?.count || 0;
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+  
+  return { total, completed, inProgress, percentage };
+}
+
+export async function getNextSuggestedTopics(userId: number, planId: number, limit = 3) {
+  const database = await getDb();
+  if (!database) return [];
+  
+  // Get all topics for this plan
+  const allTopics = await database.select().from(curriculumTopics)
+    .where(eq(curriculumTopics.planId, planId))
+    .orderBy(curriculumTopics.orderIndex);
+  
+  // Get completed/in-progress topic IDs
+  const progress = await database.select().from(teacherCurriculumProgress)
+    .where(and(
+      eq(teacherCurriculumProgress.userId, userId),
+      eq(teacherCurriculumProgress.planId, planId),
+      or(
+        eq(teacherCurriculumProgress.status, "completed"),
+        eq(teacherCurriculumProgress.status, "in_progress"),
+      ),
+    ));
+  
+  const doneTopicIds = new Set(progress.map(p => p.topicId));
+  
+  // Return next uncovered topics
+  return allTopics.filter(t => !doneTopicIds.has(t.id)).slice(0, limit);
+}
+
+export async function deleteCurriculumPlan(planId: number) {
+  const database = await getDb();
+  if (!database) return false;
+  await database.update(curriculumPlans)
+    .set({ isActive: false })
+    .where(eq(curriculumPlans.id, planId));
+  return true;
+}
+
+export async function updateCurriculumPlanTotalTopics(planId: number) {
+  const database = await getDb();
+  if (!database) return;
+  const [result] = await database.select({ count: count() }).from(curriculumTopics)
+    .where(eq(curriculumTopics.planId, planId));
+  await database.update(curriculumPlans)
+    .set({ totalTopics: result?.count || 0 })
+    .where(eq(curriculumPlans.id, planId));
+}
+
+export async function getCoverageByCurriculumPeriod(userId: number, planId: number) {
+  const database = await getDb();
+  if (!database) return [];
+  
+  // Get all topics grouped by period
+  const allTopics = await database.select().from(curriculumTopics)
+    .where(eq(curriculumTopics.planId, planId))
+    .orderBy(curriculumTopics.periodNumber, curriculumTopics.orderIndex);
+  
+  // Get user progress
+  const progress = await database.select().from(teacherCurriculumProgress)
+    .where(and(
+      eq(teacherCurriculumProgress.userId, userId),
+      eq(teacherCurriculumProgress.planId, planId),
+    ));
+  
+  const progressMap = new Map(progress.map(p => [p.topicId, p]));
+  
+  // Group by period
+  const periods: Record<number, { periodName: string; total: number; completed: number; topics: Array<typeof allTopics[0] & { progress?: typeof progress[0] }> }> = {};
+  
+  for (const topic of allTopics) {
+    if (!periods[topic.periodNumber]) {
+      periods[topic.periodNumber] = {
+        periodName: topic.periodName || `الفترة ${topic.periodNumber}`,
+        total: 0,
+        completed: 0,
+        topics: [],
+      };
+    }
+    periods[topic.periodNumber].total++;
+    const prog = progressMap.get(topic.id);
+    if (prog?.status === "completed") periods[topic.periodNumber].completed++;
+    periods[topic.periodNumber].topics.push({ ...topic, progress: prog });
+  }
+  
+  return Object.entries(periods).map(([num, data]) => ({
+    periodNumber: parseInt(num),
+    ...data,
+    percentage: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0,
+  }));
 }

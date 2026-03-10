@@ -267,6 +267,13 @@
       "when": 1773076436880,
       "tag": "0037_awesome_madame_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1773104659269,
+      "tag": "0038_slippery_namora",
+      "breakpoints": true
     }
   ]
 }

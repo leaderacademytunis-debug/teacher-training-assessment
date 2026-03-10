@@ -1755,3 +1755,17 @@
 - [x] دمج في التنقل (رابط في شريط المستخدم)
 - [x] كتابة اختبارات Vitest
 - [x] اختبار شامل وحفظ checkpoint
+
+## ميزة جديدة: خريطة المنهج الذكية (Smart Curriculum Map / Curriculum GPS)
+- [x] إنشاء جداول قاعدة البيانات: curriculumPlans, curriculumTopics, teacherCurriculumProgress
+- [x] تنفيذ backend: إدارة المخططات السنوية (CRUD) مع استيراد من ملفات مرفوعة
+- [x] تنفيذ backend: محاذاة تلقائية للدروس/الاختبارات مع المنهج (Auto-Alignment)
+- [x] تنفيذ backend: تتبع التغطية (Coverage Tracker) - حساب نسبة التقدم
+- [x] تنفيذ backend: اقتراحات ذكية حسب الفترة الحالية (Smart Suggestions)
+- [x] تنفيذ backend: مرجع صفحات الكتاب المدرسي (Textbook Referencing)
+- [x] إنشاء صفحة Curriculum Map مع عرض بصري للمنهج
+- [x] تنفيذ شريط تقدم المنهج في لوحة التحكم
+- [x] تنفيذ واجهة الاقتراحات الذكية في المساعد
+- [x] دمج المحاذاة التلقائية في تدفق إنشاء الجذاذات والاختبارات
+- [x] كتابة اختبارات Vitest
+- [x] اختبار شامل وحفظ checkpoint

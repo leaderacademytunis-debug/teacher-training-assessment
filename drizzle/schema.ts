@@ -945,3 +945,88 @@ export const teacherPortfolios = mysqlTable("teacher_portfolios", {
 });
 export type TeacherPortfolio = typeof teacherPortfolios.$inferSelect;
 export type InsertTeacherPortfolio = typeof teacherPortfolios.$inferInsert;
+
+
+// ===== CURRICULUM PLANS (المخططات السنوية الرسمية - Curriculum GPS) =====
+export const curriculumPlans = mysqlTable("curriculum_plans", {
+  id: int("id").primaryKey().autoincrement(),
+  createdBy: int("createdBy").notNull(), // Admin or teacher who uploaded
+
+  // Identification
+  schoolYear: varchar("schoolYear", { length: 20 }).notNull(), // e.g., "2025-2026"
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).notNull(),
+  grade: varchar("grade", { length: 50 }).notNull(), // e.g., "السنة الخامسة ابتدائي"
+  subject: varchar("subject", { length: 100 }).notNull(), // e.g., "الإيقاظ العلمي"
+
+  // Plan metadata
+  planTitle: varchar("planTitle", { length: 255 }).notNull(), // e.g., "التوزيع السنوي - إيقاظ علمي سنة 5"
+  totalPeriods: int("totalPeriods").default(6).notNull(), // Number of periods (فترات)
+  totalTopics: int("totalTopics").default(0).notNull(), // Total topics in plan
+  sourceDocumentUrl: text("sourceDocumentUrl"), // S3 URL of original uploaded file
+
+  // Status
+  isOfficial: boolean("isOfficial").default(false).notNull(), // Admin-verified official plan
+  isActive: boolean("isActive").default(true).notNull(),
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CurriculumPlan = typeof curriculumPlans.$inferSelect;
+export type InsertCurriculumPlan = typeof curriculumPlans.$inferInsert;
+
+// ===== CURRICULUM TOPICS (مواضيع المنهج - تفاصيل كل درس في المخطط) =====
+export const curriculumTopics = mysqlTable("curriculum_topics", {
+  id: int("id").primaryKey().autoincrement(),
+  planId: int("planId").notNull(), // FK to curriculumPlans
+
+  // Period info
+  periodNumber: int("periodNumber").notNull(), // الفترة (1-6)
+  periodName: varchar("periodName", { length: 100 }), // e.g., "الفترة الأولى"
+  weekNumber: int("weekNumber"), // Optional: week within the year
+
+  // Topic details
+  topicTitle: varchar("topicTitle", { length: 255 }).notNull(), // e.g., "الأعداد ذات 5 أرقام"
+  competency: varchar("competency", { length: 255 }), // كفاية المجال - e.g., "حل وضعيات مشكل دالة بتوظيف العمليات"
+  competencyCode: varchar("competencyCode", { length: 50 }), // e.g., "ك.م.1"
+  objectives: text("objectives"), // الأهداف المميزة
+  
+  // Textbook reference
+  textbookName: varchar("textbookName", { length: 255 }), // e.g., "كتاب الرياضيات - السنة الرابعة"
+  textbookPages: varchar("textbookPages", { length: 100 }), // e.g., "ص 42-45"
+  
+  // Session details
+  sessionCount: int("sessionCount").default(1), // Number of sessions for this topic
+  sessionDuration: int("sessionDuration").default(45), // Duration per session in minutes
+  
+  // Ordering
+  orderIndex: int("orderIndex").notNull(), // Order within the plan
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CurriculumTopic = typeof curriculumTopics.$inferSelect;
+export type InsertCurriculumTopic = typeof curriculumTopics.$inferInsert;
+
+// ===== TEACHER CURRICULUM PROGRESS (تقدم المعلم في المنهج) =====
+export const teacherCurriculumProgress = mysqlTable("teacher_curriculum_progress", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  planId: int("planId").notNull(), // FK to curriculumPlans
+  topicId: int("topicId").notNull(), // FK to curriculumTopics
+
+  // Progress tracking
+  status: mysqlEnum("status", ["not_started", "in_progress", "completed", "skipped"]).default("not_started").notNull(),
+  
+  // Linked content (what the teacher generated for this topic)
+  linkedLessonPlanId: int("linkedLessonPlanId"), // FK to pedagogicalSheets
+  linkedExamId: int("linkedExamId"), // FK to savedExams or teacherExams
+  linkedEvaluationId: int("linkedEvaluationId"), // FK to savedEvaluations
+
+  // Notes
+  teacherNotes: text("teacherNotes"),
+
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TeacherCurriculumProgress = typeof teacherCurriculumProgress.$inferSelect;
+export type InsertTeacherCurriculumProgress = typeof teacherCurriculumProgress.$inferInsert;

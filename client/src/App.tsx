@@ -41,6 +41,7 @@ import Pricing from "@/pages/Pricing";
 import LegacyDigitizer from "@/pages/LegacyDigitizer";
 import TeacherPortfolio from "@/pages/TeacherPortfolio";
 import PublicPortfolio from "@/pages/PublicPortfolio";
+import CurriculumMap from "@/pages/CurriculumMap";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/legacy-digitizer" component={LegacyDigitizer} />
       <Route path="/my-portfolio" component={TeacherPortfolio} />
       <Route path="/public-portfolio/:token" component={PublicPortfolio} />
+      <Route path="/curriculum-map" component={CurriculumMap} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

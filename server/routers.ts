@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress } from "../drizzle/schema";
 import { eq, desc, and, sql, count, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -6411,6 +6411,324 @@ ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط �
           .orderBy(desc(aiActivityLog.createdAt))
           .limit(input.limit);
         return activities;
+      }),
+  }),
+
+  // ===== CURRICULUM MAP (خريطة المنهج الذكية) =====
+  curriculum: router({
+    // Create a new curriculum plan
+    createPlan: protectedProcedure
+      .input(z.object({
+        schoolYear: z.string(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]),
+        grade: z.string(),
+        subject: z.string(),
+        planTitle: z.string(),
+        totalPeriods: z.number().default(6),
+        sourceDocumentUrl: z.string().optional(),
+        isOfficial: z.boolean().default(false),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const plan = await db.createCurriculumPlan({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+        return plan;
+      }),
+
+    // Get all plans for current user (+ official ones)
+    getMyPlans: protectedProcedure
+      .input(z.object({
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) return [];
+        const conditions = [
+          eq(curriculumPlans.isActive, true),
+          or(
+            eq(curriculumPlans.createdBy, ctx.user.id),
+            eq(curriculumPlans.isOfficial, true),
+          ),
+        ];
+        if (input?.grade) conditions.push(eq(curriculumPlans.grade, input.grade));
+        if (input?.subject) conditions.push(eq(curriculumPlans.subject, input.subject));
+        return database.select().from(curriculumPlans)
+          .where(and(...conditions))
+          .orderBy(desc(curriculumPlans.createdAt));
+      }),
+
+    // Get plan details with all topics
+    getPlanDetails: protectedProcedure
+      .input(z.object({ planId: z.number() }))
+      .query(async ({ input }) => {
+        const plan = await db.getCurriculumPlanById(input.planId);
+        if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "المخطط غير موجود" });
+        const topics = await db.getTopicsByPlan(input.planId);
+        return { plan, topics };
+      }),
+
+    // Add topics to a plan (bulk)
+    addTopics: protectedProcedure
+      .input(z.object({
+        planId: z.number(),
+        topics: z.array(z.object({
+          periodNumber: z.number(),
+          periodName: z.string().optional(),
+          weekNumber: z.number().optional(),
+          topicTitle: z.string(),
+          competency: z.string().optional(),
+          competencyCode: z.string().optional(),
+          objectives: z.string().optional(),
+          textbookName: z.string().optional(),
+          textbookPages: z.string().optional(),
+          sessionCount: z.number().default(1),
+          sessionDuration: z.number().default(45),
+          orderIndex: z.number(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const plan = await db.getCurriculumPlanById(input.planId);
+        if (!plan) throw new TRPCError({ code: "NOT_FOUND" });
+        if (plan.createdBy !== ctx.user.id && !(["admin", "trainer", "supervisor"].includes(ctx.user.role))) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        const topicsWithPlanId = input.topics.map(t => ({ ...t, planId: input.planId }));
+        const result = await db.addCurriculumTopics(topicsWithPlanId);
+        await db.updateCurriculumPlanTotalTopics(input.planId);
+        return result;
+      }),
+
+    // AI: Parse uploaded annual plan document and extract topics
+    parseAnnualPlan: protectedProcedure
+      .input(z.object({
+        documentContent: z.string(), // Extracted text from uploaded document
+        grade: z.string(),
+        subject: z.string(),
+        schoolYear: z.string().default("2025-2026"),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في المناهج التعليمية التونسية. مهمتك هي تحليل محتوى مخطط سنوي واستخراج المواضيع بشكل منظم.
+
+يجب أن تستخرج لكل موضوع:
+- رقم الفترة (periodNumber: 1-6)
+- اسم الفترة (periodName)
+- رقم الأسبوع إن وُجد (weekNumber)
+- عنوان الموضوع/الدرس (topicTitle)
+- كفاية المجال (competency)
+- رمز الكفاية (competencyCode)
+- الأهداف المميزة (objectives)
+- اسم الكتاب المدرسي (textbookName)
+- صفحات الكتاب (textbookPages)
+- عدد الحصص (sessionCount)
+- مدة الحصة بالدقائق (sessionDuration)
+
+أعد النتيجة كـ JSON array.`,
+            },
+            {
+              role: "user",
+              content: `حلل هذا المخطط السنوي للمادة: ${input.subject} - المستوى: ${input.grade} - السنة الدراسية: ${input.schoolYear}\n\nالمحتوى:\n${input.documentContent}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "curriculum_topics",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  topics: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        periodNumber: { type: "integer" },
+                        periodName: { type: "string" },
+                        weekNumber: { type: "integer" },
+                        topicTitle: { type: "string" },
+                        competency: { type: "string" },
+                        competencyCode: { type: "string" },
+                        objectives: { type: "string" },
+                        textbookName: { type: "string" },
+                        textbookPages: { type: "string" },
+                        sessionCount: { type: "integer" },
+                        sessionDuration: { type: "integer" },
+                      },
+                      required: ["periodNumber", "periodName", "topicTitle", "competency", "competencyCode", "objectives", "textbookName", "textbookPages", "sessionCount", "sessionDuration", "weekNumber"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["topics"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const content = response.choices[0].message.content;
+        const parsed = JSON.parse(typeof content === 'string' ? content : '{}');
+        return parsed.topics || [];
+      }),
+
+    // Get coverage stats for a plan
+    getCoverage: protectedProcedure
+      .input(z.object({ planId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        return db.getCoverageStats(ctx.user.id, input.planId);
+      }),
+
+    // Get coverage broken down by period
+    getCoverageByPeriod: protectedProcedure
+      .input(z.object({ planId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        return db.getCoverageByCurriculumPeriod(ctx.user.id, input.planId);
+      }),
+
+    // Update topic progress
+    updateProgress: protectedProcedure
+      .input(z.object({
+        planId: z.number(),
+        topicId: z.number(),
+        status: z.enum(["not_started", "in_progress", "completed", "skipped"]),
+        linkedLessonPlanId: z.number().optional(),
+        linkedExamId: z.number().optional(),
+        linkedEvaluationId: z.number().optional(),
+        teacherNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return db.upsertProgress({
+          userId: ctx.user.id,
+          planId: input.planId,
+          topicId: input.topicId,
+          status: input.status,
+          linkedLessonPlanId: input.linkedLessonPlanId,
+          linkedExamId: input.linkedExamId,
+          linkedEvaluationId: input.linkedEvaluationId,
+          teacherNotes: input.teacherNotes,
+        });
+      }),
+
+    // Get smart suggestions (next topics to prepare)
+    getSmartSuggestions: protectedProcedure
+      .input(z.object({
+        planId: z.number(),
+        limit: z.number().default(3),
+      }))
+      .query(async ({ input, ctx }) => {
+        return db.getNextSuggestedTopics(ctx.user.id, input.planId, input.limit);
+      }),
+
+    // Auto-align: find which topic a lesson/exam belongs to
+    autoAlign: protectedProcedure
+      .input(z.object({
+        planId: z.number(),
+        title: z.string(), // Lesson or exam title
+        content: z.string().optional(), // Optional content for better matching
+      }))
+      .mutation(async ({ input }) => {
+        // First try exact/fuzzy match
+        const directMatch = await db.findTopicByTitle(input.planId, input.title);
+        if (directMatch) return { topic: directMatch, confidence: "high" as const };
+
+        // Use AI for semantic matching
+        const topics = await db.getTopicsByPlan(input.planId);
+        if (topics.length === 0) return { topic: null, confidence: "none" as const };
+
+        const { invokeLLM } = await import("./_core/llm");
+        const topicList = topics.map((t, i) => `${i}: ${t.topicTitle} (${t.competency || ""})`).join("\n");
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: "أنت خبير في المناهج التعليمية التونسية. حدد الموضوع الأقرب من القائمة التالية للعنوان المعطى. أعد رقم الفهرس فقط (index) ودرجة الثقة.",
+            },
+            {
+              role: "user",
+              content: `العنوان: ${input.title}\n${input.content ? "المحتوى: " + input.content.substring(0, 500) : ""}\n\nقائمة المواضيع:\n${topicList}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "alignment_result",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  index: { type: "integer", description: "Index of the matching topic" },
+                  confidence: { type: "string", enum: ["high", "medium", "low"] },
+                },
+                required: ["index", "confidence"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const resultContent = response.choices[0].message.content;
+        const result = JSON.parse(typeof resultContent === 'string' ? resultContent : '{}');
+        const matchedTopic = topics[result.index];
+        return { topic: matchedTopic || null, confidence: result.confidence || "low" };
+      }),
+
+    // Delete a curriculum plan (soft delete)
+    deletePlan: protectedProcedure
+      .input(z.object({ planId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const plan = await db.getCurriculumPlanById(input.planId);
+        if (!plan) throw new TRPCError({ code: "NOT_FOUND" });
+        if (plan.createdBy !== ctx.user.id && !(["admin", "trainer", "supervisor"].includes(ctx.user.role))) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        return db.deleteCurriculumPlan(input.planId);
+      }),
+
+    // Get textbook page reference for a topic
+    getTextbookRef: protectedProcedure
+      .input(z.object({
+        planId: z.number(),
+        topicTitle: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const topic = await db.findTopicByTitle(input.planId, input.topicTitle);
+        if (!topic) return null;
+        return {
+          topicTitle: topic.topicTitle,
+          textbookName: topic.textbookName,
+          textbookPages: topic.textbookPages,
+          competency: topic.competency,
+          competencyCode: topic.competencyCode,
+          periodNumber: topic.periodNumber,
+          periodName: topic.periodName,
+        };
+      }),
+
+    // Get all plans (admin - for managing official plans)
+    getAllPlans: adminProcedure
+      .input(z.object({
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.getAvailablePlans(input?.grade, input?.subject);
+      }),
+
+    // Mark plan as official (admin only)
+    markAsOfficial: adminProcedure
+      .input(z.object({ planId: z.number(), isOfficial: z.boolean() }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await database.update(curriculumPlans)
+          .set({ isOfficial: input.isOfficial })
+          .where(eq(curriculumPlans.id, input.planId));
+        return { success: true };
       }),
   }),
 });
