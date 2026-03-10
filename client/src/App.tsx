@@ -42,6 +42,7 @@ import LegacyDigitizer from "@/pages/LegacyDigitizer";
 import TeacherPortfolio from "@/pages/TeacherPortfolio";
 import PublicPortfolio from "@/pages/PublicPortfolio";
 import CurriculumMap from "@/pages/CurriculumMap";
+import BlindGrading from "@/pages/BlindGrading";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -85,6 +86,7 @@ function Router() {
       <Route path="/my-portfolio" component={TeacherPortfolio} />
       <Route path="/public-portfolio/:token" component={PublicPortfolio} />
       <Route path="/curriculum-map" component={CurriculumMap} />
+      <Route path="/blind-grading" component={BlindGrading} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

@@ -1869,3 +1869,99 @@ export async function getCoverageByCurriculumPeriod(userId: number, planId: numb
     percentage: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0,
   }));
 }
+
+
+// ==================== GRADING SESSIONS ====================
+import { gradingSessions, GradingSession, InsertGradingSession, studentSubmissions, StudentSubmission, InsertStudentSubmission } from "../drizzle/schema";
+
+export async function createGradingSession(data: InsertGradingSession): Promise<GradingSession | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(gradingSessions).values(data);
+  const id = result[0].insertId;
+  const rows = await db.select().from(gradingSessions).where(eq(gradingSessions.id, id));
+  return rows[0] || null;
+}
+
+export async function getGradingSessionsByUser(userId: number): Promise<GradingSession[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(gradingSessions)
+    .where(eq(gradingSessions.createdBy, userId))
+    .orderBy(desc(gradingSessions.createdAt));
+}
+
+export async function getGradingSessionById(sessionId: number): Promise<GradingSession | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(gradingSessions).where(eq(gradingSessions.id, sessionId));
+  return rows[0] || null;
+}
+
+export async function updateGradingSession(sessionId: number, data: Partial<InsertGradingSession>): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(gradingSessions).set(data).where(eq(gradingSessions.id, sessionId));
+  return true;
+}
+
+export async function deleteGradingSession(sessionId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  // Delete all submissions first
+  await db.delete(studentSubmissions).where(eq(studentSubmissions.sessionId, sessionId));
+  await db.delete(gradingSessions).where(eq(gradingSessions.id, sessionId));
+  return true;
+}
+
+// ==================== STUDENT SUBMISSIONS ====================
+
+export async function createStudentSubmission(data: InsertStudentSubmission): Promise<StudentSubmission | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(studentSubmissions).values(data);
+  const id = result[0].insertId;
+  const rows = await db.select().from(studentSubmissions).where(eq(studentSubmissions.id, id));
+  return rows[0] || null;
+}
+
+export async function getSubmissionsBySession(sessionId: number): Promise<StudentSubmission[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(studentSubmissions)
+    .where(eq(studentSubmissions.sessionId, sessionId))
+    .orderBy(studentSubmissions.studentNumber);
+}
+
+export async function getSubmissionById(submissionId: number): Promise<StudentSubmission | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(studentSubmissions).where(eq(studentSubmissions.id, submissionId));
+  return rows[0] || null;
+}
+
+export async function updateStudentSubmission(submissionId: number, data: Partial<InsertStudentSubmission>): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(studentSubmissions).set(data).where(eq(studentSubmissions.id, submissionId));
+  return true;
+}
+
+export async function deleteStudentSubmission(submissionId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(studentSubmissions).where(eq(studentSubmissions.id, submissionId));
+  return true;
+}
+
+export async function getSessionStats(sessionId: number): Promise<{ total: number; graded: number; reviewed: number; finalized: number }> {
+  const db = await getDb();
+  if (!db) return { total: 0, graded: 0, reviewed: 0, finalized: 0 };
+  const all = await db.select().from(studentSubmissions).where(eq(studentSubmissions.sessionId, sessionId));
+  return {
+    total: all.length,
+    graded: all.filter(s => s.status === "ai_graded" || s.status === "teacher_reviewed" || s.status === "finalized").length,
+    reviewed: all.filter(s => s.status === "teacher_reviewed" || s.status === "finalized").length,
+    finalized: all.filter(s => s.status === "finalized").length,
+  };
+}

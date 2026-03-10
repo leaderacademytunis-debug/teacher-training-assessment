@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions } from "../drizzle/schema";
 import { eq, desc, and, sql, count, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -6729,6 +6729,437 @@ ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط �
           .set({ isOfficial: input.isOfficial })
           .where(eq(curriculumPlans.id, input.planId));
         return { success: true };
+      }),
+  }),
+
+  // ==================== BLIND GRADING ASSISTANT ====================
+  grading: router({
+    // Create a new grading session
+    createSession: protectedProcedure
+      .input(z.object({
+        sessionTitle: z.string().min(1),
+        subject: z.string().min(1),
+        grade: z.string().min(1),
+        examType: z.enum(["formative", "summative", "diagnostic"]).default("summative"),
+        linkedExamId: z.number().optional(),
+        correctionKey: z.object({
+          criteria: z.array(z.object({
+            code: z.string(),
+            label: z.string(),
+            maxScore: z.number(),
+            description: z.string(),
+            expectedAnswer: z.string().optional(),
+          })),
+          totalPoints: z.number(),
+          gradingScale: z.object({
+            excellent: z.object({ min: z.number(), symbol: z.string() }),
+            good: z.object({ min: z.number(), symbol: z.string() }),
+            acceptable: z.object({ min: z.number(), symbol: z.string() }),
+            insufficient: z.object({ min: z.number(), symbol: z.string() }),
+            veryInsufficient: z.object({ min: z.number(), symbol: z.string() }),
+            notAcquired: z.object({ min: z.number(), symbol: z.string() }),
+          }),
+        }).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Default Tunisian grading scale
+        const defaultScale = {
+          excellent: { min: 90, symbol: "+++" },
+          good: { min: 75, symbol: "++" },
+          acceptable: { min: 60, symbol: "+" },
+          insufficient: { min: 40, symbol: "-" },
+          veryInsufficient: { min: 20, symbol: "--" },
+          notAcquired: { min: 0, symbol: "---" },
+        };
+        const defaultKey = input.correctionKey || {
+          criteria: [
+            { code: "\u0645\u0639 1", label: "\u0627\u0644\u0631\u0628\u0637 \u0648\u0627\u0644\u0627\u062e\u062a\u064a\u0627\u0631", maxScore: 6, description: "\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u0631\u0628\u0637\u060c \u0627\u0644\u0627\u062e\u062a\u064a\u0627\u0631\u060c \u0623\u0648 \u0627\u0644\u062a\u062d\u062f\u064a\u062f \u0627\u0644\u0628\u0633\u064a\u0637" },
+            { code: "\u0645\u0639 2", label: "\u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0648\u0627\u0644\u062a\u0648\u0638\u064a\u0641", maxScore: 8, description: "\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0641\u064a \u0648\u0636\u0639\u064a\u0627\u062a \u0628\u0633\u064a\u0637\u0629" },
+            { code: "\u0645\u0639 3", label: "\u0627\u0644\u0625\u0635\u0644\u0627\u062d \u0648\u0627\u0644\u062a\u0645\u064a\u0632", maxScore: 6, description: "\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u0625\u0635\u0644\u0627\u062d\u060c \u0627\u0644\u062a\u0628\u0631\u064a\u0631\u060c \u0623\u0648 \u0627\u0644\u062a\u0645\u064a\u0632" },
+          ],
+          totalPoints: 20,
+          gradingScale: defaultScale,
+        };
+        const session = await db.createGradingSession({
+          createdBy: ctx.user.id,
+          sessionTitle: input.sessionTitle,
+          subject: input.subject,
+          grade: input.grade,
+          examType: input.examType,
+          linkedExamId: input.linkedExamId || null,
+          correctionKey: defaultKey,
+          hideStudentNames: true,
+          status: "draft",
+          totalStudents: 0,
+          gradedStudents: 0,
+        });
+        return session;
+      }),
+
+    // Get all sessions for current user
+    getSessions: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getGradingSessionsByUser(ctx.user.id);
+    }),
+
+    // Get session by ID with submissions
+    getSession: protectedProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "\u0627\u0644\u062c\u0644\u0633\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629" });
+        }
+        const submissions = await db.getSubmissionsBySession(input.sessionId);
+        const stats = await db.getSessionStats(input.sessionId);
+        return { session, submissions, stats };
+      }),
+
+    // Update session settings
+    updateSession: protectedProcedure
+      .input(z.object({
+        sessionId: z.number(),
+        sessionTitle: z.string().optional(),
+        hideStudentNames: z.boolean().optional(),
+        status: z.enum(["draft", "in_progress", "completed"]).optional(),
+        correctionKey: z.any().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        const { sessionId, ...updates } = input;
+        await db.updateGradingSession(sessionId, updates as any);
+        return { success: true };
+      }),
+
+    // Delete session
+    deleteSession: protectedProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        await db.deleteGradingSession(input.sessionId);
+        return { success: true };
+      }),
+
+    // Upload student answer sheet + OCR
+    uploadAndOCR: protectedProcedure
+      .input(z.object({
+        sessionId: z.number(),
+        studentName: z.string().optional(),
+        studentNumber: z.number().optional(),
+        base64Data: z.string(),
+        mimeType: z.string(),
+        fileName: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        // Upload to S3
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.base64Data, "base64");
+        const fileKey = `grading/${ctx.user.id}/${input.sessionId}/${Date.now()}-${input.fileName}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+
+        // OCR extraction
+        const { analyzeImage } = await import("./fileAnalysis");
+        let extractedText = "";
+        let ocrConfidence = "medium";
+        try {
+          const result = await analyzeImage(buffer, input.mimeType);
+          extractedText = result.text || "";
+          ocrConfidence = extractedText.length > 50 ? "high" : extractedText.length > 10 ? "medium" : "low";
+        } catch (err) {
+          console.error("OCR failed:", err);
+          ocrConfidence = "low";
+        }
+
+        // Auto-assign student number
+        const existing = await db.getSubmissionsBySession(input.sessionId);
+        const nextNumber = input.studentNumber || (existing.length + 1);
+
+        const submission = await db.createStudentSubmission({
+          sessionId: input.sessionId,
+          studentName: input.studentName || null,
+          studentNumber: nextNumber,
+          imageUrl: url,
+          imageKey: fileKey,
+          extractedText,
+          ocrConfidence,
+          status: extractedText ? "ocr_done" : "uploaded",
+        });
+
+        // Update session counts
+        await db.updateGradingSession(input.sessionId, {
+          totalStudents: existing.length + 1,
+          status: "in_progress",
+        });
+
+        return submission;
+      }),
+
+    // AI-powered criteria-based grading
+    aiGrade: protectedProcedure
+      .input(z.object({ submissionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const submission = await db.getSubmissionById(input.submissionId);
+        if (!submission) throw new TRPCError({ code: "NOT_FOUND" });
+        const session = await db.getGradingSessionById(submission.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        if (!submission.extractedText) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "\u0644\u0645 \u064a\u062a\u0645 \u0627\u0633\u062a\u062e\u0631\u0627\u062c \u0627\u0644\u0646\u0635 \u0628\u0639\u062f" });
+        }
+
+        const correctionKey = session.correctionKey as any;
+        const criteria = correctionKey?.criteria || [];
+        const totalPoints = correctionKey?.totalPoints || 20;
+        const gradingScale = correctionKey?.gradingScale;
+
+        // Build AI prompt for criteria-based grading
+        const { invokeLLM } = await import("./_core/llm");
+        const criteriaDesc = criteria.map((c: any) => 
+          `- ${c.code} (${c.label}): \u0627\u0644\u062f\u0631\u062c\u0629 \u0627\u0644\u0642\u0635\u0648\u0649 ${c.maxScore} - ${c.description}${c.expectedAnswer ? ` | \u0627\u0644\u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u0645\u0646\u062a\u0638\u0631\u0629: ${c.expectedAnswer}` : ""}`
+        ).join("\n");
+
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `\u0623\u0646\u062a \u0645\u0633\u0627\u0639\u062f \u062a\u0635\u062d\u064a\u062d \u0630\u0643\u064a \u0645\u062a\u062e\u0635\u0635 \u0641\u064a \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0631\u0628\u0648\u064a \u0627\u0644\u062a\u0648\u0646\u0633\u064a. \u0642\u0645 \u0628\u062a\u0635\u062d\u064a\u062d \u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0645\u064a\u0630 \u062d\u0633\u0628 \u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631 \u0627\u0644\u0645\u062d\u062f\u062f\u0629.\n\u0646\u0638\u0627\u0645 \u0627\u0644\u062a\u0642\u064a\u064a\u0645 \u0627\u0644\u062a\u0648\u0646\u0633\u064a:\n+++ = \u062a\u0645\u0644\u0643 \u0645\u0645\u062a\u0627\u0632 (90%+)\n++ = \u062a\u0645\u0644\u0643 \u062c\u064a\u062f (75-89%)\n+ = \u062a\u0645\u0644\u0643 \u0645\u0642\u0628\u0648\u0644 (60-74%)\n- = \u063a\u064a\u0631 \u0643\u0627\u0641 (40-59%)\n-- = \u063a\u064a\u0631 \u0643\u0627\u0641 \u062c\u062f\u0627 (20-39%)\n--- = \u063a\u064a\u0631 \u0645\u062a\u0645\u0644\u0643 (0-19%)`,
+            },
+            {
+              role: "user",
+              content: `\u0635\u062d\u062d \u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0645\u064a\u0630 \u0627\u0644\u062a\u0627\u0644\u064a\u0629 \u062d\u0633\u0628 \u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631:\n\n\u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631:\n${criteriaDesc}\n\n\u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u062a\u0644\u0645\u064a\u0630 (\u0645\u0633\u062a\u062e\u0631\u062c\u0629 \u0628\u0627\u0644 OCR):\n${submission.extractedText}\n\n\u0627\u0644\u0645\u062c\u0645\u0648\u0639 \u0627\u0644\u0643\u0644\u064a: ${totalPoints} \u0646\u0642\u0637\u0629`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "grading_result",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  criteriaScores: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        criterionCode: { type: "string" },
+                        criterionLabel: { type: "string" },
+                        maxScore: { type: "number" },
+                        suggestedScore: { type: "number" },
+                        masteryLevel: { type: "string" },
+                        justification: { type: "string" },
+                      },
+                      required: ["criterionCode", "criterionLabel", "maxScore", "suggestedScore", "masteryLevel", "justification"],
+                      additionalProperties: false,
+                    },
+                  },
+                  totalScore: { type: "number" },
+                  overallMasteryLevel: { type: "string" },
+                  feedbackStrengths: { type: "string" },
+                  feedbackImprovements: { type: "string" },
+                },
+                required: ["criteriaScores", "totalScore", "overallMasteryLevel", "feedbackStrengths", "feedbackImprovements"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response?.choices?.[0]?.message?.content;
+        let parsed: any;
+        try {
+          parsed = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "\u0641\u0634\u0644 \u062a\u062d\u0644\u064a\u0644 \u0646\u062a\u064a\u062c\u0629 \u0627\u0644\u062a\u0635\u062d\u064a\u062d" });
+        }
+
+        // Map scores with finalScore = suggestedScore initially
+        const criteriaScores = (parsed.criteriaScores || []).map((cs: any) => ({
+          ...cs,
+          finalScore: cs.suggestedScore,
+        }));
+
+        await db.updateStudentSubmission(input.submissionId, {
+          criteriaScores,
+          totalSuggestedScore: parsed.totalScore,
+          totalFinalScore: parsed.totalScore,
+          overallMasteryLevel: parsed.overallMasteryLevel,
+          feedbackStrengths: parsed.feedbackStrengths,
+          feedbackImprovements: parsed.feedbackImprovements,
+          status: "ai_graded",
+        });
+
+        // Update graded count
+        const stats = await db.getSessionStats(submission.sessionId);
+        await db.updateGradingSession(submission.sessionId, { gradedStudents: stats.graded });
+
+        return {
+          criteriaScores,
+          totalScore: parsed.totalScore,
+          overallMasteryLevel: parsed.overallMasteryLevel,
+          feedbackStrengths: parsed.feedbackStrengths,
+          feedbackImprovements: parsed.feedbackImprovements,
+        };
+      }),
+
+    // Teacher reviews and adjusts scores
+    reviewSubmission: protectedProcedure
+      .input(z.object({
+        submissionId: z.number(),
+        criteriaScores: z.array(z.object({
+          criterionCode: z.string(),
+          criterionLabel: z.string(),
+          maxScore: z.number(),
+          suggestedScore: z.number(),
+          finalScore: z.number(),
+          masteryLevel: z.string(),
+          justification: z.string(),
+        })),
+        totalFinalScore: z.number(),
+        overallMasteryLevel: z.string(),
+        teacherNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const submission = await db.getSubmissionById(input.submissionId);
+        if (!submission) throw new TRPCError({ code: "NOT_FOUND" });
+        const session = await db.getGradingSessionById(submission.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        await db.updateStudentSubmission(input.submissionId, {
+          criteriaScores: input.criteriaScores,
+          totalFinalScore: input.totalFinalScore,
+          overallMasteryLevel: input.overallMasteryLevel,
+          teacherNotes: input.teacherNotes || null,
+          status: "teacher_reviewed",
+        });
+        return { success: true };
+      }),
+
+    // Finalize a submission
+    finalizeSubmission: protectedProcedure
+      .input(z.object({ submissionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const submission = await db.getSubmissionById(input.submissionId);
+        if (!submission) throw new TRPCError({ code: "NOT_FOUND" });
+        const session = await db.getGradingSessionById(submission.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        await db.updateStudentSubmission(input.submissionId, { status: "finalized" });
+        return { success: true };
+      }),
+
+    // Get submission detail
+    getSubmission: protectedProcedure
+      .input(z.object({ submissionId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const submission = await db.getSubmissionById(input.submissionId);
+        if (!submission) throw new TRPCError({ code: "NOT_FOUND" });
+        const session = await db.getGradingSessionById(submission.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        return { submission, session };
+      }),
+
+    // Delete a submission
+    deleteSubmission: protectedProcedure
+      .input(z.object({ submissionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const submission = await db.getSubmissionById(input.submissionId);
+        if (!submission) throw new TRPCError({ code: "NOT_FOUND" });
+        const session = await db.getGradingSessionById(submission.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        await db.deleteStudentSubmission(input.submissionId);
+        // Update count
+        const stats = await db.getSessionStats(submission.sessionId);
+        await db.updateGradingSession(submission.sessionId, { totalStudents: stats.total });
+        return { success: true };
+      }),
+
+    // Export session results
+    exportResults: protectedProcedure
+      .input(z.object({ sessionId: z.number(), format: z.enum(["json", "summary"]) }))
+      .query(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        const submissions = await db.getSubmissionsBySession(input.sessionId);
+        const correctionKey = session.correctionKey as any;
+
+        if (input.format === "json") {
+          return {
+            session: {
+              title: session.sessionTitle,
+              subject: session.subject,
+              grade: session.grade,
+              totalStudents: submissions.length,
+            },
+            results: submissions.map(s => ({
+              studentNumber: s.studentNumber,
+              studentName: session.hideStudentNames ? `\u062a\u0644\u0645\u064a\u0630 ${s.studentNumber}` : s.studentName,
+              totalScore: s.totalFinalScore,
+              masteryLevel: s.overallMasteryLevel,
+              criteriaScores: s.criteriaScores,
+              strengths: s.feedbackStrengths,
+              improvements: s.feedbackImprovements,
+            })),
+          };
+        }
+
+        // Summary statistics
+        const scores = submissions.filter(s => s.totalFinalScore != null).map(s => s.totalFinalScore!);
+        const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        const max = scores.length > 0 ? Math.max(...scores) : 0;
+        const min = scores.length > 0 ? Math.min(...scores) : 0;
+
+        const masteryDistribution: Record<string, number> = {};
+        submissions.forEach(s => {
+          const level = s.overallMasteryLevel || "\u063a\u064a\u0631 \u0645\u0635\u062d\u062d";
+          masteryDistribution[level] = (masteryDistribution[level] || 0) + 1;
+        });
+
+        // Criteria averages
+        const criteriaAverages: Record<string, { total: number; count: number; avg: number }> = {};
+        submissions.forEach(s => {
+          const scores = s.criteriaScores as any[];
+          if (!scores) return;
+          scores.forEach((cs: any) => {
+            if (!criteriaAverages[cs.criterionCode]) {
+              criteriaAverages[cs.criterionCode] = { total: 0, count: 0, avg: 0 };
+            }
+            criteriaAverages[cs.criterionCode].total += cs.finalScore || cs.suggestedScore || 0;
+            criteriaAverages[cs.criterionCode].count++;
+          });
+        });
+        Object.values(criteriaAverages).forEach(v => { v.avg = v.count > 0 ? Math.round((v.total / v.count) * 100) / 100 : 0; });
+
+        return {
+          session: { title: session.sessionTitle, subject: session.subject, grade: session.grade },
+          summary: {
+            totalStudents: submissions.length,
+            gradedStudents: submissions.filter(s => s.status !== "uploaded").length,
+            averageScore: Math.round(avg * 100) / 100,
+            maxScore: max,
+            minScore: min,
+            masteryDistribution,
+            criteriaAverages,
+          },
+        };
       }),
   }),
 });

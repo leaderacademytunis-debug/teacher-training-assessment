@@ -1030,3 +1030,104 @@ export const teacherCurriculumProgress = mysqlTable("teacher_curriculum_progress
 });
 export type TeacherCurriculumProgress = typeof teacherCurriculumProgress.$inferSelect;
 export type InsertTeacherCurriculumProgress = typeof teacherCurriculumProgress.$inferInsert;
+
+
+/**
+ * Grading Sessions - stores a grading session linked to an exam
+ */
+export const gradingSessions = mysqlTable("gradingSessions", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  
+  // Session info
+  sessionTitle: varchar("sessionTitle", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  grade: varchar("grade", { length: 50 }).notNull(),
+  examType: mysqlEnum("examType", ["formative", "summative", "diagnostic"]).default("summative").notNull(),
+  
+  // Linked exam (optional - from Exam Builder)
+  linkedExamId: int("linkedExamId"),
+  
+  // Correction key - the expected answers and criteria
+  correctionKey: json("correctionKey").$type<{
+    criteria: Array<{
+      code: string; // مع1، مع2، مع3
+      label: string;
+      maxScore: number;
+      description: string;
+      expectedAnswer?: string;
+    }>;
+    totalPoints: number;
+    gradingScale: {
+      excellent: { min: number; symbol: string }; // +++
+      good: { min: number; symbol: string }; // ++
+      acceptable: { min: number; symbol: string }; // +
+      insufficient: { min: number; symbol: string }; // -
+      veryInsufficient: { min: number; symbol: string }; // --
+      notAcquired: { min: number; symbol: string }; // ---
+    };
+  }>(),
+  
+  // Privacy
+  hideStudentNames: boolean("hideStudentNames").default(true).notNull(),
+  
+  // Status
+  status: mysqlEnum("status", ["draft", "in_progress", "completed"]).default("draft").notNull(),
+  totalStudents: int("totalStudents").default(0).notNull(),
+  gradedStudents: int("gradedStudents").default(0).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GradingSession = typeof gradingSessions.$inferSelect;
+export type InsertGradingSession = typeof gradingSessions.$inferInsert;
+
+/**
+ * Student Submissions - individual student answer sheets within a grading session
+ */
+export const studentSubmissions = mysqlTable("studentSubmissions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("sessionId").notNull(),
+  
+  // Student info (can be hidden during grading)
+  studentName: varchar("studentName", { length: 255 }),
+  studentNumber: int("studentNumber"), // Anonymous number for blind grading
+  
+  // Uploaded answer sheet
+  imageUrl: text("imageUrl").notNull(), // S3 URL
+  imageKey: text("imageKey").notNull(), // S3 key
+  
+  // OCR extracted text
+  extractedText: text("extractedText"),
+  ocrConfidence: varchar("ocrConfidence", { length: 20 }), // high, medium, low
+  
+  // AI grading results
+  criteriaScores: json("criteriaScores").$type<Array<{
+    criterionCode: string; // مع1، مع2، مع3
+    criterionLabel: string;
+    maxScore: number;
+    suggestedScore: number;
+    finalScore: number; // After teacher review
+    masteryLevel: string; // +++, ++, +, -, --, ---
+    justification: string;
+  }>>(),
+  
+  totalSuggestedScore: int("totalSuggestedScore"),
+  totalFinalScore: int("totalFinalScore"),
+  overallMasteryLevel: varchar("overallMasteryLevel", { length: 10 }), // +++, ++, +, etc.
+  
+  // Pedagogical feedback
+  feedbackStrengths: text("feedbackStrengths"),
+  feedbackImprovements: text("feedbackImprovements"),
+  
+  // Status
+  status: mysqlEnum("status", ["uploaded", "ocr_done", "ai_graded", "teacher_reviewed", "finalized"]).default("uploaded").notNull(),
+  teacherNotes: text("teacherNotes"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StudentSubmission = typeof studentSubmissions.$inferSelect;
+export type InsertStudentSubmission = typeof studentSubmissions.$inferInsert;
