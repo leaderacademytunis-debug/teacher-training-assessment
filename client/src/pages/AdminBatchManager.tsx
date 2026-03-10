@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield } from "lucide-react";
+import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield, GraduationCap } from "lucide-react";
 
 const FEATURE_OPTIONS = [
   { key: "accessEdugpt", label: "EduGPT المساعد الذكي", icon: "🤖" },
@@ -241,6 +241,12 @@ export default function AdminBatchManager() {
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        <Link href="/admin/google-classroom">
+                          <Button variant="outline" size="sm" className="text-green-600 hover:bg-green-50">
+                            <GraduationCap className="h-4 w-4 ml-1" />
+                            Google Classroom
+                          </Button>
+                        </Link>
                         <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => { if (confirm("هل أنت متأكد من حذف هذه الدفعة؟")) deleteBatch.mutate({ id: selectedBatchId! }); }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>

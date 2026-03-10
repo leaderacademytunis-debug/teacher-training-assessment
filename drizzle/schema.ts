@@ -1612,3 +1612,60 @@ export const submissions = mysqlTable("submissions", {
 });
 export type Submission = typeof submissions.$inferSelect;
 export type InsertSubmission = typeof submissions.$inferInsert;
+
+
+// ========== Google Classroom Integration ==========
+
+// Google Classroom Connection (ربط Google Classroom)
+export const googleClassroomConnections = mysqlTable("google_classroom_connections", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  googleEmail: varchar("googleEmail", { length: 255 }).notNull(),
+  accessToken: text("accessToken").notNull(),
+  refreshToken: text("refreshToken").notNull(),
+  tokenExpiresAt: timestamp("tokenExpiresAt"),
+  scopes: text("scopes"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type GoogleClassroomConnection = typeof googleClassroomConnections.$inferSelect;
+
+// Batch-Classroom Course Mapping (ربط الدفعات بالفصول)
+export const batchClassroomMappings = mysqlTable("batch_classroom_mappings", {
+  id: int("id").primaryKey().autoincrement(),
+  batchId: int("batchId").notNull(),
+  connectionId: int("connectionId").notNull(),
+  googleCourseId: varchar("googleCourseId", { length: 255 }).notNull(),
+  googleCourseName: varchar("googleCourseName", { length: 500 }),
+  syncAssignments: boolean("syncAssignments").default(true).notNull(),
+  syncGrades: boolean("syncGrades").default(true).notNull(),
+  lastSyncAt: timestamp("lastSyncAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BatchClassroomMapping = typeof batchClassroomMappings.$inferSelect;
+
+// Assignment-CourseWork Mapping (ربط الواجبات)
+export const assignmentClassroomMappings = mysqlTable("assignment_classroom_mappings", {
+  id: int("id").primaryKey().autoincrement(),
+  assignmentId: int("assignmentId").notNull(),
+  mappingId: int("mappingId").notNull(),
+  googleCourseWorkId: varchar("googleCourseWorkId", { length: 255 }).notNull(),
+  lastGradeSyncAt: timestamp("lastGradeSyncAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AssignmentClassroomMapping = typeof assignmentClassroomMappings.$inferSelect;
+
+// Sync Log (سجل المزامنة)
+export const classroomSyncLogs = mysqlTable("classroom_sync_logs", {
+  id: int("id").primaryKey().autoincrement(),
+  connectionId: int("connectionId").notNull(),
+  action: mysqlEnum("action", ["push_assignment", "sync_grades", "pull_roster", "full_sync"]).notNull(),
+  status: mysqlEnum("status", ["pending", "success", "failed"]).default("pending").notNull(),
+  details: text("details"),
+  errorMessage: text("errorMessage"),
+  itemsProcessed: int("itemsProcessed").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ClassroomSyncLog = typeof classroomSyncLogs.$inferSelect;

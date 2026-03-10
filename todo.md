@@ -2036,3 +2036,13 @@
 - [x] Integrate batch-based feature gating into LockedFeature/usePermissions
 - [x] Update navigation with batch manager links
 - [x] Write vitest tests for batch manager features
+
+## Google Classroom API Integration
+- [x] Research Google Classroom API endpoints and OAuth2 requirements
+- [x] Create database schema for Google Classroom connection settings
+- [x] Build OAuth2 flow for Google account linking
+- [x] Build Google Classroom API client (list courses, create assignments, sync grades)
+- [x] Build sync procedures: push assignments to Classroom, pull/push grades
+- [x] Build admin settings page for Google Classroom integration
+- [x] Add sync controls in batch manager and assignment pages
+- [x] Write vitest tests for Google Classroom integration
