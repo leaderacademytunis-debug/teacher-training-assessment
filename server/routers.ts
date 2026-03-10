@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -10590,11 +10590,238 @@ ${input.lessonContent}
     const database = await getDb();
     if (!database) return [];
     return database.select().from(partnerSchools).orderBy(desc(partnerSchools.createdAt));
-  }),
+   }),
 }),
-});
 
-// Helper: Smart match teachers for a job posting
+  // ===== ADMIN PARTNERS (لوحة اعتماد المدارس) =====
+  adminPartners: router({
+    listPendingSchools: adminProcedure.query(async () => {
+      const database = await getDb();
+      if (!database) return [];
+      return database.select().from(partnerSchools).where(eq(partnerSchools.isVerified, false)).orderBy(desc(partnerSchools.createdAt));
+    }),
+    listAllSchools: adminProcedure.query(async () => {
+      const database = await getDb();
+      if (!database) return [];
+      return database.select().from(partnerSchools).orderBy(desc(partnerSchools.createdAt));
+    }),
+    approveSchool: adminProcedure.input(z.object({ schoolId: z.number() })).mutation(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      await database.update(partnerSchools).set({ isVerified: true, updatedAt: new Date() }).where(eq(partnerSchools.id, input.schoolId));
+      return { success: true };
+    }),
+    rejectSchool: adminProcedure.input(z.object({ schoolId: z.number(), reason: z.string().optional() })).mutation(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      await database.delete(partnerSchools).where(eq(partnerSchools.id, input.schoolId));
+      return { success: true };
+    }),
+    listJobPostings: adminProcedure.query(async () => {
+      const database = await getDb();
+      if (!database) return [];
+      const jobs = await database.select().from(jobPostings).orderBy(desc(jobPostings.createdAt));
+      const schools = await database.select().from(partnerSchools);
+      return jobs.map((j: any) => ({ ...j, school: schools.find((s: any) => s.id === j.schoolId) }));
+    }),
+    toggleJobActive: adminProcedure.input(z.object({ jobId: z.number(), isActive: z.boolean() })).mutation(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      await database.update(jobPostings).set({ isActive: input.isActive }).where(eq(jobPostings.id, input.jobId));
+      return { success: true };
+    }),
+    getStats: adminProcedure.query(async () => {
+      const database = await getDb();
+      if (!database) return { totalSchools: 0, pendingSchools: 0, approvedSchools: 0, totalJobs: 0, activeJobs: 0 };
+      const allSchools = await database.select().from(partnerSchools);
+      const allJobs = await database.select().from(jobPostings);
+      return {
+        totalSchools: allSchools.length,
+        pendingSchools: allSchools.filter((s: any) => s.status === 'pending').length,
+        approvedSchools: allSchools.filter((s: any) => s.status === 'approved').length,
+        totalJobs: allJobs.length,
+        activeJobs: allJobs.filter((j: any) => j.isActive).length,
+      };
+    }),
+  }),
+
+  // ===== MESSAGING (نظام المراسلة المهنية) =====
+  messaging: router({
+    getConversations: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const convos = await database.select().from(careerConversations)
+        .where(or(eq(careerConversations.teacherUserId, ctx.user.id), eq(careerConversations.schoolUserId, ctx.user.id)))
+        .orderBy(desc(careerConversations.lastMessageAt));
+      const results = [];
+      for (const c of convos) {
+        const otherUserId = c.teacherUserId === ctx.user.id ? c.schoolUserId : c.teacherUserId;
+        const otherUser = await database.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, otherUserId));
+        const school = await database.select({ id: partnerSchools.id, schoolName: partnerSchools.schoolName }).from(partnerSchools).where(eq(partnerSchools.id, c.schoolId));
+        const unreadCount = await database.select({ cnt: count() }).from(careerMessages)
+          .where(and(eq(careerMessages.conversationId, c.id), eq(careerMessages.isRead, false), sql`${careerMessages.senderUserId} != ${ctx.user.id}`));
+        results.push({ ...c, otherUser: otherUser[0], school: school[0], unreadCount: unreadCount[0]?.cnt || 0 });
+      }
+      return results;
+    }),
+    getMessages: protectedProcedure.input(z.object({ conversationId: z.number() })).query(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const convo = await database.select().from(careerConversations).where(eq(careerConversations.id, input.conversationId));
+      if (!convo[0] || (convo[0].teacherUserId !== ctx.user.id && convo[0].schoolUserId !== ctx.user.id)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية الوصول لهذه المحادثة' });
+      }
+      await database.update(careerMessages).set({ isRead: true })
+        .where(and(eq(careerMessages.conversationId, input.conversationId), sql`${careerMessages.senderUserId} != ${ctx.user.id}`));
+      const msgs = await database.select().from(careerMessages)
+        .where(eq(careerMessages.conversationId, input.conversationId))
+        .orderBy(asc(careerMessages.createdAt));
+      const senderIds = Array.from(new Set(msgs.map((m: any) => m.senderUserId)));
+      const senders = senderIds.length > 0 ? await database.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, senderIds)) : [];
+      return msgs.map((m: any) => ({ ...m, sender: senders.find((s: any) => s.id === m.senderUserId) }));
+    }),
+    sendMessage: protectedProcedure.input(z.object({ conversationId: z.number(), content: z.string().min(1) })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const convo = await database.select().from(careerConversations).where(eq(careerConversations.id, input.conversationId));
+      if (!convo[0] || (convo[0].teacherUserId !== ctx.user.id && convo[0].schoolUserId !== ctx.user.id)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية الوصول لهذه المحادثة' });
+      }
+      if (convo[0].status === 'blocked') throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذه المحادثة محظورة' });
+      // AI Professionalism Filter
+      let filteredContent = null;
+      let isFiltered = false;
+      try {
+        const { invokeLLM } = await import('./_core/llm');
+        const filterResult = await invokeLLM({
+          messages: [
+            { role: 'system', content: 'أنت فلتر احترافية للرسائل المهنية. حلل الرسالة التالية وأجب بـ JSON فقط: {"isAppropriate": true/false, "cleanedMessage": "الرسالة المنقحة إن لزم", "reason": "سبب التنقيح"}. الرسالة يجب أن تكون مهنية ومتعلقة بالتوظيف والتعليم. ارفض أي محتوى شخصي غير لائق أو غير مهني.' },
+            { role: 'user', content: input.content }
+          ],
+          response_format: { type: 'json_schema', json_schema: { name: 'filter_result', strict: true, schema: { type: 'object', properties: { isAppropriate: { type: 'boolean' }, cleanedMessage: { type: 'string' }, reason: { type: 'string' } }, required: ['isAppropriate', 'cleanedMessage', 'reason'], additionalProperties: false } } }
+        });
+        const parsed = JSON.parse(String(filterResult.choices[0].message.content) || '{}');
+        if (!parsed.isAppropriate) {
+          isFiltered = true;
+          filteredContent = parsed.cleanedMessage || input.content;
+        }
+      } catch (e) { /* filter failed, allow message */ }
+      const messageContent = isFiltered ? (filteredContent || input.content) : input.content;
+      await database.insert(careerMessages).values({ conversationId: input.conversationId, senderUserId: ctx.user.id, content: messageContent, isFiltered, filteredContent: isFiltered ? input.content : null, messageType: 'text' });
+      await database.update(careerConversations).set({ lastMessageAt: new Date() }).where(eq(careerConversations.id, input.conversationId));
+      return { success: true, isFiltered };
+    }),
+    startConversation: protectedProcedure.input(z.object({ teacherUserId: z.number(), schoolId: z.number(), jobPostingId: z.number().optional() })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const existing = await database.select().from(careerConversations)
+        .where(and(eq(careerConversations.teacherUserId, input.teacherUserId), eq(careerConversations.schoolId, input.schoolId), eq(careerConversations.schoolUserId, ctx.user.id)));
+      if (existing[0]) return { conversationId: existing[0].id, isNew: false };
+      const result = await database.insert(careerConversations).values({ teacherUserId: input.teacherUserId, schoolId: input.schoolId, schoolUserId: ctx.user.id, jobPostingId: input.jobPostingId || null });
+      return { conversationId: Number(result[0].insertId), isNew: true };
+    }),
+    archiveConversation: protectedProcedure.input(z.object({ conversationId: z.number() })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const convo = await database.select().from(careerConversations).where(eq(careerConversations.id, input.conversationId));
+      if (!convo[0] || (convo[0].teacherUserId !== ctx.user.id && convo[0].schoolUserId !== ctx.user.id)) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      await database.update(careerConversations).set({ status: 'archived' }).where(eq(careerConversations.id, input.conversationId));
+      return { success: true };
+    }),
+  }),
+
+  // ===== PROFILE STATS (تحليلات الملف المهني) =====
+  profileStats: router({
+    trackEvent: publicProcedure.input(z.object({ teacherUserId: z.number(), eventType: z.enum(['profile_view', 'cv_download', 'smart_match', 'contact_click']), visitorInfo: z.string().optional(), jobPostingId: z.number().optional() })).mutation(async ({ input }) => {
+      const database = await getDb();
+      if (!database) return { success: false };
+      await database.insert(profileAnalytics).values({ teacherUserId: input.teacherUserId, eventType: input.eventType, visitorInfo: input.visitorInfo || null, jobPostingId: input.jobPostingId || null });
+      return { success: true };
+    }),
+    getMyStats: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return { totalViews: 0, weeklyViews: 0, dailyViews: 0, cvDownloads: 0, smartMatches: 0, contactClicks: 0, viewsByDay: [] };
+      const allEvents = await database.select().from(profileAnalytics).where(eq(profileAnalytics.teacherUserId, ctx.user.id)).orderBy(desc(profileAnalytics.createdAt));
+      const now = new Date();
+      const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const totalViews = allEvents.filter((e: any) => e.eventType === 'profile_view').length;
+      const weeklyViews = allEvents.filter((e: any) => e.eventType === 'profile_view' && new Date(e.createdAt) >= weekAgo).length;
+      const dailyViews = allEvents.filter((e: any) => e.eventType === 'profile_view' && new Date(e.createdAt) >= dayAgo).length;
+      const cvDownloads = allEvents.filter((e: any) => e.eventType === 'cv_download').length;
+      const smartMatches = allEvents.filter((e: any) => e.eventType === 'smart_match').length;
+      const contactClicks = allEvents.filter((e: any) => e.eventType === 'contact_click').length;
+      // Views by day for the last 7 days
+      const viewsByDay: { date: string; count: number }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dayStr = d.toISOString().split('T')[0];
+        const dayCount = allEvents.filter((e: any) => e.eventType === 'profile_view' && new Date(e.createdAt).toISOString().split('T')[0] === dayStr).length;
+        viewsByDay.push({ date: dayStr, count: dayCount });
+      }
+      return { totalViews, weeklyViews, dailyViews, cvDownloads, smartMatches, contactClicks, viewsByDay };
+    }),
+  }),
+
+  // ===== DIGITAL AUDITION (المهام الرقمية) =====
+  digitalAudition: router({
+    sendTask: protectedProcedure.input(z.object({ teacherUserId: z.number(), schoolId: z.number(), jobPostingId: z.number().optional(), title: z.string().min(3), description: z.string().min(10), topic: z.string().min(2), taskType: z.enum(['lesson_plan', 'exam', 'drama_script', 'free_form']), deadline: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const result = await database.insert(digitalTasks).values({ schoolId: input.schoolId, schoolUserId: ctx.user.id, teacherUserId: input.teacherUserId, jobPostingId: input.jobPostingId || null, title: input.title, description: input.description, topic: input.topic, taskType: input.taskType, deadline: input.deadline ? new Date(input.deadline) : null });
+      // Create a system message in conversation if one exists
+      const convo = await database.select().from(careerConversations)
+        .where(and(eq(careerConversations.teacherUserId, input.teacherUserId), eq(careerConversations.schoolUserId, ctx.user.id)));
+      if (convo[0]) {
+        await database.insert(careerMessages).values({ conversationId: convo[0].id, senderUserId: ctx.user.id, content: `📋 تم إرسال مهمة رقمية: ${input.title}\n${input.description}\nالموضوع: ${input.topic}`, messageType: 'task_request' });
+        await database.update(careerConversations).set({ lastMessageAt: new Date() }).where(eq(careerConversations.id, convo[0].id));
+      }
+      return { taskId: Number(result[0].insertId), success: true };
+    }),
+    getMyTasks: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const tasks = await database.select().from(digitalTasks).where(eq(digitalTasks.teacherUserId, ctx.user.id)).orderBy(desc(digitalTasks.createdAt));
+      const schoolIds = Array.from(new Set(tasks.map((t: any) => t.schoolId)));
+      const schools = schoolIds.length > 0 ? await database.select().from(partnerSchools).where(inArray(partnerSchools.id, schoolIds)) : [];
+      return tasks.map((t: any) => ({ ...t, school: schools.find((s: any) => s.id === t.schoolId) }));
+    }),
+    getSentTasks: protectedProcedure.input(z.object({ schoolId: z.number() })).query(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const tasks = await database.select().from(digitalTasks).where(and(eq(digitalTasks.schoolId, input.schoolId), eq(digitalTasks.schoolUserId, ctx.user.id))).orderBy(desc(digitalTasks.createdAt));
+      const teacherIds = Array.from(new Set(tasks.map((t: any) => t.teacherUserId)));
+      const teachers = teacherIds.length > 0 ? await database.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, teacherIds)) : [];
+      return tasks.map((t: any) => ({ ...t, teacher: teachers.find((te: any) => te.id === t.teacherUserId) }));
+    }),
+    submitResponse: protectedProcedure.input(z.object({ taskId: z.number(), responseContent: z.string(), responseUrl: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const task = await database.select().from(digitalTasks).where(eq(digitalTasks.id, input.taskId));
+      if (!task[0] || task[0].teacherUserId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+      await database.update(digitalTasks).set({ responseContent: input.responseContent, responseUrl: input.responseUrl || null, status: 'submitted', submittedAt: new Date() }).where(eq(digitalTasks.id, input.taskId));
+      // Notify in conversation
+      const convo = await database.select().from(careerConversations)
+        .where(and(eq(careerConversations.teacherUserId, ctx.user.id), eq(careerConversations.schoolUserId, task[0].schoolUserId)));
+      if (convo[0]) {
+        await database.insert(careerMessages).values({ conversationId: convo[0].id, senderUserId: ctx.user.id, content: `✅ تم تقديم الرد على المهمة: ${task[0].title}`, messageType: 'task_response' });
+      }
+      return { success: true };
+    }),
+    reviewTask: protectedProcedure.input(z.object({ taskId: z.number(), feedback: z.string(), rating: z.number().min(1).max(5) })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const task = await database.select().from(digitalTasks).where(eq(digitalTasks.id, input.taskId));
+      if (!task[0] || task[0].schoolUserId !== ctx.user.id) throw new TRPCError({ code: 'FORBIDDEN' });
+      await database.update(digitalTasks).set({ schoolFeedback: input.feedback, schoolRating: input.rating, status: 'reviewed', reviewedAt: new Date() }).where(eq(digitalTasks.id, input.taskId));
+      return { success: true };
+    }),
+  }),
+
+});
+// Helper: Smart match teachers for a job postingg
 async function smartMatchTeachers(database: any, subject: string, region: string, grade?: string | null): Promise<number[]> {
   const conditions: any[] = [eq(teacherPortfolios.isPublic, true)];
   const portfolios = await database.select({

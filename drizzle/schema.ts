@@ -1433,3 +1433,70 @@ export const jobPostings = mysqlTable("job_postings", {
 });
 export type JobPosting = typeof jobPostings.$inferSelect;
 export type InsertJobPosting = typeof jobPostings.$inferInsert;
+
+
+// ===== CAREER CONVERSATIONS (محادثات مهنية) =====
+export const careerConversations = mysqlTable("career_conversations", {
+  id: int("id").primaryKey().autoincrement(),
+  teacherUserId: int("teacherUserId").notNull(),
+  schoolId: int("schoolId").notNull(),
+  schoolUserId: int("schoolUserId").notNull(),
+  jobPostingId: int("jobPostingId"),
+  status: mysqlEnum("status", ["active", "archived", "blocked"]).default("active").notNull(),
+  lastMessageAt: timestamp("lastMessageAt").defaultNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CareerConversation = typeof careerConversations.$inferSelect;
+export type InsertCareerConversation = typeof careerConversations.$inferInsert;
+
+// ===== CAREER MESSAGES (رسائل مهنية) =====
+export const careerMessages = mysqlTable("career_messages", {
+  id: int("id").primaryKey().autoincrement(),
+  conversationId: int("conversationId").notNull(),
+  senderUserId: int("senderUserId").notNull(),
+  content: text("content").notNull(),
+  isFiltered: boolean("isFiltered").default(false),
+  filteredContent: text("filteredContent"),
+  messageType: mysqlEnum("messageType", ["text", "system", "task_request", "task_response"]).default("text").notNull(),
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CareerMessage = typeof careerMessages.$inferSelect;
+export type InsertCareerMessage = typeof careerMessages.$inferInsert;
+
+// ===== PROFILE ANALYTICS (تحليلات الملف المهني) =====
+export const profileAnalytics = mysqlTable("profile_analytics", {
+  id: int("id").primaryKey().autoincrement(),
+  teacherUserId: int("teacherUserId").notNull(),
+  eventType: mysqlEnum("eventType", ["profile_view", "cv_download", "smart_match", "contact_click"]).notNull(),
+  visitorInfo: varchar("visitorInfo", { length: 500 }),
+  jobPostingId: int("jobPostingId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ProfileAnalytic = typeof profileAnalytics.$inferSelect;
+export type InsertProfileAnalytic = typeof profileAnalytics.$inferInsert;
+
+// ===== DIGITAL TASKS (مهام رقمية - Digital Audition) =====
+export const digitalTasks = mysqlTable("digital_tasks", {
+  id: int("id").primaryKey().autoincrement(),
+  schoolId: int("schoolId").notNull(),
+  schoolUserId: int("schoolUserId").notNull(),
+  teacherUserId: int("teacherUserId").notNull(),
+  jobPostingId: int("jobPostingId"),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description").notNull(),
+  topic: varchar("topic", { length: 200 }).notNull(),
+  taskType: mysqlEnum("taskType", ["lesson_plan", "exam", "drama_script", "free_form"]).default("lesson_plan").notNull(),
+  deadline: timestamp("deadline"),
+  status: mysqlEnum("status", ["pending", "in_progress", "submitted", "reviewed", "expired"]).default("pending").notNull(),
+  responseContent: text("responseContent"),
+  responseUrl: varchar("responseUrl", { length: 1000 }),
+  schoolFeedback: text("schoolFeedback"),
+  schoolRating: int("schoolRating"),
+  submittedAt: timestamp("submittedAt"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DigitalTask = typeof digitalTasks.$inferSelect;
+export type InsertDigitalTask = typeof digitalTasks.$inferInsert;

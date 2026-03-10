@@ -52,6 +52,9 @@ import TeacherShowcase from "@/pages/TeacherShowcase";
 import ConnectionRequests from "@/pages/ConnectionRequests";
 import TalentDirectory from "@/pages/TalentDirectory";
 import SchoolPortal from "@/pages/SchoolPortal";
+import AdminPartners from "@/pages/AdminPartners";
+import CareerMessages from "@/pages/CareerMessages";
+import TeacherAnalytics from "@/pages/TeacherAnalytics";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -105,6 +108,9 @@ function Router() {
       <Route path="/showcase/:slug" component={TeacherShowcase} />
       <Route path="/connection-requests" component={ConnectionRequests} />
       <Route path="/school-portal" component={SchoolPortal} />
+      <Route path="/admin/partners" component={AdminPartners} />
+      <Route path="/career-messages" component={CareerMessages} />
+      <Route path="/teacher-analytics" component={TeacherAnalytics} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
