@@ -149,6 +149,16 @@ export default function BlindGrading() {
     onError: () => setExportingPdf(false),
   });
 
+  // Inspector report mutation
+  const [exportingInspector, setExportingInspector] = useState(false);
+  const inspectorReportMutation = trpc.grading.inspectorReport.useMutation({
+    onSuccess: (data) => {
+      setExportingInspector(false);
+      window.open(data.url, "_blank");
+    },
+    onError: () => setExportingInspector(false),
+  });
+
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !selectedSessionId) return;
@@ -467,6 +477,18 @@ export default function BlindGrading() {
                 title="تصدير PDF">
                 {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
                 تصدير PDF
+              </button>
+              {/* Inspector Report */}
+              <button
+                onClick={() => {
+                  setExportingInspector(true);
+                  inspectorReportMutation.mutate({ sessionId: selectedSessionId });
+                }}
+                disabled={exportingInspector}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium bg-indigo-50 text-indigo-700 border-2 border-indigo-200 hover:bg-indigo-100 transition-all disabled:opacity-50"
+                title="تقرير التفقد الرسمي">
+                {exportingInspector ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                تقرير التفقد
               </button>
               {/* Statistics */}
               <button

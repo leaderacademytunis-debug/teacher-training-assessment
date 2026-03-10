@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -8352,9 +8352,232 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
           },
         };
       }),
+
+    // Official Inspector Report PDF
+    inspectorReport: protectedProcedure
+      .input(z.object({ sessionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const session = await db.getGradingSessionById(input.sessionId);
+        if (!session || session.createdBy !== ctx.user.id) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        const submissions = await db.getSubmissionsBySession(input.sessionId);
+        const correctionKey = session.correctionKey as any;
+        const totalPoints = correctionKey?.totalPoints || 20;
+        const criteria = correctionKey?.criteria || [];
+        const gradedSubs = submissions.filter(s => s.totalFinalScore != null);
+        const scores = gradedSubs.map(s => s.totalFinalScore!);
+        const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+        const passRate = scores.length > 0 ? (scores.filter(s => s >= totalPoints * 0.5).length / scores.length) * 100 : 0;
+        const excellenceRate = scores.length > 0 ? (scores.filter(s => s >= totalPoints * 0.9).length / scores.length) * 100 : 0;
+        const median = scores.length > 0 ? [...scores].sort((a, b) => a - b)[Math.floor(scores.length / 2)] : 0;
+
+        // Per-criteria deep analysis
+        const criteriaAnalysis = criteria.map((c: any) => {
+          const criterionScores: number[] = [];
+          gradedSubs.forEach(s => {
+            const cs = (s.criteriaScores as any[])?.find((x: any) => x.criterionCode === c.code);
+            if (cs) criterionScores.push(cs.finalScore ?? cs.suggestedScore ?? 0);
+          });
+          const cAvg = criterionScores.length > 0 ? criterionScores.reduce((a, b) => a + b, 0) / criterionScores.length : 0;
+          const cMax = criterionScores.length > 0 ? Math.max(...criterionScores) : 0;
+          const cMin = criterionScores.length > 0 ? Math.min(...criterionScores) : 0;
+          const successRate = criterionScores.length > 0 ? (criterionScores.filter(s => s >= c.maxScore * 0.6).length / criterionScores.length) * 100 : 0;
+          return { code: c.code, label: c.label, maxScore: c.maxScore, average: Math.round(cAvg * 100) / 100, max: cMax, min: cMin, successRate: Math.round(successRate) };
+        });
+
+        // Mastery levels
+        const masteryLevels = [
+          { symbol: "+++", label: "\u062a\u0645\u0644\u0643 \u0645\u0645\u062a\u0627\u0632", count: 0 },
+          { symbol: "++", label: "\u062a\u0645\u0644\u0643 \u062c\u064a\u062f", count: 0 },
+          { symbol: "+", label: "\u062a\u0645\u0644\u0643 \u0645\u0642\u0628\u0648\u0644", count: 0 },
+          { symbol: "-", label: "\u063a\u064a\u0631 \u0643\u0627\u0641", count: 0 },
+          { symbol: "--", label: "\u063a\u064a\u0631 \u0643\u0627\u0641 \u062c\u062f\u0627", count: 0 },
+          { symbol: "---", label: "\u063a\u064a\u0631 \u0645\u062a\u0645\u0644\u0643", count: 0 },
+        ];
+        gradedSubs.forEach(s => {
+          const level = masteryLevels.find(m => m.symbol === s.overallMasteryLevel);
+          if (level) level.count++;
+        });
+
+        // Identify gaps and recommendations
+        const weakCriteria = criteriaAnalysis.filter((c: any) => c.successRate < 50);
+        const strongCriteria = criteriaAnalysis.filter((c: any) => c.successRate >= 75);
+
+        const gaps = weakCriteria.map((c: any) => {
+          if (c.code.includes("1")) return `\u0636\u0639\u0641 \u0641\u064a \u0645\u0639\u064a\u0627\u0631 \u0627\u0644\u0631\u0628\u0637 \u0648\u0627\u0644\u062a\u062d\u062f\u064a\u062f (${c.code}) - \u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d ${c.successRate}%`;
+          if (c.code.includes("2")) return `\u0636\u0639\u0641 \u0641\u064a \u0645\u0639\u064a\u0627\u0631 \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0648\u0627\u0644\u062a\u0648\u0638\u064a\u0641 (${c.code}) - \u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d ${c.successRate}%`;
+          if (c.code.includes("3")) return `\u0636\u0639\u0641 \u0641\u064a \u0645\u0639\u064a\u0627\u0631 \u0627\u0644\u0625\u0635\u0644\u0627\u062d \u0648\u0627\u0644\u062a\u0628\u0631\u064a\u0631 (${c.code}) - \u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d ${c.successRate}%`;
+          if (c.code.includes("4")) return `\u0636\u0639\u0641 \u0641\u064a \u0645\u0639\u064a\u0627\u0631 \u0627\u0644\u062a\u0645\u064a\u0632 (${c.code}) - \u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d ${c.successRate}%`;
+          return `\u0636\u0639\u0641 \u0641\u064a ${c.code} (${c.label}) - \u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d ${c.successRate}%`;
+        });
+
+        const remediation = weakCriteria.map((c: any) => {
+          if (c.code.includes("1")) return `\u062d\u0635\u0629 \u0639\u0644\u0627\u062c\u064a\u0629: \u062a\u0645\u0627\u0631\u064a\u0646 \u0631\u0628\u0637 \u0648\u062a\u062d\u062f\u064a\u062f \u0645\u062a\u0646\u0648\u0639\u0629 \u0644\u062a\u0639\u0632\u064a\u0632 ${c.label}`;
+          if (c.code.includes("2")) return `\u062d\u0635\u0629 \u0639\u0644\u0627\u062c\u064a\u0629: \u0648\u0636\u0639\u064a\u0627\u062a \u062a\u0637\u0628\u064a\u0642\u064a\u0629 \u0645\u062a\u062f\u0631\u062c\u0629 \u0644\u062a\u0639\u0632\u064a\u0632 ${c.label}`;
+          if (c.code.includes("3")) return `\u062d\u0635\u0629 \u0639\u0644\u0627\u062c\u064a\u0629: \u0623\u0646\u0634\u0637\u0629 \u0625\u0635\u0644\u0627\u062d \u0648\u062a\u0628\u0631\u064a\u0631 \u0645\u0639 \u0645\u0631\u0627\u0641\u0642\u0629 \u0641\u0631\u062f\u064a\u0629 \u0644\u062a\u0639\u0632\u064a\u0632 ${c.label}`;
+          if (c.code.includes("4")) return `\u062d\u0635\u0629 \u0625\u062b\u0631\u0627\u0626\u064a\u0629: \u0623\u0646\u0634\u0637\u0629 \u062a\u0645\u064a\u0632 \u0648\u062a\u0641\u0643\u064a\u0631 \u0646\u0642\u062f\u064a \u0644\u062a\u0639\u0632\u064a\u0632 ${c.label}`;
+          return `\u062d\u0635\u0629 \u0639\u0644\u0627\u062c\u064a\u0629 \u0645\u062e\u0635\u0635\u0629 \u0644\u0645\u0639\u064a\u0627\u0631 ${c.code}`;
+        });
+
+        const teacherName = ctx.user.name || "\u0627\u0644\u0645\u0639\u0644\u0645";
+        const reportDate = new Date().toLocaleDateString("ar-TN", { year: "numeric", month: "long", day: "numeric" });
+
+        const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Kufi Arabic', sans-serif; background: white; color: #1e293b; padding: 30px; font-size: 12px; line-height: 1.7; }
+  .report-header { background: linear-gradient(135deg, #1e1b4b, #312e81); color: white; padding: 25px 30px; border-radius: 12px; margin-bottom: 25px; position: relative; overflow: hidden; }
+  .report-header::after { content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.05); border-radius: 50%; }
+  .report-header h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .report-header h2 { font-size: 14px; font-weight: 600; color: #c7d2fe; margin-bottom: 8px; }
+  .report-header .meta { display: flex; gap: 20px; font-size: 11px; color: #a5b4fc; flex-wrap: wrap; }
+  .seal { position: absolute; left: 25px; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.6); line-height: 1.2; }
+  .section { margin-bottom: 20px; }
+  .section-title { font-size: 15px; font-weight: 700; color: #1e1b4b; padding-bottom: 6px; border-bottom: 3px solid #4338ca; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title .icon { width: 28px; height: 28px; background: #4338ca; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-card .value { font-size: 22px; font-weight: 800; color: #4338ca; }
+  .stat-card .label { font-size: 9px; color: #64748b; margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+  th { background: #4338ca; color: white; padding: 8px 6px; font-size: 10px; font-weight: 600; }
+  td { padding: 7px 6px; border-bottom: 1px solid #e2e8f0; font-size: 10px; text-align: center; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .mastery-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; }
+  .m-excellent { background: #d1fae5; color: #065f46; }
+  .m-good { background: #dcfce7; color: #166534; }
+  .m-acceptable { background: #fef9c3; color: #854d0e; }
+  .m-insufficient { background: #fed7aa; color: #9a3412; }
+  .m-very-insufficient { background: #fecaca; color: #991b1b; }
+  .m-not-acquired { background: #fca5a5; color: #7f1d1d; }
+  .gap-card { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+  .gap-card .title { font-weight: 700; color: #991b1b; font-size: 11px; }
+  .remedy-card { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }
+  .remedy-card .title { font-weight: 700; color: #166534; font-size: 11px; }
+  .bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; }
+  .bar-success { background: #22c55e; }
+  .bar-warning { background: #eab308; }
+  .bar-danger { background: #ef4444; }
+  .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 3px solid #e2e8f0; }
+  .footer .brand { font-size: 14px; font-weight: 800; color: #4338ca; }
+  .footer .sub { font-size: 9px; color: #94a3b8; margin-top: 3px; }
+  .page-break { page-break-before: always; }
+  .verdict { background: linear-gradient(135deg, #f0f9ff, #e0f2fe); border: 2px solid #0284c7; border-radius: 12px; padding: 18px; margin-top: 15px; }
+  .verdict h3 { font-size: 14px; color: #0c4a6e; margin-bottom: 8px; }
+  .verdict p { font-size: 11px; color: #0369a1; line-height: 1.8; }
+</style></head><body>
+  <div class="report-header">
+    <h1>\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u062a\u0641\u0642\u062f \u0627\u0644\u0628\u064a\u062f\u0627\u063a\u0648\u062c\u064a \u0627\u0644\u0631\u0633\u0645\u064a</h1>
+    <h2>${session.sessionTitle}</h2>
+    <div class="meta">
+      <span>\u0627\u0644\u0645\u0627\u062f\u0629: ${session.subject}</span>
+      <span>\u0627\u0644\u0645\u0633\u062a\u0648\u0649: ${session.grade}</span>
+      <span>\u0627\u0644\u0645\u0639\u0644\u0645: ${teacherName}</span>
+      <span>\u0627\u0644\u062a\u0627\u0631\u064a\u062e: ${reportDate}</span>
+      <span>\u0627\u0644\u0646\u0648\u0639: ${session.examType === "summative" ? "\u062e\u062a\u0627\u0645\u064a" : session.examType === "formative" ? "\u062a\u0643\u0648\u064a\u0646\u064a" : "\u062a\u0634\u062e\u064a\u0635\u064a"}</span>
+    </div>
+    <div class="seal">Leader<br/>Academy<br/>\u062e\u062a\u0645 \u0631\u0633\u0645\u064a</div>
+  </div>
+
+  <!-- Section 1: Overview -->
+  <div class="section">
+    <div class="section-title"><div class="icon">1</div> \u0627\u0644\u0645\u0624\u0634\u0631\u0627\u062a \u0627\u0644\u0639\u0627\u0645\u0629</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="value">${gradedSubs.length}</div><div class="label">\u0639\u062f\u062f \u0627\u0644\u062a\u0644\u0627\u0645\u064a\u0630</div></div>
+      <div class="stat-card"><div class="value">${Math.round(avg * 100) / 100}</div><div class="label">\u0627\u0644\u0645\u0639\u062f\u0644 \u0627\u0644\u0639\u0627\u0645 / ${totalPoints}</div></div>
+      <div class="stat-card"><div class="value">${Math.round(passRate)}%</div><div class="label">\u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d</div></div>
+      <div class="stat-card"><div class="value">${Math.round(excellenceRate)}%</div><div class="label">\u0646\u0633\u0628\u0629 \u0627\u0644\u062a\u0645\u064a\u0632</div></div>
+      <div class="stat-card"><div class="value">${median}</div><div class="label">\u0627\u0644\u0648\u0633\u064a\u0637</div></div>
+    </div>
+  </div>
+
+  <!-- Section 2: Mastery Levels -->
+  <div class="section">
+    <div class="section-title"><div class="icon">2</div> \u062a\u0648\u0632\u064a\u0639 \u0645\u0633\u062a\u0648\u064a\u0627\u062a \u0627\u0644\u062a\u0645\u0644\u0643</div>
+    <table>
+      <thead><tr><th>\u0627\u0644\u0631\u0645\u0632</th><th>\u0627\u0644\u0645\u0633\u062a\u0648\u0649</th><th>\u0627\u0644\u0639\u062f\u062f</th><th>\u0627\u0644\u0646\u0633\u0628\u0629</th><th>\u0627\u0644\u062a\u0645\u062b\u064a\u0644</th></tr></thead>
+      <tbody>${masteryLevels.map(m => {
+        const pct = gradedSubs.length > 0 ? Math.round((m.count / gradedSubs.length) * 100) : 0;
+        const cls = m.symbol === "+++" ? "m-excellent" : m.symbol === "++" ? "m-good" : m.symbol === "+" ? "m-acceptable" : m.symbol === "-" ? "m-insufficient" : m.symbol === "--" ? "m-very-insufficient" : "m-not-acquired";
+        const barCls = pct >= 60 ? "bar-success" : pct >= 30 ? "bar-warning" : "bar-danger";
+        return `<tr><td><span class="mastery-badge ${cls}">${m.symbol}</span></td><td>${m.label}</td><td>${m.count}</td><td>${pct}%</td><td><div class="bar"><div class="bar-fill ${barCls}" style="width:${pct}%"></div></div></td></tr>`;
+      }).join("")}</tbody>
+    </table>
+  </div>
+
+  <!-- Section 3: Per-Criteria Analysis -->
+  <div class="section">
+    <div class="section-title"><div class="icon">3</div> \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0645\u0639\u0627\u064a\u064a\u0631 (\u0645\u0639 1 \u0625\u0644\u0649 \u0645\u0639 4)</div>
+    <table>
+      <thead><tr><th>\u0627\u0644\u0645\u0639\u064a\u0627\u0631</th><th>\u0627\u0644\u0648\u0635\u0641</th><th>\u0627\u0644\u0645\u0639\u062f\u0644</th><th>\u0623\u0639\u0644\u0649</th><th>\u0623\u062f\u0646\u0649</th><th>\u0646\u0633\u0628\u0629 \u0627\u0644\u0646\u062c\u0627\u062d</th><th>\u0627\u0644\u062a\u0642\u064a\u064a\u0645</th></tr></thead>
+      <tbody>${criteriaAnalysis.map((c: any) => {
+        const barCls = c.successRate >= 75 ? "bar-success" : c.successRate >= 50 ? "bar-warning" : "bar-danger";
+        const verdict = c.successRate >= 75 ? "\u0645\u062a\u0645\u0644\u0643" : c.successRate >= 50 ? "\u0641\u064a \u0637\u0648\u0631 \u0627\u0644\u062a\u0645\u0644\u0643" : "\u064a\u062d\u062a\u0627\u062c \u0645\u0639\u0627\u0644\u062c\u0629";
+        return `<tr><td style="font-weight:700;color:#4338ca;">${c.code}</td><td style="text-align:right;">${c.label}</td><td>${c.average}/${c.maxScore}</td><td style="color:#16a34a;">${c.max}</td><td style="color:#dc2626;">${c.min}</td><td><div class="bar"><div class="bar-fill ${barCls}" style="width:${c.successRate}%"></div></div><span style="font-size:9px;">${c.successRate}%</span></td><td style="font-weight:600;color:${c.successRate >= 75 ? '#16a34a' : c.successRate >= 50 ? '#ca8a04' : '#dc2626'};">${verdict}</td></tr>`;
+      }).join("")}</tbody>
+    </table>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Section 4: Identified Gaps -->
+  <div class="section">
+    <div class="section-title"><div class="icon">4</div> \u0627\u0644\u062b\u063a\u0631\u0627\u062a \u0627\u0644\u0628\u064a\u062f\u0627\u063a\u0648\u062c\u064a\u0629 \u0627\u0644\u0645\u0643\u062a\u0634\u0641\u0629</div>
+    ${gaps.length > 0 ? gaps.map((g: string) => `<div class="gap-card"><div class="title">\u26a0 ${g}</div></div>`).join("") : '<p style="color:#16a34a;font-weight:600;">\u2705 \u0644\u0627 \u062a\u0648\u062c\u062f \u062b\u063a\u0631\u0627\u062a \u0628\u064a\u062f\u0627\u063a\u0648\u062c\u064a\u0629 \u0645\u0644\u062d\u0648\u0638\u0629 - \u0623\u062f\u0627\u0621 \u0627\u0644\u0641\u0635\u0644 \u062c\u064a\u062f</p>'}
+  </div>
+
+  <!-- Section 5: Remediation Plan -->
+  <div class="section">
+    <div class="section-title"><div class="icon">5</div> \u062e\u0637\u0629 \u0627\u0644\u0639\u0644\u0627\u062c \u0627\u0644\u0645\u0642\u062a\u0631\u062d\u0629</div>
+    ${remediation.length > 0 ? remediation.map((r: string) => `<div class="remedy-card"><div class="title">\u2705 ${r}</div></div>`).join("") : '<p style="color:#64748b;">\u0644\u0627 \u062a\u0648\u062c\u062f \u062d\u0627\u062c\u0629 \u0644\u062d\u0635\u0635 \u0639\u0644\u0627\u062c\u064a\u0629 \u062d\u0627\u0644\u064a\u0627\u064b</p>'}
+  </div>
+
+  <!-- Section 6: Student Results Table -->
+  <div class="section">
+    <div class="section-title"><div class="icon">6</div> \u062c\u062f\u0648\u0644 \u0625\u0633\u0646\u0627\u062f \u0627\u0644\u0623\u0639\u062f\u0627\u062f</div>
+    <table>
+      <thead><tr><th>#</th><th>\u0627\u0644\u062a\u0644\u0645\u064a\u0630</th>${criteria.map((c: any) => `<th>${c.code}</th>`).join("")}<th>\u0627\u0644\u0645\u062c\u0645\u0648\u0639</th><th>\u0627\u0644\u0645\u0633\u062a\u0648\u0649</th></tr></thead>
+      <tbody>${gradedSubs.map((s, i) => {
+        const cs = (s.criteriaScores as any[]) || [];
+        const cls = s.overallMasteryLevel === "+++" ? "m-excellent" : s.overallMasteryLevel === "++" ? "m-good" : s.overallMasteryLevel === "+" ? "m-acceptable" : s.overallMasteryLevel === "-" ? "m-insufficient" : s.overallMasteryLevel === "--" ? "m-very-insufficient" : "m-not-acquired";
+        return `<tr><td>${i + 1}</td><td style="text-align:right;">${session.hideStudentNames ? `\u062a\u0644\u0645\u064a\u0630 ${s.studentNumber}` : (s.studentName || `\u062a\u0644\u0645\u064a\u0630 ${s.studentNumber}`)}</td>${criteria.map((c: any) => {
+          const score = cs.find((x: any) => x.criterionCode === c.code);
+          return `<td>${score ? `${score.finalScore ?? score.suggestedScore}/${c.maxScore}` : "-"}</td>`;
+        }).join("")}<td style="font-weight:700;">${s.totalFinalScore}/${totalPoints}</td><td><span class="mastery-badge ${cls}">${s.overallMasteryLevel || "-"}</span></td></tr>`;
+      }).join("")}</tbody>
+    </table>
+  </div>
+
+  <!-- Verdict -->
+  <div class="verdict">
+    <h3>\u0627\u0644\u062e\u0644\u0627\u0635\u0629 \u0627\u0644\u0639\u0627\u0645\u0629</h3>
+    <p>${passRate >= 75 ? `\u0623\u062f\u0627\u0621 \u0627\u0644\u0641\u0635\u0644 \u062c\u064a\u062f \u0628\u0646\u0633\u0628\u0629 \u0646\u062c\u0627\u062d ${Math.round(passRate)}%. ${strongCriteria.length > 0 ? `\u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629: ${strongCriteria.map((c: any) => c.code).join("\u060c ")}.` : ""}` : passRate >= 50 ? `\u0623\u062f\u0627\u0621 \u0645\u0642\u0628\u0648\u0644 \u0628\u0646\u0633\u0628\u0629 \u0646\u062c\u0627\u062d ${Math.round(passRate)}%. \u064a\u062d\u062a\u0627\u062c \u0627\u0644\u0641\u0635\u0644 \u0644\u062d\u0635\u0635 \u0639\u0644\u0627\u062c\u064a\u0629 \u0641\u064a ${weakCriteria.map((c: any) => c.code).join("\u060c ")}.` : `\u0623\u062f\u0627\u0621 \u0636\u0639\u064a\u0641 \u0628\u0646\u0633\u0628\u0629 \u0646\u062c\u0627\u062d ${Math.round(passRate)}% \u0641\u0642\u0637. \u064a\u062c\u0628 \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0646\u0638\u0631 \u0641\u064a \u0627\u0644\u0645\u0642\u0627\u0631\u0628\u0629 \u0627\u0644\u0628\u064a\u062f\u0627\u063a\u0648\u062c\u064a\u0629 \u0648\u062a\u062e\u0635\u064a\u0635 \u062d\u0635\u0635 \u0639\u0644\u0627\u062c\u064a\u0629 \u0639\u0627\u062c\u0644\u0629.`}</p>
+  </div>
+
+  <div class="footer">
+    <div class="brand">Leader Academy</div>
+    <div class="sub">\u0645\u0646\u0635\u0629 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064a \u0627\u0644\u062a\u0631\u0628\u0648\u064a #1 \u0641\u064a \u062a\u0648\u0646\u0633 | \u062a\u0642\u0631\u064a\u0631 \u0645\u0648\u0644\u062f \u0622\u0644\u064a\u0627\u064b | ${reportDate}</div>
+  </div>
+</body></html>`;
+
+        // Convert HTML to PDF using Puppeteer
+        const puppeteer = await import("puppeteer");
+        const browser = await puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: "networkidle0" });
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" } });
+        await browser.close();
+        // Upload to S3
+        const { storagePut } = await import("./storage");
+        const fileKey = `inspector-reports/${ctx.user.id}/${input.sessionId}/inspector-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileKey, Buffer.from(pdfBuffer), "application/pdf");
+        return { url, fileName: `${session.sessionTitle}-\u062a\u0642\u0631\u064a\u0631-\u0627\u0644\u062a\u0641\u0642\u062f.pdf` };
+      }),
   }),
 
-  // ===== MARKETPLACE (سوق المحتوى الذهبي) =====
+  // ===== MARKETPLACE (\u0633\u0648\u0642 \u0627\u0644\u0645\u062d\u062a\u0648\u0649 \u0627\u0644\u0630\u0647\u0628\u064a) =====
   marketplace: router({
     // List marketplace items with filters
     list: publicProcedure
@@ -8723,6 +8946,320 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
             ? approvedItems.reduce((sum, i) => sum + Number(i.averageRating || 0), 0) / approvedItems.length 
             : 0,
         };
+      }),
+  }),
+
+  // ===== CREATIVE DRAMA ENGINE (محرك الدراما التعليمية) =====
+  drama: router({
+    // Generate interactive classroom script from a lesson plan
+    generateScript: protectedProcedure
+      .input(z.object({
+        lessonTitle: z.string(),
+        subject: z.string(),
+        grade: z.string(),
+        lessonContent: z.string(),
+        duration: z.number().default(10),
+        studentCount: z.number().default(25),
+        language: z.enum(["ar", "fr"]).default("ar"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في الدراما التعليمية والمسرح المدرسي التونسي. مهمتك تحويل محتوى الدرس إلى نص مسرحي تفاعلي للفصل.
+
+القواعد:
+1. النص يجب أن يكون مدته ${input.duration} دقائق تقريباً
+2. عدد التلاميذ في الفصل: ${input.studentCount}
+3. استخدم لغة بسيطة مناسبة لمستوى ${input.grade}
+4. أدمج المفاهيم العلمية/التعليمية بشكل طبيعي في الحوار
+5. أضف تعليمات إخراجية واضحة للمعلم
+6. اجعل النص ممتعاً وتفاعلياً مع مشاركة أكبر عدد من التلاميذ`,
+            },
+            {
+              role: "user",
+              content: `حوّل هذا الدرس إلى نص مسرحي تفاعلي:
+
+عنوان الدرس: ${input.lessonTitle}
+المادة: ${input.subject}
+المستوى: ${input.grade}
+
+محتوى الدرس:
+${input.lessonContent}
+
+أنشئ نصاً مسرحياً يتضمن:
+1. عنوان المسرحية
+2. قائمة الشخصيات مع وصف كل شخصية
+3. المشاهد (3-5 مشاهد)
+4. حوارات تفاعلية
+5. تعليمات إخراجية للمعلم
+6. أسئلة تفاعلية للجمهور (بقية التلاميذ)
+
+أجب بصيغة JSON:
+{
+  "title": "عنوان المسرحية",
+  "synopsis": "ملخص قصير",
+  "duration": "المدة التقريبية",
+  "characters": [
+    { "name": "اسم الشخصية", "description": "وصف الدور", "keyLines": 3, "difficulty": "easy|medium|hard" }
+  ],
+  "scenes": [
+    {
+      "number": 1,
+      "title": "عنوان المشهد",
+      "setting": "وصف المكان والأجواء",
+      "directorNotes": "تعليمات للمعلم",
+      "dialogue": [
+        { "character": "اسم", "line": "الحوار", "action": "الحركة المرافقة" }
+      ],
+      "audienceInteraction": "سؤال أو نشاط للجمهور"
+    }
+  ],
+  "educationalObjectives": ["الهدف 1", "الهدف 2"],
+  "props": [
+    { "name": "اسم الوسيلة", "description": "الوصف", "cost": "مجاني|منخفض|متوسط", "alternatives": "بدائل بسيطة" }
+  ],
+  "warmUpActivity": "نشاط تحمية قبل المسرحية",
+  "debriefQuestions": ["سؤال 1 للنقاش بعد المسرحية"]
+}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "drama_script",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  synopsis: { type: "string" },
+                  duration: { type: "string" },
+                  characters: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        description: { type: "string" },
+                        keyLines: { type: "number" },
+                        difficulty: { type: "string" },
+                      },
+                      required: ["name", "description", "keyLines", "difficulty"],
+                      additionalProperties: false,
+                    },
+                  },
+                  scenes: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        number: { type: "number" },
+                        title: { type: "string" },
+                        setting: { type: "string" },
+                        directorNotes: { type: "string" },
+                        dialogue: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              character: { type: "string" },
+                              line: { type: "string" },
+                              action: { type: "string" },
+                            },
+                            required: ["character", "line", "action"],
+                            additionalProperties: false,
+                          },
+                        },
+                        audienceInteraction: { type: "string" },
+                      },
+                      required: ["number", "title", "setting", "directorNotes", "dialogue", "audienceInteraction"],
+                      additionalProperties: false,
+                    },
+                  },
+                  educationalObjectives: { type: "array", items: { type: "string" } },
+                  props: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        description: { type: "string" },
+                        cost: { type: "string" },
+                        alternatives: { type: "string" },
+                      },
+                      required: ["name", "description", "cost", "alternatives"],
+                      additionalProperties: false,
+                    },
+                  },
+                  warmUpActivity: { type: "string" },
+                  debriefQuestions: { type: "array", items: { type: "string" } },
+                },
+                required: ["title", "synopsis", "duration", "characters", "scenes", "educationalObjectives", "props", "warmUpActivity", "debriefQuestions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices[0].message.content;
+        const script = JSON.parse(typeof content === "string" ? content : "{}");
+        return script;
+      }),
+
+    // Auto-assign roles to students
+    assignRoles: protectedProcedure
+      .input(z.object({
+        characters: z.array(z.object({
+          name: z.string(),
+          description: z.string(),
+          difficulty: z.string(),
+        })),
+        studentCount: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const assignments: Array<{ studentNumber: number; characterName: string; role: string; tip: string }> = [];
+        const chars = input.characters;
+        
+        for (let i = 0; i < Math.min(chars.length, input.studentCount); i++) {
+          assignments.push({
+            studentNumber: i + 1,
+            characterName: chars[i].name,
+            role: chars[i].description,
+            tip: chars[i].difficulty === "easy" ? "\u062f\u0648\u0631 \u0628\u0633\u064a\u0637 - \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u062a\u0644\u0627\u0645\u064a\u0630 \u0627\u0644\u062e\u062c\u0648\u0644\u064a\u0646" :
+                  chars[i].difficulty === "hard" ? "\u062f\u0648\u0631 \u0645\u062a\u0642\u062f\u0645 - \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u062a\u0644\u0627\u0645\u064a\u0630 \u0627\u0644\u0646\u0634\u064a\u0637\u064a\u0646" :
+                  "\u062f\u0648\u0631 \u0645\u062a\u0648\u0633\u0637 - \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u062c\u0645\u064a\u0639",
+          });
+        }
+        
+        // Remaining students become audience participants
+        for (let i = chars.length; i < input.studentCount; i++) {
+          assignments.push({
+            studentNumber: i + 1,
+            characterName: "\u062c\u0645\u0647\u0648\u0631 \u062a\u0641\u0627\u0639\u0644\u064a",
+            role: "\u0627\u0644\u0645\u0634\u0627\u0631\u0643\u0629 \u0641\u064a \u0627\u0644\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u062a\u0641\u0627\u0639\u0644\u064a\u0629 \u0648\u0627\u0644\u062a\u0635\u0641\u064a\u0642 \u0648\u0627\u0644\u062a\u0634\u062c\u064a\u0639",
+            tip: "\u064a\u0645\u0643\u0646 \u062a\u0628\u062f\u064a\u0644 \u0627\u0644\u0623\u062f\u0648\u0627\u0631 \u0641\u064a \u0627\u0644\u062d\u0635\u0629 \u0627\u0644\u0642\u0627\u062f\u0645\u0629",
+          });
+        }
+        
+        return { assignments };
+      }),
+
+    // Generate from existing lesson plan in database
+    generateFromLesson: protectedProcedure
+      .input(z.object({
+        lessonId: z.number(),
+        duration: z.number().default(10),
+        studentCount: z.number().default(25),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Fetch the lesson from aiSuggestions (lesson history)
+        const dbConn = await getDb();
+        if (!dbConn) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const [lesson] = await dbConn.select().from(aiSuggestions).where(
+          and(eq(aiSuggestions.id, input.lessonId), eq(aiSuggestions.userId, ctx.user.id))
+        );
+        if (!lesson) throw new TRPCError({ code: "NOT_FOUND", message: "\u0627\u0644\u062c\u0630\u0627\u0630\u0629 \u063a\u064a\u0631 \u0645\u0648\u062c\u0648\u062f\u0629" });
+        
+        return {
+          lessonTitle: lesson.lessonTitle || "\u062f\u0631\u0633",
+          subject: lesson.subject || "",
+          grade: lesson.grade || "",
+          lessonContent: lesson.rawSuggestion || [lesson.introduction, lesson.mainActivities ? JSON.stringify(lesson.mainActivities) : "", lesson.conclusion, lesson.evaluation].filter(Boolean).join("\n\n"),
+        };
+      }),
+
+    // Export drama script as PDF
+    exportPDF: protectedProcedure
+      .input(z.object({
+        script: z.any(),
+        lessonTitle: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const s = input.script;
+        const reportDate = new Date().toLocaleDateString("ar-TN", { year: "numeric", month: "long", day: "numeric" });
+        
+        const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Kufi Arabic', sans-serif; background: white; color: #1e293b; padding: 25px; font-size: 12px; line-height: 1.8; }
+  .header { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; padding: 20px 25px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
+  .header h1 { font-size: 20px; font-weight: 800; }
+  .header h2 { font-size: 13px; color: #e9d5ff; margin-top: 4px; }
+  .header .meta { font-size: 10px; color: #d8b4fe; margin-top: 8px; }
+  .section { margin-bottom: 18px; }
+  .section-title { font-size: 14px; font-weight: 700; color: #6d28d9; padding-bottom: 5px; border-bottom: 2px solid #8b5cf6; margin-bottom: 10px; }
+  .char-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
+  .char-card { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 10px; }
+  .char-card .name { font-weight: 700; color: #6d28d9; font-size: 12px; }
+  .char-card .desc { font-size: 10px; color: #64748b; margin-top: 3px; }
+  .scene { background: #fafafa; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 12px; }
+  .scene-header { font-size: 13px; font-weight: 700; color: #1e1b4b; margin-bottom: 8px; }
+  .scene-setting { font-size: 10px; color: #8b5cf6; font-style: italic; margin-bottom: 8px; padding: 6px 10px; background: #f5f3ff; border-radius: 6px; }
+  .dialogue { margin-bottom: 6px; }
+  .dialogue .char { font-weight: 700; color: #7c3aed; display: inline; }
+  .dialogue .line { display: inline; }
+  .dialogue .action { font-size: 10px; color: #94a3b8; font-style: italic; }
+  .director-note { background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; font-size: 10px; color: #92400e; margin: 8px 0; }
+  .audience-q { background: #dbeafe; border: 1px solid #93c5fd; border-radius: 6px; padding: 8px 10px; font-size: 10px; color: #1e40af; margin: 8px 0; }
+  .prop-card { display: inline-block; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 10px; margin: 3px; font-size: 10px; }
+  .prop-name { font-weight: 700; color: #166534; }
+  .objectives { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; }
+  .objectives li { margin-bottom: 4px; font-size: 11px; color: #1e40af; }
+  .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 2px solid #e2e8f0; font-size: 9px; color: #94a3b8; }
+  .page-break { page-break-before: always; }
+</style></head><body>
+  <div class="header">
+    <h1>${s.title || input.lessonTitle}</h1>
+    <h2>${s.synopsis || ''}</h2>
+    <div class="meta">\u0627\u0644\u0645\u062f\u0629: ${s.duration || '10 \u062f\u0642\u0627\u0626\u0642'} | \u0627\u0644\u062a\u0627\u0631\u064a\u062e: ${reportDate} | Leader Academy</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">\u0627\u0644\u0634\u062e\u0635\u064a\u0627\u062a</div>
+    <div class="char-grid">
+      ${(s.characters || []).map((c: any) => `<div class="char-card"><div class="name">${c.name}</div><div class="desc">${c.description}</div></div>`).join('')}
+    </div>
+  </div>
+
+  ${(s.scenes || []).map((scene: any, idx: number) => `
+    ${idx > 0 && idx % 2 === 0 ? '<div class="page-break"></div>' : ''}
+    <div class="scene">
+      <div class="scene-header">\u0627\u0644\u0645\u0634\u0647\u062f ${scene.number}: ${scene.title}</div>
+      <div class="scene-setting">${scene.setting}</div>
+      ${scene.directorNotes ? `<div class="director-note">\u062a\u0639\u0644\u064a\u0645\u0627\u062a \u0644\u0644\u0645\u0639\u0644\u0645: ${scene.directorNotes}</div>` : ''}
+      ${(scene.dialogue || []).map((d: any) => `<div class="dialogue"><span class="char">${d.character}:</span> <span class="line">${d.line}</span> ${d.action ? `<span class="action">(${d.action})</span>` : ''}</div>`).join('')}
+      ${scene.audienceInteraction ? `<div class="audience-q">\u062a\u0641\u0627\u0639\u0644 \u0627\u0644\u062c\u0645\u0647\u0648\u0631: ${scene.audienceInteraction}</div>` : ''}
+    </div>
+  `).join('')}
+
+  <div class="section">
+    <div class="section-title">\u0627\u0644\u0648\u0633\u0627\u0626\u0644 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629</div>
+    ${(s.props || []).map((p: any) => `<div class="prop-card"><span class="prop-name">${p.name}</span>: ${p.description} (${p.cost}) ${p.alternatives ? `| \u0628\u062f\u064a\u0644: ${p.alternatives}` : ''}</div>`).join('')}
+  </div>
+
+  <div class="section">
+    <div class="section-title">\u0627\u0644\u0623\u0647\u062f\u0627\u0641 \u0627\u0644\u062a\u0639\u0644\u064a\u0645\u064a\u0629</div>
+    <div class="objectives"><ul>${(s.educationalObjectives || []).map((o: string) => `<li>${o}</li>`).join('')}</ul></div>
+  </div>
+
+  <div class="footer">
+    <strong>Leader Academy</strong> | \u0645\u062d\u0631\u0643 \u0627\u0644\u062f\u0631\u0627\u0645\u0627 \u0627\u0644\u062a\u0639\u0644\u064a\u0645\u064a\u0629 | ${reportDate}
+  </div>
+</body></html>`;
+
+        const puppeteer = await import("puppeteer");
+        const browser = await puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: "networkidle0" });
+        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" } });
+        await browser.close();
+        const { storagePut } = await import("./storage");
+        const fileKey = `drama-scripts/${ctx.user.id}/drama-${Date.now()}.pdf`;
+        const { url } = await storagePut(fileKey, Buffer.from(pdfBuffer), "application/pdf");
+        return { url, fileName: `${input.lessonTitle}-\u0646\u0635-\u0645\u0633\u0631\u062d\u064a.pdf` };
       }),
   }),
 });
