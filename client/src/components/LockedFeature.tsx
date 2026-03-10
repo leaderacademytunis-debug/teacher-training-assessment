@@ -33,23 +33,40 @@ const SERVICE_REQUEST_MAP: Record<ServiceKey, string> = {
   accessFullBundle: "full_bundle",
 };
 
+// Map ServiceKey to batch feature keys
+const SERVICE_TO_BATCH_FEATURE: Record<ServiceKey, string> = {
+  accessEdugpt: "accessEdugpt",
+  accessCourseAi: "accessCourseAi",
+  accessCoursePedagogy: "accessCoursePedagogy",
+  accessFullBundle: "accessFullBundle",
+};
+
 export function LockedFeature({ requiredService, children, featureName }: LockedFeatureProps) {
   const { user } = useAuth();
   const { data: permissions, isLoading } = trpc.adminDashboard.getMyPermissions.useQuery(
     undefined,
     { enabled: !!user }
   );
+  // Also check batch-based feature access
+  const { data: batchAccess, isLoading: batchLoading } = trpc.batchManager.myFeatureAccess.useQuery(
+    undefined,
+    { enabled: !!user }
+  );
 
   // If loading, show children (optimistic)
-  if (isLoading || !user) return <>{children}</>;
+  if ((isLoading && batchLoading) || !user) return <>{children}</>;
 
   // Admin users always have full access
   if (user?.role === 'admin') return <>{children}</>;
 
-  // Check if user has access
-  const hasAccess = permissions?.[requiredService] || permissions?.accessFullBundle;
+  // Check individual permissions
+  const hasIndividualAccess = permissions?.[requiredService] || permissions?.accessFullBundle;
 
-  if (hasAccess) return <>{children}</>;
+  // Check batch-based access
+  const batchFeatureKey = SERVICE_TO_BATCH_FEATURE[requiredService];
+  const hasBatchAccess = batchAccess?.features?.includes(batchFeatureKey) || batchAccess?.features?.includes("accessFullBundle");
+
+  if (hasIndividualAccess || hasBatchAccess) return <>{children}</>;
 
   // Show locked state
   return (
@@ -288,14 +305,21 @@ export function usePermissions() {
     undefined,
     { enabled: !!user }
   );
+  const { data: batchAccess, isLoading: batchLoading } = trpc.batchManager.myFeatureAccess.useQuery(
+    undefined,
+    { enabled: !!user }
+  );
+
+  const batchFeatures = batchAccess?.features || [];
 
   return {
-    isLoading,
+    isLoading: isLoading || batchLoading,
     permissions,
-    hasEdugpt: permissions?.accessEdugpt || permissions?.accessFullBundle || false,
-    hasCourseAi: permissions?.accessCourseAi || permissions?.accessFullBundle || false,
-    hasCoursePedagogy: permissions?.accessCoursePedagogy || permissions?.accessFullBundle || false,
-    hasFullBundle: permissions?.accessFullBundle || false,
+    batchFeatures,
+    hasEdugpt: permissions?.accessEdugpt || permissions?.accessFullBundle || batchFeatures.includes("accessEdugpt") || batchFeatures.includes("accessFullBundle") || false,
+    hasCourseAi: permissions?.accessCourseAi || permissions?.accessFullBundle || batchFeatures.includes("accessCourseAi") || batchFeatures.includes("accessFullBundle") || false,
+    hasCoursePedagogy: permissions?.accessCoursePedagogy || permissions?.accessFullBundle || batchFeatures.includes("accessCoursePedagogy") || batchFeatures.includes("accessFullBundle") || false,
+    hasFullBundle: permissions?.accessFullBundle || batchFeatures.includes("accessFullBundle") || false,
     tier: permissions?.tier || "free",
     isAdmin: user?.role === "admin",
   };

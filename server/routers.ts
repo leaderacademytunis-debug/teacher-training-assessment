@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -11056,6 +11056,322 @@ ${input.lessonContent}
       if (!database) return { count: 0 };
       const [result] = await database.select({ cnt: count() }).from(smartMatchNotifications).where(and(eq(smartMatchNotifications.teacherUserId, ctx.user.id), eq(smartMatchNotifications.isRead, false)));
       return { count: result?.cnt || 0 };
+    }),
+  }),
+
+  // ===== BATCH MANAGER (مدير الدفعات) =====
+  batchManager: router({
+    // List all batches (admin)
+    listBatches: adminProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const allBatches = await database.select().from(batches).orderBy(desc(batches.createdAt));
+      // Get member counts for each batch
+      const result = [];
+      for (const batch of allBatches) {
+        const [memberCount] = await database.select({ cnt: count() }).from(batchMembers).where(eq(batchMembers.batchId, batch.id));
+        const [assignmentCount] = await database.select({ cnt: count() }).from(assignments).where(eq(assignments.batchId, batch.id));
+        const features = await database.select().from(batchFeatureAccess).where(eq(batchFeatureAccess.batchId, batch.id));
+        result.push({ ...batch, memberCount: memberCount?.cnt || 0, assignmentCount: assignmentCount?.cnt || 0, features: features.map(f => f.featureKey) });
+      }
+      return result;
+    }),
+
+    // Create a new batch
+    createBatch: adminProcedure.input(z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+      color: z.string().optional(),
+      icon: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [result] = await database.insert(batches).values({ ...input, createdBy: ctx.user.id });
+      return { id: result.insertId, ...input };
+    }),
+
+    // Update a batch
+    updateBatch: adminProcedure.input(z.object({
+      id: z.number(),
+      name: z.string().min(1).optional(),
+      description: z.string().optional(),
+      color: z.string().optional(),
+      icon: z.string().optional(),
+      isActive: z.boolean().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const { id, ...data } = input;
+      await database.update(batches).set(data).where(eq(batches.id, id));
+      return { success: true };
+    }),
+
+    // Delete a batch
+    deleteBatch: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await database.delete(batchMembers).where(eq(batchMembers.batchId, input.id));
+      await database.delete(batchFeatureAccess).where(eq(batchFeatureAccess.batchId, input.id));
+      await database.delete(batches).where(eq(batches.id, input.id));
+      return { success: true };
+    }),
+
+    // Get batch details with members
+    getBatch: adminProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.id));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "Batch not found" });
+      const members = await database.select({ id: batchMembers.id, userId: batchMembers.userId, joinedAt: batchMembers.joinedAt, userName: users.name, userEmail: users.email, arabicName: users.arabicName }).from(batchMembers).innerJoin(users, eq(batchMembers.userId, users.id)).where(eq(batchMembers.batchId, input.id));
+      const features = await database.select().from(batchFeatureAccess).where(eq(batchFeatureAccess.batchId, input.id));
+      const batchAssignments = await database.select().from(assignments).where(eq(assignments.batchId, input.id)).orderBy(desc(assignments.createdAt));
+      return { ...batch, members, features: features.map(f => ({ key: f.featureKey, enabled: f.isEnabled })), assignments: batchAssignments };
+    }),
+
+    // Add members to batch
+    addMembers: adminProcedure.input(z.object({
+      batchId: z.number(),
+      userIds: z.array(z.number()),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const existing = await database.select({ userId: batchMembers.userId }).from(batchMembers).where(eq(batchMembers.batchId, input.batchId));
+      const existingIds = new Set(existing.map(e => e.userId));
+      const newIds = input.userIds.filter(id => !existingIds.has(id));
+      if (newIds.length > 0) {
+        await database.insert(batchMembers).values(newIds.map(userId => ({ batchId: input.batchId, userId })));
+      }
+      return { added: newIds.length };
+    }),
+
+    // Remove member from batch
+    removeMember: adminProcedure.input(z.object({
+      batchId: z.number(),
+      userId: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await database.delete(batchMembers).where(and(eq(batchMembers.batchId, input.batchId), eq(batchMembers.userId, input.userId)));
+      return { success: true };
+    }),
+
+    // Set feature access for a batch
+    setFeatureAccess: adminProcedure.input(z.object({
+      batchId: z.number(),
+      features: z.array(z.object({ featureKey: z.string(), isEnabled: z.boolean() })),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // Delete existing features for this batch
+      await database.delete(batchFeatureAccess).where(eq(batchFeatureAccess.batchId, input.batchId));
+      // Insert new features
+      if (input.features.length > 0) {
+        await database.insert(batchFeatureAccess).values(input.features.map(f => ({ batchId: input.batchId, featureKey: f.featureKey, isEnabled: f.isEnabled })));
+      }
+      return { success: true };
+    }),
+
+    // Search users to add to batch
+    searchUsers: adminProcedure.input(z.object({ query: z.string().min(1) })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const results = await database.select({ id: users.id, name: users.name, email: users.email, arabicName: users.arabicName }).from(users).where(or(like(users.name, `%${input.query}%`), like(users.email, `%${input.query}%`), like(users.arabicName, `%${input.query}%`))).limit(20);
+      return results;
+    }),
+
+    // Get user's batches (for feature gating)
+    myBatches: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const myMemberships = await database.select({ batchId: batchMembers.batchId }).from(batchMembers).where(eq(batchMembers.userId, ctx.user.id));
+      if (myMemberships.length === 0) return [];
+      const batchIds = myMemberships.map(m => m.batchId);
+      const myBatchList = await database.select().from(batches).where(and(inArray(batches.id, batchIds), eq(batches.isActive, true)));
+      return myBatchList;
+    }),
+
+    // Get user's batch feature access (for feature gating)
+    myFeatureAccess: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return { features: [] as string[] };
+      const myMemberships = await database.select({ batchId: batchMembers.batchId }).from(batchMembers).where(eq(batchMembers.userId, ctx.user.id));
+      if (myMemberships.length === 0) return { features: [] as string[] };
+      const batchIds = myMemberships.map(m => m.batchId);
+      const accessRules = await database.select().from(batchFeatureAccess).where(and(inArray(batchFeatureAccess.batchId, batchIds), eq(batchFeatureAccess.isEnabled, true)));
+      const featureSet = new Set(accessRules.map(r => r.featureKey));
+      return { features: Array.from(featureSet) };
+    }),
+
+    // Get batch progress summary (admin)
+    batchProgress: adminProcedure.input(z.object({ batchId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND" });
+      const [memberCount] = await database.select({ cnt: count() }).from(batchMembers).where(eq(batchMembers.batchId, input.batchId));
+      const batchAssignments = await database.select().from(assignments).where(eq(assignments.batchId, input.batchId));
+      const progressData = [];
+      for (const assignment of batchAssignments) {
+        const [totalSubs] = await database.select({ cnt: count() }).from(submissions).where(eq(submissions.assignmentId, assignment.id));
+        const [gradedSubs] = await database.select({ cnt: count() }).from(submissions).where(and(eq(submissions.assignmentId, assignment.id), eq(submissions.status, "graded")));
+        const [submittedSubs] = await database.select({ cnt: count() }).from(submissions).where(and(eq(submissions.assignmentId, assignment.id), or(eq(submissions.status, "submitted"), eq(submissions.status, "grading"), eq(submissions.status, "graded"), eq(submissions.status, "returned"))));
+        const avgScoreResult = await database.select({ avg: sql<number>`AVG(${submissions.aiScore})` }).from(submissions).where(and(eq(submissions.assignmentId, assignment.id), eq(submissions.status, "graded")));
+        const avgScore = avgScoreResult[0]?.avg || 0;
+        const completionRate = (memberCount?.cnt || 0) > 0 ? Math.round(((submittedSubs?.cnt || 0) / (memberCount?.cnt || 1)) * 100) : 0;
+        progressData.push({
+          assignmentId: assignment.id,
+          assignmentTitle: assignment.title,
+          type: assignment.type,
+          dueDate: assignment.dueDate,
+          totalMembers: memberCount?.cnt || 0,
+          totalSubmissions: totalSubs?.cnt || 0,
+          gradedSubmissions: gradedSubs?.cnt || 0,
+          completionRate,
+          averageScore: Math.round(avgScore),
+        });
+      }
+      return { batch, memberCount: memberCount?.cnt || 0, assignments: progressData };
+    }),
+  }),
+
+  // ===== ASSIGNMENT & SUBMISSION (الواجبات والتسليمات) =====
+  assignmentManager: router({
+    // Create assignment (admin)
+    createAssignment: adminProcedure.input(z.object({
+      batchId: z.number(),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      type: z.enum(["lesson_plan", "exam", "evaluation", "free_form"]).optional(),
+      dueDate: z.string().optional(),
+      maxScore: z.number().optional(),
+      rubric: z.array(z.object({ criteria: z.string(), weight: z.number(), description: z.string() })).optional(),
+      isPublished: z.boolean().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const { dueDate, ...rest } = input;
+      const values: any = { ...rest, createdBy: ctx.user.id };
+      if (dueDate) values.dueDate = new Date(dueDate);
+      const [result] = await database.insert(assignments).values(values);
+      return { id: result.insertId };
+    }),
+
+    // List assignments for a batch (admin)
+    listByBatch: adminProcedure.input(z.object({ batchId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) return [];
+      return database.select().from(assignments).where(eq(assignments.batchId, input.batchId)).orderBy(desc(assignments.createdAt));
+    }),
+
+    // Get assignment with submissions (admin)
+    getWithSubmissions: adminProcedure.input(z.object({ assignmentId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [assignment] = await database.select().from(assignments).where(eq(assignments.id, input.assignmentId));
+      if (!assignment) throw new TRPCError({ code: "NOT_FOUND" });
+      const subs = await database.select({ id: submissions.id, userId: submissions.userId, status: submissions.status, aiScore: submissions.aiScore, aiGrade: submissions.aiGrade, masteryScore: submissions.masteryScore, submittedAt: submissions.submittedAt, gradedAt: submissions.gradedAt, userName: users.name, userEmail: users.email, arabicName: users.arabicName }).from(submissions).innerJoin(users, eq(submissions.userId, users.id)).where(eq(submissions.assignmentId, input.assignmentId)).orderBy(desc(submissions.submittedAt));
+      return { assignment, submissions: subs };
+    }),
+
+    // My assignments (student/teacher view)
+    myAssignments: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const myMemberships = await database.select({ batchId: batchMembers.batchId }).from(batchMembers).where(eq(batchMembers.userId, ctx.user.id));
+      if (myMemberships.length === 0) return [];
+      const batchIds = myMemberships.map(m => m.batchId);
+      const myAssignmentsList = await database.select({ id: assignments.id, batchId: assignments.batchId, title: assignments.title, description: assignments.description, type: assignments.type, dueDate: assignments.dueDate, maxScore: assignments.maxScore, isPublished: assignments.isPublished, createdAt: assignments.createdAt, batchName: batches.name, batchColor: batches.color }).from(assignments).innerJoin(batches, eq(assignments.batchId, batches.id)).where(and(inArray(assignments.batchId, batchIds), eq(assignments.isPublished, true))).orderBy(desc(assignments.createdAt));
+      // Get submission status for each assignment
+      const result = [];
+      for (const a of myAssignmentsList) {
+        const [sub] = await database.select({ id: submissions.id, status: submissions.status, aiScore: submissions.aiScore, aiGrade: submissions.aiGrade, masteryScore: submissions.masteryScore }).from(submissions).where(and(eq(submissions.assignmentId, a.id), eq(submissions.userId, ctx.user.id)));
+        result.push({ ...a, submission: sub || null });
+      }
+      return result;
+    }),
+
+    // Submit assignment
+    submitWork: protectedProcedure.input(z.object({
+      assignmentId: z.number(),
+      content: z.string().min(1),
+      fileUrl: z.string().optional(),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // Check if already submitted
+      const [existing] = await database.select().from(submissions).where(and(eq(submissions.assignmentId, input.assignmentId), eq(submissions.userId, ctx.user.id)));
+      if (existing && existing.status !== "draft" && existing.status !== "returned") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "لقد قمت بتسليم هذا الواجب مسبقاً" });
+      }
+      if (existing) {
+        await database.update(submissions).set({ content: input.content, fileUrl: input.fileUrl, status: "submitted", submittedAt: new Date() }).where(eq(submissions.id, existing.id));
+        return { id: existing.id, status: "submitted" };
+      }
+      const [result] = await database.insert(submissions).values({ assignmentId: input.assignmentId, userId: ctx.user.id, content: input.content, fileUrl: input.fileUrl, status: "submitted", submittedAt: new Date() });
+      return { id: result.insertId, status: "submitted" };
+    }),
+
+    // Get my submission details
+    mySubmission: protectedProcedure.input(z.object({ assignmentId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) return null;
+      const [sub] = await database.select().from(submissions).where(and(eq(submissions.assignmentId, input.assignmentId), eq(submissions.userId, ctx.user.id)));
+      return sub || null;
+    }),
+
+    // AI Auto-Grade a submission (admin trigger)
+    aiGradeSubmission: adminProcedure.input(z.object({ submissionId: z.number() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [sub] = await database.select().from(submissions).where(eq(submissions.id, input.submissionId));
+      if (!sub) throw new TRPCError({ code: "NOT_FOUND" });
+      const [assignment] = await database.select().from(assignments).where(eq(assignments.id, sub.assignmentId));
+      if (!assignment) throw new TRPCError({ code: "NOT_FOUND" });
+      // Mark as grading
+      await database.update(submissions).set({ status: "grading" }).where(eq(submissions.id, input.submissionId));
+      try {
+        const { invokeLLM } = await import("./_core/llm");
+        const rubricText = assignment.rubric ? (assignment.rubric as any[]).map((r: any) => `- ${r.criteria} (${r.weight}%): ${r.description}`).join("\n") : "تقييم عام حسب المعايير التونسية";
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: `أنت مفتش بيداغوجي تونسي خبير. قم بتقييم العمل المقدم وفقاً للمعايير التونسية الرسمية.\nنوع الواجب: ${assignment.type}\nالعنوان: ${assignment.title}\nالوصف: ${assignment.description || "غير محدد"}\nمعايير التقييم:\n${rubricText}\n\nأعد النتيجة بصيغة JSON بالضبط كالتالي:\n{\n  "score": <رقم من 0 إلى ${assignment.maxScore}>,\n  "grade": "<excellent|good|acceptable|needs_improvement|insufficient>",\n  "feedback": "<تعليق مفصل بالعربية>",\n  "rubricScores": [{"criterion": "<اسم المعيار>", "score": <رقم>, "maxScore": <رقم>, "feedback": "<تعليق>"}],\n  "masteryScore": <رقم من 0 إلى 100>\n}` },
+            { role: "user", content: `المحتوى المقدم:\n\n${sub.content}` }
+          ],
+          response_format: { type: "json_schema", json_schema: { name: "grading_result", strict: true, schema: { type: "object", properties: { score: { type: "number" }, grade: { type: "string", enum: ["excellent", "good", "acceptable", "needs_improvement", "insufficient"] }, feedback: { type: "string" }, rubricScores: { type: "array", items: { type: "object", properties: { criterion: { type: "string" }, score: { type: "number" }, maxScore: { type: "number" }, feedback: { type: "string" } }, required: ["criterion", "score", "maxScore", "feedback"], additionalProperties: false } }, masteryScore: { type: "number" } }, required: ["score", "grade", "feedback", "rubricScores", "masteryScore"], additionalProperties: false } } }
+        });
+        const gradeResult = JSON.parse((response.choices[0].message.content as string) || "{}");
+        await database.update(submissions).set({
+          aiScore: Math.min(gradeResult.score, assignment.maxScore),
+          aiGrade: gradeResult.grade,
+          aiFeedback: gradeResult.feedback,
+          aiRubricScores: gradeResult.rubricScores,
+          masteryScore: gradeResult.masteryScore,
+          status: "graded",
+          gradedAt: new Date(),
+        }).where(eq(submissions.id, input.submissionId));
+        return { success: true, score: gradeResult.score, grade: gradeResult.grade, feedback: gradeResult.feedback };
+      } catch (error: any) {
+        await database.update(submissions).set({ status: "submitted" }).where(eq(submissions.id, input.submissionId));
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل التقييم الآلي: " + error.message });
+      }
+    }),
+
+    // Bulk AI grade all pending submissions for an assignment
+    bulkAiGrade: adminProcedure.input(z.object({ assignmentId: z.number() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const pendingSubs = await database.select({ id: submissions.id }).from(submissions).where(and(eq(submissions.assignmentId, input.assignmentId), eq(submissions.status, "submitted")));
+      return { totalPending: pendingSubs.length, message: `${pendingSubs.length} تسليمات في انتظار التقييم. استخدم التقييم الفردي لكل تسليم.` };
+    }),
+
+    // Return submission to student for revision
+    returnSubmission: adminProcedure.input(z.object({ submissionId: z.number(), feedback: z.string().optional() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const updateData: any = { status: "returned" as const };
+      if (input.feedback) updateData.aiFeedback = input.feedback;
+      await database.update(submissions).set(updateData).where(eq(submissions.id, input.submissionId));
+      return { success: true };
     }),
   }),
 

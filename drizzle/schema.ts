@@ -1534,3 +1534,81 @@ export const smartMatchNotifications = mysqlTable("smart_match_notifications", {
 });
 export type SmartMatchNotification = typeof smartMatchNotifications.$inferSelect;
 export type InsertSmartMatchNotification = typeof smartMatchNotifications.$inferInsert;
+
+
+// ===== ACADEMY BATCH MANAGER (مدير الدفعات الأكاديمية) =====
+
+// Batches / Tags (الدفعات والمجموعات)
+export const batches = mysqlTable("batches", {
+  id: int("id").primaryKey().autoincrement(),
+  name: varchar("name", { length: 255 }).notNull(), // e.g., "Batch-114", "English-Group"
+  description: text("description"),
+  color: varchar("color", { length: 20 }).default("#3B82F6"),
+  icon: varchar("icon", { length: 50 }).default("users"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Batch = typeof batches.$inferSelect;
+export type InsertBatch = typeof batches.$inferInsert;
+
+// Batch Members (أعضاء الدفعة)
+export const batchMembers = mysqlTable("batch_members", {
+  id: int("id").primaryKey().autoincrement(),
+  batchId: int("batchId").notNull(),
+  userId: int("userId").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+export type BatchMember = typeof batchMembers.$inferSelect;
+export type InsertBatchMember = typeof batchMembers.$inferInsert;
+
+// Batch Feature Access Rules (قواعد الوصول للميزات حسب الدفعة)
+export const batchFeatureAccess = mysqlTable("batch_feature_access", {
+  id: int("id").primaryKey().autoincrement(),
+  batchId: int("batchId").notNull(),
+  featureKey: varchar("featureKey", { length: 100 }).notNull(),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type BatchFeatureAccess = typeof batchFeatureAccess.$inferSelect;
+export type InsertBatchFeatureAccess = typeof batchFeatureAccess.$inferInsert;
+
+// Assignments (الواجبات)
+export const assignments = mysqlTable("assignments", {
+  id: int("id").primaryKey().autoincrement(),
+  batchId: int("batchId").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("type", ["lesson_plan", "exam", "evaluation", "free_form"]).default("lesson_plan").notNull(),
+  dueDate: timestamp("dueDate"),
+  maxScore: int("maxScore").default(100).notNull(),
+  rubric: json("rubric").$type<{ criteria: string; weight: number; description: string }[]>(),
+  isPublished: boolean("isPublished").default(false).notNull(),
+  createdBy: int("createdBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Assignment = typeof assignments.$inferSelect;
+export type InsertAssignment = typeof assignments.$inferInsert;
+
+// Submissions (التسليمات)
+export const submissions = mysqlTable("submissions", {
+  id: int("id").primaryKey().autoincrement(),
+  assignmentId: int("assignmentId").notNull(),
+  userId: int("userId").notNull(),
+  content: mediumtext("content"),
+  fileUrl: varchar("fileUrl", { length: 500 }),
+  aiScore: int("aiScore"),
+  aiGrade: mysqlEnum("aiGrade", ["excellent", "good", "acceptable", "needs_improvement", "insufficient"]),
+  aiFeedback: mediumtext("aiFeedback"),
+  aiRubricScores: json("aiRubricScores").$type<{ criterion: string; score: number; maxScore: number; feedback: string }[]>(),
+  masteryScore: int("masteryScore"),
+  status: mysqlEnum("status", ["draft", "submitted", "grading", "graded", "returned"]).default("draft").notNull(),
+  submittedAt: timestamp("submittedAt"),
+  gradedAt: timestamp("gradedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Submission = typeof submissions.$inferSelect;
+export type InsertSubmission = typeof submissions.$inferInsert;

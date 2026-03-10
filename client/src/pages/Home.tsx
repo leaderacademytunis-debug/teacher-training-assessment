@@ -450,6 +450,7 @@ function AdminConsoleDropdown({ language, t, location, isAdmin }: { language: Ap
     { href: "/admin", labelAr: "لوحة الإدارة العامة", labelFr: "Administration générale", labelEn: "General Admin", icon: Settings, descAr: "إدارة المستخدمين والإعدادات العامة", descFr: "Gérer utilisateurs et paramètres", descEn: "Manage users and settings", section: "admin" },
     { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion des partenaires", labelEn: "Partner Management", icon: Building2, descAr: "اعتماد ورفض طلبات المدارس الشريكة", descFr: "Approuver/rejeter les demandes d'écoles", descEn: "Approve/reject school partner requests", section: "admin" },
     { href: "/managerial-dashboard", labelAr: "التحليلات والإحصائيات", labelFr: "Analyses & Statistiques", labelEn: "Analytics & Statistics", icon: BarChart3, descAr: "تقارير الأداء والإحصائيات التفصيلية", descFr: "Rapports de performance et statistiques", descEn: "Performance reports and statistics", section: "admin" },
+    { href: "/admin/batches", labelAr: "إدارة الدفعات", labelFr: "Gestion des groupes", labelEn: "Batch Manager", icon: Users, descAr: "إدارة المجموعات والصلاحيات والواجبات", descFr: "Gérer groupes, accès et devoirs", descEn: "Manage batches, access and assignments", section: "admin" },
   ];
 
   const generalLinks = ADMIN_LINKS.filter(l => l.section === "general");
@@ -792,6 +793,17 @@ export default function Home() {
                           </div>
                         </div>
                       </Link>
+                      <Link href="/my-assignments">
+                        <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-50">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-emerald-500 to-green-600">
+                            <BookOpen className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-gray-900">{t("واجباتي", "Mes devoirs", "My Assignments")}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{t("تسليم الواجبات وعرض التقييمات", "Soumettre devoirs et voir évaluations", "Submit work and view grades")}</p>
+                          </div>
+                        </div>
+                      </Link>
                       <Link href="/showcase">
                         <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-50">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-purple-500 to-pink-600">
@@ -1006,8 +1018,9 @@ export default function Home() {
                     <div className="space-y-1 mr-4">
                       {[
                         { href: "/jobs", icon: Briefcase, labelAr: "فرص العمل", labelFr: "Offres d'emploi", labelEn: "Job Board" },
-                        { href: "/my-applications", icon: FileText, labelAr: "طلباتي", labelFr: "Mes candidatures", labelEn: "My Applications" },
-                        { href: "/showcase", icon: Users, labelAr: "دليل الكفاءات", labelFr: "R\u00e9pertoire", labelEn: "Directory" },
+                          { href: "/my-applications", icon: FileText, labelAr: "طلباتي", labelFr: "Mes candidatures", labelEn: "My Applications" },
+                        { href: "/my-assignments", icon: BookOpen, labelAr: "واجباتي", labelFr: "Mes devoirs", labelEn: "My Assignments" },
+                        { href: "/showcase", icon: Users, labelAr: "دليل الكفاءات", labelFr: "Répertoire", labelEn: "Directory" },
                         { href: "/my-portfolio", icon: Star, labelAr: "ملفي المهني", labelFr: "Mon portfolio", labelEn: "My Portfolio" },
                       ].map((item) => {
                         const CIcon = item.icon;

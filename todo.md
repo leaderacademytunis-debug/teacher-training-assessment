@@ -2021,3 +2021,18 @@
 - [x] AUDIT: RTL alignment issues across pages
 - [x] AUDIT: Responsive design on mobile screens
 - [x] VERIFY: All navigation links point to correct routes
+
+## Academy Batch Manager
+- [x] Create database schema: batches, batch_members, batch_feature_access tables
+- [x] Create database schema: assignments, submissions tables
+- [x] Build backend: batch CRUD (create, list, update, delete batches)
+- [x] Build backend: batch member management (add/remove users, tag users)
+- [x] Build backend: batch feature gating rules (set access per batch)
+- [x] Build backend: assignment CRUD (create, list, update assignments per batch)
+- [x] Build backend: submission portal (submit, list, grade submissions)
+- [x] Build backend: AI auto-grader using Inspector logic
+- [x] Build Admin Batch Manager dashboard (/admin/batches)
+- [x] Build Homework Submission Portal (/my-assignments)
+- [x] Integrate batch-based feature gating into LockedFeature/usePermissions
+- [x] Update navigation with batch manager links
+- [x] Write vitest tests for batch manager features
