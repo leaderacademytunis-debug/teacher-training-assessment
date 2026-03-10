@@ -43,6 +43,8 @@ import TeacherPortfolio from "@/pages/TeacherPortfolio";
 import PublicPortfolio from "@/pages/PublicPortfolio";
 import CurriculumMap from "@/pages/CurriculumMap";
 import BlindGrading from "@/pages/BlindGrading";
+import Marketplace from "@/pages/Marketplace";
+import MarketplacePublish from "@/pages/MarketplacePublish";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -87,6 +89,8 @@ function Router() {
       <Route path="/public-portfolio/:token" component={PublicPortfolio} />
       <Route path="/curriculum-map" component={CurriculumMap} />
       <Route path="/blind-grading" component={BlindGrading} />
+      <Route path="/marketplace" component={Marketplace} />
+      <Route path="/marketplace/publish" component={MarketplacePublish} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

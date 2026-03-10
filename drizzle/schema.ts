@@ -1131,3 +1131,107 @@ export const studentSubmissions = mysqlTable("studentSubmissions", {
 
 export type StudentSubmission = typeof studentSubmissions.$inferSelect;
 export type InsertStudentSubmission = typeof studentSubmissions.$inferInsert;
+
+
+// ===== MARKETPLACE ITEMS (سوق المحتوى الذهبي) =====
+export const marketplaceItems = mysqlTable("marketplace_items", {
+  id: int("id").primaryKey().autoincrement(),
+  publishedBy: int("publishedBy").notNull(), // FK to users
+  
+  // Content identification
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  contentType: mysqlEnum("contentType", [
+    "lesson_plan",    // جذاذة درس
+    "exam",           // اختبار
+    "evaluation",     // تقييم
+    "drama_script",   // نص مسرحي
+    "annual_plan",    // مخطط سنوي
+    "digitized_doc",  // وثيقة مرقمنة
+    "other"
+  ]).notNull(),
+  
+  // Educational metadata
+  subject: varchar("subject", { length: 100 }).notNull(),
+  grade: varchar("grade", { length: 100 }).notNull(),
+  educationLevel: mysqlEnum("educationLevel", ["primary", "middle", "secondary"]).default("primary").notNull(),
+  period: varchar("period", { length: 50 }), // الفترة (1-6)
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("medium").notNull(),
+  trimester: varchar("trimester", { length: 50 }), // الثلاثي
+  
+  // Content data
+  content: mediumtext("content").notNull(), // The actual content (HTML/Markdown)
+  contentPreview: text("contentPreview"), // First 300 chars for card display
+  thumbnailUrl: text("thumbnailUrl"), // Preview image URL
+  
+  // Source reference (link to original item)
+  sourceType: varchar("sourceType", { length: 50 }), // 'pedagogicalSheet', 'savedExam', 'savedEvaluation', etc.
+  sourceId: int("sourceId"), // ID of the original item
+  
+  // Files
+  wordExportUrl: text("wordExportUrl"),
+  pdfExportUrl: text("pdfExportUrl"),
+  
+  // Watermarked versions (with IP protection)
+  watermarkedPdfUrl: text("watermarkedPdfUrl"),
+  
+  // Contributor info (snapshot at publish time)
+  contributorName: varchar("contributorName", { length: 255 }),
+  contributorSchool: varchar("contributorSchool", { length: 255 }),
+  
+  // Ranking metrics
+  aiInspectorScore: int("aiInspectorScore"), // 0-100 from AI evaluation
+  averageRating: decimal("averageRating", { precision: 3, scale: 2 }).default("0"),
+  totalRatings: int("totalRatings").default(0).notNull(),
+  totalDownloads: int("totalDownloads").default(0).notNull(),
+  totalViews: int("totalViews").default(0).notNull(),
+  
+  // Computed ranking score (weighted combination)
+  rankingScore: decimal("rankingScore", { precision: 8, scale: 4 }).default("0"),
+  
+  // Moderation
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "flagged"]).default("pending").notNull(),
+  moderationNote: text("moderationNote"),
+  moderatedBy: int("moderatedBy"),
+  moderatedAt: timestamp("moderatedAt"),
+  
+  // Tags for enhanced search
+  tags: json("tags").$type<string[]>(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MarketplaceItem = typeof marketplaceItems.$inferSelect;
+export type InsertMarketplaceItem = typeof marketplaceItems.$inferInsert;
+
+// ===== MARKETPLACE RATINGS (تقييمات ومراجعات السوق) =====
+export const marketplaceRatings = mysqlTable("marketplace_ratings", {
+  id: int("id").primaryKey().autoincrement(),
+  itemId: int("itemId").notNull(), // FK to marketplaceItems
+  userId: int("userId").notNull(), // FK to users
+  
+  // Rating
+  rating: int("rating").notNull(), // 1-5 stars
+  review: text("review"), // Optional text review
+  
+  // Helpful votes
+  helpfulCount: int("helpfulCount").default(0).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MarketplaceRating = typeof marketplaceRatings.$inferSelect;
+export type InsertMarketplaceRating = typeof marketplaceRatings.$inferInsert;
+
+// ===== MARKETPLACE DOWNLOADS (تتبع التحميلات) =====
+export const marketplaceDownloads = mysqlTable("marketplace_downloads", {
+  id: int("id").primaryKey().autoincrement(),
+  itemId: int("itemId").notNull(), // FK to marketplaceItems
+  userId: int("userId").notNull(), // FK to users
+  
+  format: varchar("format", { length: 20 }).default("view"), // 'view', 'pdf', 'word'
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MarketplaceDownload = typeof marketplaceDownloads.$inferSelect;
+export type InsertMarketplaceDownload = typeof marketplaceDownloads.$inferInsert;

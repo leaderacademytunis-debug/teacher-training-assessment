@@ -281,6 +281,13 @@
       "when": 1773106115724,
       "tag": "0039_pink_felicia_hardy",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1773108822013,
+      "tag": "0040_pretty_tombstone",
+      "breakpoints": true
     }
   ]
 }

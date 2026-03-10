@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings, ScanLine, FileCheck,
+  Megaphone, Settings, ScanLine, FileCheck, Store,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -44,6 +44,7 @@ const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: strin
   { href: "/legacy-digitizer", labelAr: "Legacy Digitizer — رقمنة الوثائق", labelFr: "Legacy Digitizer — Numérisation", labelEn: "Legacy Digitizer", icon: ScanLine, descAr: "مسح ورقمنة الوثائق التعليمية القديمة بالذكاء الاصطناعي", descFr: "Numériser les anciens documents pédagogiques avec l'IA", descEn: "Scan and digitize old educational documents with AI" },
   { href: "/curriculum-map", labelAr: "Curriculum GPS — خريطة المنهج", labelFr: "Curriculum GPS — Carte du programme", labelEn: "Curriculum GPS — Curriculum Map", icon: BarChart3, descAr: "تتبع تقدمك في تغطية المنهج الدراسي بذكاء", descFr: "Suivre votre progression dans le programme scolaire", descEn: "Track your curriculum coverage progress intelligently" },
   { href: "/blind-grading", labelAr: "مساعد التصحيح الأعمى", labelFr: "Correction aveugle IA", labelEn: "Blind Grading Assistant", icon: FileCheck, descAr: "تصحيح ذكي لأوراق التلاميذ حسب المعايير التونسية", descFr: "Correction intelligente des copies selon les critères tunisiens", descEn: "AI-powered student paper grading with Tunisian criteria" },
+  { href: "/marketplace", labelAr: "سوق المحتوى الذهبي", labelFr: "Marché du contenu", labelEn: "Content Marketplace", icon: Store, descAr: "سوق مجتمعي لمشاركة وتحميل أفضل المحتويات التعليمية", descFr: "Marché communautaire pour partager le meilleur contenu éducatif", descEn: "Community marketplace for sharing best educational content" },
 ];
 
 // Certificate links grouped in a dropdown

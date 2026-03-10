@@ -1791,3 +1791,17 @@
 - [x] تحليل إحصائي للفصل مع رسوم بيانية لتوزيع الدرجات ومستويات التملك
 - [x] تحديث اختبارات Vitest
 - [x] اختبار شامل وحفظ checkpoint
+
+## ميزة جديدة: سوق المحتوى الذهبي والذكاء الجماعي (Step 6 - Golden Content Market)
+- [x] إنشاء جداول قاعدة البيانات: marketplaceItems, marketplaceRatings, marketplaceDownloads
+- [x] تنفيذ backend: نشر المحتوى في السوق (Publish to Marketplace)
+- [x] تنفيذ backend: نظام التقييم والمراجعات (Ratings & Reviews)
+- [x] تنفيذ backend: نظام الترتيب الذكي (AI Score + Ratings + Downloads)
+- [x] تنفيذ backend: بحث وتصفية عالمي (Subject, Grade, Period, Difficulty)
+- [x] تنفيذ backend: حماية الحقوق (Watermark/Footer تلقائي)
+- [x] إنشاء صفحة Marketplace مع بطاقات المحتوى والبحث والتصفية
+- [x] تنفيذ واجهة التقييم والمراجعات
+- [x] ربط كل محتوى بالملف المهني للمساهم (Contributor Profile)
+- [x] دمج في التنقل (رابط في شريط التنقل الرئيسي)
+- [x] كتابة اختبارات Vitest
+- [x] اختبار شامل وحفظ checkpoint

@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users } from "../drizzle/schema";
 import { eq, desc, and, sql, count, like, or } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -7535,6 +7535,274 @@ ${subjectLabels.length > 0 ? `<div class="section"><h2>توزيع النشاط �
           gradedStudents: 0,
         });
         return session;
+      }),
+  }),
+
+  // ===== MARKETPLACE (سوق المحتوى الذهبي) =====
+  marketplace: router({
+    // List marketplace items with filters
+    list: publicProcedure
+      .input(z.object({
+        contentType: z.string().optional(),
+        subject: z.string().optional(),
+        grade: z.string().optional(),
+        educationLevel: z.string().optional(),
+        period: z.string().optional(),
+        difficulty: z.string().optional(),
+        search: z.string().optional(),
+        sortBy: z.enum(["ranking", "newest", "rating", "downloads"]).optional(),
+        limit: z.number().optional(),
+        offset: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return db.listMarketplaceItems(input || {});
+      }),
+
+    // Get single item details
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const item = await db.getMarketplaceItemById(input.id);
+        if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "المحتوى غير موجود" });
+        // Increment views
+        await db.incrementItemViews(input.id);
+        return item;
+      }),
+
+    // Get item ratings
+    getItemRatings: publicProcedure
+      .input(z.object({ itemId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getItemRatings(input.itemId);
+      }),
+
+    // Get marketplace stats
+    getStats: publicProcedure.query(async () => {
+      return db.getMarketplaceStats();
+    }),
+
+    // Get user's published items
+    myItems: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserMarketplaceItems(ctx.user.id);
+    }),
+
+    // Publish content to marketplace
+    publish: protectedProcedure
+      .input(z.object({
+        title: z.string().min(3),
+        description: z.string().optional(),
+        contentType: z.enum(["lesson_plan", "exam", "evaluation", "drama_script", "annual_plan", "digitized_doc", "other"]),
+        subject: z.string(),
+        grade: z.string(),
+        educationLevel: z.enum(["primary", "middle", "secondary"]).optional(),
+        period: z.string().optional(),
+        difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+        trimester: z.string().optional(),
+        content: z.string(),
+        contentPreview: z.string().optional(),
+        sourceType: z.string().optional(),
+        sourceId: z.number().optional(),
+        tags: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Add watermark footer to content
+        const contributorName = ctx.user.name || ctx.user.arabicName || "معلم";
+        const contributorSchool = ctx.user.schoolName || "";
+        const watermarkFooter = `\n\n---\n**تم الإنتاج عبر Leader Academy بواسطة ${contributorName}${contributorSchool ? " - " + contributorSchool : ""}**`;
+        const watermarkedContent = input.content + watermarkFooter;
+        
+        // Generate content preview
+        const preview = input.contentPreview || input.content.replace(/<[^>]*>/g, "").substring(0, 300);
+        
+        const item = await db.createMarketplaceItem({
+          publishedBy: ctx.user.id,
+          title: input.title,
+          description: input.description,
+          contentType: input.contentType,
+          subject: input.subject,
+          grade: input.grade,
+          educationLevel: input.educationLevel || "primary",
+          period: input.period,
+          difficulty: input.difficulty || "medium",
+          trimester: input.trimester,
+          content: watermarkedContent,
+          contentPreview: preview,
+          sourceType: input.sourceType,
+          sourceId: input.sourceId,
+          contributorName,
+          contributorSchool,
+          tags: input.tags,
+          status: "approved", // Auto-approve for now
+        });
+        return item;
+      }),
+
+    // AI Inspector Score - evaluate content quality
+    evaluateContent: protectedProcedure
+      .input(z.object({ itemId: z.number() }))
+      .mutation(async ({ input }) => {
+        const item = await db.getMarketplaceItemById(input.itemId);
+        if (!item) throw new TRPCError({ code: "NOT_FOUND" });
+        
+        const { invokeLLM } = await import("./_core/llm");
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت متفقد بيداغوجي تونسي خبير. قيّم المحتوى التعليمي التالي وأعطه درجة من 0 إلى 100 حسب المعايير التالية:
+- الالتزام بالبنية الرسمية (سند/تعليمة/معايير): 25 نقطة
+- الدقة العلمية والبيداغوجية: 25 نقطة  
+- التدرج في الصعوبة: 20 نقطة
+- وضوح الصياغة وملاءمتها للمستوى: 15 نقطة
+- الإبداع والتميز: 15 نقطة
+أجب بصيغة JSON فقط.`
+            },
+            { role: "user", content: `المحتوى:\n${item.content?.substring(0, 3000)}\n\nالمادة: ${item.subject}\nالمستوى: ${item.grade}` }
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "ai_score",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  totalScore: { type: "integer", description: "الدرجة الإجمالية من 0 إلى 100" },
+                  structureScore: { type: "integer", description: "درجة البنية" },
+                  accuracyScore: { type: "integer", description: "درجة الدقة" },
+                  progressionScore: { type: "integer", description: "درجة التدرج" },
+                  clarityScore: { type: "integer", description: "درجة الوضوح" },
+                  creativityScore: { type: "integer", description: "درجة الإبداع" },
+                  feedback: { type: "string", description: "ملاحظة مختصرة" }
+                },
+                required: ["totalScore", "structureScore", "accuracyScore", "progressionScore", "clarityScore", "creativityScore", "feedback"],
+                additionalProperties: false
+              }
+            }
+          }
+        });
+        
+        const result = JSON.parse(response.choices[0].message.content as string || "{}");
+        await db.updateMarketplaceItem(input.itemId, { aiInspectorScore: result.totalScore });
+        // Recalculate ranking
+        await db.recalculateItemRating(input.itemId);
+        return result;
+      }),
+
+    // Rate an item
+    rate: protectedProcedure
+      .input(z.object({
+        itemId: z.number(),
+        rating: z.number().min(1).max(5),
+        review: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const item = await db.getMarketplaceItemById(input.itemId);
+        if (!item) throw new TRPCError({ code: "NOT_FOUND" });
+        // Cannot rate own content
+        if (item.publishedBy === ctx.user.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكنك تقييم محتواك الخاص" });
+        }
+        const rating = await db.createRating({
+          itemId: input.itemId,
+          userId: ctx.user.id,
+          rating: input.rating,
+          review: input.review,
+        });
+        // Recalculate average rating and ranking
+        await db.recalculateItemRating(input.itemId);
+        return rating;
+      }),
+
+    // Record download
+    recordDownload: protectedProcedure
+      .input(z.object({
+        itemId: z.number(),
+        format: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.recordDownload(input.itemId, ctx.user.id, input.format || "view");
+        return { success: true };
+      }),
+
+    // Update own item
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        tags: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const item = await db.getMarketplaceItemById(input.id);
+        if (!item) throw new TRPCError({ code: "NOT_FOUND" });
+        if (item.publishedBy !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+        await db.updateMarketplaceItem(input.id, {
+          title: input.title,
+          description: input.description,
+          tags: input.tags,
+        });
+        return { success: true };
+      }),
+
+    // Delete own item
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const item = await db.getMarketplaceItemById(input.id);
+        if (!item) throw new TRPCError({ code: "NOT_FOUND" });
+        if (item.publishedBy !== ctx.user.id && ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        await db.deleteMarketplaceItem(input.id);
+        return { success: true };
+      }),
+
+    // Admin: moderate item
+    moderate: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["approved", "rejected", "flagged"]),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await db.updateMarketplaceItem(input.id, {
+          status: input.status,
+          moderationNote: input.note,
+          moderatedBy: ctx.user.id,
+        });
+        return { success: true };
+      }),
+
+    // Get contributor profile (linked to portfolio)
+    getContributor: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const dbConn = await getDb();
+        if (!dbConn) return null;
+        const [user] = await dbConn.select({
+          id: users.id,
+          name: users.name,
+          arabicName: users.arabicName,
+          schoolName: users.schoolName,
+        }).from(users).where(eq(users.id, input.userId));
+        
+        // Get portfolio
+        const [portfolio] = await dbConn.select().from(teacherPortfolios).where(eq(teacherPortfolios.userId, input.userId));
+        
+        // Get published items count
+        const items = await db.getUserMarketplaceItems(input.userId);
+        const approvedItems = items.filter(i => i.status === "approved");
+        
+        return {
+          user: user || null,
+          portfolio: portfolio || null,
+          publishedCount: approvedItems.length,
+          totalDownloads: approvedItems.reduce((sum, i) => sum + i.totalDownloads, 0),
+          averageRating: approvedItems.length > 0 
+            ? approvedItems.reduce((sum, i) => sum + Number(i.averageRating || 0), 0) / approvedItems.length 
+            : 0,
+        };
       }),
   }),
 });

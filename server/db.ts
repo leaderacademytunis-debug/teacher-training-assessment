@@ -1965,3 +1965,211 @@ export async function getSessionStats(sessionId: number): Promise<{ total: numbe
     finalized: all.filter(s => s.status === "finalized").length,
   };
 }
+
+
+// ===== MARKETPLACE HELPERS =====
+import { marketplaceItems, MarketplaceItem, InsertMarketplaceItem, marketplaceRatings, MarketplaceRating, InsertMarketplaceRating, marketplaceDownloads } from "../drizzle/schema";
+
+export async function createMarketplaceItem(data: InsertMarketplaceItem): Promise<MarketplaceItem | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(marketplaceItems).values(data).$returningId();
+  const [item] = await db.select().from(marketplaceItems).where(eq(marketplaceItems.id, result.id));
+  return item || null;
+}
+
+export async function getMarketplaceItemById(id: number): Promise<MarketplaceItem | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [item] = await db.select().from(marketplaceItems).where(eq(marketplaceItems.id, id));
+  return item || null;
+}
+
+export async function listMarketplaceItems(filters: {
+  contentType?: string;
+  subject?: string;
+  grade?: string;
+  educationLevel?: string;
+  period?: string;
+  difficulty?: string;
+  search?: string;
+  publishedBy?: number;
+  status?: string;
+  sortBy?: "ranking" | "newest" | "rating" | "downloads";
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: MarketplaceItem[]; total: number }> {
+  const db = await getDb();
+  if (!db) return { items: [], total: 0 };
+
+  const conditions: any[] = [];
+  
+  // Default to approved items unless specific status requested
+  if (filters.status) {
+    conditions.push(eq(marketplaceItems.status, filters.status as any));
+  } else {
+    conditions.push(eq(marketplaceItems.status, "approved"));
+  }
+
+  if (filters.contentType) conditions.push(eq(marketplaceItems.contentType, filters.contentType as any));
+  if (filters.subject) conditions.push(eq(marketplaceItems.subject, filters.subject));
+  if (filters.grade) conditions.push(eq(marketplaceItems.grade, filters.grade));
+  if (filters.educationLevel) conditions.push(eq(marketplaceItems.educationLevel, filters.educationLevel as any));
+  if (filters.period) conditions.push(eq(marketplaceItems.period, filters.period));
+  if (filters.difficulty) conditions.push(eq(marketplaceItems.difficulty, filters.difficulty as any));
+  if (filters.publishedBy) conditions.push(eq(marketplaceItems.publishedBy, filters.publishedBy));
+  if (filters.search) {
+    conditions.push(
+      or(
+        like(marketplaceItems.title, `%${filters.search}%`),
+        like(marketplaceItems.description, `%${filters.search}%`)
+      )
+    );
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  // Get total count
+  const [countResult] = await db.select({ value: count() }).from(marketplaceItems).where(whereClause);
+  const total = countResult?.value || 0;
+
+  // Determine sort order
+  let orderBy;
+  switch (filters.sortBy) {
+    case "newest": orderBy = desc(marketplaceItems.createdAt); break;
+    case "rating": orderBy = desc(marketplaceItems.averageRating); break;
+    case "downloads": orderBy = desc(marketplaceItems.totalDownloads); break;
+    case "ranking": default: orderBy = desc(marketplaceItems.rankingScore); break;
+  }
+
+  const items = await db.select().from(marketplaceItems)
+    .where(whereClause)
+    .orderBy(orderBy)
+    .limit(filters.limit || 20)
+    .offset(filters.offset || 0);
+
+  return { items, total };
+}
+
+export async function updateMarketplaceItem(id: number, data: Partial<InsertMarketplaceItem>): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.update(marketplaceItems).set(data).where(eq(marketplaceItems.id, id));
+  return true;
+}
+
+export async function deleteMarketplaceItem(id: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(marketplaceItems).where(eq(marketplaceItems.id, id));
+  return true;
+}
+
+// Ratings
+export async function createRating(data: InsertMarketplaceRating): Promise<MarketplaceRating | null> {
+  const db = await getDb();
+  if (!db) return null;
+  // Check if user already rated this item
+  const [existing] = await db.select().from(marketplaceRatings)
+    .where(and(eq(marketplaceRatings.itemId, data.itemId), eq(marketplaceRatings.userId, data.userId)));
+  
+  if (existing) {
+    // Update existing rating
+    await db.update(marketplaceRatings).set({ rating: data.rating, review: data.review }).where(eq(marketplaceRatings.id, existing.id));
+    const [updated] = await db.select().from(marketplaceRatings).where(eq(marketplaceRatings.id, existing.id));
+    return updated || null;
+  }
+  
+  const [result] = await db.insert(marketplaceRatings).values(data).$returningId();
+  const [rating] = await db.select().from(marketplaceRatings).where(eq(marketplaceRatings.id, result.id));
+  return rating || null;
+}
+
+export async function getItemRatings(itemId: number): Promise<MarketplaceRating[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(marketplaceRatings)
+    .where(eq(marketplaceRatings.itemId, itemId))
+    .orderBy(desc(marketplaceRatings.createdAt));
+}
+
+export async function recalculateItemRating(itemId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const ratings = await db.select().from(marketplaceRatings).where(eq(marketplaceRatings.itemId, itemId));
+  const totalRatings = ratings.length;
+  const avgRating = totalRatings > 0 ? ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings : 0;
+  
+  // Recalculate ranking score: 40% AI score + 30% rating + 30% popularity
+  const [item] = await db.select().from(marketplaceItems).where(eq(marketplaceItems.id, itemId));
+  if (item) {
+    const aiScore = (item.aiInspectorScore || 0) / 100; // normalize to 0-1
+    const ratingScore = avgRating / 5; // normalize to 0-1
+    const popularityScore = Math.min((item.totalDownloads + item.totalViews * 0.1) / 100, 1); // normalize
+    const rankingScore = (aiScore * 0.4 + ratingScore * 0.3 + popularityScore * 0.3) * 100;
+    
+    await db.update(marketplaceItems).set({
+      averageRating: avgRating.toFixed(2),
+      totalRatings,
+      rankingScore: rankingScore.toFixed(4),
+    }).where(eq(marketplaceItems.id, itemId));
+  }
+}
+
+// Downloads tracking
+export async function recordDownload(itemId: number, userId: number, format: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(marketplaceDownloads).values({ itemId, userId, format });
+  await db.update(marketplaceItems).set({
+    totalDownloads: sql`${marketplaceItems.totalDownloads} + 1`,
+  }).where(eq(marketplaceItems.id, itemId));
+}
+
+export async function incrementItemViews(itemId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(marketplaceItems).set({
+    totalViews: sql`${marketplaceItems.totalViews} + 1`,
+  }).where(eq(marketplaceItems.id, itemId));
+}
+
+export async function getUserMarketplaceItems(userId: number): Promise<MarketplaceItem[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(marketplaceItems)
+    .where(eq(marketplaceItems.publishedBy, userId))
+    .orderBy(desc(marketplaceItems.createdAt));
+}
+
+export async function getMarketplaceStats(): Promise<{
+  totalItems: number;
+  totalDownloads: number;
+  totalContributors: number;
+  topSubjects: Array<{ subject: string; count: number }>;
+}> {
+  const db = await getDb();
+  if (!db) return { totalItems: 0, totalDownloads: 0, totalContributors: 0, topSubjects: [] };
+  
+  const [itemCount] = await db.select({ value: count() }).from(marketplaceItems).where(eq(marketplaceItems.status, "approved"));
+  const allItems = await db.select().from(marketplaceItems).where(eq(marketplaceItems.status, "approved"));
+  const totalDownloads = allItems.reduce((sum, item) => sum + item.totalDownloads, 0);
+  const contributors = new Set(allItems.map(item => item.publishedBy));
+  
+  // Top subjects
+  const subjectMap: Record<string, number> = {};
+  allItems.forEach(item => {
+    subjectMap[item.subject] = (subjectMap[item.subject] || 0) + 1;
+  });
+  const topSubjects = Object.entries(subjectMap)
+    .map(([subject, count]) => ({ subject, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  
+  return {
+    totalItems: itemCount?.value || 0,
+    totalDownloads,
+    totalContributors: contributors.size,
+    topSubjects,
+  };
+}
