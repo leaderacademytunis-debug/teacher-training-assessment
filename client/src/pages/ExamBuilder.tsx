@@ -287,8 +287,20 @@ export default function ExamBuilder() {
     if (userSchoolLogo && !schoolLogo) setSchoolLogo(userSchoolLogo);
   }, [userSchoolLogo]);
 
+  // Show loading spinner while permissions are loading
+  if (permLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm">جارٍ التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
   // ── EARLY RETURN FOR LOCKED FEATURE (after all hooks) ──
-  if (!permLoading && !hasEdugpt && !isAdmin) {
+  if (!hasEdugpt && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
         <LockedFeature requiredService="accessEdugpt" featureName="بناء الاختبار">

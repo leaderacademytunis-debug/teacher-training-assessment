@@ -2011,3 +2011,13 @@
 - [x] Nettoyer les liens redondants du menu desktop
 - [x] Mettre à jour le menu mobile en conséquence
 - [x] Tester et checkpoint
+
+## Bug Squashing Session (from video analysis)
+- [x] FIX: /assistant page crashes with React error #310 (useSyncExternalStore)
+- [x] FIX: /inspector page crashes with React error #300
+- [x] FIX: /exam-builder shows blank page or paywall for admin user
+- [x] FIX: Admin/owner should bypass all paywalls
+- [x] AUDIT: Check browser console logs for silent errors on all pages
+- [x] AUDIT: RTL alignment issues across pages
+- [x] AUDIT: Responsive design on mobile screens
+- [x] VERIFY: All navigation links point to correct routes

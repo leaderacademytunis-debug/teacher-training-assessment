@@ -140,17 +140,6 @@ function formatFileSize(bytes: number): string {
 
 export default function SmartInspector() {
   const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
-
-  if (!permLoading && !hasEdugpt && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-        <LockedFeature requiredService="accessEdugpt" featureName="المتفقد الذكي">
-          <div />
-        </LockedFeature>
-      </div>
-    );
-  }
-
   const [activeTab, setActiveTab] = useState<TabId>("lesson");
   const [inputMode, setInputMode] = useState<InputMode>("text");
   const [documentText, setDocumentText] = useState("");
@@ -391,6 +380,29 @@ export default function SmartInspector() {
     setUploadedFile(null);
     setDocumentText("");
     setError(null);
+  }
+
+  // Show loading spinner while permissions are loading
+  if (permLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm">جارٍ التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show locked state for non-subscribers (admin always has access)
+  if (!hasEdugpt && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <LockedFeature requiredService="accessEdugpt" featureName="المتفقد الذكي">
+          <div />
+        </LockedFeature>
+      </div>
+    );
   }
 
   return (

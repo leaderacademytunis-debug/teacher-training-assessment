@@ -199,18 +199,6 @@ const PREDEFINED_TAGS = [
 
 export default function EduGPTAssistantEnhanced() {
   const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
-
-  // Show locked state for non-subscribers (admin always has access)
-  if (!permLoading && !hasEdugpt && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-        <LockedFeature requiredService="accessEdugpt" featureName="EDUGPT - المساعد التربوي الذكي">
-          <div />
-        </LockedFeature>
-      </div>
-    );
-  }
-
   const [, navigate] = useLocation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -798,6 +786,29 @@ export default function EduGPTAssistantEnhanced() {
     if (days < 7) return `منذ ${days} أيام`;
     return date.toLocaleDateString("ar-TN");
   };
+
+  // Show loading spinner while permissions are loading
+  if (permLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-gray-500 text-sm">جارٍ التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show locked state for non-subscribers (admin always has access)
+  if (!hasEdugpt && !isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
+        <LockedFeature requiredService="accessEdugpt" featureName="EDUGPT - المساعد التربوي الذكي">
+          <div />
+        </LockedFeature>
+      </div>
+    );
+  }
 
   return (
     <>

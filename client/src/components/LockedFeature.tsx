@@ -43,6 +43,9 @@ export function LockedFeature({ requiredService, children, featureName }: Locked
   // If loading, show children (optimistic)
   if (isLoading || !user) return <>{children}</>;
 
+  // Admin users always have full access
+  if (user?.role === 'admin') return <>{children}</>;
+
   // Check if user has access
   const hasAccess = permissions?.[requiredService] || permissions?.accessFullBundle;
 
