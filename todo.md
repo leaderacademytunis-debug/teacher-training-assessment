@@ -2005,3 +2005,9 @@
 - [x] Update navigation: /jobs visible for all authenticated users, /admin/partners for admins
 - [x] Write vitest tests for all new Career Hub features
 - [x] Generate comprehensive Platform Audit Whitepaper (modules, health, SWOT, Circle of Value)
+
+## Amélioration du menu principal - Regroupement admin
+- [x] Regrouper Admin, Gestion formations et Console dans un seul dropdown "الإدارة"
+- [x] Nettoyer les liens redondants du menu desktop
+- [x] Mettre à jour le menu mobile en conséquence
+- [x] Tester et checkpoint

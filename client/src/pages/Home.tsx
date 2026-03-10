@@ -56,8 +56,6 @@ const NAV_LINKS: { href: string; labelAr: string; labelFr: string; labelEn: stri
   { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false, authOnly: false, icon: Megaphone },
   { href: "/contact", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false, authOnly: false, icon: Info },
   { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false, authOnly: false, icon: DollarSign },
-  { href: "/dashboard", labelAr: "لوحة التحكم بالدورات", labelFr: "Gestion formations", labelEn: "Course Dashboard", adminOnly: false, authOnly: true, icon: LayoutDashboard },
-  { href: "/admin", labelAr: "لوحة الإدارة", labelFr: "Admin", labelEn: "Admin", adminOnly: true, authOnly: false, icon: Settings },
 ];
 
 const FEATURES = [
@@ -443,23 +441,27 @@ function NewsletterSection() {
 }
 
 // Admin Console Dropdown for desktop nav
-function AdminConsoleDropdown({ language, t, location }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; location: string }) {
-  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000 });
-  const pendingCount = pendingCountQuery.data?.count || 0;
+function AdminConsoleDropdown({ language, t, location, isAdmin }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; location: string; isAdmin: boolean }) {
+  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000, enabled: isAdmin });
+  const pendingCount = isAdmin ? (pendingCountQuery.data?.count || 0) : 0;
 
   const ADMIN_LINKS = [
-    { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion partenaires", labelEn: "Partner Management", icon: Building2, descAr: "اعتماد ورفض طلبات المدارس الشريكة", descFr: "Approuver/rejeter les demandes d'écoles", descEn: "Approve/reject school partner requests" },
-    { href: "/admin", labelAr: "لوحة الإدارة العامة", labelFr: "Tableau de bord admin", labelEn: "Admin Dashboard", icon: Settings, descAr: "إدارة المستخدمين والدورات والإعدادات", descFr: "Gérer utilisateurs, cours et paramètres", descEn: "Manage users, courses and settings" },
-    { href: "/managerial-dashboard", labelAr: "التحليلات الإدارية", labelFr: "Analyses managériales", labelEn: "Managerial Analytics", icon: BarChart3, descAr: "تقارير الأداء والإحصائيات التفصيلية", descFr: "Rapports de performance et statistiques", descEn: "Performance reports and statistics" },
+    { href: "/dashboard", labelAr: "لوحة التحكم بالدورات", labelFr: "Gestion des formations", labelEn: "Course Management", icon: LayoutDashboard, descAr: "إدارة الدورات والمشاركين والامتحانات", descFr: "Gérer formations, participants et examens", descEn: "Manage courses, participants and exams", section: "general" },
+    { href: "/admin", labelAr: "لوحة الإدارة العامة", labelFr: "Administration générale", labelEn: "General Admin", icon: Settings, descAr: "إدارة المستخدمين والإعدادات العامة", descFr: "Gérer utilisateurs et paramètres", descEn: "Manage users and settings", section: "admin" },
+    { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion des partenaires", labelEn: "Partner Management", icon: Building2, descAr: "اعتماد ورفض طلبات المدارس الشريكة", descFr: "Approuver/rejeter les demandes d'écoles", descEn: "Approve/reject school partner requests", section: "admin" },
+    { href: "/managerial-dashboard", labelAr: "التحليلات والإحصائيات", labelFr: "Analyses & Statistiques", labelEn: "Analytics & Statistics", icon: BarChart3, descAr: "تقارير الأداء والإحصائيات التفصيلية", descFr: "Rapports de performance et statistiques", descEn: "Performance reports and statistics", section: "admin" },
   ];
+
+  const generalLinks = ADMIN_LINKS.filter(l => l.section === "general");
+  const adminLinks = ADMIN_LINKS.filter(l => l.section === "admin");
 
   return (
     <div className="relative group/admin">
       <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-        ['/admin', '/admin/partners', '/managerial-dashboard'].some(p => location.startsWith(p)) ? "text-white bg-white/15" : "text-red-200 hover:text-white hover:bg-white/10"
-      }`} style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)" }}>
-        <Shield className="w-4 h-4 text-red-300" />
-        {t("وحدة التحكم", "Console", "Console")}
+        ['/admin', '/admin/partners', '/managerial-dashboard', '/dashboard'].some(p => location === p || location.startsWith(p + '/')) ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+      }`} style={{ background: "rgba(30,64,175,0.25)", border: "1px solid rgba(96,165,250,0.3)" }}>
+        <Settings className="w-4 h-4 text-blue-200" />
+        {t("الإدارة", "Administration", "Management")}
         {pendingCount > 0 && (
           <span className="relative flex h-5 w-5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -468,28 +470,54 @@ function AdminConsoleDropdown({ language, t, location }: { language: AppLanguage
             </span>
           </span>
         )}
-        <ChevronDown className="w-3.5 h-3.5 text-red-300 transition-transform group-hover/admin:rotate-180" />
+        <ChevronDown className="w-3.5 h-3.5 text-blue-200 transition-transform group-hover/admin:rotate-180" />
       </button>
       {/* Hover dropdown */}
-      <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "300px" }}>
+      <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
         <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
-          <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #991B1B, #DC2626)" }}>
+          <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
             <p className="text-white font-bold text-sm flex items-center gap-2">
-              <Shield className="w-4 h-4 text-red-200" />
-              {t("وحدة التحكم الإدارية", "Console d'administration", "Admin Console")}
+              <Settings className="w-4 h-4 text-orange-300" />
+              {t("لوحة الإدارة", "Panneau d'administration", "Admin Panel")}
               {pendingCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-red-600">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-400 text-white">
                   {pendingCount} {t("طلب معلق", "en attente", "pending")}
                 </span>
               )}
             </p>
           </div>
-          {ADMIN_LINKS.map((link, idx) => {
+          {/* General section */}
+          {generalLinks.map((link) => {
+            const IconComp = link.icon;
+            return (
+              <Link key={link.href} href={link.href}>
+                <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                    <IconComp className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-gray-900">{language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{language === "fr" ? link.descFr : language === "en" ? link.descEn : link.descAr}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+
+          {isAdmin && adminLinks.length > 0 && (
+            <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Shield className="w-3 h-3" />
+                {t("إدارة متقدمة", "Administration avancée", "Advanced Admin")}
+              </p>
+            </div>
+          )}
+          {isAdmin && adminLinks.map((link, idx, arr) => {
             const IconComp = link.icon;
             const isPartners = link.href === "/admin/partners";
             return (
               <Link key={link.href} href={link.href}>
-                <div className={`flex items-start gap-3 px-4 py-3 hover:bg-red-50 cursor-pointer transition-colors ${idx < ADMIN_LINKS.length - 1 ? "border-b border-gray-50" : ""}`}>
+                <div className={`flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${idx < arr.length - 1 ? "border-b border-gray-50" : ""}`}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: isPartners ? "linear-gradient(135deg, #DC2626, #EF4444)" : "linear-gradient(135deg, #1A237E, #1565C0)" }}>
                     <IconComp className="w-4 h-4 text-white" />
                   </div>
@@ -497,7 +525,7 @@ function AdminConsoleDropdown({ language, t, location }: { language: AppLanguage
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-sm text-gray-900">{language === "fr" ? link.labelFr : language === "en" ? link.labelEn : link.labelAr}</p>
                       {isPartners && pendingCount > 0 && (
-                        <span className="flex h-2.5 w-2.5">
+                        <span className="relative flex h-2.5 w-2.5">
                           <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-red-400 opacity-75" />
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                         </span>
@@ -516,15 +544,17 @@ function AdminConsoleDropdown({ language, t, location }: { language: AppLanguage
 }
 
 // Admin mobile link with red dot badge
-function AdminMobileLink({ setMobileMenuOpen, location, language, t }: { setMobileMenuOpen: (v: boolean) => void; location: string; language: AppLanguage; t: (ar: string, fr: string, en: string) => string }) {
-  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000 });
-  const pendingCount = pendingCountQuery.data?.count || 0;
+function AdminMobileLink({ setMobileMenuOpen, location, language, t, isAdmin }: { setMobileMenuOpen: (v: boolean) => void; location: string; language: AppLanguage; t: (ar: string, fr: string, en: string) => string; isAdmin: boolean }) {
+  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000, enabled: isAdmin });
+  const pendingCount = isAdmin ? (pendingCountQuery.data?.count || 0) : 0;
 
-  const links = [
-    { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion partenaires", labelEn: "Partner Management", icon: Building2 },
-    { href: "/admin", labelAr: "لوحة الإدارة العامة", labelFr: "Tableau de bord admin", labelEn: "Admin Dashboard", icon: Settings },
-    { href: "/managerial-dashboard", labelAr: "التحليلات الإدارية", labelFr: "Analyses managériales", labelEn: "Managerial Analytics", icon: BarChart3 },
+  const allLinks = [
+    { href: "/dashboard", labelAr: "لوحة التحكم بالدورات", labelFr: "Gestion des formations", labelEn: "Course Management", icon: LayoutDashboard, adminOnly: false },
+    { href: "/admin", labelAr: "لوحة الإدارة العامة", labelFr: "Administration générale", labelEn: "General Admin", icon: Settings, adminOnly: true },
+    { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion des partenaires", labelEn: "Partner Management", icon: Building2, adminOnly: true },
+    { href: "/managerial-dashboard", labelAr: "التحليلات والإحصائيات", labelFr: "Analyses & Statistiques", labelEn: "Analytics & Statistics", icon: BarChart3, adminOnly: true },
   ];
+  const links = allLinks.filter(l => !l.adminOnly || isAdmin);
 
   return (
     <>
@@ -789,9 +819,9 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Admin Console Dropdown - admin only */}
-              {user?.role === "admin" && (
-                <AdminConsoleDropdown language={language} t={t} location={location} />
+              {/* Admin/Management Dropdown - visible for authenticated users */}
+              {user && (
+                <AdminConsoleDropdown language={language} t={t} location={location} isAdmin={user.role === 'admin'} />
               )}
             </nav>
 
@@ -1000,17 +1030,17 @@ export default function Home() {
                   </div>
                 </>
               )}
-              {/* Admin Console section in mobile */}
-              {user?.role === "admin" && (
+              {/* Management section in mobile */}
+              {user && (
                 <>
                   <div className="border-t border-white/10 my-2" />
                   <div className="px-4 py-2">
-                    <p className="text-red-300 font-bold text-xs flex items-center gap-2 mb-2">
-                      <Shield className="w-3.5 h-3.5" />
-                      {t("وحدة التحكم الإدارية", "Console Admin", "Admin Console")}
+                    <p className="text-blue-200 font-bold text-xs flex items-center gap-2 mb-2">
+                      <Settings className="w-3.5 h-3.5" />
+                      {t("الإدارة", "Administration", "Management")}
                     </p>
                     <div className="space-y-1 mr-4">
-                      <AdminMobileLink setMobileMenuOpen={setMobileMenuOpen} location={location} language={language} t={t} />
+                      <AdminMobileLink setMobileMenuOpen={setMobileMenuOpen} location={location} language={language} t={t} isAdmin={user?.role === 'admin'} />
                     </div>
                   </div>
                 </>
