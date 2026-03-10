@@ -316,6 +316,13 @@
       "when": 1773127035561,
       "tag": "0044_early_hercules",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "5",
+      "when": 1773128873299,
+      "tag": "0045_quick_the_watchers",
+      "breakpoints": true
     }
   ]
 }

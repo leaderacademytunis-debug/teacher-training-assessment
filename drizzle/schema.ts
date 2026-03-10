@@ -1346,3 +1346,44 @@ export const aiVideoTeasers = mysqlTable("ai_video_teasers", {
 });
 export type AiVideoTeaser = typeof aiVideoTeasers.$inferSelect;
 export type InsertAiVideoTeaser = typeof aiVideoTeasers.$inferInsert;
+
+// ===== CONNECTION REQUESTS (طلبات التوظيف - Career Hub) =====
+export const connectionRequests = mysqlTable("connection_requests", {
+  id: int("id").primaryKey().autoincrement(),
+  teacherUserId: int("teacherUserId").notNull(), // FK to users - the teacher being contacted
+  // Requester info
+  requesterName: varchar("requesterName", { length: 255 }).notNull(),
+  requesterEmail: varchar("requesterEmail", { length: 320 }).notNull(),
+  requesterPhone: varchar("requesterPhone", { length: 50 }),
+  requesterOrganization: varchar("requesterOrganization", { length: 255 }),
+  requesterRole: varchar("requesterRole", { length: 100 }),
+  message: text("message").notNull(),
+  // Status flow: pending -> teacher approves/rejects -> if approved, contact info revealed
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  teacherResponse: text("teacherResponse"),
+  contactInfoRevealed: boolean("contactInfoRevealed").default(false).notNull(),
+  teacherNotifiedAt: timestamp("teacherNotifiedAt"),
+  adminNotifiedAt: timestamp("adminNotifiedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ConnectionRequest = typeof connectionRequests.$inferSelect;
+export type InsertConnectionRequest = typeof connectionRequests.$inferInsert;
+
+// ===== GOLDEN SAMPLES (العينات الذهبية - Featured Portfolio Items) =====
+export const goldenSamples = mysqlTable("golden_samples", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  itemType: mysqlEnum("itemType", ["lesson_plan", "exam", "drama_script", "digitized_doc", "marketplace_item"]).notNull(),
+  itemId: int("itemId").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  subject: varchar("subject", { length: 100 }),
+  grade: varchar("grade", { length: 50 }),
+  thumbnailUrl: text("thumbnailUrl"),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  isVisible: boolean("isVisible").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type GoldenSample = typeof goldenSamples.$inferSelect;
+export type InsertGoldenSample = typeof goldenSamples.$inferInsert;

@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -10156,5 +10156,235 @@ ${input.lessonContent}
         return { trending, forYou, colleagues };
       }),
   }),
+  // ===== CAREER HUB (مركز التوظيف المهني) =====
+  careerHub: router({
+    // Get showcase profile by slug (public - no auth)
+    getShowcase: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const findPortfolio = async (condition: any) => {
+          const [result] = await database.select({
+            portfolio: teacherPortfolios,
+            userName: users.name,
+            arabicName: users.arabicName,
+            schoolName: users.schoolName,
+            firstNameAr: users.firstNameAr,
+            lastNameAr: users.lastNameAr,
+          }).from(teacherPortfolios)
+            .innerJoin(users, eq(teacherPortfolios.userId, users.id))
+            .where(and(condition, eq(teacherPortfolios.isPublic, true)))
+            .limit(1);
+          return result;
+        };
+        let result = await findPortfolio(eq(teacherPortfolios.publicSlug, input.slug));
+        if (!result) result = await findPortfolio(eq(teacherPortfolios.publicToken, input.slug));
+        if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "الملف المهني غير موجود أو غير عام" });
+        return await buildShowcaseData(database, result);
+      }),
+    // Generate/update public slug
+    updateSlug: protectedProcedure
+      .input(z.object({ slug: z.string().min(3).max(50).regex(/^[a-zA-Z0-9-]+$/) }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const [existing] = await database.select({ id: teacherPortfolios.id })
+          .from(teacherPortfolios)
+          .where(and(eq(teacherPortfolios.publicSlug, input.slug), sql`${teacherPortfolios.userId} != ${ctx.user.id}`))
+          .limit(1);
+        if (existing) throw new TRPCError({ code: "CONFLICT", message: "هذا الرابط مستخدم بالفعل. جرّب رابطاً آخر." });
+        await db.getOrCreatePortfolio(ctx.user.id);
+        await db.updatePortfolio(ctx.user.id, { publicSlug: input.slug });
+        return { slug: input.slug };
+      }),
+    // Auto-generate slug from name
+    generateSlug: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = ctx.user;
+      const nameParts: string[] = [];
+      if (user.firstNameFr) nameParts.push(user.firstNameFr.toLowerCase());
+      if (user.lastNameFr) nameParts.push(user.lastNameFr.toLowerCase());
+      if (nameParts.length === 0 && user.name) nameParts.push(...user.name.toLowerCase().split(/\s+/).filter(Boolean));
+      let baseSlug = nameParts.join("-").replace(/[^a-z0-9-]/g, "") || `teacher-${ctx.user.id}`;
+      const database = await getDb();
+      if (!database) return { slug: baseSlug };
+      let slug = baseSlug;
+      let attempt = 0;
+      while (true) {
+        const [ex] = await database.select({ id: teacherPortfolios.id }).from(teacherPortfolios)
+          .where(and(eq(teacherPortfolios.publicSlug, slug), sql`${teacherPortfolios.userId} != ${ctx.user.id}`))
+          .limit(1);
+        if (!ex) break;
+        attempt++;
+        slug = `${baseSlug}-${attempt}`;
+      }
+      await db.getOrCreatePortfolio(ctx.user.id);
+      await db.updatePortfolio(ctx.user.id, { publicSlug: slug });
+      return { slug };
+    }),
+    // Submit connection request (public - no auth required)
+    submitConnectionRequest: publicProcedure
+      .input(z.object({
+        teacherSlug: z.string(),
+        requesterName: z.string().min(2),
+        requesterEmail: z.string().email(),
+        requesterPhone: z.string().optional(),
+        requesterOrganization: z.string().optional(),
+        requesterRole: z.string().optional(),
+        message: z.string().min(10),
+      }))
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const [portfolio] = await database.select({ userId: teacherPortfolios.userId, isPublic: teacherPortfolios.isPublic })
+          .from(teacherPortfolios)
+          .where(or(eq(teacherPortfolios.publicSlug, input.teacherSlug), eq(teacherPortfolios.publicToken, input.teacherSlug)))
+          .limit(1);
+        if (!portfolio || !portfolio.isPublic) throw new TRPCError({ code: "NOT_FOUND", message: "الملف المهني غير موجود" });
+        await database.insert(connectionRequests).values({
+          teacherUserId: portfolio.userId,
+          requesterName: input.requesterName,
+          requesterEmail: input.requesterEmail,
+          requesterPhone: input.requesterPhone || null,
+          requesterOrganization: input.requesterOrganization || null,
+          requesterRole: input.requesterRole || null,
+          message: input.message,
+          status: "pending",
+          contactInfoRevealed: false,
+        });
+        await database.insert(notifications).values({
+          userId: portfolio.userId,
+          titleAr: "طلب توظيف جديد",
+          messageAr: `لديك طلب اتصال جديد من ${input.requesterName} (${input.requesterOrganization || "غير محدد"})`,
+          type: "enrollment_request",
+          isRead: false,
+        });
+        return { success: true, message: "تم إرسال طلب الاتصال بنجاح. سيتم إعلامك عند رد المعلم." };
+      }),
+    // Get my connection requests (teacher side)
+    getMyConnectionRequests: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      return database.select().from(connectionRequests)
+        .where(eq(connectionRequests.teacherUserId, ctx.user.id))
+        .orderBy(desc(connectionRequests.createdAt));
+    }),
+    // Respond to connection request
+    respondToRequest: protectedProcedure
+      .input(z.object({
+        requestId: z.number(),
+        action: z.enum(["approved", "rejected"]),
+        response: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const [request] = await database.select().from(connectionRequests)
+          .where(and(eq(connectionRequests.id, input.requestId), eq(connectionRequests.teacherUserId, ctx.user.id)))
+          .limit(1);
+        if (!request) throw new TRPCError({ code: "NOT_FOUND" });
+        await database.update(connectionRequests)
+          .set({ status: input.action, teacherResponse: input.response || null, contactInfoRevealed: input.action === "approved" })
+          .where(eq(connectionRequests.id, input.requestId));
+        return { success: true };
+      }),
+    // Get golden samples for a user
+    getGoldenSamples: publicProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        const database = await getDb();
+        if (!database) return [];
+        return database.select().from(goldenSamples)
+          .where(and(eq(goldenSamples.userId, input.userId), eq(goldenSamples.isVisible, true)))
+          .orderBy(asc(goldenSamples.displayOrder));
+      }),
+    // Add golden sample
+    addGoldenSample: protectedProcedure
+      .input(z.object({
+        itemType: z.enum(["lesson_plan", "exam", "drama_script", "digitized_doc", "marketplace_item"]),
+        itemId: z.number(),
+        title: z.string(),
+        description: z.string().optional(),
+        subject: z.string().optional(),
+        grade: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const [countResult] = await database.select({ count: count() }).from(goldenSamples).where(eq(goldenSamples.userId, ctx.user.id));
+        if ((countResult?.count || 0) >= 12) throw new TRPCError({ code: "BAD_REQUEST", message: "الحد الأقصى 12 عينة ذهبية" });
+        await database.insert(goldenSamples).values({
+          userId: ctx.user.id, itemType: input.itemType, itemId: input.itemId,
+          title: input.title, description: input.description || null,
+          subject: input.subject || null, grade: input.grade || null,
+          displayOrder: (countResult?.count || 0) + 1,
+        });
+        return { success: true };
+      }),
+    // Remove golden sample
+    removeGoldenSample: protectedProcedure
+      .input(z.object({ sampleId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await database.delete(goldenSamples).where(and(eq(goldenSamples.id, input.sampleId), eq(goldenSamples.userId, ctx.user.id)));
+        return { success: true };
+      }),
+  }),
 });
+
+// Helper: Build showcase data for public profile
+async function buildShowcaseData(database: any, result: any) {
+  const portfolio = result.portfolio;
+  const userId = portfolio.userId;
+  const displayName = result.arabicName || (result.firstNameAr && result.lastNameAr ? `${result.firstNameAr} ${result.lastNameAr}` : result.userName) || "معلم";
+  const stats = await db.computePortfolioStats(userId);
+  // Skill radar
+  const subjectExpertise: Record<string, number> = {};
+  const sheetsData = await database.select({ subject: pedagogicalSheets.subject }).from(pedagogicalSheets).where(eq(pedagogicalSheets.createdBy, userId)).limit(200);
+  for (const s of sheetsData) { if (s.subject) subjectExpertise[s.subject] = (subjectExpertise[s.subject] || 0) + 2; }
+  const examsData = await database.select({ subject: teacherExams.subject }).from(teacherExams).where(eq(teacherExams.createdBy, userId)).limit(200);
+  for (const e of examsData) { if (e.subject) subjectExpertise[e.subject] = (subjectExpertise[e.subject] || 0) + 3; }
+  const digiDocs = await database.select({ subject: digitizedDocuments.subject, status: digitizedDocuments.status }).from(digitizedDocuments).where(eq(digitizedDocuments.userId, userId)).limit(200);
+  for (const d of digiDocs) { if (d.subject) subjectExpertise[d.subject] = (subjectExpertise[d.subject] || 0) + (d.status === "formatted" || d.status === "saved" ? 4 : 1); }
+  const mItems = await database.select({ subject: marketplaceItems.subject, status: marketplaceItems.status }).from(marketplaceItems).where(eq(marketplaceItems.publishedBy, userId)).limit(200);
+  for (const m of mItems) { if (m.subject && m.status === "approved") subjectExpertise[m.subject] = (subjectExpertise[m.subject] || 0) + 5; }
+  const totalScore = Object.values(subjectExpertise).reduce((s, v) => s + v, 0);
+  let level = "مبتدئ";
+  if (totalScore >= 100) level = "خبير متميز";
+  else if (totalScore >= 60) level = "خبير";
+  else if (totalScore >= 30) level = "متقدم";
+  else if (totalScore >= 10) level = "متوسط";
+  // Verified badge check
+  const [certCount] = await database.select({ count: count() }).from(certificates).where(eq(certificates.userId, userId));
+  const isVerified = (certCount?.count || 0) > 0;
+  // Golden samples
+  const samples = await database.select().from(goldenSamples)
+    .where(and(eq(goldenSamples.userId, userId), eq(goldenSamples.isVisible, true)))
+    .orderBy(asc(goldenSamples.displayOrder));
+  let autoSamples: any[] = [];
+  if (samples.length === 0) {
+    const topItems = await database.select({
+      id: marketplaceItems.id, title: marketplaceItems.title,
+      contentType: marketplaceItems.contentType, subject: marketplaceItems.subject,
+      grade: marketplaceItems.grade, averageRating: marketplaceItems.averageRating,
+    }).from(marketplaceItems)
+      .where(and(eq(marketplaceItems.publishedBy, userId), eq(marketplaceItems.status, "approved")))
+      .orderBy(desc(marketplaceItems.averageRating)).limit(6);
+    autoSamples = topItems.map((item: any) => ({
+      id: item.id, title: item.title,
+      itemType: item.contentType === "lesson_plan" ? "lesson_plan" : item.contentType === "exam" ? "exam" : "marketplace_item",
+      subject: item.subject, grade: item.grade, rating: item.averageRating,
+    }));
+  }
+  return {
+    displayName, schoolName: result.schoolName || portfolio.currentSchool,
+    bio: portfolio.bio, region: portfolio.region, educationLevel: portfolio.educationLevel,
+    specializations: portfolio.specializations, yearsOfExperience: portfolio.yearsOfExperience,
+    stats, subjectExpertise, totalScore, level, isVerified,
+    goldenSamples: samples.length > 0 ? samples : autoSamples,
+    publicSlug: portfolio.publicSlug, publicToken: portfolio.publicToken,
+    userId,
+  };
+}
 export type AppRouter = typeof appRouter;

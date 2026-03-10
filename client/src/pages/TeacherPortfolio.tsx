@@ -16,6 +16,7 @@ import {
   ArrowRight, Loader2, Copy, Check, User, Briefcase,
   MapPin, School, ChevronLeft, BookOpen, TrendingUp,
   Calendar, ExternalLink, Store, Zap, Filter, Target,
+  Inbox, ShieldCheck, Sparkles, Link2,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -674,6 +675,53 @@ export default function TeacherPortfolio() {
                     <ExternalLink className="w-4 h-4" />
                   </Button>
                 </a>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Career Hub Section */}
+        <Card className="border-amber-200 bg-gradient-to-l from-amber-50/50 to-yellow-50/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-600" />
+              مركز التوظيف المهني (Career Hub)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              اجعل ملفك المهني قابلاً للاكتشاف من طرف المدارس الخاصة والمؤسسات التعليمية. صفحة العرض تشمل شارة التحقق، رادار الكفاءات، والعينات الذهبية.
+            </p>
+            {portfolio?.isPublic && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-amber-200">
+                  <Link2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="text-xs text-gray-500 shrink-0">رابط العرض:</span>
+                  <code className="text-xs text-amber-700 flex-1 truncate" dir="ltr">
+                    {window.location.origin}/showcase/{portfolio?.publicSlug || portfolio?.publicToken}
+                  </code>
+                  <a href={`/showcase/${portfolio?.publicSlug || portfolio?.publicToken}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-50">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Button>
+                  </a>
+                </div>
+                <Link href="/connection-requests">
+                  <Button variant="outline" className="w-full gap-2 border-amber-300 text-amber-700 hover:bg-amber-50">
+                    <Inbox className="w-4 h-4" />
+                    إدارة طلبات التوظيف
+                    <ArrowRight className="w-4 h-4 mr-auto" />
+                  </Button>
+                </Link>
+                <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                  <ShieldCheck className="w-4 h-4 text-gray-400 shrink-0" />
+                  <span>درع الخصوصية نشط: معلومات الاتصال مخفية حتى توافق على طلب التواصل</span>
+                </div>
+              </div>
+            )}
+            {!portfolio?.isPublic && (
+              <div className="text-sm text-amber-600 bg-amber-50 rounded-lg p-3">
+                فعّل المشاركة العامة أعلاه لتفعيل مركز التوظيف المهني.
               </div>
             )}
           </CardContent>
