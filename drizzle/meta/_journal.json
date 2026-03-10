@@ -337,6 +337,13 @@
       "when": 1773133844038,
       "tag": "0047_uneven_newton_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "5",
+      "when": 1773137151543,
+      "tag": "0048_stiff_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

@@ -55,6 +55,8 @@ import SchoolPortal from "@/pages/SchoolPortal";
 import AdminPartners from "@/pages/AdminPartners";
 import CareerMessages from "@/pages/CareerMessages";
 import TeacherAnalytics from "@/pages/TeacherAnalytics";
+import JobBoard from "@/pages/JobBoard";
+import MyApplications from "@/pages/MyApplications";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -111,6 +113,8 @@ function Router() {
       <Route path="/admin/partners" component={AdminPartners} />
       <Route path="/career-messages" component={CareerMessages} />
       <Route path="/teacher-analytics" component={TeacherAnalytics} />
+      <Route path="/jobs" component={JobBoard} />
+      <Route path="/my-applications" component={MyApplications} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

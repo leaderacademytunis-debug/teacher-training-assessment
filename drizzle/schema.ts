@@ -1500,3 +1500,37 @@ export const digitalTasks = mysqlTable("digital_tasks", {
 });
 export type DigitalTask = typeof digitalTasks.$inferSelect;
 export type InsertDigitalTask = typeof digitalTasks.$inferInsert;
+
+// ===== JOB APPLICATIONS (طلبات التوظيف) =====
+export const jobApplications = mysqlTable("job_applications", {
+  id: int("id").primaryKey().autoincrement(),
+  jobPostingId: int("jobPostingId").notNull(),
+  teacherUserId: int("teacherUserId").notNull(),
+  schoolId: int("schoolId").notNull(),
+  showcaseLink: varchar("showcaseLink", { length: 500 }), // Teacher's verified showcase link
+  coverMessage: text("coverMessage"), // Optional cover message
+  status: mysqlEnum("status", ["sent", "viewed", "shortlisted", "interviewed", "accepted", "rejected"]).default("sent").notNull(),
+  matchScore: int("matchScore"), // Smart match percentage (0-100)
+  schoolNotes: text("schoolNotes"), // Internal notes from school
+  viewedAt: timestamp("viewedAt"),
+  respondedAt: timestamp("respondedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type JobApplication = typeof jobApplications.$inferSelect;
+export type InsertJobApplication = typeof jobApplications.$inferInsert;
+
+// ===== SMART MATCH NOTIFICATIONS (إشعارات المطابقة الذكية) =====
+export const smartMatchNotifications = mysqlTable("smart_match_notifications", {
+  id: int("id").primaryKey().autoincrement(),
+  teacherUserId: int("teacherUserId").notNull(),
+  jobPostingId: int("jobPostingId").notNull(),
+  matchScore: int("matchScore").notNull(), // Match percentage (0-100)
+  matchDetails: json("matchDetails").$type<{ matchedSkills: string[]; matchedRegion: boolean; matchedLevel: boolean }>(),
+  notificationType: mysqlEnum("notificationType", ["in_app", "email", "both"]).default("both").notNull(),
+  isRead: boolean("isRead").default(false).notNull(),
+  emailSent: boolean("emailSent").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SmartMatchNotification = typeof smartMatchNotifications.$inferSelect;
+export type InsertSmartMatchNotification = typeof smartMatchNotifications.$inferInsert;

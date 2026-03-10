@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -10499,17 +10499,65 @@ ${input.lessonContent}
         applicationDeadline: input.applicationDeadline ? new Date(input.applicationDeadline) : null,
         matchedTeacherIds: matchedIds,
       });
-      if (matchedIds.length > 0) {
-        const { sendEmail } = await import("./emailService");
-        const matchedUsers = await database.select({ id: users.id, email: users.email, arabicName: users.arabicName, name: users.name })
-          .from(users).where(inArray(users.id, matchedIds));
-        for (const teacher of matchedUsers) {
-          const teacherName = teacher.arabicName || teacher.name || "معلم";
-          await sendEmail({
-            to: teacher.email,
-            subject: `فرصة عمل جديدة من ${school.schoolName} - ${input.title}`,
-            html: `<div dir="rtl" style="font-family:Cairo,sans-serif;max-width:600px;margin:0 auto;padding:20px;"><h2 style="color:#1e40af;">فرصة عمل تناسب ملفك المهني</h2><p>مرحباً ${teacherName}،</p><p>نشرت مدرسة <strong>${school.schoolName}</strong> في <strong>${input.region}</strong> عرض عمل يتوافق مع مهاراتك:</p><div style="background:#f0f9ff;padding:15px;border-radius:8px;margin:15px 0;"><h3 style="color:#1e40af;margin:0 0 8px;">${input.title}</h3><p style="margin:4px 0;">المادة: ${input.subject}</p><p style="margin:4px 0;">المنطقة: ${input.region}</p></div><p style="color:#6b7280;font-size:14px;">هذا الإشعار من Leader Academy Career Hub</p></div>`,
-          });
+      // Get the inserted job ID
+      const [insertedJob] = await database.select({ id: jobPostings.id }).from(jobPostings).orderBy(desc(jobPostings.id)).limit(1);
+      const jobId = insertedJob?.id;
+      // Smart Match: find teachers with 90%+ match and send notifications
+      if (jobId) {
+        const allPortfolios = await database.select({
+          userId: teacherPortfolios.userId,
+          region: teacherPortfolios.region,
+          educationLevel: teacherPortfolios.educationLevel,
+          specializations: teacherPortfolios.specializations,
+          subjectBreakdown: teacherPortfolios.subjectBreakdown,
+        }).from(teacherPortfolios).where(eq(teacherPortfolios.isPublic, true)).limit(200);
+        const jobData = { subject: input.subject, region: input.region, grade: input.grade, requiredSkills: input.requiredSkills };
+        const highMatches: { userId: number; score: number; details: any }[] = [];
+        for (const p of allPortfolios) {
+          const score = await calculateMatchScore(database, p.userId, jobData);
+          if (score >= 90) {
+            const matchedSkills = (input.requiredSkills || []).filter((skill: string) => p.specializations?.some((s: string) => s.includes(skill) || skill.includes(s)));
+            highMatches.push({ userId: p.userId, score, details: { matchedSkills, matchedRegion: p.region === input.region, matchedLevel: !!input.grade && p.educationLevel === input.grade } });
+          }
+        }
+        // Create in-app notifications and send emails for 90%+ matches
+        if (highMatches.length > 0) {
+          const { sendEmail } = await import("./emailService");
+          for (const match of highMatches) {
+            await database.insert(smartMatchNotifications).values({
+              teacherUserId: match.userId,
+              jobPostingId: jobId,
+              matchScore: match.score,
+              matchDetails: match.details,
+              notificationType: 'both',
+            });
+            // Send email
+            const [teacher] = await database.select({ email: users.email, arabicName: users.arabicName, name: users.name }).from(users).where(eq(users.id, match.userId));
+            if (teacher?.email) {
+              const teacherName = teacher.arabicName || teacher.name || "معلم";
+              await sendEmail({
+                to: teacher.email,
+                subject: `تطابق ${match.score}%! فرصة عمل من ${school.schoolName}`,
+                html: `<div dir="rtl" style="font-family:Cairo,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#ffffff;"><div style="background:linear-gradient(135deg,#1A237E,#1565C0);padding:20px;border-radius:12px 12px 0 0;text-align:center;"><h1 style="color:#fff;margin:0;font-size:22px;">مطابقة ذكية ${match.score}%</h1><p style="color:#93c5fd;margin:5px 0 0;">Leader Academy Career Hub</p></div><div style="padding:20px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;"><p>مرحباً <strong>${teacherName}</strong>،</p><p>مدرسة <strong>${school.schoolName}</strong> في <strong>${input.region}</strong> تبحث عن خبير في مجالك!</p><div style="background:#f0f9ff;padding:15px;border-radius:8px;margin:15px 0;border-right:4px solid #1e40af;"><h3 style="color:#1e40af;margin:0 0 8px;">${input.title}</h3><p style="margin:4px 0;">المادة: ${input.subject}</p><p style="margin:4px 0;">المنطقة: ${input.region}</p><p style="margin:4px 0;color:#059669;font-weight:bold;">نسبة المطابقة: ${match.score}%</p></div><p style="color:#6b7280;font-size:13px;">سجّل الدخول إلى المنصة لعرض التفاصيل والتقديم.</p></div></div>`,
+              });
+            }
+          }
+        }
+        // Also send basic emails to top 3 matched (existing behavior)
+        if (matchedIds.length > 0) {
+          const { sendEmail } = await import("./emailService");
+          const matchedUsers = await database.select({ id: users.id, email: users.email, arabicName: users.arabicName, name: users.name })
+            .from(users).where(inArray(users.id, matchedIds));
+          for (const teacher of matchedUsers) {
+            const alreadyNotified = highMatches.some(m => m.userId === teacher.id);
+            if (alreadyNotified) continue;
+            const teacherName = teacher.arabicName || teacher.name || "معلم";
+            await sendEmail({
+              to: teacher.email,
+              subject: `فرصة عمل جديدة من ${school.schoolName} - ${input.title}`,
+              html: `<div dir="rtl" style="font-family:Cairo,sans-serif;max-width:600px;margin:0 auto;padding:20px;"><h2 style="color:#1e40af;">فرصة عمل تناسب ملفك المهني</h2><p>مرحباً ${teacherName}،</p><p>نشرت مدرسة <strong>${school.schoolName}</strong> في <strong>${input.region}</strong> عرض عمل يتوافق مع مهاراتك:</p><div style="background:#f0f9ff;padding:15px;border-radius:8px;margin:15px 0;"><h3 style="color:#1e40af;margin:0 0 8px;">${input.title}</h3><p style="margin:4px 0;">المادة: ${input.subject}</p><p style="margin:4px 0;">المنطقة: ${input.region}</p></div><p style="color:#6b7280;font-size:14px;">هذا الإشعار من Leader Academy Career Hub</p></div>`,
+            });
+          }
         }
       }
       return { success: true, matchedCount: matchedIds.length };
@@ -10826,7 +10874,224 @@ ${input.lessonContent}
     }),
   }),
 
+  // ===== JOB BOARD (لوحة عروض العمل العامة) =====
+  jobBoard: router({
+    // List active public job postings
+    listJobs: publicProcedure.input(z.object({
+      subject: z.string().optional(),
+      region: z.string().optional(),
+      contractType: z.string().optional(),
+      page: z.number().default(1),
+    }).optional()).query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) return { jobs: [], total: 0 };
+      const conditions: any[] = [eq(jobPostings.isActive, true)];
+      if (input?.subject) conditions.push(like(jobPostings.subject, `%${input.subject}%`));
+      if (input?.region) conditions.push(eq(jobPostings.region, input.region));
+      if (input?.contractType) conditions.push(eq(jobPostings.contractType, input.contractType as any));
+      const allJobs = await database.select().from(jobPostings).where(and(...conditions)).orderBy(desc(jobPostings.createdAt));
+      const schools = await database.select({ id: partnerSchools.id, schoolName: partnerSchools.schoolName, schoolType: partnerSchools.schoolType, region: partnerSchools.region, logoUrl: partnerSchools.logoUrl, isVerified: partnerSchools.isVerified }).from(partnerSchools);
+      const jobsWithSchool = allJobs.map((j: any) => ({ ...j, school: schools.find((s: any) => s.id === j.schoolId) }));
+      return { jobs: jobsWithSchool, total: allJobs.length };
+    }),
+
+    // Get single job detail
+    getJob: publicProcedure.input(z.object({ jobId: z.number() })).query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const [job] = await database.select().from(jobPostings).where(eq(jobPostings.id, input.jobId));
+      if (!job) throw new TRPCError({ code: 'NOT_FOUND', message: 'العرض غير موجود' });
+      const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.id, job.schoolId));
+      const appCount = await database.select({ cnt: count() }).from(jobApplications).where(eq(jobApplications.jobPostingId, input.jobId));
+      return { ...job, school, applicationCount: appCount[0]?.cnt || 0 };
+    }),
+
+    // Apply for a job - sends teacher's showcase link
+    applyForJob: protectedProcedure.input(z.object({
+      jobId: z.number(),
+      coverMessage: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      // Check if already applied
+      const [existing] = await database.select().from(jobApplications).where(and(eq(jobApplications.jobPostingId, input.jobId), eq(jobApplications.teacherUserId, ctx.user.id)));
+      if (existing) throw new TRPCError({ code: 'CONFLICT', message: 'لقد تقدمت لهذا العرض مسبقاً' });
+      // Get job info
+      const [job] = await database.select().from(jobPostings).where(eq(jobPostings.id, input.jobId));
+      if (!job || !job.isActive) throw new TRPCError({ code: 'NOT_FOUND', message: 'العرض غير متاح' });
+      // Get teacher's portfolio for showcase link
+      const [portfolio] = await database.select().from(teacherPortfolios).where(eq(teacherPortfolios.userId, ctx.user.id));
+      const showcaseLink = portfolio?.publicSlug ? `/showcase/${portfolio.publicSlug}` : portfolio?.publicToken ? `/public-portfolio/${portfolio.publicToken}` : null;
+      // Calculate match score
+      const matchScore = await calculateMatchScore(database, ctx.user.id, job);
+      // Create application
+      await database.insert(jobApplications).values({
+        jobPostingId: input.jobId,
+        teacherUserId: ctx.user.id,
+        schoolId: job.schoolId,
+        showcaseLink,
+        coverMessage: input.coverMessage || null,
+        matchScore,
+        status: 'sent',
+      });
+      return { success: true, matchScore };
+    }),
+
+    // Check if user already applied
+    hasApplied: protectedProcedure.input(z.object({ jobId: z.number() })).query(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) return { applied: false };
+      const [existing] = await database.select().from(jobApplications).where(and(eq(jobApplications.jobPostingId, input.jobId), eq(jobApplications.teacherUserId, ctx.user.id)));
+      return { applied: !!existing, application: existing || null };
+    }),
+  }),
+
+  // ===== APPLICATIONS TRACKER (متتبع الطلبات) =====
+  applications: router({
+    // Teacher: list my applications
+    myApplications: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const apps = await database.select().from(jobApplications).where(eq(jobApplications.teacherUserId, ctx.user.id)).orderBy(desc(jobApplications.createdAt));
+      const jobIds = apps.map((a: any) => a.jobPostingId);
+      if (jobIds.length === 0) return [];
+      const jobs = await database.select().from(jobPostings).where(inArray(jobPostings.id, jobIds));
+      const schoolIds = Array.from(new Set(apps.map((a: any) => a.schoolId)));
+      const schools = schoolIds.length > 0 ? await database.select().from(partnerSchools).where(inArray(partnerSchools.id, schoolIds)) : [];
+      return apps.map((app: any) => ({
+        ...app,
+        job: jobs.find((j: any) => j.id === app.jobPostingId),
+        school: schools.find((s: any) => s.id === app.schoolId),
+      }));
+    }),
+
+    // School: list applications for their jobs
+    schoolApplications: protectedProcedure.input(z.object({ jobId: z.number().optional() })).query(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      // Get school owned by this user
+      const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id));
+      if (!school) return [];
+      const conditions: any[] = [eq(jobApplications.schoolId, school.id)];
+      if (input.jobId) conditions.push(eq(jobApplications.jobPostingId, input.jobId));
+      const apps = await database.select().from(jobApplications).where(and(...conditions)).orderBy(desc(jobApplications.createdAt));
+      const teacherIds = apps.map((a: any) => a.teacherUserId);
+      const teachers = teacherIds.length > 0 ? await database.select({ id: users.id, name: users.name, arabicName: users.arabicName, firstNameAr: users.firstNameAr, lastNameAr: users.lastNameAr }).from(users).where(inArray(users.id, teacherIds)) : [];
+      const jobIds = Array.from(new Set(apps.map((a: any) => a.jobPostingId)));
+      const jobs = jobIds.length > 0 ? await database.select().from(jobPostings).where(inArray(jobPostings.id, jobIds)) : [];
+      return apps.map((app: any) => ({
+        ...app,
+        teacher: teachers.find((t: any) => t.id === app.teacherUserId),
+        job: jobs.find((j: any) => j.id === app.jobPostingId),
+      }));
+    }),
+
+    // School: update application status
+    updateStatus: protectedProcedure.input(z.object({
+      applicationId: z.number(),
+      status: z.enum(['viewed', 'shortlisted', 'interviewed', 'accepted', 'rejected']),
+      notes: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      const [app] = await database.select().from(jobApplications).where(eq(jobApplications.id, input.applicationId));
+      if (!app) throw new TRPCError({ code: 'NOT_FOUND' });
+      // Verify school ownership
+      const [school] = await database.select().from(partnerSchools).where(and(eq(partnerSchools.id, app.schoolId), eq(partnerSchools.userId, ctx.user.id)));
+      if (!school && !['admin', 'trainer', 'supervisor'].includes(ctx.user.role)) throw new TRPCError({ code: 'FORBIDDEN' });
+      const updateData: any = { status: input.status };
+      if (input.status === 'viewed' && !app.viewedAt) updateData.viewedAt = new Date();
+      if (['accepted', 'rejected'].includes(input.status)) updateData.respondedAt = new Date();
+      if (input.notes) updateData.schoolNotes = input.notes;
+      await database.update(jobApplications).set(updateData).where(eq(jobApplications.id, input.applicationId));
+      return { success: true };
+    }),
+
+    // Get application counts for a teacher
+    myCounts: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return { total: 0, sent: 0, viewed: 0, shortlisted: 0, interviewed: 0, accepted: 0, rejected: 0 };
+      const apps = await database.select({ status: jobApplications.status }).from(jobApplications).where(eq(jobApplications.teacherUserId, ctx.user.id));
+      return {
+        total: apps.length,
+        sent: apps.filter((a: any) => a.status === 'sent').length,
+        viewed: apps.filter((a: any) => a.status === 'viewed').length,
+        shortlisted: apps.filter((a: any) => a.status === 'shortlisted').length,
+        interviewed: apps.filter((a: any) => a.status === 'interviewed').length,
+        accepted: apps.filter((a: any) => a.status === 'accepted').length,
+        rejected: apps.filter((a: any) => a.status === 'rejected').length,
+      };
+    }),
+  }),
+
+  // ===== SMART MATCH (المطابقة الذكية) =====
+  smartMatch: router({
+    // Get teacher's smart match notifications
+    myNotifications: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const notifs = await database.select().from(smartMatchNotifications).where(eq(smartMatchNotifications.teacherUserId, ctx.user.id)).orderBy(desc(smartMatchNotifications.createdAt)).limit(50);
+      const jobIds = notifs.map((n: any) => n.jobPostingId);
+      if (jobIds.length === 0) return [];
+      const jobs = await database.select().from(jobPostings).where(inArray(jobPostings.id, jobIds));
+      const schoolIds = Array.from(new Set(jobs.map((j: any) => j.schoolId)));
+      const schools = schoolIds.length > 0 ? await database.select({ id: partnerSchools.id, schoolName: partnerSchools.schoolName, region: partnerSchools.region }).from(partnerSchools).where(inArray(partnerSchools.id, schoolIds)) : [];
+      return notifs.map((n: any) => {
+        const job = jobs.find((j: any) => j.id === n.jobPostingId);
+        return { ...n, job, school: job ? schools.find((s: any) => s.id === job.schoolId) : null };
+      });
+    }),
+
+    // Mark notification as read
+    markRead: protectedProcedure.input(z.object({ notificationId: z.number() })).mutation(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+      await database.update(smartMatchNotifications).set({ isRead: true }).where(and(eq(smartMatchNotifications.id, input.notificationId), eq(smartMatchNotifications.teacherUserId, ctx.user.id)));
+      return { success: true };
+    }),
+
+    // Get unread count
+    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return { count: 0 };
+      const [result] = await database.select({ cnt: count() }).from(smartMatchNotifications).where(and(eq(smartMatchNotifications.teacherUserId, ctx.user.id), eq(smartMatchNotifications.isRead, false)));
+      return { count: result?.cnt || 0 };
+    }),
+  }),
+
 });
+
+// Helper: Calculate match score between teacher and job
+async function calculateMatchScore(database: any, teacherUserId: number, job: any): Promise<number> {
+  const [portfolio] = await database.select().from(teacherPortfolios).where(eq(teacherPortfolios.userId, teacherUserId));
+  if (!portfolio) return 0;
+  let score = 0;
+  let maxScore = 0;
+  // Subject match (40 points)
+  maxScore += 40;
+  const breakdown = portfolio.subjectBreakdown || {};
+  for (const [key] of Object.entries(breakdown)) {
+    if (key.includes(job.subject)) { score += 25; break; }
+  }
+  if (portfolio.specializations?.some((s: string) => s.includes(job.subject))) score += 15;
+  // Region match (25 points)
+  maxScore += 25;
+  if (portfolio.region && portfolio.region === job.region) score += 25;
+  // Education level match (15 points)
+  maxScore += 15;
+  if (job.grade && portfolio.educationLevel) {
+    const gradeMap: Record<string, string> = { "ابتدائي": "primary", "إعدادي": "middle", "ثانوي": "secondary" };
+    if (portfolio.educationLevel === job.grade || portfolio.educationLevel === gradeMap[job.grade]) score += 15;
+  }
+  // Required skills match (20 points)
+  maxScore += 20;
+  if (job.requiredSkills && job.requiredSkills.length > 0 && portfolio.specializations) {
+    const matched = job.requiredSkills.filter((skill: string) => portfolio.specializations.some((s: string) => s.includes(skill) || skill.includes(s)));
+    score += Math.round((matched.length / job.requiredSkills.length) * 20);
+  }
+  return maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+}
+
 // Helper: Smart match teachers for a job postingg
 async function smartMatchTeachers(database: any, subject: string, region: string, grade?: string | null): Promise<number[]> {
   const conditions: any[] = [eq(teacherPortfolios.isPublic, true)];

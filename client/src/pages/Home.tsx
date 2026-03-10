@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2,
+  Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2, Briefcase, FileText,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -721,6 +721,74 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Career Hub Dropdown */}
+              {user && (
+                <div className="relative group/career">
+                  <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                    ['/jobs', '/my-applications', '/showcase', '/my-portfolio', '/school-portal', '/career-messages', '/teacher-analytics'].includes(location) ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+                  }`}>
+                    <Briefcase className="w-4 h-4" />
+                    {t("المسار المهني", "Carri\u00e8re", "Career")}
+                    <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/career:rotate-180" />
+                    {['/jobs', '/my-applications'].includes(location) && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-orange-400 rounded-full" />}
+                  </button>
+                  <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/career:opacity-100 group-hover/career:visible transition-all duration-200 z-50" style={{ minWidth: "300px" }}>
+                    <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
+                      <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                        <p className="text-white font-bold text-sm flex items-center gap-2">
+                          <Briefcase className="w-4 h-4 text-orange-300" />
+                          {t("المسار المهني وفرص العمل", "Carri\u00e8re & Emploi", "Career & Jobs")}
+                        </p>
+                      </div>
+                      <Link href="/jobs">
+                        <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-50">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-blue-600 to-indigo-600">
+                            <Briefcase className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-gray-900">{t("فرص العمل", "Offres d'emploi", "Job Board")}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{t("تصفح عروض العمل في المدارس الشريكة", "Parcourir les offres des \u00e9coles partenaires", "Browse partner school listings")}</p>
+                          </div>
+                        </div>
+                      </Link>
+                      <Link href="/my-applications">
+                        <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-50">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-teal-500 to-emerald-600">
+                            <FileText className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-gray-900">{t("طلباتي", "Mes candidatures", "My Applications")}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{t("تتبع حالة طلبات التوظيف", "Suivre l'\u00e9tat de vos candidatures", "Track application status")}</p>
+                          </div>
+                        </div>
+                      </Link>
+                      <Link href="/showcase">
+                        <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-50">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-purple-500 to-pink-600">
+                            <Users className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-gray-900">{t("دليل الكفاءات", "R\u00e9pertoire des talents", "Talent Directory")}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{t("اكتشف المعلمين المعتمدين", "D\u00e9couvrir les enseignants certifi\u00e9s", "Discover certified teachers")}</p>
+                          </div>
+                        </div>
+                      </Link>
+                      <Link href="/my-portfolio">
+                        <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-amber-500 to-orange-600">
+                            <Star className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm text-gray-900">{t("ملفي المهني", "Mon portfolio", "My Portfolio")}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{t("إدارة ملفك المهني العام", "G\u00e9rer votre profil professionnel", "Manage your public portfolio")}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Admin Console Dropdown - admin only */}
               {user?.role === "admin" && (
                 <AdminConsoleDropdown language={language} t={t} location={location} />
@@ -896,6 +964,42 @@ export default function Home() {
                   })}
                 </div>
               </div>
+              {/* Career Hub section in mobile */}
+              {user && (
+                <>
+                  <div className="border-t border-white/10 my-2" />
+                  <div className="px-4 py-2">
+                    <p className="text-orange-300 font-bold text-xs flex items-center gap-2 mb-2">
+                      <Briefcase className="w-3.5 h-3.5" />
+                      {t("المسار المهني", "Carri\u00e8re", "Career")}
+                    </p>
+                    <div className="space-y-1 mr-4">
+                      {[
+                        { href: "/jobs", icon: Briefcase, labelAr: "فرص العمل", labelFr: "Offres d'emploi", labelEn: "Job Board" },
+                        { href: "/my-applications", icon: FileText, labelAr: "طلباتي", labelFr: "Mes candidatures", labelEn: "My Applications" },
+                        { href: "/showcase", icon: Users, labelAr: "دليل الكفاءات", labelFr: "R\u00e9pertoire", labelEn: "Directory" },
+                        { href: "/my-portfolio", icon: Star, labelAr: "ملفي المهني", labelFr: "Mon portfolio", labelEn: "My Portfolio" },
+                      ].map((item) => {
+                        const CIcon = item.icon;
+                        const isActive = location === item.href;
+                        return (
+                          <Link key={item.href} href={item.href}>
+                            <button
+                              className={`flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+                              }`}
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <CIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-orange-300" : ""}`} />
+                              {language === "fr" ? item.labelFr : language === "en" ? item.labelEn : item.labelAr}
+                            </button>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
               {/* Admin Console section in mobile */}
               {user?.role === "admin" && (
                 <>
