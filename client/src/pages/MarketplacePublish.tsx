@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -64,6 +64,25 @@ export default function MarketplacePublish() {
   const [content, setContent] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [published, setPublished] = useState(false);
+  const [sourceId, setSourceId] = useState<number | undefined>(undefined);
+  const [prefilled, setPrefilled] = useState(false);
+
+  // Pre-fill from URL params (when coming from library pages)
+  useEffect(() => {
+    if (prefilled) return;
+    const params = new URLSearchParams(window.location.search);
+    const pType = params.get("type");
+    const pTitle = params.get("title");
+    const pSubject = params.get("subject");
+    const pGrade = params.get("grade");
+    const pSourceId = params.get("sourceId");
+    if (pType) setContentType(pType);
+    if (pTitle) setTitle(pTitle);
+    if (pSubject) setSubject(pSubject);
+    if (pGrade) setGrade(pGrade);
+    if (pSourceId) setSourceId(Number(pSourceId));
+    if (pType || pTitle) setPrefilled(true);
+  }, [prefilled]);
 
   const publishMutation = trpc.marketplace.publish.useMutation({
     onSuccess: () => {
@@ -92,6 +111,8 @@ export default function MarketplacePublish() {
       trimester: trimester || undefined,
       content,
       tags: tags.length > 0 ? tags : undefined,
+      sourceType: sourceId ? contentType : undefined,
+      sourceId: sourceId || undefined,
     });
   };
 

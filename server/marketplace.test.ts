@@ -197,6 +197,41 @@ describe("marketplace", () => {
     });
   });
 
+  describe("marketplace.featured", () => {
+    it("returns featured items (public)", async () => {
+      const ctx = createPublicContext();
+      const caller = appRouter.createCaller(ctx);
+      const result = await caller.marketplace.featured({ limit: 6 });
+      expect(result).toHaveProperty("items");
+      expect(result).toHaveProperty("total");
+      expect(Array.isArray(result.items)).toBe(true);
+      expect(result.items.length).toBeLessThanOrEqual(6);
+    });
+
+    it("returns featured items with default limit", async () => {
+      const ctx = createPublicContext();
+      const caller = appRouter.createCaller(ctx);
+      const result = await caller.marketplace.featured();
+      expect(result).toHaveProperty("items");
+    });
+  });
+
+  describe("marketplace.quickPublish", () => {
+    it("requires authentication", async () => {
+      const ctx = createPublicContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.marketplace.quickPublish({
+          sourceType: "lesson_plan",
+          sourceId: 1,
+          title: "\u062c\u0630\u0627\u0630\u0629 \u0644\u0644\u0646\u0634\u0631",
+          subject: "\u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0627\u062a",
+          grade: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062e\u0627\u0645\u0633\u0629",
+        })
+      ).rejects.toThrow();
+    });
+  });
+
   describe("marketplace.delete", () => {
     it("allows deleting own content", async () => {
       const ctx = createAuthContext({ id: 1 });

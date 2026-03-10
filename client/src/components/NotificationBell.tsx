@@ -50,7 +50,28 @@ export default function NotificationBell() {
         notification.type === "enrollment_rejected") {
       return `/courses/${notification.relatedId}`;
     }
+    if (notification.type === "marketplace_rating" || 
+        notification.type === "marketplace_download" ||
+        notification.type === "marketplace_review") {
+      return "/marketplace";
+    }
+    if (notification.type === "exam_result") {
+      return "/my-certificates";
+    }
     return "#";
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "marketplace_rating": return "\u2B50";
+      case "marketplace_download": return "\u2B07";
+      case "marketplace_review": return "\uD83D\uDCAC";
+      case "enrollment_approved": return "\u2705";
+      case "enrollment_rejected": return "\u274C";
+      case "enrollment_request": return "\uD83D\uDCE9";
+      case "exam_result": return "\uD83D\uDCCA";
+      default: return "\uD83D\uDD14";
+    }
   };
 
   const handleNotificationClick = (notification: any) => {
@@ -107,7 +128,10 @@ export default function NotificationBell() {
                       className="w-full text-right"
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-semibold text-sm">{notification.titleAr}</h4>
+                        <h4 className="font-semibold text-sm">
+                          <span className="ml-1">{getNotificationIcon(notification.type)}</span>
+                          {notification.titleAr}
+                        </h4>
                         {!notification.isRead && (
                           <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />
                         )}

@@ -106,6 +106,91 @@ const STATS = [
   { value: "2026", labelAr: "متوافق مع البرامج", labelFr: "Conforme aux programmes" },
 ];
 
+function FeaturedContentSection({ t }: { t: (ar: string, fr: string, en: string) => string }) {
+  const featuredQuery = trpc.marketplace.featured.useQuery({ limit: 6 });
+  const featured = featuredQuery.data?.items || [];
+
+  if (featured.length === 0) return null;
+
+  const typeLabels: Record<string, string> = {
+    lesson_plan: "جذاذة",
+    exam: "اختبار",
+    evaluation: "تقييم",
+    drama_script: "نص مسرحي",
+    digitized_doc: "وثيقة مرقمنة",
+    other: "أخرى",
+  };
+
+  return (
+    <section className="py-16 bg-gradient-to-b from-white to-gray-50" dir="rtl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-4" style={{ background: "rgba(255,109,0,0.1)", color: "#FF6D00" }}>
+            <Award className="w-4 h-4" />
+            {t("محتوى الأسبوع", "Contenu de la semaine", "Content of the Week")}
+          </span>
+          <h2 className="text-3xl lg:text-4xl font-black mb-3" style={{ fontFamily: "Cairo, sans-serif", color: "#1A237E" }}>
+            {t("أفضل المحتويات في السوق الذهبي", "Meilleur contenu du march\u00e9", "Top Marketplace Content")}
+          </h2>
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+            {t("محتويات مميزة أنشأها معلمون تونسيون وحازت على أعلى التقييمات", "Contenu cr\u00e9\u00e9 par des enseignants tunisiens", "Top-rated content by Tunisian teachers")}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {featured.map((item: any) => (
+            <Link key={item.id} href="/marketplace">
+              <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer border-0 shadow-md h-full">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "rgba(26,35,126,0.08)", color: "#1A237E" }}>
+                      {typeLabels[item.contentType] || item.contentType}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-bold text-gray-700">{Number(item.averageRating || 0).toFixed(1)}</span>
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-lg mb-2 line-clamp-2" style={{ color: "#1A237E", fontFamily: "Cairo, sans-serif" }}>
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-500 text-sm line-clamp-2 mb-3">
+                    {item.description || item.contentPreview || ""}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>{item.subject} • {item.grade}</span>
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {item.totalDownloads || 0} {t("تحميل", "t\u00e9l\u00e9chargements", "downloads")}
+                    </span>
+                  </div>
+                  {item.contributorName && (
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs text-white font-bold" style={{ background: "#1A237E" }}>
+                        {item.contributorName.charAt(0)}
+                      </div>
+                      <span className="text-xs text-gray-500">{item.contributorName}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+
+        <div className="text-center mt-8">
+          <Link href="/marketplace">
+            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all hover:scale-105" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
+              <Store className="w-5 h-5" />
+              {t("استكشف السوق الذهبي", "Explorer le march\u00e9", "Explore Marketplace")}
+            </button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -867,6 +952,9 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* ===== FEATURED CONTENT OF THE WEEK ===== */}
+      <FeaturedContentSection t={t} />
 
       {/* ===== TESTIMONIALS SECTION ===== */}
       <section className="py-20 bg-gray-50" dir="rtl">

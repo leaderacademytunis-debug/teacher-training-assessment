@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, History, Search, Trash2, Eye, RefreshCw, BookOpen, Calendar, GraduationCap, ChevronLeft, FileText } from "lucide-react";
+import { Loader2, History, Search, Trash2, Eye, RefreshCw, BookOpen, Calendar, GraduationCap, ChevronLeft, FileText, Store } from "lucide-react";
 import { toast } from "sonner";
 
 const LEVEL_LABELS: Record<string, { ar: string; fr: string; en: string }> = {
@@ -272,6 +272,25 @@ export default function LessonHistory() {
                         title={t("إعادة الاستخدام", "Réutiliser", "Reuse")}
                       >
                         <RefreshCw className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-50"
+                        onClick={() => {
+                          const params = new URLSearchParams({
+                            type: "lesson_plan",
+                            title: s.lessonTitle,
+                            subject: s.subject,
+                            grade: s.grade,
+                            level: s.educationLevel,
+                            sourceId: String(s.id),
+                          });
+                          navigate(`/marketplace/publish?${params.toString()}`);
+                        }}
+                        title={t("نشر في السوق", "Publier au marché", "Publish to Market")}
+                      >
+                        <Store className="w-4 h-4" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>

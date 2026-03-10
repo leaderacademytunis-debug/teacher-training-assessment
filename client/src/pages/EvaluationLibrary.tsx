@@ -15,7 +15,7 @@ import {
 import {
   BookMarked, Search, Filter, Trash2, Eye, Download,
   ClipboardCheck, Calendar, BookOpen, Loader2, Plus,
-  FileText, RotateCcw
+  FileText, RotateCcw, Store
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
@@ -399,6 +399,27 @@ export default function EvaluationLibrary() {
                           <Download className="w-3.5 h-3.5 ml-1" />
                         )}
                         Word
+                      </Button>
+
+                      {/* نشر في السوق */}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const params = new URLSearchParams({
+                            type: "evaluation",
+                            title: item.title,
+                            subject: item.subject || "",
+                            grade: item.level || "",
+                            sourceId: String(item.id),
+                          });
+                          navigate(`/marketplace/publish?${params.toString()}`);
+                        }}
+                        className="border-orange-300 text-orange-700 hover:bg-orange-50 h-8 px-3 text-xs"
+                        title="نشر في السوق"
+                      >
+                        <Store className="w-3.5 h-3.5 ml-1" />
+                        نشر
                       </Button>
 
                       {/* حذف */}
