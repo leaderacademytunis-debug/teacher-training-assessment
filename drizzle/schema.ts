@@ -1183,6 +1183,7 @@ export const marketplaceItems = mysqlTable("marketplace_items", {
   // Contributor info (snapshot at publish time)
   contributorName: varchar("contributorName", { length: 255 }),
   contributorSchool: varchar("contributorSchool", { length: 255 }),
+  contributorPortfolioLink: text("contributorPortfolioLink"), // Link to creator's public portfolio
   
   // Ranking metrics
   aiInspectorScore: int("aiInspectorScore"), // 0-100 from AI evaluation
@@ -1240,3 +1241,72 @@ export const marketplaceDownloads = mysqlTable("marketplace_downloads", {
 });
 export type MarketplaceDownload = typeof marketplaceDownloads.$inferSelect;
 export type InsertMarketplaceDownload = typeof marketplaceDownloads.$inferInsert;
+
+
+// ========== Saved Drama Scripts ==========
+export const savedDramaScripts = mysqlTable("saved_drama_scripts", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(), // FK to users
+  
+  // Script metadata
+  lessonTitle: varchar("lessonTitle", { length: 500 }).notNull(),
+  subject: varchar("subject", { length: 100 }).notNull(),
+  grade: varchar("grade", { length: 100 }).notNull(),
+  duration: int("duration").default(10).notNull(),
+  studentCount: int("studentCount").default(25).notNull(),
+  
+  // Generated content
+  scriptData: json("scriptData").$type<{
+    title: string;
+    synopsis: string;
+    duration: string;
+    characters: Array<{ name: string; description: string; keyLines: number; difficulty: string }>;
+    scenes: Array<{
+      number: number;
+      title: string;
+      setting: string;
+      directorNotes: string;
+      dialogue: Array<{ character: string; line: string; action: string }>;
+      audienceInteraction: string;
+    }>;
+    educationalObjectives: string[];
+    props: Array<{ name: string; description: string; cost: string; alternatives: string }>;
+    warmUpActivity: string;
+    debriefQuestions: string[];
+  }>().notNull(),
+  
+  // Mask images (generated via Visual Studio)
+  maskImages: json("maskImages").$type<Array<{
+    characterName: string;
+    imageUrl: string;
+    generatedAt: string;
+  }>>(),
+  
+  // Formative assessment questions
+  assessmentQuestions: json("assessmentQuestions").$type<Array<{
+    question: string;
+    expectedAnswer: string;
+    criteria: string; // مع1, مع2, مع3
+  }>>(),
+  
+  // Role assignments
+  roleAssignments: json("roleAssignments").$type<Array<{
+    studentNumber: number;
+    characterName: string;
+    role: string;
+    tip: string;
+  }>>(),
+  
+  // Export URLs
+  pdfExportUrl: text("pdfExportUrl"),
+  
+  // Status
+  isFavorite: boolean("isFavorite").default(false),
+  isPublished: boolean("isPublished").default(false),
+  marketplaceItemId: int("marketplaceItemId"), // FK to marketplace_items if published
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type SavedDramaScript = typeof savedDramaScripts.$inferSelect;
+export type InsertDramaScript = typeof savedDramaScripts.$inferInsert;

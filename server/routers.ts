@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -9260,6 +9260,216 @@ ${input.lessonContent}
         const fileKey = `drama-scripts/${ctx.user.id}/drama-${Date.now()}.pdf`;
         const { url } = await storagePut(fileKey, Buffer.from(pdfBuffer), "application/pdf");
         return { url, fileName: `${input.lessonTitle}-\u0646\u0635-\u0645\u0633\u0631\u062d\u064a.pdf` };
+      }),
+
+    // Generate character masks using Visual Studio Line Art
+    generateMasks: protectedProcedure
+      .input(z.object({
+        characters: z.array(z.object({
+          name: z.string(),
+          description: z.string(),
+        })),
+        subject: z.string(),
+        lessonTitle: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { generateImage } = await import("./_core/imageGeneration");
+        const masks: Array<{ characterName: string; imageUrl: string; generatedAt: string }> = [];
+        for (const char of input.characters) {
+          const prompt = `Create a simple black and white line art mask template for a character called "${char.name}" (${char.description}) from a ${input.subject} lesson about "${input.lessonTitle}". The mask should be designed for children to cut out and wear. Include eye holes. Style: clean black and white line drawing, simple outlines, suitable for printing on A4 paper. No text, no Arabic letters. Just the mask outline with decorative elements related to the character.`;
+          try {
+            const { url } = await generateImage({ prompt });
+            masks.push({ characterName: char.name, imageUrl: url || "", generatedAt: new Date().toISOString() });
+          } catch (e) {
+            masks.push({ characterName: char.name, imageUrl: "", generatedAt: new Date().toISOString() });
+          }
+        }
+        return { masks };
+      }),
+
+    // Save script to personal library
+    saveScript: protectedProcedure
+      .input(z.object({
+        lessonTitle: z.string(),
+        subject: z.string(),
+        grade: z.string(),
+        duration: z.number(),
+        studentCount: z.number(),
+        scriptData: z.any(),
+        maskImages: z.array(z.object({ characterName: z.string(), imageUrl: z.string(), generatedAt: z.string() })).optional(),
+        assessmentQuestions: z.array(z.object({ question: z.string(), expectedAnswer: z.string(), criteria: z.string() })).optional(),
+        roleAssignments: z.array(z.object({ studentNumber: z.number(), characterName: z.string(), role: z.string(), tip: z.string() })).optional(),
+        pdfExportUrl: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+        const result = await database.insert(savedDramaScripts).values({
+          userId: ctx.user.id,
+          lessonTitle: input.lessonTitle,
+          subject: input.subject,
+          grade: input.grade,
+          duration: input.duration,
+          studentCount: input.studentCount,
+          scriptData: input.scriptData,
+          maskImages: input.maskImages || null,
+          assessmentQuestions: input.assessmentQuestions || null,
+          roleAssignments: input.roleAssignments || null,
+          pdfExportUrl: input.pdfExportUrl || null,
+        });
+        return { id: result[0].insertId, message: "\u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u0645\u0633\u0631\u062d\u064a\u0629 \u0628\u0646\u062c\u0627\u062d" };
+      }),
+
+    // Get saved scripts library
+    getLibrary: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const scripts = await database.select().from(savedDramaScripts)
+        .where(eq(savedDramaScripts.userId, ctx.user.id))
+        .orderBy(desc(savedDramaScripts.createdAt));
+      return scripts;
+    }),
+
+    // Delete a saved script
+    deleteScript: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await database.delete(savedDramaScripts)
+          .where(and(eq(savedDramaScripts.id, input.id), eq(savedDramaScripts.userId, ctx.user.id)));
+        return { success: true };
+      }),
+
+    // Toggle favorite
+    toggleFavorite: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const [existing] = await database.select().from(savedDramaScripts)
+          .where(and(eq(savedDramaScripts.id, input.id), eq(savedDramaScripts.userId, ctx.user.id)));
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+        await database.update(savedDramaScripts)
+          .set({ isFavorite: !existing.isFavorite })
+          .where(eq(savedDramaScripts.id, input.id));
+        return { isFavorite: !existing.isFavorite };
+      }),
+
+    // Generate formative assessment questions
+    generateAssessment: protectedProcedure
+      .input(z.object({
+        lessonTitle: z.string(),
+        subject: z.string(),
+        grade: z.string(),
+        scriptSynopsis: z.string(),
+        educationalObjectives: z.array(z.string()),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: `\u0623\u0646\u062a \u062e\u0628\u064a\u0631 \u062a\u0642\u064a\u064a\u0645 \u062a\u0643\u0648\u064a\u0646\u064a \u062a\u0648\u0646\u0633\u064a. \u0623\u0646\u0634\u0626 3 \u0623\u0633\u0626\u0644\u0629 \u062a\u0642\u064a\u064a\u0645 \u0628\u0639\u062f \u0627\u0644\u0639\u0631\u0636 \u0627\u0644\u0645\u0633\u0631\u062d\u064a \u0644\u0642\u064a\u0627\u0633 \u0641\u0647\u0645 \u0627\u0644\u062a\u0644\u0627\u0645\u064a\u0630.\n\u0627\u0644\u0633\u0624\u0627\u0644 1: \u0645\u0639\u064a\u0627\u0631 \u0645\u06391 (\u0627\u0644\u0631\u0628\u0637 \u0648\u0627\u0644\u062a\u062d\u062f\u064a\u062f)\n\u0627\u0644\u0633\u0624\u0627\u0644 2: \u0645\u0639\u064a\u0627\u0631 \u0645\u06392 (\u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0648\u0627\u0644\u062a\u0648\u0638\u064a\u0641)\n\u0627\u0644\u0633\u0624\u0627\u0644 3: \u0645\u0639\u064a\u0627\u0631 \u0645\u06393 (\u0627\u0644\u062a\u0628\u0631\u064a\u0631 \u0648\u0627\u0644\u062a\u0645\u064a\u0632)\n\u0623\u062c\u0628 \u0628\u0635\u064a\u063a\u0629 JSON \u0641\u0642\u0637.` },
+            { role: "user", content: `\u0627\u0644\u062f\u0631\u0633: ${input.lessonTitle}\n\u0627\u0644\u0645\u0627\u062f\u0629: ${input.subject}\n\u0627\u0644\u0645\u0633\u062a\u0648\u0649: ${input.grade}\n\u0645\u0644\u062e\u0635 \u0627\u0644\u0645\u0633\u0631\u062d\u064a\u0629: ${input.scriptSynopsis}\n\u0627\u0644\u0623\u0647\u062f\u0627\u0641: ${input.educationalObjectives.join(", ")}` },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "assessment_questions",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question: { type: "string", description: "\u0627\u0644\u0633\u0624\u0627\u0644" },
+                        expectedAnswer: { type: "string", description: "\u0627\u0644\u0625\u062c\u0627\u0628\u0629 \u0627\u0644\u0645\u0646\u062a\u0638\u0631\u0629" },
+                        criteria: { type: "string", description: "\u0627\u0644\u0645\u0639\u064a\u0627\u0631 (\u0645\u06391, \u0645\u06392, \u0645\u06393)" },
+                      },
+                      required: ["question", "expectedAnswer", "criteria"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["questions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const rawContent = response.choices[0].message.content;
+        const parsed = JSON.parse(typeof rawContent === "string" ? rawContent : "{}");
+        return { questions: parsed.questions || [] };
+      }),
+
+    // Publish drama script to Golden Market with rights & metadata
+    publishToMarket: protectedProcedure
+      .input(z.object({
+        scriptId: z.number().optional(), // If from saved library
+        title: z.string(),
+        description: z.string(),
+        subject: z.string(),
+        grade: z.string(),
+        content: z.string(), // HTML/Markdown of the script
+        scriptData: z.any(),
+        tags: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        
+        // Get user's school name and portfolio link
+        const [userInfo] = await database.select({
+          name: users.name,
+          schoolName: users.schoolName,
+        }).from(users).where(eq(users.id, ctx.user.id));
+        
+        // Get portfolio public token for link
+        const [portfolio] = await database.select({
+          publicToken: teacherPortfolios.publicToken,
+        }).from(teacherPortfolios).where(eq(teacherPortfolios.userId, ctx.user.id));
+        
+        const portfolioLink = portfolio?.publicToken ? `/public-portfolio/${portfolio.publicToken}` : null;
+        
+        // Create marketplace item
+        const result = await database.insert(marketplaceItems).values({
+          publishedBy: ctx.user.id,
+          title: input.title,
+          description: input.description,
+          contentType: "drama_script",
+          subject: input.subject,
+          grade: input.grade,
+          educationLevel: "primary",
+          content: input.content,
+          contentPreview: input.description.substring(0, 300),
+          sourceType: "drama_script",
+          sourceId: input.scriptId || null,
+          contributorName: userInfo?.name || ctx.user.name || "\u0645\u0639\u0644\u0645",
+          contributorSchool: userInfo?.schoolName || null,
+          contributorPortfolioLink: portfolioLink,
+          tags: input.tags || ["\u0645\u0633\u0631\u062d\u064a\u0629", "\u062f\u0631\u0627\u0645\u0627 \u062a\u0639\u0644\u064a\u0645\u064a\u0629"],
+          status: "approved",
+        });
+        
+        const marketplaceId = result[0].insertId;
+        
+        // If from saved library, mark as published
+        if (input.scriptId) {
+          await database.update(savedDramaScripts)
+            .set({ isPublished: true, marketplaceItemId: marketplaceId })
+            .where(and(eq(savedDramaScripts.id, input.scriptId), eq(savedDramaScripts.userId, ctx.user.id)));
+        }
+        
+        // Send notification to owner
+        try {
+          const { notifyOwner } = await import("./_core/notification");
+          await notifyOwner({ title: "\u0646\u0634\u0631 \u0645\u0633\u0631\u062d\u064a\u0629 \u062c\u062f\u064a\u062f\u0629", content: `${userInfo?.name || "\u0645\u0639\u0644\u0645"} \u0646\u0634\u0631 \u0645\u0633\u0631\u062d\u064a\u0629 "${input.title}" \u0641\u064a \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0630\u0647\u0628\u064a` });
+        } catch (e) { /* ignore */ }
+        
+        return { marketplaceId, message: "\u062a\u0645 \u0646\u0634\u0631 \u0627\u0644\u0645\u0633\u0631\u062d\u064a\u0629 \u0641\u064a \u0627\u0644\u0633\u0648\u0642 \u0627\u0644\u0630\u0647\u0628\u064a \u0628\u0646\u062c\u0627\u062d" };
       }),
   }),
 });

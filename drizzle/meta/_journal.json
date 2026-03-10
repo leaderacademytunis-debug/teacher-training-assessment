@@ -302,6 +302,13 @@
       "when": 1773120384561,
       "tag": "0042_graceful_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "5",
+      "when": 1773123507140,
+      "tag": "0043_faulty_blindfold",
+      "breakpoints": true
     }
   ]
 }

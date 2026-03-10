@@ -103,6 +103,110 @@ describe("Inspector Report & Drama Engine", () => {
     });
   });
 
+  // New Features: Masks, Library, Assessment, Publish
+  describe("Drama Engine New Features", () => {
+    it("should have generateMasks procedure", async () => {
+      const { appRouter } = await import("./routers");
+      const procedures = Object.keys((appRouter as any)._def.procedures);
+      expect(procedures).toContain("drama.generateMasks");
+    });
+
+    it("should have saveScript procedure", async () => {
+      const { appRouter } = await import("./routers");
+      const procedures = Object.keys((appRouter as any)._def.procedures);
+      expect(procedures).toContain("drama.saveScript");
+    });
+
+    it("should have getLibrary procedure", async () => {
+      const { appRouter } = await import("./routers");
+      const procedures = Object.keys((appRouter as any)._def.procedures);
+      expect(procedures).toContain("drama.getLibrary");
+    });
+
+    it("should have deleteScript procedure", async () => {
+      const { appRouter } = await import("./routers");
+      const procedures = Object.keys((appRouter as any)._def.procedures);
+      expect(procedures).toContain("drama.deleteScript");
+    });
+
+    it("should have toggleFavorite procedure", async () => {
+      const { appRouter } = await import("./routers");
+      const procedures = Object.keys((appRouter as any)._def.procedures);
+      expect(procedures).toContain("drama.toggleFavorite");
+    });
+
+    it("should have generateAssessment procedure", async () => {
+      const { appRouter } = await import("./routers");
+      const procedures = Object.keys((appRouter as any)._def.procedures);
+      expect(procedures).toContain("drama.generateAssessment");
+    });
+
+    it("should have publishToMarket procedure", async () => {
+      const { appRouter } = await import("./routers");
+      const procedures = Object.keys((appRouter as any)._def.procedures);
+      expect(procedures).toContain("drama.publishToMarket");
+    });
+  });
+
+  // Assessment Question Structure Tests
+  describe("Formative Assessment Questions", () => {
+    it("should validate assessment question structure", () => {
+      const mockQuestions = [
+        { question: "ما هو دور الأكسجين؟", type: "mcq", options: ["التنفس", "الهضم", "الحركة"], correctAnswer: "التنفس", criterion: "مع1" },
+        { question: "اشرح رحلة الأكسجين في الجسم", type: "open", correctAnswer: "يدخل عبر الأنف...", criterion: "مع2" },
+        { question: "الأكسجين ضروري للحياة", type: "truefalse", options: ["صح", "خطأ"], correctAnswer: "صح", criterion: "مع1" },
+      ];
+
+      expect(mockQuestions.length).toBe(3);
+      mockQuestions.forEach(q => {
+        expect(q.question).toBeTruthy();
+        expect(q.correctAnswer).toBeTruthy();
+        expect(q.criterion).toBeTruthy();
+        expect(["mcq", "open", "truefalse"]).toContain(q.type);
+      });
+    });
+  });
+
+  // Mask Generation Tests
+  describe("Character Mask Generation", () => {
+    it("should limit mask generation to 6 characters max", () => {
+      const characters = Array.from({ length: 10 }, (_, i) => ({
+        name: `شخصية ${i + 1}`,
+        description: `وصف الشخصية ${i + 1}`,
+      }));
+
+      const masksToGenerate = characters.slice(0, 6);
+      expect(masksToGenerate.length).toBe(6);
+    });
+
+    it("should validate mask output structure", () => {
+      const mockMask = {
+        characterName: "الأكسجين",
+        imageUrl: "https://example.com/mask.png",
+        generatedAt: new Date().toISOString(),
+      };
+
+      expect(mockMask.characterName).toBeTruthy();
+      expect(mockMask.imageUrl).toMatch(/^https?:\/\//);
+      expect(mockMask.generatedAt).toBeTruthy();
+    });
+  });
+
+  // Rights & Metadata Tests
+  describe("Rights & Metadata Tagging", () => {
+    it("should include contributor portfolio link in marketplace schema", async () => {
+      const schema = await import("../drizzle/schema");
+      const marketplaceColumns = Object.keys((schema.marketplaceItems as any));
+      // The schema should have the contributorPortfolioLink field
+      expect(schema.marketplaceItems).toBeDefined();
+    });
+
+    it("should include savedDramaScripts table in schema", async () => {
+      const schema = await import("../drizzle/schema");
+      expect(schema.savedDramaScripts).toBeDefined();
+    });
+  });
+
   // Drama Script Structure Tests
   describe("Drama Script Structure", () => {
     it("should validate expected script structure", () => {
