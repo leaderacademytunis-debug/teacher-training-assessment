@@ -215,7 +215,7 @@ export const notifications = mysqlTable("notifications", {
   userId: int("userId").notNull(),
   titleAr: varchar("titleAr", { length: 255 }).notNull(),
   messageAr: text("messageAr").notNull(),
-  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review"]).notNull(),
+  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review", "assignment_graded", "assignment_returned"]).notNull(),
   relatedId: int("relatedId"), // courseId, examId, etc.
   isRead: boolean("isRead").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1546,6 +1546,8 @@ export const batches = mysqlTable("batches", {
   color: varchar("color", { length: 20 }).default("#3B82F6"),
   icon: varchar("icon", { length: 50 }).default("users"),
   inviteCode: varchar("inviteCode", { length: 32 }).unique(),
+  inviteExpiresAt: timestamp("inviteExpiresAt"),
+  maxMembers: int("maxMembers"),
   isActive: boolean("isActive").default(true).notNull(),
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

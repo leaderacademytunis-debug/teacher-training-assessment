@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield, Link2, Copy, RefreshCw, Download, ExternalLink } from "lucide-react";
+import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield, Link2, Copy, RefreshCw, Download, ExternalLink, Eye, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
 
 const FEATURE_OPTIONS = [
   { key: "accessEdugpt", label: "EduGPT المساعد الذكي", icon: "🤖" },
@@ -51,6 +51,9 @@ export default function AdminBatchManager() {
   const [selectedFeatures, setSelectedFeatures] = useState<Record<string, boolean>>({});
   const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [inviteExpiresAt, setInviteExpiresAt] = useState("");
+  const [inviteMaxMembers, setInviteMaxMembers] = useState<string>("");
+  const [showSubmissionDetail, setShowSubmissionDetail] = useState<number | null>(null);
 
   // Queries
   const batchesQuery = trpc.batchManager.listBatches.useQuery(undefined, { enabled: !!user && user.role === "admin" });
@@ -146,24 +149,61 @@ export default function AdminBatchManager() {
   const progressData = batchProgressQuery.data;
 
   // Invite Link Dialog
+  const submissionsQuery = trpc.assignmentManager.getAssignmentSubmissions.useQuery(
+    { assignmentId: showSubmissionDetail! },
+    { enabled: !!showSubmissionDetail }
+  );
+
   const inviteLinkDialog = showInviteLinkDialog && selectedBatchId && (
     <Dialog open={showInviteLinkDialog} onOpenChange={setShowInviteLinkDialog}>
-      <DialogContent dir="rtl" className="max-w-md">
+      <DialogContent dir="rtl" className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Link2 className="h-5 w-5 text-green-600" />رابط دعوة الانضمام</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {inviteLinkQuery.data?.inviteCode ? (
             <>
-              <p className="text-sm text-gray-600">شارك هذا الرابط مع المشاركين للانضمام تلقائياً إلى الدفعة مع الصلاحيات المناسبة:</p>
+              <p className="text-sm text-gray-600">شارك هذا الرابط مع المشاركين للانضمام تلقائياً إلى الدفعة:</p>
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
                 <input readOnly className="flex-1 bg-transparent text-sm font-mono text-left" dir="ltr" value={getInviteUrl(inviteLinkQuery.data.inviteCode)} />
                 <Button size="sm" variant="outline" onClick={() => copyInviteLink(inviteLinkQuery.data!.inviteCode!)}>
                   {copiedLink ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
+              {/* Expiry and Max Members info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <p className="text-xs text-blue-600 font-medium mb-1">الأعضاء</p>
+                  <p className="text-sm font-bold text-blue-800">
+                    {inviteLinkQuery.data.currentMembers ?? 0}
+                    {inviteLinkQuery.data.maxMembers ? ` / ${inviteLinkQuery.data.maxMembers}` : ' (غير محدود)'}
+                  </p>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-lg border border-amber-100">
+                  <p className="text-xs text-amber-600 font-medium mb-1">الصلاحية</p>
+                  <p className="text-sm font-bold text-amber-800">
+                    {inviteLinkQuery.data.inviteExpiresAt
+                      ? new Date(inviteLinkQuery.data.inviteExpiresAt).toLocaleDateString('ar-TN', { year: 'numeric', month: 'short', day: 'numeric' })
+                      : 'غير محدودة'}
+                  </p>
+                </div>
+              </div>
+              {/* Settings */}
+              <div className="border-t pt-3 space-y-3">
+                <p className="text-xs font-medium text-gray-700">إعدادات الرابط:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">تاريخ انتهاء الصلاحية</label>
+                    <Input type="date" value={inviteExpiresAt} onChange={(e) => setInviteExpiresAt(e.target.value)} className="text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 block mb-1">الحد الأقصى للأعضاء</label>
+                    <Input type="number" min="1" placeholder="غير محدود" value={inviteMaxMembers} onChange={(e) => setInviteMaxMembers(e.target.value)} className="text-sm" />
+                  </div>
+                </div>
+              </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1" onClick={() => regenerateInviteLink.mutate({ batchId: selectedBatchId! })} disabled={regenerateInviteLink.isPending}>
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => regenerateInviteLink.mutate({ batchId: selectedBatchId!, expiresAt: inviteExpiresAt || undefined, maxMembers: inviteMaxMembers ? parseInt(inviteMaxMembers) : undefined })} disabled={regenerateInviteLink.isPending}>
                   {regenerateInviteLink.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <RefreshCw className="h-4 w-4 ml-1" />}
                   تجديد الرابط
                 </Button>
@@ -172,7 +212,7 @@ export default function AdminBatchManager() {
                   نسخ الرابط
                 </Button>
               </div>
-              <p className="text-xs text-gray-500">عند تجديد الرابط، يصبح الرابط القديم غير صالح.</p>
+              <p className="text-xs text-gray-500">عند تجديد الرابط، يصبح الرابط القديم غير صالح. الإعدادات الجديدة تُطبق على الرابط المجدد.</p>
             </>
           ) : (
             <div className="text-center py-4">
@@ -558,7 +598,12 @@ export default function AdminBatchManager() {
                                       {a.dueDate && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(a.dueDate).toLocaleDateString("ar-TN")}</span>}
                                     </div>
                                   </div>
-                                  <Badge variant={a.isPublished ? "default" : "secondary"}>{a.isPublished ? "منشور" : "مسودة"}</Badge>
+                                  <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setShowSubmissionDetail(a.id)}>
+                                      <Eye className="h-4 w-4 ml-1" />عرض التسليمات
+                                    </Button>
+                                    <Badge variant={a.isPublished ? "default" : "secondary"}>{a.isPublished ? "منشور" : "مسودة"}</Badge>
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -633,6 +678,107 @@ export default function AdminBatchManager() {
           </div>
         </div>
       </div>
+
+      {/* Submission Detail Dialog */}
+      <Dialog open={!!showSubmissionDetail} onOpenChange={(open) => { if (!open) setShowSubmissionDetail(null); }}>
+        <DialogContent dir="rtl" className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-blue-600" />تسليمات الواجب</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {submissionsQuery.isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : !submissionsQuery.data?.submissions?.length ? (
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                <p>لا توجد تسليمات بعد</p>
+              </div>
+            ) : (
+              submissionsQuery.data.submissions.map((sub: any) => (
+                <div key={sub.id} className="p-4 rounded-lg border hover:shadow-sm transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="font-medium">{sub.userName}</h4>
+                      <p className="text-xs text-gray-500">{sub.userEmail}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={sub.status === 'graded' ? 'default' : sub.status === 'submitted' ? 'secondary' : 'outline'}
+                        className={sub.status === 'graded' ? 'bg-green-600' : sub.status === 'returned' ? 'bg-amber-500 text-white' : ''}>
+                        {sub.status === 'graded' ? 'مُقيّم' : sub.status === 'submitted' ? 'مُسلّم' : sub.status === 'returned' ? 'مُعاد' : sub.status}
+                      </Badge>
+                      {sub.aiScore !== null && sub.aiScore !== undefined && (
+                        <span className="text-sm font-bold text-green-700">{sub.aiScore}/{submissionsQuery.data?.assignment?.maxScore || 100}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rich Text Content */}
+                  {sub.content && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500 mb-1">الإجابة النصية:</p>
+                      <div className="p-3 bg-gray-50 rounded-lg border text-sm prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: sub.content }} />
+                    </div>
+                  )}
+
+                  {/* Attachments */}
+                  {sub.attachments && JSON.parse(sub.attachments || '[]').length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1"><Paperclip className="h-3 w-3" />المرفقات ({JSON.parse(sub.attachments).length}):</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {JSON.parse(sub.attachments).map((file: any, idx: number) => {
+                          const isImage = file.type?.startsWith('image/');
+                          return (
+                            <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-3 p-3 rounded-lg border bg-white hover:bg-blue-50 hover:border-blue-200 transition-colors group">
+                              {isImage ? (
+                                <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border">
+                                  <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 rounded bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                  <FileText className="h-6 w-6 text-blue-600" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate group-hover:text-blue-700">{file.name}</p>
+                                <p className="text-xs text-gray-500">{file.type} • {(file.size / 1024).toFixed(0)} KB</p>
+                              </div>
+                              <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Feedback */}
+                  {sub.aiFeedback && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500 mb-1">تقييم الذكاء الاصطناعي:</p>
+                      <div className="p-3 bg-green-50 rounded-lg border border-green-100 text-sm">{sub.aiFeedback}</div>
+                    </div>
+                  )}
+
+                  {/* Grading actions */}
+                  {sub.status === 'submitted' && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t">
+                      <Button size="sm" onClick={() => aiGrade.mutate({ submissionId: sub.id })} disabled={aiGrade.isPending}>
+                        {aiGrade.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <CheckCircle2 className="h-4 w-4 ml-1" />}
+                        تقييم بالذكاء الاصطناعي
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-gray-400 mt-2">
+                    تاريخ التسليم: {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('ar-TN') : '—'}
+                    {sub.gradedAt && <span className="mr-3">تاريخ التقييم: {new Date(sub.gradedAt).toLocaleString('ar-TN')}</span>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

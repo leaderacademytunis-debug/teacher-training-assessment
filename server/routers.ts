@@ -11234,28 +11234,34 @@ ${input.lessonContent}
     }),
 
     // Generate invite link for a batch (admin)
-    generateInviteLink: adminProcedure.input(z.object({ batchId: z.number() })).mutation(async ({ ctx, input }) => {
+    generateInviteLink: adminProcedure.input(z.object({ batchId: z.number(), expiresAt: z.string().optional(), maxMembers: z.number().optional() })).mutation(async ({ ctx, input }) => {
       const database = await getDb();
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "الدفعة غير موجودة" });
-      // Generate a unique invite code if not already set
       const inviteCode = batch.inviteCode || nanoid(12);
-      if (!batch.inviteCode) {
-        await database.update(batches).set({ inviteCode }).where(eq(batches.id, input.batchId));
+      const updateData: any = {};
+      if (!batch.inviteCode) updateData.inviteCode = inviteCode;
+      if (input.expiresAt) updateData.inviteExpiresAt = new Date(input.expiresAt);
+      if (input.maxMembers !== undefined) updateData.maxMembers = input.maxMembers;
+      if (Object.keys(updateData).length > 0) {
+        await database.update(batches).set(updateData).where(eq(batches.id, input.batchId));
       }
-      return { inviteCode, batchId: input.batchId, batchName: batch.name };
+      return { inviteCode, batchId: input.batchId, batchName: batch.name, inviteExpiresAt: input.expiresAt ? new Date(input.expiresAt) : batch.inviteExpiresAt, maxMembers: input.maxMembers ?? batch.maxMembers };
     }),
 
     // Regenerate invite link (admin) - creates a new code
-    regenerateInviteLink: adminProcedure.input(z.object({ batchId: z.number() })).mutation(async ({ ctx, input }) => {
+    regenerateInviteLink: adminProcedure.input(z.object({ batchId: z.number(), expiresAt: z.string().optional(), maxMembers: z.number().optional() })).mutation(async ({ ctx, input }) => {
       const database = await getDb();
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "الدفعة غير موجودة" });
       const inviteCode = nanoid(12);
-      await database.update(batches).set({ inviteCode }).where(eq(batches.id, input.batchId));
-      return { inviteCode, batchId: input.batchId, batchName: batch.name };
+      const updateData: any = { inviteCode };
+      if (input.expiresAt) updateData.inviteExpiresAt = new Date(input.expiresAt);
+      if (input.maxMembers !== undefined) updateData.maxMembers = input.maxMembers;
+      await database.update(batches).set(updateData).where(eq(batches.id, input.batchId));
+      return { inviteCode, batchId: input.batchId, batchName: batch.name, inviteExpiresAt: input.expiresAt ? new Date(input.expiresAt) : null, maxMembers: input.maxMembers ?? null };
     }),
 
     // Get invite link info for a batch (admin)
@@ -11264,16 +11270,31 @@ ${input.lessonContent}
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
       const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
       if (!batch) throw new TRPCError({ code: "NOT_FOUND" });
-      return { inviteCode: batch.inviteCode, batchId: batch.id, batchName: batch.name };
+      // Count current members
+      const memberCount = await database.select({ count: sql<number>`count(*)` }).from(batchMembers).where(eq(batchMembers.batchId, input.batchId));
+      return { inviteCode: batch.inviteCode, batchId: batch.id, batchName: batch.name, inviteExpiresAt: batch.inviteExpiresAt, maxMembers: batch.maxMembers, currentMembers: memberCount[0]?.count ?? 0 };
     }),
 
     // Public: Get batch info by invite code (for join page)
     getBatchByInviteCode: publicProcedure.input(z.object({ inviteCode: z.string() })).query(async ({ input }) => {
       const database = await getDb();
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const [batch] = await database.select({ id: batches.id, name: batches.name, description: batches.description, color: batches.color, icon: batches.icon, isActive: batches.isActive }).from(batches).where(and(eq(batches.inviteCode, input.inviteCode), eq(batches.isActive, true)));
-      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو منتهي الصلاحية" });
-      return batch;
+      const [batch] = await database.select({ id: batches.id, name: batches.name, description: batches.description, color: batches.color, icon: batches.icon, isActive: batches.isActive, inviteExpiresAt: batches.inviteExpiresAt, maxMembers: batches.maxMembers }).from(batches).where(and(eq(batches.inviteCode, input.inviteCode), eq(batches.isActive, true)));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح" });
+      // Check expiry
+      if (batch.inviteExpiresAt && new Date(batch.inviteExpiresAt) < new Date()) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "رابط الدعوة منتهي الصلاحية" });
+      }
+      // Check capacity
+      let currentMembers = 0;
+      if (batch.maxMembers) {
+        const [cnt] = await database.select({ c: sql<number>`count(*)` }).from(batchMembers).where(eq(batchMembers.batchId, batch.id));
+        currentMembers = cnt?.c ?? 0;
+        if (currentMembers >= batch.maxMembers) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "الدفعة ممتلئة - لا يمكن الانضمام" });
+        }
+      }
+      return { ...batch, currentMembers };
     }),
 
     // Join a batch via invite code (authenticated user)
@@ -11283,6 +11304,17 @@ ${input.lessonContent}
       // Find the batch by invite code
       const [batch] = await database.select().from(batches).where(and(eq(batches.inviteCode, input.inviteCode), eq(batches.isActive, true)));
       if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو منتهي الصلاحية" });
+      // Check expiry
+      if (batch.inviteExpiresAt && new Date(batch.inviteExpiresAt) < new Date()) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "رابط الدعوة منتهي الصلاحية" });
+      }
+      // Check max members
+      if (batch.maxMembers) {
+        const [memberCountResult] = await database.select({ cnt: sql<number>`count(*)` }).from(batchMembers).where(eq(batchMembers.batchId, batch.id));
+        if ((memberCountResult?.cnt ?? 0) >= batch.maxMembers) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "الدفعة ممتلئة - تم الوصول للحد الأقصى للأعضاء" });
+        }
+      }
       // Check if user is already a member
       const [existing] = await database.select().from(batchMembers).where(and(eq(batchMembers.batchId, batch.id), eq(batchMembers.userId, ctx.user.id)));
       if (existing) {
@@ -11492,6 +11524,27 @@ ${input.lessonContent}
           status: "graded",
           gradedAt: new Date(),
         }).where(eq(submissions.id, input.submissionId));
+        // Send notification to participant about grading
+        try {
+          const gradeLabels: Record<string, string> = { excellent: "ممتاز", good: "جيد", acceptable: "مقبول", needs_improvement: "يحتاج تحسين", insufficient: "غير كافي" };
+          await database.insert(notifications).values({
+            userId: sub.userId,
+            titleAr: "تم تقييم واجبك",
+            messageAr: `تم تقييم واجبك "${assignment.title}" - العلامة: ${gradeResult.score}/${assignment.maxScore} (${gradeLabels[gradeResult.grade] || gradeResult.grade})`,
+            type: "assignment_graded",
+            relatedId: assignment.id,
+          });
+          // Send email notification
+          const [userInfo] = await database.select({ email: users.email, name: users.name, arabicName: users.arabicName }).from(users).where(eq(users.id, sub.userId));
+          if (userInfo?.email) {
+            const { sendEmail } = await import('./emailService');
+            await sendEmail({
+              to: userInfo.email,
+              subject: `تم تقييم واجبك - ${assignment.title}`,
+              html: `<div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><h2 style="color: #10b981;">✅ تم تقييم واجبك</h2><p>مرحباً ${userInfo.arabicName || userInfo.name || ''},</p><p>تم تقييم واجبك <strong>"${assignment.title}"</strong></p><div style="background: #ecfdf5; padding: 16px; border-radius: 8px; margin: 16px 0; text-align: center;"><div style="font-size: 28px; font-weight: bold; color: #059669;">${gradeResult.score}/${assignment.maxScore}</div><div style="color: #065f46; margin-top: 4px;">${gradeLabels[gradeResult.grade] || gradeResult.grade}</div></div>${gradeResult.feedback ? `<div style="background: #f0f9ff; padding: 12px; border-radius: 8px;"><strong>ملاحظات التقييم:</strong><br/>${gradeResult.feedback}</div>` : ''}<p style="color: #6b7280; font-size: 12px; margin-top: 20px;">ليدر أكاديمي - منصة تأهيل المدرسين</p></div>`,
+            });
+          }
+        } catch (notifErr) { console.warn('[Notification] Failed to send grading notification:', notifErr); }
         return { success: true, score: gradeResult.score, grade: gradeResult.grade, feedback: gradeResult.feedback };
       } catch (error: any) {
         await database.update(submissions).set({ status: "submitted" }).where(eq(submissions.id, input.submissionId));
@@ -11514,7 +11567,60 @@ ${input.lessonContent}
       const updateData: any = { status: "returned" as const };
       if (input.feedback) updateData.aiFeedback = input.feedback;
       await database.update(submissions).set(updateData).where(eq(submissions.id, input.submissionId));
+      // Send notification to participant
+      try {
+        const [subInfo] = await database.select({ userId: submissions.userId, assignmentId: submissions.assignmentId }).from(submissions).where(eq(submissions.id, input.submissionId));
+        if (subInfo) {
+          const [assignmentInfo] = await database.select({ title: assignments.title }).from(assignments).where(eq(assignments.id, subInfo.assignmentId));
+          await database.insert(notifications).values({
+            userId: subInfo.userId,
+            titleAr: "تمت إعادة الواجب للمراجعة",
+            messageAr: `تمت إعادة واجبك "${assignmentInfo?.title || ''}" للمراجعة. ${input.feedback ? 'ملاحظة المدرب: ' + input.feedback : 'يرجى مراجعة الواجب وإعادة التسليم.'}`,
+            type: "assignment_returned",
+            relatedId: subInfo.assignmentId,
+          });
+          // Send email notification
+          try {
+            const [userInfo] = await database.select({ email: users.email, name: users.name, arabicName: users.arabicName }).from(users).where(eq(users.id, subInfo.userId));
+            if (userInfo?.email) {
+              const { sendEmail } = await import('./emailService');
+              await sendEmail({
+                to: userInfo.email,
+                subject: `تمت إعادة الواجب للمراجعة - ${assignmentInfo?.title || ''}`,
+                html: `<div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;"><h2 style="color: #f59e0b;">📋 تمت إعادة الواجب للمراجعة</h2><p>مرحباً ${userInfo.arabicName || userInfo.name || ''},</p><p>تمت إعادة واجبك <strong>"${assignmentInfo?.title || ''}"</strong> للمراجعة.</p>${input.feedback ? `<div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin: 16px 0;"><strong>ملاحظة المدرب:</strong><br/>${input.feedback}</div>` : ''}<p>يرجى مراجعة الواجب وإعادة التسليم.</p><p style="color: #6b7280; font-size: 12px;">ليدر أكاديمي - منصة تأهيل المدرسين</p></div>`,
+              });
+            }
+          } catch (emailErr) { console.warn('[Notification] Email failed:', emailErr); }
+        }
+      } catch (notifErr) { console.warn('[Notification] Failed to send return notification:', notifErr); }
       return { success: true };
+    }),
+
+    // Get all submissions for an assignment with user info and attachments (admin)
+    getAssignmentSubmissions: adminProcedure.input(z.object({ assignmentId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [assignment] = await database.select().from(assignments).where(eq(assignments.id, input.assignmentId));
+      if (!assignment) throw new TRPCError({ code: "NOT_FOUND" });
+      const subs = await database.select({
+        id: submissions.id,
+        content: submissions.content,
+        fileUrl: submissions.fileUrl,
+        attachments: submissions.attachments,
+        aiScore: submissions.aiScore,
+        aiGrade: submissions.aiGrade,
+        aiFeedback: submissions.aiFeedback,
+        aiRubricScores: submissions.aiRubricScores,
+        masteryScore: submissions.masteryScore,
+        status: submissions.status,
+        submittedAt: submissions.submittedAt,
+        gradedAt: submissions.gradedAt,
+        userName: users.name,
+        userEmail: users.email,
+        userArabicName: users.arabicName,
+        userId: submissions.userId,
+      }).from(submissions).innerJoin(users, eq(submissions.userId, users.id)).where(eq(submissions.assignmentId, input.assignmentId)).orderBy(desc(submissions.submittedAt));
+      return { assignment, submissions: subs };
     }),
   }),
 

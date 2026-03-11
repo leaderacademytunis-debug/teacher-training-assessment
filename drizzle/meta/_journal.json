@@ -372,6 +372,20 @@
       "when": 1773248169703,
       "tag": "0052_polite_penance",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "5",
+      "when": 1773269228105,
+      "tag": "0053_clean_iron_fist",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1773269252829,
+      "tag": "0054_secret_vivisector",
+      "breakpoints": true
     }
   ]
 }

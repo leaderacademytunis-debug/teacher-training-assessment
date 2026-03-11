@@ -2097,3 +2097,28 @@
 - [x] Show submitted files and rich text in admin grading view
 - [x] Write tests for submission features (15/15 passing)
 - [ ] Save checkpoint
+
+## Feature: Show attachments in admin grading view
+- [x] Display submitted files (PDF, Word, images) in admin grading interface
+- [x] Add file preview/download links for each attachment (image thumbnails + file icons)
+- [x] Show rich text content properly formatted in grading view
+- [x] Added 'عرض التسليمات' button on each assignment card
+- [x] Submission detail dialog with user info, status, score, content, attachments, AI feedback
+- [x] Tests passing (9/9 notifications-expiry tests)
+
+## Feature: Auto-notifications on grading
+- [x] Send in-app notification to participant when assignment is graded
+- [x] Send email notification with grade details and feedback
+- [x] Send in-app notification when assignment is returned for review
+- [x] Send email notification for return with trainer feedback
+- [x] Include grade, score, and feedback in all notifications
+- [x] Graceful error handling (notification failure doesn't block grading)
+
+## Feature: Invite link expiry and max members
+- [x] Add inviteExpiresAt field to batches schema
+- [x] Add maxMembers field to batches schema
+- [x] Enforce expiry date check on join (getBatchByInviteCode + joinByInvite)
+- [x] Enforce max members limit on join with count validation
+- [x] Add expiry date and max members UI in invite link dialog
+- [x] Show remaining spots and expiry info on join page
+- [x] Show expired/full error messages with appropriate icons
