@@ -2068,3 +2068,9 @@
 - [x] Updated frontend to use /api/auth/callback/google
 - [x] Updated tests (4 passing)
 - [ ] Save checkpoint
+
+## Fix: Batches not loading on Google Classroom settings page
+- [x] Diagnosed: frontend calls trpc.batchManager.list but procedure is named listBatches
+- [x] Fixed: changed trpc.batchManager.list to trpc.batchManager.listBatches
+- [x] HMR update confirmed, no console errors
+- [ ] Save checkpoint

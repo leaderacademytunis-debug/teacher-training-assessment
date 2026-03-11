@@ -24,7 +24,7 @@ export default function GoogleClassroomSettings() {
   });
 
   // Get batches for mapping
-  const batchesQuery = trpc.batchManager.list.useQuery(undefined, {
+  const batchesQuery = trpc.batchManager.listBatches.useQuery(undefined, {
     enabled: !!user && isAdmin,
   });
 
