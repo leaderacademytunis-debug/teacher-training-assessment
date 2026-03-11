@@ -721,35 +721,40 @@ export default function AdminBatchManager() {
                   )}
 
                   {/* Attachments */}
-                  {sub.attachments && JSON.parse(sub.attachments || '[]').length > 0 && (
-                    <div className="mb-3">
-                      <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1"><Paperclip className="h-3 w-3" />المرفقات ({JSON.parse(sub.attachments).length}):</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {JSON.parse(sub.attachments).map((file: any, idx: number) => {
-                          const isImage = file.type?.startsWith('image/');
-                          return (
-                            <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-3 p-3 rounded-lg border bg-white hover:bg-blue-50 hover:border-blue-200 transition-colors group">
-                              {isImage ? (
-                                <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border">
-                                  <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                  {(() => {
+                    if (!sub.attachments) return null;
+                    const atts: any[] = typeof sub.attachments === 'string' ? JSON.parse(sub.attachments) : (Array.isArray(sub.attachments) ? sub.attachments : []);
+                    if (atts.length === 0) return null;
+                    return (
+                      <div className="mb-3">
+                        <p className="text-xs font-medium text-gray-500 mb-2 flex items-center gap-1"><Paperclip className="h-3 w-3" />المرفقات ({atts.length}):</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {atts.map((file: any, idx: number) => {
+                            const isImage = file.type?.startsWith('image/');
+                            return (
+                              <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-3 rounded-lg border bg-white hover:bg-blue-50 hover:border-blue-200 transition-colors group">
+                                {isImage ? (
+                                  <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0 border">
+                                    <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-12 rounded bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                    <FileText className="h-6 w-6 text-blue-600" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate group-hover:text-blue-700">{file.name}</p>
+                                  <p className="text-xs text-gray-500">{file.type} • {(file.size / 1024).toFixed(0)} KB</p>
                                 </div>
-                              ) : (
-                                <div className="w-12 h-12 rounded bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                  <FileText className="h-6 w-6 text-blue-600" />
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate group-hover:text-blue-700">{file.name}</p>
-                                <p className="text-xs text-gray-500">{file.type} • {(file.size / 1024).toFixed(0)} KB</p>
-                              </div>
-                              <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
-                            </a>
-                          );
-                        })}
+                                <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
+                              </a>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* AI Feedback */}
                   {sub.aiFeedback && (

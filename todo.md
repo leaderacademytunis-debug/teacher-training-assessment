@@ -2122,3 +2122,11 @@
 - [x] Add expiry date and max members UI in invite link dialog
 - [x] Show remaining spots and expiry info on join page
 - [x] Show expired/full error messages with appropriate icons
+
+## Bug Fix: JSON parse error on 'عرض التسليمات' button
+- [x] Fix SyntaxError: "[object Object]" is not valid JSON when clicking view submissions
+- [x] Root cause: Drizzle json() column returns parsed objects, not strings - JSON.parse() on object causes error
+- [x] Fix: Added typeof check to handle both string and object attachment formats
+- [x] 10 vitest tests passing for attachments parsing
+- [x] Verified in browser: submissions dialog shows correctly with attachments
+- [x] Test and save checkpoint
