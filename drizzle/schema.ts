@@ -1545,6 +1545,7 @@ export const batches = mysqlTable("batches", {
   description: text("description"),
   color: varchar("color", { length: 20 }).default("#3B82F6"),
   icon: varchar("icon", { length: 50 }).default("users"),
+  inviteCode: varchar("inviteCode", { length: 32 }).unique(),
   isActive: boolean("isActive").default(true).notNull(),
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

@@ -59,7 +59,7 @@ import JobBoard from "@/pages/JobBoard";
 import MyApplications from "@/pages/MyApplications";
 import AdminBatchManager from "@/pages/AdminBatchManager";
 import MyAssignments from "@/pages/MyAssignments";
-import GoogleClassroomSettings from "@/pages/GoogleClassroomSettings";
+import JoinBatch from "@/pages/JoinBatch";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -120,7 +120,7 @@ function Router() {
       <Route path="/my-applications" component={MyApplications} />
       <Route path="/admin/batches" component={AdminBatchManager} />
       <Route path="/my-assignments" component={MyAssignments} />
-      <Route path="/admin/google-classroom" component={GoogleClassroomSettings} />
+      <Route path="/join/:code" component={JoinBatch} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

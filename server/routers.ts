@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, googleClassroomConnections, batchClassroomMappings, assignmentClassroomMappings, classroomSyncLogs } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -11232,6 +11232,101 @@ ${input.lessonContent}
       }
       return { batch, memberCount: memberCount?.cnt || 0, assignments: progressData };
     }),
+
+    // Generate invite link for a batch (admin)
+    generateInviteLink: adminProcedure.input(z.object({ batchId: z.number() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "الدفعة غير موجودة" });
+      // Generate a unique invite code if not already set
+      const inviteCode = batch.inviteCode || nanoid(12);
+      if (!batch.inviteCode) {
+        await database.update(batches).set({ inviteCode }).where(eq(batches.id, input.batchId));
+      }
+      return { inviteCode, batchId: input.batchId, batchName: batch.name };
+    }),
+
+    // Regenerate invite link (admin) - creates a new code
+    regenerateInviteLink: adminProcedure.input(z.object({ batchId: z.number() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "الدفعة غير موجودة" });
+      const inviteCode = nanoid(12);
+      await database.update(batches).set({ inviteCode }).where(eq(batches.id, input.batchId));
+      return { inviteCode, batchId: input.batchId, batchName: batch.name };
+    }),
+
+    // Get invite link info for a batch (admin)
+    getInviteLink: adminProcedure.input(z.object({ batchId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND" });
+      return { inviteCode: batch.inviteCode, batchId: batch.id, batchName: batch.name };
+    }),
+
+    // Public: Get batch info by invite code (for join page)
+    getBatchByInviteCode: publicProcedure.input(z.object({ inviteCode: z.string() })).query(async ({ input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select({ id: batches.id, name: batches.name, description: batches.description, color: batches.color, icon: batches.icon, isActive: batches.isActive }).from(batches).where(and(eq(batches.inviteCode, input.inviteCode), eq(batches.isActive, true)));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو منتهي الصلاحية" });
+      return batch;
+    }),
+
+    // Join a batch via invite code (authenticated user)
+    joinByInvite: protectedProcedure.input(z.object({ inviteCode: z.string() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // Find the batch by invite code
+      const [batch] = await database.select().from(batches).where(and(eq(batches.inviteCode, input.inviteCode), eq(batches.isActive, true)));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND", message: "رابط الدعوة غير صالح أو منتهي الصلاحية" });
+      // Check if user is already a member
+      const [existing] = await database.select().from(batchMembers).where(and(eq(batchMembers.batchId, batch.id), eq(batchMembers.userId, ctx.user.id)));
+      if (existing) {
+        return { success: true, alreadyMember: true, batchId: batch.id, batchName: batch.name };
+      }
+      // Add user to batch
+      await database.insert(batchMembers).values({ batchId: batch.id, userId: ctx.user.id, role: "member" });
+      return { success: true, alreadyMember: false, batchId: batch.id, batchName: batch.name };
+    }),
+
+    // CSV Export: Get all grades for a batch's assignments (admin)
+    exportBatchGrades: adminProcedure.input(z.object({ batchId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND" });
+      // Get all members
+      const members = await database.select({ userId: batchMembers.userId, role: batchMembers.role }).from(batchMembers).where(eq(batchMembers.batchId, input.batchId));
+      // Get all assignments for this batch
+      const batchAssignments = await database.select().from(assignments).where(eq(assignments.batchId, input.batchId));
+      // Get all submissions for these assignments
+      const rows: Array<{ userName: string; userEmail: string; assignmentTitle: string; assignmentType: string; score: number | null; maxScore: number; grade: string | null; masteryScore: number | null; status: string; submittedAt: string | null; gradedAt: string | null }> = [];
+      for (const member of members) {
+        const [user] = await database.select({ id: users.id, name: users.name, email: users.email }).from(users).where(eq(users.id, member.userId));
+        if (!user) continue;
+        for (const assignment of batchAssignments) {
+          const [sub] = await database.select().from(submissions).where(and(eq(submissions.assignmentId, assignment.id), eq(submissions.userId, user.id)));
+          rows.push({
+            userName: user.name || "غير محدد",
+            userEmail: user.email,
+            assignmentTitle: assignment.title,
+            assignmentType: assignment.type,
+            score: sub?.aiScore ?? null,
+            maxScore: assignment.maxScore,
+            grade: sub?.aiGrade ?? null,
+            masteryScore: sub?.masteryScore ?? null,
+            status: sub?.status ?? "لم يُسلّم",
+            submittedAt: sub?.submittedAt ? new Date(sub.submittedAt).toISOString() : null,
+            gradedAt: sub?.gradedAt ? new Date(sub.gradedAt).toISOString() : null,
+          });
+        }
+      }
+      return { batchName: batch.name, rows };
+    }),
   }),
 
   // ===== ASSIGNMENT & SUBMISSION (الواجبات والتسليمات) =====
@@ -11375,242 +11470,9 @@ ${input.lessonContent}
     }),
   }),
 
-  // ========== Google Classroom Integration Router ==========
-  googleClassroom: router({
-    // Get active connection status
-    getConnection: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const database = await getDb();
-      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const [conn] = await database.select().from(googleClassroomConnections)
-        .where(and(eq(googleClassroomConnections.userId, ctx.user.id), eq(googleClassroomConnections.isActive, true)))
-        .limit(1);
-      return conn || null;
-    }),
-
-    // Get Google OAuth URL
-    getAuthUrl: protectedProcedure
-      .input(z.object({ redirectUri: z.string(), origin: z.string() }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const { getGoogleAuthUrl } = await import("./googleClassroom");
-        // Use server-side callback route as redirect_uri for reliability
-        const callbackUri = `${input.origin}/api/auth/callback/google`;
-        const state = JSON.stringify({ userId: ctx.user.id, origin: input.origin });
-        console.log("[Google Classroom] Generating auth URL with callback:", callbackUri);
-        const url = getGoogleAuthUrl(state, callbackUri);
-        return { url };
-      }),
-
-    // Handle OAuth callback - exchange code for tokens
-    handleCallback: protectedProcedure
-      .input(z.object({ code: z.string(), redirectUri: z.string() }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const database = await getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const { exchangeCodeForTokens } = await import("./googleClassroom");
-        const tokens = await exchangeCodeForTokens(input.code, input.redirectUri);
-        // Deactivate old connections
-        await database.update(googleClassroomConnections)
-          .set({ isActive: false })
-          .where(eq(googleClassroomConnections.userId, ctx.user.id));
-        // Create new connection
-        const [result] = await database.insert(googleClassroomConnections).values({
-          userId: ctx.user.id,
-          googleEmail: tokens.email,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          tokenExpiresAt: tokens.expiresAt,
-          scopes: tokens.scopes,
-          isActive: true,
-        });
-        return { success: true, email: tokens.email, connectionId: result.insertId };
-      }),
-
-    // Disconnect Google account
-    disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-      const database = await getDb();
-      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      await database.update(googleClassroomConnections)
-        .set({ isActive: false })
-        .where(eq(googleClassroomConnections.userId, ctx.user.id));
-      return { success: true };
-    }),
-
-    // List Google Classroom courses
-    listCourses: protectedProcedure
-      .input(z.object({ connectionId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const { listGoogleCourses } = await import("./googleClassroom");
-        try {
-          return await listGoogleCourses(input.connectionId);
-        } catch (error: any) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
-        }
-      }),
-
-    // Map a batch to a Google Classroom course
-    mapBatchToCourse: protectedProcedure
-      .input(z.object({
-        batchId: z.number(),
-        connectionId: z.number(),
-        googleCourseId: z.string(),
-        googleCourseName: z.string().optional(),
-        syncAssignments: z.boolean().default(true),
-        syncGrades: z.boolean().default(true),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const database = await getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        // Check if mapping already exists
-        const [existing] = await database.select().from(batchClassroomMappings)
-          .where(and(eq(batchClassroomMappings.batchId, input.batchId), eq(batchClassroomMappings.googleCourseId, input.googleCourseId)));
-        if (existing) throw new TRPCError({ code: "CONFLICT", message: "This batch is already mapped to this course" });
-        const [result] = await database.insert(batchClassroomMappings).values({
-          batchId: input.batchId,
-          connectionId: input.connectionId,
-          googleCourseId: input.googleCourseId,
-          googleCourseName: input.googleCourseName,
-          syncAssignments: input.syncAssignments,
-          syncGrades: input.syncGrades,
-        });
-        return { success: true, mappingId: result.insertId };
-      }),
-
-    // Get batch-classroom mappings
-    getBatchMappings: protectedProcedure
-      .input(z.object({ batchId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const database = await getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        return await database.select().from(batchClassroomMappings)
-          .where(eq(batchClassroomMappings.batchId, input.batchId));
-      }),
-
-    // Remove a batch-classroom mapping
-    removeBatchMapping: protectedProcedure
-      .input(z.object({ mappingId: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const database = await getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        await database.delete(batchClassroomMappings).where(eq(batchClassroomMappings.id, input.mappingId));
-        return { success: true };
-      }),
-
-    // Push assignment to Google Classroom
-    pushAssignment: protectedProcedure
-      .input(z.object({
-        assignmentId: z.number(),
-        mappingId: z.number(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const database = await getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        // Get the assignment
-        const [assignment] = await database.select().from(assignments).where(eq(assignments.id, input.assignmentId));
-        if (!assignment) throw new TRPCError({ code: "NOT_FOUND", message: "Assignment not found" });
-        // Get the mapping
-        const [mapping] = await database.select().from(batchClassroomMappings).where(eq(batchClassroomMappings.id, input.mappingId));
-        if (!mapping) throw new TRPCError({ code: "NOT_FOUND", message: "Classroom mapping not found" });
-        const { pushAssignmentToClassroom, logSyncOperation } = await import("./googleClassroom");
-        try {
-          const courseWorkId = await pushAssignmentToClassroom(
-            mapping.connectionId,
-            mapping.googleCourseId,
-            { title: assignment.title, description: assignment.description || undefined, maxScore: assignment.maxScore, dueDate: assignment.dueDate || undefined }
-          );
-          // Save the mapping
-          await database.insert(assignmentClassroomMappings).values({
-            assignmentId: input.assignmentId,
-            mappingId: input.mappingId,
-            googleCourseWorkId: courseWorkId,
-          });
-          await logSyncOperation(mapping.connectionId, "push_assignment", "success", `Pushed assignment "${assignment.title}" to Google Classroom`, undefined, 1);
-          return { success: true, courseWorkId };
-        } catch (error: any) {
-          await logSyncOperation(mapping.connectionId, "push_assignment", "failed", undefined, error.message);
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Failed to push assignment: ${error.message}` });
-        }
-      }),
-
-    // Sync grades to Google Classroom
-    syncGrades: protectedProcedure
-      .input(z.object({ assignmentId: z.number(), mappingId: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const database = await getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        // Get assignment-classroom mapping
-        const [acMapping] = await database.select().from(assignmentClassroomMappings)
-          .where(and(eq(assignmentClassroomMappings.assignmentId, input.assignmentId), eq(assignmentClassroomMappings.mappingId, input.mappingId)));
-        if (!acMapping) throw new TRPCError({ code: "NOT_FOUND", message: "Assignment not synced to Google Classroom yet" });
-        // Get the batch-classroom mapping
-        const [mapping] = await database.select().from(batchClassroomMappings).where(eq(batchClassroomMappings.id, input.mappingId));
-        if (!mapping) throw new TRPCError({ code: "NOT_FOUND" });
-        // Get graded submissions
-        const gradedSubs = await database.select().from(submissions)
-          .where(and(eq(submissions.assignmentId, input.assignmentId), eq(submissions.status, "graded")));
-        const { syncGradeToClassroom, logSyncOperation } = await import("./googleClassroom");
-        let synced = 0;
-        let failed = 0;
-        for (const sub of gradedSubs) {
-          // Get user email
-          const [user] = await database.select().from(users).where(eq(users.id, sub.userId));
-          if (!user) continue;
-          const score = sub.masteryScore ?? sub.aiScore ?? 0;
-          const success = await syncGradeToClassroom(
-            mapping.connectionId,
-            mapping.googleCourseId,
-            acMapping.googleCourseWorkId,
-            user.email,
-            score
-          );
-          if (success) synced++; else failed++;
-        }
-        // Update last sync timestamp
-        await database.update(assignmentClassroomMappings)
-          .set({ lastGradeSyncAt: new Date() })
-          .where(eq(assignmentClassroomMappings.id, acMapping.id));
-        await database.update(batchClassroomMappings)
-          .set({ lastSyncAt: new Date() })
-          .where(eq(batchClassroomMappings.id, input.mappingId));
-        await logSyncOperation(mapping.connectionId, "sync_grades", failed > 0 ? "failed" : "success", `Synced ${synced} grades, ${failed} failed`, undefined, synced);
-        return { synced, failed, total: gradedSubs.length };
-      }),
-
-    // Get sync logs
-    getSyncLogs: protectedProcedure
-      .input(z.object({ connectionId: z.number(), limit: z.number().default(20) }))
-      .query(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const database = await getDb();
-        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        return await database.select().from(classroomSyncLogs)
-          .where(eq(classroomSyncLogs.connectionId, input.connectionId))
-          .orderBy(desc(classroomSyncLogs.createdAt))
-          .limit(input.limit);
-      }),
-
-    // List students from Google Classroom
-    listStudents: protectedProcedure
-      .input(z.object({ connectionId: z.number(), googleCourseId: z.string() }))
-      .query(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
-        const { listGoogleClassroomStudents } = await import("./googleClassroom");
-        try {
-          return await listGoogleClassroomStudents(input.connectionId, input.googleCourseId);
-        } catch (error: any) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
-        }
-      }),
-  }),
+  // ========== Google Classroom Integration Router (DISABLED - Replaced by Internal Batch Management) ==========
+  // All Google Classroom functionality has been removed.
+  // Use batchManager.generateInviteLink and batchManager.joinByInvite instead.
 
 });
 

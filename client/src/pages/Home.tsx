@@ -451,7 +451,7 @@ function AdminConsoleDropdown({ language, t, location, isAdmin }: { language: Ap
     { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion des partenaires", labelEn: "Partner Management", icon: Building2, descAr: "اعتماد ورفض طلبات المدارس الشريكة", descFr: "Approuver/rejeter les demandes d'écoles", descEn: "Approve/reject school partner requests", section: "admin" },
     { href: "/managerial-dashboard", labelAr: "التحليلات والإحصائيات", labelFr: "Analyses & Statistiques", labelEn: "Analytics & Statistics", icon: BarChart3, descAr: "تقارير الأداء والإحصائيات التفصيلية", descFr: "Rapports de performance et statistiques", descEn: "Performance reports and statistics", section: "admin" },
     { href: "/admin/batches", labelAr: "إدارة الدفعات", labelFr: "Gestion des groupes", labelEn: "Batch Manager", icon: Users, descAr: "إدارة المجموعات والصلاحيات والواجبات", descFr: "Gérer groupes, accès et devoirs", descEn: "Manage batches, access and assignments", section: "admin" },
-    { href: "/admin/google-classroom", labelAr: "Google Classroom", labelFr: "Google Classroom", labelEn: "Google Classroom", icon: GraduationCap, descAr: "ربط ومزامنة الفصول والدرجات", descFr: "Connecter et synchroniser classes et notes", descEn: "Connect and sync classes and grades", section: "admin" },
+
   ];
 
   const generalLinks = ADMIN_LINKS.filter(l => l.section === "general");
@@ -556,7 +556,7 @@ function AdminMobileLink({ setMobileMenuOpen, location, language, t, isAdmin }: 
     { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion des partenaires", labelEn: "Partner Management", icon: Building2, adminOnly: true },
     { href: "/managerial-dashboard", labelAr: "التحليلات والإحصائيات", labelFr: "Analyses & Statistiques", labelEn: "Analytics & Statistics", icon: BarChart3, adminOnly: true },
     { href: "/admin/batches", labelAr: "إدارة الدفعات", labelFr: "Gestion des groupes", labelEn: "Batch Manager", icon: Users, adminOnly: true },
-    { href: "/admin/google-classroom", labelAr: "Google Classroom", labelFr: "Google Classroom", labelEn: "Google Classroom", icon: GraduationCap, adminOnly: true },
+
   ];
   const links = allLinks.filter(l => !l.adminOnly || isAdmin);
 

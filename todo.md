@@ -2074,3 +2074,13 @@
 - [x] Fixed: changed trpc.batchManager.list to trpc.batchManager.listBatches
 - [x] HMR update confirmed, no console errors
 - [ ] Save checkpoint
+
+## Internal Batch Management (replacing Google Classroom integration)
+- [x] Create unique invite link for each batch with auto-permission assignment on join
+- [x] Add invite link generation/management UI in batch details
+- [x] Add public join page that registers user and assigns batch permissions
+- [x] Implement CSV export for assignment grades (admin feature)
+- [x] Remove Google Classroom OAuth UI, error messages, and blocked screens
+- [x] Remove Google Classroom link from batch cards and navigation
+- [x] Ensure smooth user experience with no Google OAuth remnants
+- [x] Tests passing (5/5 invite-links tests)

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield, GraduationCap } from "lucide-react";
+import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield, Link2, Copy, RefreshCw, Download, ExternalLink } from "lucide-react";
 
 const FEATURE_OPTIONS = [
   { key: "accessEdugpt", label: "EduGPT المساعد الذكي", icon: "🤖" },
@@ -49,6 +49,8 @@ export default function AdminBatchManager() {
   const [newBatch, setNewBatch] = useState({ name: "", description: "", color: "#3B82F6" });
   const [newAssignment, setNewAssignment] = useState({ title: "", description: "", type: "lesson_plan" as const, dueDate: "", maxScore: 100 });
   const [selectedFeatures, setSelectedFeatures] = useState<Record<string, boolean>>({});
+  const [showInviteLinkDialog, setShowInviteLinkDialog] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   // Queries
   const batchesQuery = trpc.batchManager.listBatches.useQuery(undefined, { enabled: !!user && user.role === "admin" });
@@ -78,6 +80,46 @@ export default function AdminBatchManager() {
   const aiGrade = trpc.assignmentManager.aiGradeSubmission.useMutation({
     onSuccess: (data) => { toast.success(`تم التقييم: ${data.score}/${100} - ${data.grade}`); },
   });
+  const generateInviteLink = trpc.batchManager.generateInviteLink.useMutation({
+    onSuccess: () => { inviteLinkQuery.refetch(); toast.success("تم إنشاء رابط الدعوة"); },
+  });
+  const regenerateInviteLink = trpc.batchManager.regenerateInviteLink.useMutation({
+    onSuccess: () => { inviteLinkQuery.refetch(); toast.success("تم تجديد رابط الدعوة"); },
+  });
+  const inviteLinkQuery = trpc.batchManager.getInviteLink.useQuery({ batchId: selectedBatchId! }, { enabled: !!selectedBatchId });
+  const exportGradesQuery = trpc.batchManager.exportBatchGrades.useQuery({ batchId: selectedBatchId! }, { enabled: false });
+
+  const getInviteUrl = (code: string) => `${window.location.origin}/join/${code}`;
+
+  const copyInviteLink = (code: string) => {
+    navigator.clipboard.writeText(getInviteUrl(code));
+    setCopiedLink(true);
+    toast.success("تم نسخ رابط الدعوة");
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const result = await exportGradesQuery.refetch();
+      if (!result.data) { toast.error("لا توجد بيانات للتصدير"); return; }
+      const { batchName, rows } = result.data;
+      if (rows.length === 0) { toast.error("لا توجد بيانات للتصدير"); return; }
+      const BOM = "\uFEFF";
+      const headers = ["الاسم", "البريد الإلكتروني", "الواجب", "النوع", "العلامة", "العلامة القصوى", "التقدير", "درجة التمكن", "الحالة", "تاريخ التسليم", "تاريخ التقييم"];
+      const csvRows = rows.map(r => [
+        r.userName, r.userEmail, r.assignmentTitle, r.assignmentType,
+        r.score ?? "", r.maxScore, r.grade ?? "", r.masteryScore ?? "",
+        r.status, r.submittedAt ?? "", r.gradedAt ?? ""
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+      const csv = BOM + headers.join(",") + "\n" + csvRows.join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${batchName}_grades.csv`; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير الدرجات بنجاح");
+    } catch (e) { toast.error("فشل في تصدير البيانات"); }
+  };
 
 
   if (!user) {
@@ -103,8 +145,49 @@ export default function AdminBatchManager() {
   const batchDetail = batchDetailQuery.data;
   const progressData = batchProgressQuery.data;
 
+  // Invite Link Dialog
+  const inviteLinkDialog = showInviteLinkDialog && selectedBatchId && (
+    <Dialog open={showInviteLinkDialog} onOpenChange={setShowInviteLinkDialog}>
+      <DialogContent dir="rtl" className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Link2 className="h-5 w-5 text-green-600" />رابط دعوة الانضمام</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          {inviteLinkQuery.data?.inviteCode ? (
+            <>
+              <p className="text-sm text-gray-600">شارك هذا الرابط مع المشاركين للانضمام تلقائياً إلى الدفعة مع الصلاحيات المناسبة:</p>
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                <input readOnly className="flex-1 bg-transparent text-sm font-mono text-left" dir="ltr" value={getInviteUrl(inviteLinkQuery.data.inviteCode)} />
+                <Button size="sm" variant="outline" onClick={() => copyInviteLink(inviteLinkQuery.data!.inviteCode!)}>
+                  {copiedLink ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1" onClick={() => regenerateInviteLink.mutate({ batchId: selectedBatchId! })} disabled={regenerateInviteLink.isPending}>
+                  {regenerateInviteLink.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <RefreshCw className="h-4 w-4 ml-1" />}
+                  تجديد الرابط
+                </Button>
+                <Button size="sm" className="flex-1" onClick={() => copyInviteLink(inviteLinkQuery.data!.inviteCode!)}>
+                  <Copy className="h-4 w-4 ml-1" />
+                  نسخ الرابط
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">عند تجديد الرابط، يصبح الرابط القديم غير صالح.</p>
+            </>
+          ) : (
+            <div className="text-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-gray-500">جاري إنشاء رابط الدعوة...</p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
+      {inviteLinkDialog}
       {/* Header */}
       <div className="bg-gradient-to-l from-blue-600 via-blue-700 to-indigo-800 text-white">
         <div className="container py-8">
@@ -241,12 +324,14 @@ export default function AdminBatchManager() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Link href="/admin/google-classroom">
-                          <Button variant="outline" size="sm" className="text-green-600 hover:bg-green-50">
-                            <GraduationCap className="h-4 w-4 ml-1" />
-                            Google Classroom
-                          </Button>
-                        </Link>
+                        <Button variant="outline" size="sm" className="text-green-600 hover:bg-green-50" onClick={() => { if (!inviteLinkQuery.data?.inviteCode) { generateInviteLink.mutate({ batchId: selectedBatchId! }); } setShowInviteLinkDialog(true); }}>
+                          <Link2 className="h-4 w-4 ml-1" />
+                          رابط الدعوة
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-purple-600 hover:bg-purple-50" onClick={handleExportCSV}>
+                          <Download className="h-4 w-4 ml-1" />
+                          تصدير CSV
+                        </Button>
                         <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => { if (confirm("هل أنت متأكد من حذف هذه الدفعة؟")) deleteBatch.mutate({ id: selectedBatchId! }); }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
