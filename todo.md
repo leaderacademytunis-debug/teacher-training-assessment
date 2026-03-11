@@ -2060,3 +2060,11 @@
 - [x] Updated tests (4 passing)
 - [ ] User needs to add new redirect URI in Google Cloud Console
 - [ ] Save checkpoint
+
+## Fix: redirect_uri_mismatch error 400
+- [x] Determined redirect URIs in Google Cloud Console: /api/auth/callback/google
+- [x] Updated server callback route to /api/auth/callback/google
+- [x] Updated routers.ts getAuthUrl to use /api/auth/callback/google
+- [x] Updated frontend to use /api/auth/callback/google
+- [x] Updated tests (4 passing)
+- [ ] Save checkpoint

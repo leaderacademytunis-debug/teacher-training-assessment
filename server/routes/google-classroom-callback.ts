@@ -10,7 +10,8 @@ import { googleClassroomConnections } from "../../drizzle/schema";
 
 export function registerGoogleClassroomRoutes(app: Express) {
   // Server-side callback for Google OAuth
-  app.get("/api/google-classroom/callback", async (req: Request, res: Response) => {
+  // Route matches the Authorized redirect URI in Google Cloud Console
+  app.get("/api/auth/callback/google", async (req: Request, res: Response) => {
     const code = typeof req.query.code === "string" ? req.query.code : undefined;
     const stateParam = typeof req.query.state === "string" ? req.query.state : undefined;
     const error = typeof req.query.error === "string" ? req.query.error : undefined;
@@ -79,8 +80,8 @@ export function registerGoogleClassroomRoutes(app: Express) {
     try {
       const { exchangeCodeForTokens } = await import("../googleClassroom");
       
-      // The redirect_uri must match exactly what was used in the auth URL
-      const callbackUri = `${frontendOrigin}/api/google-classroom/callback`;
+      // The redirect_uri must match exactly what was registered in Google Cloud Console
+      const callbackUri = `${frontendOrigin}/api/auth/callback/google`;
       
       console.log("[Google Classroom] Exchanging code for tokens with redirect_uri:", callbackUri);
       

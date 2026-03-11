@@ -18,20 +18,20 @@ describe("Google Classroom Credentials Validation", () => {
   it("should be able to construct a valid Google OAuth URL with server callback", async () => {
     const { getGoogleAuthUrl } = await import("./googleClassroom");
     const state = JSON.stringify({ userId: 1, origin: "https://leaderacademy.school" });
-    const callbackUri = "https://leaderacademy.school/api/google-classroom/callback";
+    const callbackUri = "https://leaderacademy.school/api/auth/callback/google";
     const url = getGoogleAuthUrl(state, callbackUri);
     expect(url).toContain("accounts.google.com");
     expect(url).toContain("client_id=");
     expect(url).toContain("redirect_uri=");
     expect(url).toContain("scope=");
     // Verify the redirect_uri points to the server callback
-    expect(url).toContain(encodeURIComponent("/api/google-classroom/callback"));
+    expect(url).toContain(encodeURIComponent("/api/auth/callback/google"));
   });
 
   it("should include state parameter with origin in the auth URL", async () => {
     const { getGoogleAuthUrl } = await import("./googleClassroom");
     const state = JSON.stringify({ userId: 1, origin: "https://leaderacademy.school" });
-    const callbackUri = "https://leaderacademy.school/api/google-classroom/callback";
+    const callbackUri = "https://leaderacademy.school/api/auth/callback/google";
     const url = getGoogleAuthUrl(state, callbackUri);
     expect(url).toContain("state=");
     // The state should be URL-encoded JSON containing the origin

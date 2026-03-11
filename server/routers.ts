@@ -11395,7 +11395,7 @@ ${input.lessonContent}
         if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
         const { getGoogleAuthUrl } = await import("./googleClassroom");
         // Use server-side callback route as redirect_uri for reliability
-        const callbackUri = `${input.origin}/api/google-classroom/callback`;
+        const callbackUri = `${input.origin}/api/auth/callback/google`;
         const state = JSON.stringify({ userId: ctx.user.id, origin: input.origin });
         console.log("[Google Classroom] Generating auth URL with callback:", callbackUri);
         const url = getGoogleAuthUrl(state, callbackUri);

@@ -72,7 +72,7 @@ export default function GoogleClassroomSettings() {
     setIsConnecting(true);
     try {
       const result = await getAuthUrl.mutateAsync({
-        redirectUri: `${window.location.origin}/api/google-classroom/callback`,
+        redirectUri: `${window.location.origin}/api/auth/callback/google`,
         origin: window.location.origin,
       });
       // Redirect to Google OAuth consent screen
