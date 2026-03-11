@@ -2084,3 +2084,16 @@
 - [x] Remove Google Classroom link from batch cards and navigation
 - [x] Ensure smooth user experience with no Google OAuth remnants
 - [x] Tests passing (5/5 invite-links tests)
+
+## Enhanced Assignment Submission System
+- [x] Add submission attachments schema (file uploads: PDF, Word, images)
+- [x] Add rich text content field to submissions
+- [x] Implement file upload endpoint using S3 storage
+- [x] Create submission procedures: submit with files + rich text
+- [x] Build rich text editor component (tiptap) for submission UI
+- [x] Build file upload component with drag-and-drop support
+- [x] Update participant assignment view with new submission form (tabs: text + files)
+- [x] Allow multiple file attachments per submission (max 5 files, 10MB each)
+- [x] Show submitted files and rich text in admin grading view
+- [x] Write tests for submission features (15/15 passing)
+- [ ] Save checkpoint

@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BookOpen, Clock, CheckCircle2, AlertCircle, Send, Eye, Loader2, FileText, Award, ArrowRight, BarChart3, Star, RefreshCw } from "lucide-react";
+import { BookOpen, Clock, CheckCircle2, AlertCircle, Send, Eye, Loader2, FileText, Award, BarChart3, Star, RefreshCw, Paperclip, Type } from "lucide-react";
+import RichTextEditor from "@/components/RichTextEditor";
+import FileUploader from "@/components/FileUploader";
+
+interface FileAttachment {
+  name: string;
+  url: string;
+  mimeType: string;
+  size: number;
+}
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
   draft: { label: "مسودة", color: "bg-gray-100 text-gray-700", icon: FileText },
@@ -19,20 +28,22 @@ const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = 
   returned: { label: "مُعاد للمراجعة", color: "bg-red-100 text-red-700", icon: RefreshCw },
 };
 
-const GRADE_MAP: Record<string, { label: string; color: string; emoji: string }> = {
-  excellent: { label: "ممتاز", color: "text-green-600", emoji: "🌟" },
-  good: { label: "جيد", color: "text-blue-600", emoji: "👍" },
-  acceptable: { label: "مقبول", color: "text-amber-600", emoji: "📝" },
-  needs_improvement: { label: "يحتاج تحسين", color: "text-orange-600", emoji: "📌" },
-  insufficient: { label: "غير كافٍ", color: "text-red-600", emoji: "⚠️" },
+const GRADE_MAP: Record<string, { label: string; color: string }> = {
+  excellent: { label: "ممتاز", color: "text-green-600" },
+  good: { label: "جيد", color: "text-blue-600" },
+  acceptable: { label: "مقبول", color: "text-amber-600" },
+  needs_improvement: { label: "يحتاج تحسين", color: "text-orange-600" },
+  insufficient: { label: "غير كافٍ", color: "text-red-600" },
 };
 
 export default function MyAssignments() {
   const { user } = useAuth();
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [submissionContent, setSubmissionContent] = useState("");
+  const [submissionAttachments, setSubmissionAttachments] = useState<FileAttachment[]>([]);
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("text");
 
   const assignmentsQuery = trpc.assignmentManager.myAssignments.useQuery(undefined, { enabled: !!user });
   const submissionQuery = trpc.assignmentManager.mySubmission.useQuery(
@@ -47,6 +58,7 @@ export default function MyAssignments() {
       submissionQuery.refetch();
       setShowSubmitDialog(false);
       setSubmissionContent("");
+      setSubmissionAttachments([]);
     },
     onError: (err) => { toast.error(err.message); },
   });
@@ -62,10 +74,24 @@ export default function MyAssignments() {
   }
 
   const assignments = assignmentsQuery.data || [];
-  const pendingCount = assignments.filter(a => !a.submission).length;
-  const submittedCount = assignments.filter(a => a.submission?.status === "submitted" || a.submission?.status === "grading").length;
-  const gradedCount = assignments.filter(a => a.submission?.status === "graded").length;
-  const returnedCount = assignments.filter(a => a.submission?.status === "returned").length;
+  const pendingCount = assignments.filter((a: any) => !a.submission).length;
+  const submittedCount = assignments.filter((a: any) => a.submission?.status === "submitted" || a.submission?.status === "grading").length;
+  const gradedCount = assignments.filter((a: any) => a.submission?.status === "graded").length;
+  const returnedCount = assignments.filter((a: any) => a.submission?.status === "returned").length;
+
+  const handleSubmit = (assignmentId: number) => {
+    const hasContent = submissionContent.trim() && submissionContent !== "<p></p>";
+    const hasFiles = submissionAttachments.length > 0;
+    if (!hasContent && !hasFiles) {
+      toast.error("يجب إضافة محتوى نصي أو ملفات مرفقة");
+      return;
+    }
+    submitWork.mutate({
+      assignmentId,
+      content: submissionContent || "",
+      attachments: submissionAttachments,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
@@ -173,7 +199,7 @@ export default function MyAssignments() {
                           <div className="text-center">
                             <div className="text-2xl font-bold text-emerald-600">{assignment.submission.aiScore}/{assignment.maxScore}</div>
                             {grade && (
-                              <div className={`text-sm font-medium ${grade.color}`}>{grade.emoji} {grade.label}</div>
+                              <div className={`text-sm font-medium ${grade.color}`}>{grade.label}</div>
                             )}
                             {assignment.submission.masteryScore != null && (
                               <div className="text-xs text-gray-500 mt-1">درجة الإتقان: {assignment.submission.masteryScore}%</div>
@@ -186,7 +212,12 @@ export default function MyAssignments() {
                           {canSubmit && (
                             <Dialog open={showSubmitDialog && selectedAssignment?.id === assignment.id} onOpenChange={(open) => {
                               setShowSubmitDialog(open);
-                              if (open) { setSelectedAssignment(assignment); setSubmissionContent(""); }
+                              if (open) {
+                                setSelectedAssignment(assignment);
+                                setSubmissionContent("");
+                                setSubmissionAttachments([]);
+                                setActiveTab("text");
+                              }
                             }}>
                               <DialogTrigger asChild>
                                 <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
@@ -194,28 +225,90 @@ export default function MyAssignments() {
                                   {assignment.submission?.status === "returned" ? "إعادة التسليم" : "تسليم"}
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent dir="rtl" className="max-w-2xl">
+                              <DialogContent dir="rtl" className="max-w-3xl max-h-[90vh] overflow-y-auto">
                                 <DialogHeader>
-                                  <DialogTitle>تسليم: {assignment.title}</DialogTitle>
+                                  <DialogTitle className="text-xl">تسليم: {assignment.title}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
+                                  {/* Return feedback */}
                                   {assignment.submission?.status === "returned" && assignment.submission?.aiFeedback && (
                                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                                       <h4 className="font-medium text-amber-800 mb-2 flex items-center gap-2"><AlertCircle className="h-4 w-4" />ملاحظات المراجعة السابقة:</h4>
                                       <p className="text-sm text-amber-700">{assignment.submission.aiFeedback}</p>
                                     </div>
                                   )}
-                                  <div>
-                                    <label className="text-sm font-medium mb-2 block">المحتوى المقدم</label>
-                                    <p className="text-xs text-gray-500 mb-2">
-                                      {assignment.type === "lesson_plan" ? "الصق هنا جذاذة الدرس المُعدّة" : assignment.type === "exam" ? "الصق هنا الاختبار المُعدّ" : "اكتب إجابتك هنا"}
-                                    </p>
-                                    <Textarea className="min-h-[300px] font-mono text-sm" placeholder="الصق محتوى عملك هنا..." value={submissionContent} onChange={e => setSubmissionContent(e.target.value)} dir="rtl" />
-                                  </div>
+
+                                  {/* Submission Tabs */}
+                                  <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                      <TabsTrigger value="text" className="flex items-center gap-2">
+                                        <Type className="h-4 w-4" />
+                                        محرر النصوص
+                                      </TabsTrigger>
+                                      <TabsTrigger value="files" className="flex items-center gap-2">
+                                        <Paperclip className="h-4 w-4" />
+                                        رفع ملفات
+                                        {submissionAttachments.length > 0 && (
+                                          <Badge variant="secondary" className="mr-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                                            {submissionAttachments.length}
+                                          </Badge>
+                                        )}
+                                      </TabsTrigger>
+                                    </TabsList>
+
+                                    <TabsContent value="text" className="mt-4">
+                                      <div className="space-y-2">
+                                        <p className="text-sm text-gray-600">
+                                          {assignment.type === "lesson_plan" ? "اكتب أو الصق جذاذة الدرس المُعدّة" : assignment.type === "exam" ? "اكتب أو الصق الاختبار المُعدّ" : "اكتب إجابتك هنا مع إمكانية التنسيق"}
+                                        </p>
+                                        <RichTextEditor
+                                          content={submissionContent}
+                                          onChange={setSubmissionContent}
+                                          placeholder={assignment.type === "lesson_plan" ? "اكتب جذاذة الدرس هنا..." : assignment.type === "exam" ? "اكتب الاختبار هنا..." : "اكتب إجابتك هنا..."}
+                                          minHeight="250px"
+                                        />
+                                      </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="files" className="mt-4">
+                                      <div className="space-y-2">
+                                        <p className="text-sm text-gray-600">
+                                          ارفع ملفات الواجب (PDF, Word, PowerPoint, صور) - حد أقصى 5 ملفات
+                                        </p>
+                                        <FileUploader
+                                          attachments={submissionAttachments}
+                                          onAttachmentsChange={setSubmissionAttachments}
+                                        />
+                                      </div>
+                                    </TabsContent>
+                                  </Tabs>
+
+                                  {/* Summary of what will be submitted */}
+                                  {(submissionContent.trim() && submissionContent !== "<p></p>" || submissionAttachments.length > 0) && (
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                                      <p className="text-sm font-medium text-emerald-800 mb-1">ملخص التسليم:</p>
+                                      <div className="flex flex-wrap gap-2 text-xs text-emerald-700">
+                                        {submissionContent.trim() && submissionContent !== "<p></p>" && (
+                                          <span className="flex items-center gap-1 bg-emerald-100 px-2 py-1 rounded">
+                                            <Type className="h-3 w-3" /> محتوى نصي
+                                          </span>
+                                        )}
+                                        {submissionAttachments.length > 0 && (
+                                          <span className="flex items-center gap-1 bg-emerald-100 px-2 py-1 rounded">
+                                            <Paperclip className="h-3 w-3" /> {submissionAttachments.length} ملف مرفق
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                                 <DialogFooter>
                                   <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-                                  <Button onClick={() => submitWork.mutate({ assignmentId: assignment.id, content: submissionContent })} disabled={!submissionContent.trim() || submitWork.isPending} className="bg-emerald-600 hover:bg-emerald-700">
+                                  <Button
+                                    onClick={() => handleSubmit(assignment.id)}
+                                    disabled={submitWork.isPending || (!submissionContent.trim() && submissionContent !== "<p></p>" && submissionAttachments.length === 0)}
+                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                  >
                                     {submitWork.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Send className="h-4 w-4 ml-2" />}
                                     تسليم للتقييم
                                   </Button>
@@ -232,7 +325,7 @@ export default function MyAssignments() {
                               <DialogTrigger asChild>
                                 <Button size="sm" variant="outline"><Eye className="h-4 w-4 ml-1" />عرض التقييم</Button>
                               </DialogTrigger>
-                              <DialogContent dir="rtl" className="max-w-2xl">
+                              <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
                                 <DialogHeader>
                                   <DialogTitle className="flex items-center gap-2"><Award className="h-5 w-5 text-emerald-600" />نتيجة التقييم</DialogTitle>
                                 </DialogHeader>
@@ -241,7 +334,7 @@ export default function MyAssignments() {
                                   <div className="bg-gradient-to-l from-emerald-50 to-teal-50 rounded-xl p-6 text-center">
                                     <div className="text-4xl font-bold text-emerald-600">{assignment.submission.aiScore}/{assignment.maxScore}</div>
                                     {grade && (
-                                      <div className={`text-lg font-medium mt-1 ${grade.color}`}>{grade.emoji} {grade.label}</div>
+                                      <div className={`text-lg font-medium mt-1 ${grade.color}`}>{grade.label}</div>
                                     )}
                                     {assignment.submission.masteryScore != null && (
                                       <div className="mt-2">
@@ -278,6 +371,21 @@ export default function MyAssignments() {
                                             </div>
                                             {r.feedback && <p className="text-xs text-gray-600">{r.feedback}</p>}
                                           </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Submitted Attachments */}
+                                  {submissionQuery.data?.attachments && (submissionQuery.data.attachments as any[]).length > 0 && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2"><Paperclip className="h-4 w-4" />الملفات المرفقة</h4>
+                                      <div className="space-y-2">
+                                        {(submissionQuery.data.attachments as any[]).map((file: any, i: number) => (
+                                          <a key={i} href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-gray-50 rounded border hover:bg-gray-100 transition-colors">
+                                            <FileText className="h-4 w-4 text-gray-500" />
+                                            <span className="text-sm text-blue-600 hover:underline">{file.name}</span>
+                                          </a>
                                         ))}
                                       </div>
                                     </div>

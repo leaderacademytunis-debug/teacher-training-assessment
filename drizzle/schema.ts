@@ -1598,8 +1598,14 @@ export const submissions = mysqlTable("submissions", {
   id: int("id").primaryKey().autoincrement(),
   assignmentId: int("assignmentId").notNull(),
   userId: int("userId").notNull(),
-  content: mediumtext("content"),
-  fileUrl: varchar("fileUrl", { length: 500 }),
+  content: mediumtext("content"), // Rich text HTML content
+  fileUrl: varchar("fileUrl", { length: 500 }), // Legacy single file
+  attachments: json("attachments").$type<Array<{
+    name: string;
+    url: string;
+    mimeType: string;
+    size: number;
+  }>>(), // Multiple file attachments
   aiScore: int("aiScore"),
   aiGrade: mysqlEnum("aiGrade", ["excellent", "good", "acceptable", "needs_improvement", "insufficient"]),
   aiFeedback: mediumtext("aiFeedback"),

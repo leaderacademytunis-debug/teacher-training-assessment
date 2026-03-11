@@ -11386,23 +11386,71 @@ ${input.lessonContent}
     }),
 
     // Submit assignment
+    // Upload file for submission
+    uploadSubmissionFile: protectedProcedure.input(z.object({
+      base64Data: z.string(),
+      fileName: z.string(),
+      mimeType: z.string(),
+      fileSize: z.number(),
+    })).mutation(async ({ ctx, input }) => {
+      // Validate file type
+      const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "image/jpeg", "image/png", "image/gif", "image/webp",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ];
+      if (!allowedTypes.includes(input.mimeType)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "نوع الملف غير مدعوم. الأنواع المدعومة: PDF, Word, PowerPoint, صور" });
+      }
+      // Max 10MB
+      if (input.fileSize > 10 * 1024 * 1024) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الملف يتجاوز الحد الأقصى (10 ميغابايت)" });
+      }
+      const { storagePut } = await import("./storage");
+      const buffer = Buffer.from(input.base64Data, "base64");
+      const ext = input.fileName.split(".").pop() || "bin";
+      const uniqueName = `submissions/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { url } = await storagePut(uniqueName, buffer, input.mimeType);
+      return { url, name: input.fileName, mimeType: input.mimeType, size: input.fileSize };
+    }),
+    // Submit assignment with rich text and file attachments
     submitWork: protectedProcedure.input(z.object({
       assignmentId: z.number(),
-      content: z.string().min(1),
+      content: z.string().optional().default(""),
       fileUrl: z.string().optional(),
+      attachments: z.array(z.object({
+        name: z.string(),
+        url: z.string(),
+        mimeType: z.string(),
+        size: z.number(),
+      })).optional(),
     })).mutation(async ({ ctx, input }) => {
       const database = await getDb();
       if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // Must have content or attachments
+      if (!input.content?.trim() && (!input.attachments || input.attachments.length === 0)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "يجب إضافة محتوى نصي أو ملفات مرفقة" });
+      }
       // Check if already submitted
       const [existing] = await database.select().from(submissions).where(and(eq(submissions.assignmentId, input.assignmentId), eq(submissions.userId, ctx.user.id)));
       if (existing && existing.status !== "draft" && existing.status !== "returned") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "لقد قمت بتسليم هذا الواجب مسبقاً" });
       }
+      const submissionData = {
+        content: input.content || "",
+        fileUrl: input.fileUrl || (input.attachments?.[0]?.url ?? null),
+        attachments: input.attachments || [],
+        status: "submitted" as const,
+        submittedAt: new Date(),
+      };
       if (existing) {
-        await database.update(submissions).set({ content: input.content, fileUrl: input.fileUrl, status: "submitted", submittedAt: new Date() }).where(eq(submissions.id, existing.id));
+        await database.update(submissions).set(submissionData).where(eq(submissions.id, existing.id));
         return { id: existing.id, status: "submitted" };
       }
-      const [result] = await database.insert(submissions).values({ assignmentId: input.assignmentId, userId: ctx.user.id, content: input.content, fileUrl: input.fileUrl, status: "submitted", submittedAt: new Date() });
+      const [result] = await database.insert(submissions).values({ assignmentId: input.assignmentId, userId: ctx.user.id, ...submissionData });
       return { id: result.insertId, status: "submitted" };
     }),
 
