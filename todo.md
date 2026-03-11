@@ -2130,3 +2130,32 @@
 - [x] 10 vitest tests passing for attachments parsing
 - [x] Verified in browser: submissions dialog shows correctly with attachments
 - [x] Test and save checkpoint
+
+## Feature: Statistics Dashboard with Charts
+- [x] Create backend procedure to calculate batch statistics (completion rates, averages, score distribution)
+- [x] Create statistics tab/section in batch management with charts (recharts)
+- [x] Show completion rate per assignment, average scores, score distribution
+- [x] Show per-member progress overview with expandable cards
+- [x] Show assignment details table (submissions, graded, completion, average, highest, lowest)
+- [x] Show grade distribution pie chart
+- [x] Show participant ranking bar chart
+- [x] Write vitest tests (22 tests passing)
+- [x] Test in browser - verified all charts and data display correctly
+
+## Feature: Direct Commenting System on Submissions
+- [x] Create database schema for submission comments (submissionComments table)
+- [x] Create backend procedures for adding/listing comments
+- [x] Add comment UI in submission detail dialog (instructor-participant conversation)
+- [x] Support both instructor and participant comments with role badges
+- [x] Toast notification on successful comment
+- [x] Write vitest tests (22 tests passing including comments tests)
+- [x] Test in browser - verified comment creation, display, and author info
+
+## Feature: Downloadable PDF Reports for Participants
+- [x] Create participant report dialog with full report layout
+- [x] Include all assignments, grades, feedback, and overall statistics
+- [x] Support Arabic text and RTL layout in report
+- [x] Add PDF report button per participant in statistics tab
+- [x] Print/PDF export via window.print() with @media print styles
+- [x] Write vitest tests (22 tests passing including PDF report tests)
+- [x] Test in browser - verified report dialog, content, and print button

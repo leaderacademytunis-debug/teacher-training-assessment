@@ -12,7 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield, Link2, Copy, RefreshCw, Download, ExternalLink, Eye, Paperclip, FileText, Image as ImageIcon } from "lucide-react";
+import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, CheckCircle2, Clock, AlertCircle, ArrowRight, Loader2, Tag, Shield, Link2, Copy, RefreshCw, Download, ExternalLink, Eye, Paperclip, FileText, Image as ImageIcon, PieChart, MessageSquare } from "lucide-react";
+import BatchStatsDashboard from "./BatchStatsDashboard";
+import SubmissionComments from "./SubmissionComments";
+import ParticipantPDFReport from "./ParticipantPDFReport";
 
 const FEATURE_OPTIONS = [
   { key: "accessEdugpt", label: "EduGPT المساعد الذكي", icon: "🤖" },
@@ -54,12 +57,18 @@ export default function AdminBatchManager() {
   const [inviteExpiresAt, setInviteExpiresAt] = useState("");
   const [inviteMaxMembers, setInviteMaxMembers] = useState<string>("");
   const [showSubmissionDetail, setShowSubmissionDetail] = useState<number | null>(null);
+  const [reportUserId, setReportUserId] = useState<number | null>(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   // Queries
   const batchesQuery = trpc.batchManager.listBatches.useQuery(undefined, { enabled: !!user && user.role === "admin" });
   const batchDetailQuery = trpc.batchManager.getBatch.useQuery({ id: selectedBatchId! }, { enabled: !!selectedBatchId });
   const batchProgressQuery = trpc.batchManager.batchProgress.useQuery({ batchId: selectedBatchId! }, { enabled: !!selectedBatchId && activeTab === "progress" });
   const searchUsersQuery = trpc.batchManager.searchUsers.useQuery({ query: searchQuery }, { enabled: searchQuery.length >= 2 });
+  const submissionsQuery = trpc.assignmentManager.getAssignmentSubmissions.useQuery(
+    { assignmentId: showSubmissionDetail! },
+    { enabled: !!showSubmissionDetail }
+  );
 
   // Mutations
   const createBatch = trpc.batchManager.createBatch.useMutation({
@@ -149,10 +158,6 @@ export default function AdminBatchManager() {
   const progressData = batchProgressQuery.data;
 
   // Invite Link Dialog
-  const submissionsQuery = trpc.assignmentManager.getAssignmentSubmissions.useQuery(
-    { assignmentId: showSubmissionDetail! },
-    { enabled: !!showSubmissionDetail }
-  );
 
   const inviteLinkDialog = showInviteLinkDialog && selectedBatchId && (
     <Dialog open={showInviteLinkDialog} onOpenChange={setShowInviteLinkDialog}>
@@ -382,11 +387,12 @@ export default function AdminBatchManager() {
 
                 {/* Tabs */}
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="w-full grid grid-cols-4">
+                  <TabsList className="w-full grid grid-cols-5">
                     <TabsTrigger value="members" className="flex items-center gap-1"><Users className="h-4 w-4" />الأعضاء ({batchDetail.members.length})</TabsTrigger>
                     <TabsTrigger value="features" className="flex items-center gap-1"><Settings className="h-4 w-4" />الصلاحيات</TabsTrigger>
                     <TabsTrigger value="assignments" className="flex items-center gap-1"><BookOpen className="h-4 w-4" />الواجبات</TabsTrigger>
                     <TabsTrigger value="progress" className="flex items-center gap-1"><BarChart3 className="h-4 w-4" />التقدم</TabsTrigger>
+                    <TabsTrigger value="statistics" className="flex items-center gap-1"><PieChart className="h-4 w-4" />الإحصائيات</TabsTrigger>
                   </TabsList>
 
                   {/* Members Tab */}
@@ -672,6 +678,19 @@ export default function AdminBatchManager() {
                       </CardContent>
                     </Card>
                   </TabsContent>
+
+                  {/* Statistics Tab */}
+                  <TabsContent value="statistics">
+                    {selectedBatchId && (
+                      <BatchStatsDashboard
+                        batchId={selectedBatchId}
+                        onGenerateReport={(userId) => {
+                          setReportUserId(userId);
+                          setShowReportDialog(true);
+                        }}
+                      />
+                    )}
+                  </TabsContent>
                 </Tabs>
               </div>
             ) : null}
@@ -778,12 +797,30 @@ export default function AdminBatchManager() {
                     تاريخ التسليم: {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('ar-TN') : '—'}
                     {sub.gradedAt && <span className="mr-3">تاريخ التقييم: {new Date(sub.gradedAt).toLocaleString('ar-TN')}</span>}
                   </div>
+
+                  {/* Submission Comments */}
+                  <div className="mt-3 pt-3 border-t">
+                    <SubmissionComments submissionId={sub.id} />
+                  </div>
                 </div>
               ))
             )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* PDF Report Dialog */}
+      {selectedBatchId && reportUserId && (
+        <ParticipantPDFReport
+          batchId={selectedBatchId}
+          userId={reportUserId}
+          open={showReportDialog}
+          onOpenChange={(open) => {
+            setShowReportDialog(open);
+            if (!open) setReportUserId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

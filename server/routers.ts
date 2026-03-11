@@ -5,8 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions } from "../drizzle/schema";
-import { eq, desc, asc, and, sql, count, like, or, inArray } from "drizzle-orm";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, submissionComments } from "../drizzle/schema";
+import { eq, desc, asc, and, sql, count, like, or, inArray, avg, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
 import { nanoid } from "nanoid";
@@ -11621,6 +11621,254 @@ ${input.lessonContent}
         userId: submissions.userId,
       }).from(submissions).innerJoin(users, eq(submissions.userId, users.id)).where(eq(submissions.assignmentId, input.assignmentId)).orderBy(desc(submissions.submittedAt));
       return { assignment, submissions: subs };
+    }),
+  }),
+
+  // ===== BATCH STATISTICS (إحصائيات الدفعة) =====
+  batchStats: router({
+    // Detailed batch statistics with charts data
+    getStats: adminProcedure.input(z.object({ batchId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      // Get members
+      const members = await database.select({ userId: batchMembers.userId, userName: users.name, userEmail: users.email, arabicName: users.arabicName, joinedAt: batchMembers.joinedAt })
+        .from(batchMembers).innerJoin(users, eq(batchMembers.userId, users.id)).where(eq(batchMembers.batchId, input.batchId));
+      const memberCount = members.length;
+      
+      // Get assignments
+      const batchAssignments = await database.select().from(assignments).where(eq(assignments.batchId, input.batchId)).orderBy(asc(assignments.createdAt));
+      
+      // Per-assignment stats
+      const assignmentStats = [];
+      let totalSubmitted = 0;
+      let totalGraded = 0;
+      let totalScoreSum = 0;
+      let totalScoreCount = 0;
+      
+      for (const assignment of batchAssignments) {
+        const allSubs = await database.select().from(submissions).where(eq(submissions.assignmentId, assignment.id));
+        const submitted = allSubs.filter(s => s.status !== 'draft').length;
+        const graded = allSubs.filter(s => s.status === 'graded').length;
+        const scores = allSubs.filter(s => s.aiScore !== null).map(s => s.aiScore!);
+        const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+        const maxScoreVal = scores.length > 0 ? Math.max(...scores) : 0;
+        const minScoreVal = scores.length > 0 ? Math.min(...scores) : 0;
+        const completionRate = memberCount > 0 ? Math.round((submitted / memberCount) * 100) : 0;
+        
+        // Score distribution
+        const distribution = { excellent: 0, good: 0, acceptable: 0, needsImprovement: 0, insufficient: 0 };
+        for (const s of allSubs) {
+          if (s.aiGrade === 'excellent') distribution.excellent++;
+          else if (s.aiGrade === 'good') distribution.good++;
+          else if (s.aiGrade === 'acceptable') distribution.acceptable++;
+          else if (s.aiGrade === 'needs_improvement') distribution.needsImprovement++;
+          else if (s.aiGrade === 'insufficient') distribution.insufficient++;
+        }
+        
+        totalSubmitted += submitted;
+        totalGraded += graded;
+        totalScoreSum += scores.reduce((a, b) => a + b, 0);
+        totalScoreCount += scores.length;
+        
+        assignmentStats.push({
+          id: assignment.id,
+          title: assignment.title,
+          type: assignment.type,
+          maxScore: assignment.maxScore,
+          dueDate: assignment.dueDate,
+          submitted,
+          graded,
+          completionRate,
+          avgScore,
+          maxScoreVal,
+          minScoreVal,
+          distribution,
+        });
+      }
+      
+      // Per-member progress
+      const memberProgress = [];
+      for (const member of members) {
+        const memberSubs = await database.select({ id: submissions.id, assignmentId: submissions.assignmentId, status: submissions.status, aiScore: submissions.aiScore, aiGrade: submissions.aiGrade, masteryScore: submissions.masteryScore })
+          .from(submissions).where(and(eq(submissions.userId, member.userId), inArray(submissions.assignmentId, batchAssignments.map(a => a.id).length > 0 ? batchAssignments.map(a => a.id) : [0])));
+        const completedCount = memberSubs.filter(s => s.status === 'graded' || s.status === 'submitted').length;
+        const gradedScores = memberSubs.filter(s => s.aiScore !== null).map(s => s.aiScore!);
+        const memberAvg = gradedScores.length > 0 ? Math.round(gradedScores.reduce((a, b) => a + b, 0) / gradedScores.length) : 0;
+        const completionPct = batchAssignments.length > 0 ? Math.round((completedCount / batchAssignments.length) * 100) : 0;
+        
+        memberProgress.push({
+          userId: member.userId,
+          name: member.arabicName || member.userName || member.userEmail,
+          email: member.userEmail,
+          completedAssignments: completedCount,
+          totalAssignments: batchAssignments.length,
+          completionPct,
+          avgScore: memberAvg,
+          submissions: memberSubs,
+        });
+      }
+      
+      // Overall stats
+      const overallAvg = totalScoreCount > 0 ? Math.round(totalScoreSum / totalScoreCount) : 0;
+      const overallCompletion = (memberCount * batchAssignments.length) > 0 ? Math.round((totalSubmitted / (memberCount * batchAssignments.length)) * 100) : 0;
+      
+      return {
+        batch,
+        memberCount,
+        assignmentCount: batchAssignments.length,
+        overallAvg,
+        overallCompletion,
+        totalSubmitted,
+        totalGraded,
+        assignmentStats,
+        memberProgress,
+      };
+    }),
+  }),
+
+  // ===== SUBMISSION COMMENTS (تعليقات التسليمات) =====
+  submissionComment: router({
+    // List comments for a submission
+    list: protectedProcedure.input(z.object({ submissionId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) return [];
+      const comments = await database.select({
+        id: submissionComments.id,
+        submissionId: submissionComments.submissionId,
+        userId: submissionComments.userId,
+        content: submissionComments.content,
+        role: submissionComments.role,
+        createdAt: submissionComments.createdAt,
+        userName: users.name,
+        userEmail: users.email,
+        arabicName: users.arabicName,
+      }).from(submissionComments)
+        .innerJoin(users, eq(submissionComments.userId, users.id))
+        .where(eq(submissionComments.submissionId, input.submissionId))
+        .orderBy(asc(submissionComments.createdAt));
+      return comments;
+    }),
+
+    // Add a comment
+    add: protectedProcedure.input(z.object({
+      submissionId: z.number(),
+      content: z.string().min(1),
+    })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      // Determine role
+      const isAdmin = ["admin", "trainer", "supervisor"].includes(ctx.user.role);
+      const role = isAdmin ? "instructor" : "participant";
+      
+      // Verify access: participant can only comment on their own submission
+      if (!isAdmin) {
+        const [sub] = await database.select({ userId: submissions.userId }).from(submissions).where(eq(submissions.id, input.submissionId));
+        if (!sub || sub.userId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكنك التعليق على هذا التسليم" });
+        }
+      }
+      
+      const [result] = await database.insert(submissionComments).values({
+        submissionId: input.submissionId,
+        userId: ctx.user.id,
+        content: input.content,
+        role,
+      });
+      
+      // Send notification to the other party
+      try {
+        const [sub] = await database.select({ userId: submissions.userId, assignmentId: submissions.assignmentId }).from(submissions).where(eq(submissions.id, input.submissionId));
+        if (sub) {
+          const [assignment] = await database.select({ title: assignments.title, createdBy: assignments.createdBy }).from(assignments).where(eq(assignments.id, sub.assignmentId));
+          if (isAdmin) {
+            // Notify participant
+            await database.insert(notifications).values({
+              userId: sub.userId,
+              titleAr: "تعليق جديد من المدرب",
+              messageAr: `أضاف المدرب تعليقاً على تسليمك للواجب "${assignment?.title || ''}"`,
+              type: "submission_comment",
+              relatedId: sub.assignmentId,
+            });
+          } else {
+            // Notify instructor (assignment creator)
+            if (assignment?.createdBy) {
+              await database.insert(notifications).values({
+                userId: assignment.createdBy,
+                titleAr: "تعليق جديد من المشارك",
+                messageAr: `أضاف المشارك ${ctx.user.name || ''} تعليقاً على تسليمه للواجب "${assignment?.title || ''}"`,
+                type: "submission_comment",
+                relatedId: sub.assignmentId,
+              });
+            }
+          }
+        }
+      } catch (e) { console.warn('[Comment Notification] Failed:', e); }
+      
+      return { id: result.insertId };
+    }),
+  }),
+
+  // ===== PARTICIPANT PDF REPORT (تقرير PDF للمشارك) =====
+  participantReport: router({
+    // Generate report data for a participant in a batch
+    getData: adminProcedure.input(z.object({ batchId: z.number(), userId: z.number() })).query(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const [user] = await database.select({ id: users.id, name: users.name, email: users.email, arabicName: users.arabicName }).from(users).where(eq(users.id, input.userId));
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const batchAssignments = await database.select().from(assignments).where(eq(assignments.batchId, input.batchId)).orderBy(asc(assignments.createdAt));
+      
+      const assignmentResults = [];
+      let totalScore = 0;
+      let totalMaxScore = 0;
+      let gradedCount = 0;
+      
+      for (const assignment of batchAssignments) {
+        const [sub] = await database.select().from(submissions).where(and(eq(submissions.assignmentId, assignment.id), eq(submissions.userId, input.userId)));
+        assignmentResults.push({
+          title: assignment.title,
+          type: assignment.type,
+          maxScore: assignment.maxScore,
+          score: sub?.aiScore ?? null,
+          grade: sub?.aiGrade ?? null,
+          feedback: sub?.aiFeedback ?? null,
+          masteryScore: sub?.masteryScore ?? null,
+          status: sub?.status ?? 'not_submitted',
+          submittedAt: sub?.submittedAt,
+          gradedAt: sub?.gradedAt,
+        });
+        if (sub?.aiScore !== null && sub?.aiScore !== undefined) {
+          totalScore += sub.aiScore;
+          totalMaxScore += assignment.maxScore;
+          gradedCount++;
+        }
+      }
+      
+      const overallAvg = gradedCount > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
+      
+      return {
+        batch: { name: batch.name, description: batch.description },
+        participant: { name: user.arabicName || user.name || user.email, email: user.email },
+        assignmentResults,
+        summary: {
+          totalAssignments: batchAssignments.length,
+          completedAssignments: assignmentResults.filter(a => a.status !== 'not_submitted' && a.status !== 'draft').length,
+          gradedAssignments: gradedCount,
+          totalScore,
+          totalMaxScore,
+          overallAvg,
+        },
+        generatedAt: new Date().toISOString(),
+      };
     }),
   }),
 

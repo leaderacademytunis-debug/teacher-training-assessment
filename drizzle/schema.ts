@@ -215,7 +215,7 @@ export const notifications = mysqlTable("notifications", {
   userId: int("userId").notNull(),
   titleAr: varchar("titleAr", { length: 255 }).notNull(),
   messageAr: text("messageAr").notNull(),
-  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review", "assignment_graded", "assignment_returned"]).notNull(),
+  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review", "assignment_graded", "assignment_returned", "submission_comment"]).notNull(),
   relatedId: int("relatedId"), // courseId, examId, etc.
   isRead: boolean("isRead").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1621,6 +1621,18 @@ export const submissions = mysqlTable("submissions", {
 });
 export type Submission = typeof submissions.$inferSelect;
 export type InsertSubmission = typeof submissions.$inferInsert;
+
+// Submission Comments (تعليقات التسليمات - محادثة بين المدرب والمشارك)
+export const submissionComments = mysqlTable("submission_comments", {
+  id: int("id").primaryKey().autoincrement(),
+  submissionId: int("submissionId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  role: mysqlEnum("role", ["instructor", "participant"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SubmissionComment = typeof submissionComments.$inferSelect;
+export type InsertSubmissionComment = typeof submissionComments.$inferInsert;
 
 
 // ========== Google Classroom Integration ==========
