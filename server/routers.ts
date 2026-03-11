@@ -11390,12 +11390,15 @@ ${input.lessonContent}
 
     // Get Google OAuth URL
     getAuthUrl: protectedProcedure
-      .input(z.object({ redirectUri: z.string() }))
+      .input(z.object({ redirectUri: z.string(), origin: z.string() }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
         const { getGoogleAuthUrl } = await import("./googleClassroom");
-        const state = JSON.stringify({ userId: ctx.user.id });
-        const url = getGoogleAuthUrl(state, input.redirectUri);
+        // Use server-side callback route as redirect_uri for reliability
+        const callbackUri = `${input.origin}/api/google-classroom/callback`;
+        const state = JSON.stringify({ userId: ctx.user.id, origin: input.origin });
+        console.log("[Google Classroom] Generating auth URL with callback:", callbackUri);
+        const url = getGoogleAuthUrl(state, callbackUri);
         return { url };
       }),
 

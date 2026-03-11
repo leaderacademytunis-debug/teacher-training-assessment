@@ -15,12 +15,31 @@ describe("Google Classroom Credentials Validation", () => {
     expect(clientSecret).toContain("GOCSPX-");
   });
 
-  it("should be able to construct a valid Google OAuth URL", async () => {
+  it("should be able to construct a valid Google OAuth URL with server callback", async () => {
     const { getGoogleAuthUrl } = await import("./googleClassroom");
-    const url = getGoogleAuthUrl("https://leaderacademy.school/admin/google-classroom");
+    const state = JSON.stringify({ userId: 1, origin: "https://leaderacademy.school" });
+    const callbackUri = "https://leaderacademy.school/api/google-classroom/callback";
+    const url = getGoogleAuthUrl(state, callbackUri);
     expect(url).toContain("accounts.google.com");
     expect(url).toContain("client_id=");
     expect(url).toContain("redirect_uri=");
     expect(url).toContain("scope=");
+    // Verify the redirect_uri points to the server callback
+    expect(url).toContain(encodeURIComponent("/api/google-classroom/callback"));
+  });
+
+  it("should include state parameter with origin in the auth URL", async () => {
+    const { getGoogleAuthUrl } = await import("./googleClassroom");
+    const state = JSON.stringify({ userId: 1, origin: "https://leaderacademy.school" });
+    const callbackUri = "https://leaderacademy.school/api/google-classroom/callback";
+    const url = getGoogleAuthUrl(state, callbackUri);
+    expect(url).toContain("state=");
+    // The state should be URL-encoded JSON containing the origin
+    const urlObj = new URL(url);
+    const stateParam = urlObj.searchParams.get("state");
+    expect(stateParam).toBeTruthy();
+    const parsedState = JSON.parse(stateParam!);
+    expect(parsedState.origin).toBe("https://leaderacademy.school");
+    expect(parsedState.userId).toBe(1);
   });
 });

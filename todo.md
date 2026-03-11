@@ -2046,3 +2046,17 @@
 - [x] Build admin settings page for Google Classroom integration
 - [x] Add sync controls in batch manager and assignment pages
 - [x] Write vitest tests for Google Classroom integration
+
+## Google OAuth Redirect URI Fix
+- [x] Fix redirect_uri_mismatch error for Google Classroom OAuth (user needs to add URI in Google Cloud Console)
+
+## Fix: Google Classroom OAuth callback not saving connection
+- [x] Created server-side callback route /api/google-classroom/callback for reliable code exchange
+- [x] Moved OAuth code exchange from frontend useEffect to server-side Express route
+- [x] Added comprehensive logging for OAuth callback debugging
+- [x] Added error handling with user-friendly Arabic error messages
+- [x] Updated getAuthUrl to pass origin in state for correct redirect
+- [x] Added ref guard to prevent double processing on frontend
+- [x] Updated tests (4 passing)
+- [ ] User needs to add new redirect URI in Google Cloud Console
+- [ ] Save checkpoint

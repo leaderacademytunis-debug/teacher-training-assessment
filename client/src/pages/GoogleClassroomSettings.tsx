@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -13,6 +13,7 @@ export default function GoogleClassroomSettings() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const [isConnecting, setIsConnecting] = useState(false);
+  const processedRef = useRef(false);
 
   // Check if user is admin
   const isAdmin = user?.role === "admin";
@@ -29,39 +30,52 @@ export default function GoogleClassroomSettings() {
 
   // Mutations
   const getAuthUrl = trpc.googleClassroom.getAuthUrl.useMutation();
-  const handleCallback = trpc.googleClassroom.handleCallback.useMutation();
   const disconnect = trpc.googleClassroom.disconnect.useMutation();
 
-  // Handle OAuth callback
+  // Handle server-side callback results (gc_success or gc_error in URL)
   useEffect(() => {
+    if (processedRef.current) return;
+    
     const params = new URLSearchParams(searchString);
-    const code = params.get("code");
-    if (code && user && isAdmin) {
-      handleCallback.mutate(
-        { code, redirectUri: `${window.location.origin}/admin/google-classroom` },
-        {
-          onSuccess: (data) => {
-            toast.success(`تم الربط بنجاح مع ${data.email}`);
-            connectionQuery.refetch();
-            // Clean URL
-            setLocation("/admin/google-classroom", { replace: true });
-          },
-          onError: (err) => {
-            toast.error(`فشل الربط: ${err.message}`);
-            setLocation("/admin/google-classroom", { replace: true });
-          },
-        }
-      );
+    const gcSuccess = params.get("gc_success");
+    const gcError = params.get("gc_error");
+    const gcEmail = params.get("gc_email");
+
+    if (gcSuccess === "true") {
+      processedRef.current = true;
+      toast.success(gcEmail ? `تم الربط بنجاح مع ${gcEmail}` : "تم ربط Google Classroom بنجاح");
+      connectionQuery.refetch();
+      // Clean URL after a short delay to ensure toast is shown
+      setTimeout(() => {
+        setLocation("/admin/google-classroom", { replace: true });
+      }, 100);
+    } else if (gcError) {
+      processedRef.current = true;
+      const errorMessages: Record<string, string> = {
+        "no_code": "لم يتم استلام رمز التفويض من Google",
+        "not_authenticated": "يجب تسجيل الدخول أولاً. يرجى تسجيل الدخول والمحاولة مرة أخرى.",
+        "not_admin": "هذه الميزة متاحة فقط للمسؤولين",
+        "db_error": "خطأ في قاعدة البيانات. يرجى المحاولة لاحقاً.",
+        "access_denied": "تم رفض الوصول. يرجى الموافقة على الأذونات المطلوبة.",
+        "token_exchange_failed": "فشل في تبادل رمز التفويض. يرجى المحاولة مرة أخرى.",
+      };
+      const message = errorMessages[gcError] || `فشل الربط: ${gcError}`;
+      toast.error(message);
+      setTimeout(() => {
+        setLocation("/admin/google-classroom", { replace: true });
+      }, 100);
     }
   }, [searchString, user]);
 
-  // Connect to Google
+  // Connect to Google - now uses server-side callback
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
       const result = await getAuthUrl.mutateAsync({
-        redirectUri: `${window.location.origin}/admin/google-classroom`,
+        redirectUri: `${window.location.origin}/api/google-classroom/callback`,
+        origin: window.location.origin,
       });
+      // Redirect to Google OAuth consent screen
       window.location.href = result.url;
     } catch (err: any) {
       toast.error(err.message || "فشل في إنشاء رابط الربط");
@@ -102,6 +116,10 @@ export default function GoogleClassroomSettings() {
     );
   }
 
+  // Show processing state when callback params are in URL
+  const params = new URLSearchParams(searchString);
+  const isProcessingCallback = params.has("gc_success") || params.has("gc_error") || params.has("code");
+
   const connection = connectionQuery.data;
 
   return (
@@ -131,6 +149,16 @@ export default function GoogleClassroomSettings() {
       </div>
 
       <div className="container py-8 max-w-4xl mx-auto space-y-6">
+        {/* Processing callback indicator */}
+        {isProcessingCallback && (
+          <Card className="border-blue-200 bg-blue-50/50">
+            <CardContent className="p-6 flex items-center gap-3 justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              <span className="text-blue-800 font-medium">جاري معالجة الربط...</span>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Connection Status Card */}
         <Card className="overflow-hidden">
           <div className={`h-1.5 ${connection ? "bg-gradient-to-l from-green-400 to-emerald-500" : "bg-gradient-to-l from-amber-400 to-orange-500"}`} />
@@ -286,7 +314,6 @@ export default function GoogleClassroomSettings() {
 // Batch Mapping Card Component
 function BatchMappingCard({ batch, connectionId }: { batch: any; connectionId: number }) {
   const [showCourses, setShowCourses] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<{ id: string; name: string } | null>(null);
 
   const mappingsQuery = trpc.googleClassroom.getBatchMappings.useQuery(
     { batchId: batch.id },
