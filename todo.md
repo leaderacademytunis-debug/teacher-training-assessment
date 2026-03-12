@@ -2204,3 +2204,16 @@
 - [x] Frontend: URL param ?tab=director to auto-switch tab in Visual Studio
 - [x] Write vitest tests (18 tests passing)
 - [x] Verified code structure and API endpoint (returns UNAUTHORIZED for unauthenticated - correct)
+
+## Feature: Arabic Text-to-Speech for Video Scripts
+- [x] Research best TTS API options for Arabic - chose Web Speech API (free, built-in browser, $0 cost)
+- [x] Built reusable ArabicTTS component using browser SpeechSynthesis API
+- [x] Integrate TTS button in EduGPT video script preview (per-scene + full script)
+- [x] Integrate TTS button in AI Director scene editor (description + voiceover section)
+- [x] Per-scene TTS ('استمع للمشهد X') with purple gradient button
+- [x] All-scenes TTS ('استمع لكل المشاهد') with orange/red gradient button
+- [x] Voice selector with Arabic voice auto-detection (ar-SA, ar-EG, etc.)
+- [x] Play/pause/stop controls with visual state indicators
+- [x] Configurable rate, pitch, volume for speech
+- [x] Write vitest tests (18 tests passing)
+- [x] Test in browser - all TTS buttons visible and functional, no console errors

@@ -12,8 +12,9 @@ import {
   Wand2, Copy, Download, ArrowRight, Loader2, BookOpen,
   GraduationCap, Sparkles, CheckCircle, FileText, Brain,
   ChevronLeft, RotateCcw, Lightbulb, Target, Clock, Users,
-  Film, Video, Clapperboard, X,
+  Film, Video, Clapperboard, X, Volume2,
 } from "lucide-react";
+import ArabicTTS from "@/components/ArabicTTS";
 
 const LEVELS = [
   { value: "ابتدائي", label: "ابتدائي (Primaire)", icon: "🏫" },
@@ -610,7 +611,16 @@ export default function EduGPT() {
 
                       {/* Narrative Script */}
                       <div className="mb-6">
-                        <h4 className="font-bold text-sm mb-2" style={{ color: "#1A237E" }}>السكريبت السردي</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-bold text-sm" style={{ color: "#1A237E" }}>السكريبت السردي</h4>
+                          <ArabicTTS
+                            text={videoScriptResult.narrativeScript}
+                            label="استمع للسكريبت"
+                            size="sm"
+                            className="bg-gradient-to-l from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600 border-0"
+                            showVoiceSelector
+                          />
+                        </div>
                         <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 text-sm leading-relaxed" style={{ fontFamily: "Cairo, sans-serif" }}>
                           {videoScriptResult.narrativeScript}
                         </div>
@@ -627,6 +637,15 @@ export default function EduGPT() {
                                 <span className="font-bold text-sm" style={{ color: "#E65100" }}>{scene.title}</span>
                               </div>
                               <p className="text-sm text-gray-700 mb-1">{scene.narration}</p>
+                              <div className="my-1.5">
+                                <ArabicTTS
+                                  text={scene.narration}
+                                  label={`استمع للمشهد ${i + 1}`}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-6"
+                                />
+                              </div>
                               <p className="text-xs text-gray-500 flex items-center gap-1">
                                 <Video className="w-3 h-3" />
                                 {scene.visualNote}

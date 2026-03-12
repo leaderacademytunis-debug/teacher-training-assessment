@@ -10,6 +10,7 @@ import {
   Image as ImageIcon, Video, RefreshCw, Check, X, ArrowRight,
   User, Crown, Wand2, Layers, Clock, Volume2, FileText
 } from "lucide-react";
+import ArabicTTS from "@/components/ArabicTTS";
 
 type ProjectView = "list" | "create" | "editor";
 
@@ -606,7 +607,16 @@ export default function AIDirectorAssistant() {
 
                     {/* Scene Description */}
                     <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                      <h4 className="text-xs font-bold text-gray-600 mb-1">وصف المشهد</h4>
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-xs font-bold text-gray-600">وصف المشهد</h4>
+                        <ArabicTTS
+                          text={currentScene.description}
+                          label="استمع"
+                          size="sm"
+                          variant="ghost"
+                          className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 h-6 text-[10px]"
+                        />
+                      </div>
                       <p className="text-sm text-gray-700">{currentScene.description}</p>
                     </div>
 
@@ -664,6 +674,31 @@ export default function AIDirectorAssistant() {
                           {currentScene.editedPrompt || currentScene.visualPrompt}
                         </p>
                       )}
+                    </div>
+
+                    {/* TTS: Read All Scenes */}
+                    <div className="bg-gradient-to-l from-indigo-50 to-purple-50 rounded-xl p-3 mb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Volume2 className="w-4 h-4 text-purple-500" />
+                          <span className="text-xs font-bold text-gray-700">التعليق الصوتي</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <ArabicTTS
+                            text={currentScene.description}
+                            label={`استمع للمشهد ${currentScene.sceneNumber}`}
+                            size="sm"
+                            className="bg-gradient-to-l from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 border-0 text-[10px] h-7"
+                            showVoiceSelector
+                          />
+                          <ArabicTTS
+                            text={scenes.map(s => `المشهد ${s.sceneNumber}: ${s.title}. ${s.description}`).join(". ")}
+                            label="استمع لكل المشاهد"
+                            size="sm"
+                            className="bg-gradient-to-l from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 border-0 text-[10px] h-7"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Action Buttons */}
