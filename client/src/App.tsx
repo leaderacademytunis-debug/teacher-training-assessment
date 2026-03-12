@@ -60,6 +60,7 @@ import MyApplications from "@/pages/MyApplications";
 import AdminBatchManager from "@/pages/AdminBatchManager";
 import MyAssignments from "@/pages/MyAssignments";
 import JoinBatch from "@/pages/JoinBatch";
+import BatchComparison from "@/pages/BatchComparison";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -121,6 +122,7 @@ function Router() {
       <Route path="/admin/batches" component={AdminBatchManager} />
       <Route path="/my-assignments" component={MyAssignments} />
       <Route path="/join/:code" component={JoinBatch} />
+      <Route path="/admin/batch-comparison" component={BatchComparison} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

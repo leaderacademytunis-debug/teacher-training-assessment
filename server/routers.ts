@@ -11779,13 +11779,13 @@ ${input.lessonContent}
         role,
       });
       
-      // Send notification to the other party
+      // Send notification to the other party (in-app + email)
       try {
         const [sub] = await database.select({ userId: submissions.userId, assignmentId: submissions.assignmentId }).from(submissions).where(eq(submissions.id, input.submissionId));
         if (sub) {
-          const [assignment] = await database.select({ title: assignments.title, createdBy: assignments.createdBy }).from(assignments).where(eq(assignments.id, sub.assignmentId));
+          const [assignment] = await database.select({ title: assignments.title, createdBy: assignments.createdBy, batchId: assignments.batchId }).from(assignments).where(eq(assignments.id, sub.assignmentId));
           if (isAdmin) {
-            // Notify participant
+            // Notify participant (in-app)
             await database.insert(notifications).values({
               userId: sub.userId,
               titleAr: "تعليق جديد من المدرب",
@@ -11793,6 +11793,32 @@ ${input.lessonContent}
               type: "submission_comment",
               relatedId: sub.assignmentId,
             });
+            
+            // Send email notification to participant
+            try {
+              const [participant] = await database.select({ name: users.name, email: users.email, arabicName: users.arabicName }).from(users).where(eq(users.id, sub.userId));
+              if (participant?.email) {
+                let batchName = '';
+                if (assignment?.batchId) {
+                  const [batch] = await database.select({ name: batches.name }).from(batches).where(eq(batches.id, assignment.batchId));
+                  batchName = batch?.name || '';
+                }
+                const { sendEmail, getCommentNotificationEmailTemplate } = await import('./emailService');
+                const participantDisplayName = participant.arabicName || participant.name || participant.email;
+                const instructorDisplayName = ctx.user.arabicName || ctx.user.name || 'المدرب';
+                await sendEmail({
+                  to: participant.email,
+                  subject: `تعليق جديد من المدرب على واجب "${assignment?.title || ''}"`,
+                  html: getCommentNotificationEmailTemplate(
+                    participantDisplayName,
+                    instructorDisplayName,
+                    assignment?.title || '',
+                    batchName,
+                    input.content,
+                  ),
+                });
+              }
+            } catch (emailErr) { console.warn('[Comment Email] Failed:', emailErr); }
           } else {
             // Notify instructor (assignment creator)
             if (assignment?.createdBy) {
@@ -11869,6 +11895,200 @@ ${input.lessonContent}
         },
         generatedAt: new Date().toISOString(),
       };
+    }),
+  }),
+
+  // ===== EXCEL EXPORT (تصدير Excel) =====
+  excelExport: router({
+    batchStats: adminProcedure.input(z.object({ batchId: z.number() })).mutation(async ({ ctx, input }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      
+      const [batch] = await database.select().from(batches).where(eq(batches.id, input.batchId));
+      if (!batch) throw new TRPCError({ code: "NOT_FOUND" });
+      
+      const members = await database.select({
+        userId: batchMembers.userId,
+        userName: users.name,
+        userEmail: users.email,
+        arabicName: users.arabicName,
+      }).from(batchMembers)
+        .innerJoin(users, eq(batchMembers.userId, users.id))
+        .where(eq(batchMembers.batchId, input.batchId));
+      
+      const batchAssignments = await database.select().from(assignments)
+        .where(eq(assignments.batchId, input.batchId))
+        .orderBy(asc(assignments.createdAt));
+      
+      // Build data rows
+      const rows = [];
+      for (const member of members) {
+        const memberRow: Record<string, any> = {
+          name: member.arabicName || member.userName || member.userEmail,
+          email: member.userEmail,
+        };
+        let totalScore = 0;
+        let totalMax = 0;
+        let gradedCount = 0;
+        let completedCount = 0;
+        
+        for (const assignment of batchAssignments) {
+          const [sub] = await database.select({
+            status: submissions.status,
+            aiScore: submissions.aiScore,
+            aiGrade: submissions.aiGrade,
+            masteryScore: submissions.masteryScore,
+          }).from(submissions)
+            .where(and(eq(submissions.assignmentId, assignment.id), eq(submissions.userId, member.userId)));
+          
+          const statusMap: Record<string, string> = {
+            'submitted': '\u0645\u064f\u0633\u0644\u0651\u0645',
+            'graded': '\u0645\u064f\u0642\u064a\u0651\u0645',
+            'returned': '\u0645\u064f\u0639\u0627\u062f',
+            'draft': '\u0645\u0633\u0648\u062f\u0629',
+            'not_submitted': '\u063a\u064a\u0631 \u0645\u064f\u0633\u0644\u0651\u0645',
+          };
+          const gradeMap: Record<string, string> = {
+            'excellent': '\u0645\u0645\u062a\u0627\u0632',
+            'good': '\u062c\u064a\u062f \u062c\u062f\u0627\u064b',
+            'acceptable': '\u062c\u064a\u062f',
+            'needs_improvement': '\u0645\u0642\u0628\u0648\u0644',
+            'insufficient': '\u0636\u0639\u064a\u0641',
+          };
+          
+          memberRow[`${assignment.title}_status`] = statusMap[sub?.status || 'not_submitted'] || '\u063a\u064a\u0631 \u0645\u064f\u0633\u0644\u0651\u0645';
+          memberRow[`${assignment.title}_score`] = sub?.aiScore ?? '-';
+          memberRow[`${assignment.title}_grade`] = gradeMap[sub?.aiGrade || ''] || '-';
+          memberRow[`${assignment.title}_mastery`] = sub?.masteryScore ?? '-';
+          
+          if (sub?.status === 'submitted' || sub?.status === 'graded') completedCount++;
+          if (sub?.aiScore !== null && sub?.aiScore !== undefined) {
+            totalScore += sub.aiScore;
+            totalMax += assignment.maxScore;
+            gradedCount++;
+          }
+        }
+        
+        memberRow.completedAssignments = completedCount;
+        memberRow.totalAssignments = batchAssignments.length;
+        memberRow.completionPct = batchAssignments.length > 0 ? Math.round((completedCount / batchAssignments.length) * 100) : 0;
+        memberRow.overallAvg = gradedCount > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+        rows.push(memberRow);
+      }
+      
+      // Generate Excel using exceljs
+      const ExcelJS = (await import('exceljs')).default;
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = '\u0644\u064a\u062f\u0631 \u0623\u0643\u0627\u062f\u064a\u0645\u064a';
+      
+      // Sheet 1: Members overview
+      const sheet = workbook.addWorksheet(batch.name || '\u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a \u0627\u0644\u062f\u0641\u0639\u0629', { views: [{ rightToLeft: true }] });
+      
+      // Build columns
+      const columns: any[] = [
+        { header: '\u0627\u0644\u0627\u0633\u0645', key: 'name', width: 25 },
+        { header: '\u0627\u0644\u0628\u0631\u064a\u062f \u0627\u0644\u0625\u0644\u0643\u062a\u0631\u0648\u0646\u064a', key: 'email', width: 30 },
+      ];
+      for (const assignment of batchAssignments) {
+        columns.push({ header: `${assignment.title} - \u0627\u0644\u062d\u0627\u0644\u0629`, key: `${assignment.title}_status`, width: 15 });
+        columns.push({ header: `${assignment.title} - \u0627\u0644\u0639\u0644\u0627\u0645\u0629`, key: `${assignment.title}_score`, width: 12 });
+        columns.push({ header: `${assignment.title} - \u0627\u0644\u062a\u0642\u062f\u064a\u0631`, key: `${assignment.title}_grade`, width: 12 });
+        columns.push({ header: `${assignment.title} - \u0627\u0644\u062a\u0645\u0643\u0646`, key: `${assignment.title}_mastery`, width: 12 });
+      }
+      columns.push(
+        { header: '\u0627\u0644\u0648\u0627\u062c\u0628\u0627\u062a \u0627\u0644\u0645\u0646\u062c\u0632\u0629', key: 'completedAssignments', width: 15 },
+        { header: '\u0625\u062c\u0645\u0627\u0644\u064a \u0627\u0644\u0648\u0627\u062c\u0628\u0627\u062a', key: 'totalAssignments', width: 15 },
+        { header: '\u0646\u0633\u0628\u0629 \u0627\u0644\u0625\u0646\u062c\u0627\u0632 %', key: 'completionPct', width: 12 },
+        { header: '\u0627\u0644\u0645\u0639\u062f\u0644 \u0627\u0644\u0639\u0627\u0645 %', key: 'overallAvg', width: 12 },
+      );
+      sheet.columns = columns;
+      
+      // Style header row
+      const headerRow = sheet.getRow(1);
+      headerRow.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      headerRow.height = 30;
+      
+      // Add data rows
+      for (const row of rows) {
+        const dataRow = sheet.addRow(row);
+        dataRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      }
+      
+      // Auto-filter
+      sheet.autoFilter = { from: 'A1', to: { row: 1, column: columns.length } };
+      
+      // Convert to buffer and upload to S3
+      const buffer = await workbook.xlsx.writeBuffer();
+      const { storagePut } = await import('./storage');
+      const fileName = `batch-stats-${input.batchId}-${Date.now()}.xlsx`;
+      const { url } = await storagePut(`exports/${fileName}`, Buffer.from(buffer), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      
+      return { url, fileName };
+    }),
+  }),
+
+  // ===== BATCH COMPARISON (مقارنة الدفعات) =====
+  batchComparison: router({
+    getAll: adminProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return [];
+      
+      const allBatches = await database.select().from(batches)
+        .where(eq(batches.createdBy, ctx.user.id))
+        .orderBy(desc(batches.createdAt));
+      
+      const results = [];
+      for (const batch of allBatches) {
+        const memberRows = await database.select({ userId: batchMembers.userId })
+          .from(batchMembers).where(eq(batchMembers.batchId, batch.id));
+        const memberCount = memberRows.length;
+        
+        const batchAssignments = await database.select({ id: assignments.id, maxScore: assignments.maxScore })
+          .from(assignments).where(eq(assignments.batchId, batch.id));
+        const assignmentCount = batchAssignments.length;
+        
+        if (assignmentCount === 0 || memberCount === 0) {
+          results.push({
+            id: batch.id,
+            name: batch.name,
+            memberCount,
+            assignmentCount,
+            overallCompletion: 0,
+            overallAvg: 0,
+            totalSubmissions: 0,
+            totalGraded: 0,
+          });
+          continue;
+        }
+        
+        const assignmentIds = batchAssignments.map(a => a.id);
+        const allSubs = await database.select({
+          status: submissions.status,
+          aiScore: submissions.aiScore,
+        }).from(submissions)
+          .where(inArray(submissions.assignmentId, assignmentIds));
+        
+        const totalSubmissions = allSubs.filter(s => s.status === 'submitted' || s.status === 'graded').length;
+        const totalGraded = allSubs.filter(s => s.status === 'graded').length;
+        const scores = allSubs.filter(s => s.aiScore !== null).map(s => s.aiScore!);
+        const overallAvg = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+        const overallCompletion = Math.round((totalSubmissions / (memberCount * assignmentCount)) * 100);
+        
+        results.push({
+          id: batch.id,
+          name: batch.name,
+          memberCount,
+          assignmentCount,
+          overallCompletion,
+          overallAvg,
+          totalSubmissions,
+          totalGraded,
+        });
+      }
+      
+      return results;
     }),
   }),
 

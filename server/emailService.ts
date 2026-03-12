@@ -592,3 +592,76 @@ export function getCertificateEmailTemplate(
 </html>
   `;
 }
+
+
+// ===== SUBMISSION COMMENT EMAIL TEMPLATES =====
+
+export function getCommentNotificationEmailTemplate(
+  participantName: string,
+  instructorName: string,
+  assignmentTitle: string,
+  batchName: string,
+  commentText: string,
+): string {
+  const appUrl = ENV.VITE_APP_URL || 'https://your-domain.manus.space';
+  return `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; direction: rtl; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+    .content { padding: 30px; }
+    .message { font-size: 16px; line-height: 1.8; color: #333; }
+    .comment-box { background-color: #f0f7ff; border-right: 4px solid #3b82f6; padding: 15px 20px; border-radius: 8px; margin: 20px 0; font-size: 15px; color: #1e3a5f; line-height: 1.8; }
+    .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 15px; }
+    .info-label { font-weight: bold; color: #555; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 20px; }
+    .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 13px; color: #666; }
+    .highlight { color: #3b82f6; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>تعليق جديد من المدرب</h1>
+    </div>
+    <div class="content">
+      <div class="message">
+        <p>عزيزي/عزيزتي <span class="highlight">${participantName}</span>،</p>
+        <p>أضاف المدرب <strong>${instructorName}</strong> تعليقاً جديداً على تسليمك:</p>
+      </div>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+        <tr><td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555; width: 35%;">الواجب</td><td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${assignmentTitle}</td></tr>
+        <tr><td style="padding: 8px 12px; border-bottom: 1px solid #eee; font-weight: bold; color: #555;">الدفعة</td><td style="padding: 8px 12px; border-bottom: 1px solid #eee;">${batchName}</td></tr>
+      </table>
+      
+      <div class="comment-box">
+        <strong>التعليق:</strong><br/>
+        ${commentText}
+      </div>
+      
+      <center>
+        <a href="${appUrl}/my-courses" class="cta-button">
+          عرض التسليم والرد
+        </a>
+      </center>
+      
+      <p style="margin-top: 25px; font-size: 14px; color: #888;">
+        يمكنك الرد على تعليق المدرب من خلال صفحة تسليماتك في المنصة.
+      </p>
+    </div>
+    <div class="footer">
+      <p>&copy; 2026 ليدر أكاديمي - جميع الحقوق محفوظة</p>
+      <p>هذا البريد الإلكتروني تم إرساله تلقائياً، يرجى عدم الرد عليه</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}

@@ -245,6 +245,9 @@ export default function AdminBatchManager() {
               <p className="text-blue-100 mt-1">إدارة المجموعات والواجبات والصلاحيات</p>
             </div>
             <div className="flex gap-3">
+              <Link href="/admin/batch-comparison">
+                <Button variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20"><BarChart3 className="h-4 w-4 ml-2" />مقارنة الدفعات</Button>
+              </Link>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
                   <Button className="bg-white text-blue-700 hover:bg-blue-50"><Plus className="h-4 w-4 ml-2" />دفعة جديدة</Button>

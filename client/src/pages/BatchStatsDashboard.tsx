@@ -29,7 +29,9 @@ interface BatchStatsDashboardProps {
 
 export default function BatchStatsDashboard({ batchId, onGenerateReport }: BatchStatsDashboardProps) {
   const [expandedMember, setExpandedMember] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
   const statsQuery = trpc.batchStats.getStats.useQuery({ batchId }, { enabled: !!batchId });
+  const exportMutation = trpc.excelExport.batchStats.useMutation();
 
   const stats = statsQuery.data;
 
@@ -95,6 +97,37 @@ export default function BatchStatsDashboard({ batchId, onGenerateReport }: Batch
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Export Button */}
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          disabled={exporting}
+          onClick={async () => {
+            setExporting(true);
+            try {
+              const result = await exportMutation.mutateAsync({ batchId });
+              if (result.url) {
+                const a = document.createElement('a');
+                a.href = result.url;
+                a.download = result.fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }
+            } catch (e) {
+              console.error('Export failed:', e);
+            } finally {
+              setExporting(false);
+            }
+          }}
+        >
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          {exporting ? 'جاري التصدير...' : 'تصدير Excel'}
+        </Button>
+      </div>
+
       {/* Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">

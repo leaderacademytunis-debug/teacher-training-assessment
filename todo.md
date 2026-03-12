@@ -2159,3 +2159,27 @@
 - [x] Print/PDF export via window.print() with @media print styles
 - [x] Write vitest tests (22 tests passing including PDF report tests)
 - [x] Test in browser - verified report dialog, content, and print button
+
+## Feature: Email Notifications for Comments
+- [x] Send email notification to participant when instructor adds a comment
+- [x] Include comment text, assignment name, and batch info in email (RTL HTML template)
+- [x] Graceful error handling (email failure doesn't block comment creation)
+- [x] Write vitest tests (16 tests passing)
+- [x] Test in browser - comment added, email attempted (SMTP credentials need user config)
+
+## Feature: Excel Export for Batch Statistics
+- [x] Create backend procedure to generate Excel file with all participants' data
+- [x] Include: participant name, email, assignments, scores, grades, mastery, completion rates
+- [x] Add export button in statistics tab with loading spinner
+- [x] File uploaded to S3 and auto-downloaded (7KB verified)
+- [x] Write vitest tests (16 tests passing)
+- [x] Test in browser - Excel file generated and downloaded with correct Arabic content
+
+## Feature: Batch Comparison Dashboard
+- [x] Create backend procedure to fetch statistics for all batches
+- [x] Create comparison page with bar charts comparing batch performance
+- [x] Show completion rates, average scores, member counts, submissions across batches
+- [x] Add detailed comparison table with ranking badges
+- [x] Add navigation button from batch manager
+- [x] Write vitest tests (16 tests passing)
+- [x] Test in browser - all charts, table, and ranking display correctly
