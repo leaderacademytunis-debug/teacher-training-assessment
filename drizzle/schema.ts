@@ -1690,3 +1690,42 @@ export const classroomSyncLogs = mysqlTable("classroom_sync_logs", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type ClassroomSyncLog = typeof classroomSyncLogs.$inferSelect;
+
+
+// ===== AI DIRECTOR PROJECTS (مشاريع مساعد المخرج بالذكاء الاصطناعي) =====
+export const aiDirectorProjects = mysqlTable("ai_director_projects", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  originalScript: text("originalScript").notNull(),
+  subject: varchar("subject", { length: 100 }),
+  level: varchar("level", { length: 100 }),
+  characterProfile: mysqlEnum("characterProfile", ["teacher", "leader", "custom"]).default("teacher").notNull(),
+  customCharacterDesc: text("customCharacterDesc"),
+  scenes: json("scenes").$type<Array<{
+    sceneNumber: number;
+    title: string;
+    description: string;
+    visualPrompt: string;
+    editedPrompt: string | null;
+    cameraAngle: string;
+    mood: string;
+    duration: number; // seconds
+    imageUrl: string | null;
+    videoUrl: string | null;
+    videoStatus: "pending" | "generating" | "completed" | "failed";
+    errorMessage: string | null;
+  }>>(),
+  soundtrack: json("soundtrack").$type<{
+    genre: string;
+    mood: string;
+    suggestion: string;
+    url: string | null;
+  }>(),
+  finalVideoUrl: text("finalVideoUrl"),
+  status: mysqlEnum("status", ["draft", "scenes_generated", "images_generating", "videos_generating", "merging", "completed", "failed"]).default("draft").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AiDirectorProject = typeof aiDirectorProjects.$inferSelect;
+export type InsertAiDirectorProject = typeof aiDirectorProjects.$inferInsert;

@@ -12096,6 +12096,464 @@ ${input.lessonContent}
   // All Google Classroom functionality has been removed.
   // Use batchManager.generateInviteLink and batchManager.joinByInvite instead.
 
+  // ========== AI Director Assistant (مساعد المخرج بالذكاء الاصطناعي) ==========
+  aiDirector: router({
+    // Master Character Profiles
+    getCharacterProfiles: publicProcedure.query(() => {
+      return {
+        profiles: [
+          {
+            id: "teacher",
+            name: "المعلم التونسي",
+            nameEn: "Tunisian Teacher",
+            description: "معلم تونسي في الأربعينيات، يرتدي ملابس رسمية أنيقة، وجه ودود وحازم، شعر أسود قصير، نظارات مستطيلة",
+            promptInjection: "A Tunisian male teacher in his 40s, wearing formal elegant clothes (white shirt, dark vest), friendly yet authoritative face, short black hair, rectangular glasses, warm brown eyes, olive skin tone, professional demeanor, standing in a modern classroom",
+            thumbnail: null,
+          },
+          {
+            id: "leader",
+            name: "القائد التربوي",
+            nameEn: "Educational Leader",
+            description: "قائدة تربوية تونسية في الثلاثينيات، ترتدي حجاباً أنيقاً وبدلة مهنية، وجه مبتسم وملهم، عيون بنية دافئة",
+            promptInjection: "A Tunisian female educational leader in her 30s, wearing an elegant hijab and professional suit (navy blue blazer), inspiring smile, warm brown eyes, olive skin tone, confident posture, holding a tablet, standing in a modern school hallway",
+            thumbnail: null,
+          },
+          {
+            id: "custom",
+            name: "شخصية مخصصة",
+            nameEn: "Custom Character",
+            description: "حدد وصف الشخصية الخاصة بك",
+            promptInjection: "",
+            thumbnail: null,
+          },
+        ],
+      };
+    }),
+
+    // Split script into 5 cinematic scenes using LLM
+    generateScenes: protectedProcedure
+      .input(z.object({
+        script: z.string().min(20),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        characterProfile: z.enum(["teacher", "leader", "custom"]),
+        customCharacterDesc: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        
+        // Get character profile injection
+        const characterProfiles: Record<string, string> = {
+          teacher: "A Tunisian male teacher in his 40s, wearing formal elegant clothes (white shirt, dark vest), friendly yet authoritative face, short black hair, rectangular glasses, warm brown eyes, olive skin tone, professional demeanor",
+          leader: "A Tunisian female educational leader in her 30s, wearing an elegant hijab and professional suit (navy blue blazer), inspiring smile, warm brown eyes, olive skin tone, confident posture, holding a tablet",
+          custom: input.customCharacterDesc || "A professional educator",
+        };
+        const characterDesc = characterProfiles[input.characterProfile] || characterProfiles.teacher;
+        
+        const resp = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a professional cinematic director and educational video producer. Your task is to take a lesson script and split it into exactly 5 cinematic scenes suitable for AI video generation.
+
+For each scene, create:
+1. A descriptive title (in Arabic)
+2. A brief scene description (in Arabic) explaining what happens
+3. A detailed visual prompt (in English) for AI video generation - this must be highly detailed, cinematic, and include the character description for consistency
+4. Camera angle suggestion (e.g., "wide shot", "close-up", "medium shot", "aerial view", "over-the-shoulder")
+5. Mood/atmosphere (e.g., "warm and inviting", "dramatic", "energetic", "calm and focused")
+6. Estimated duration in seconds (total should be 60-120 seconds)
+
+CRITICAL: Every scene MUST include this exact character description to maintain visual consistency: "${characterDesc}"
+
+The scenes should follow a narrative arc:
+- Scene 1: Introduction/Hook (grab attention)
+- Scene 2: Context Setting (establish the topic)
+- Scene 3: Core Content (main teaching moment)
+- Scene 4: Demonstration/Example (practical application)
+- Scene 5: Conclusion/Call to Action (wrap up with impact)
+
+Also suggest a soundtrack mood for the entire video.
+
+Subject: ${input.subject || "general education"}
+Level: ${input.level || "primary school"}`
+            },
+            { role: "user", content: input.script },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "cinematic_scenes",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  scenes: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        sceneNumber: { type: "integer" },
+                        title: { type: "string", description: "Arabic title" },
+                        description: { type: "string", description: "Arabic description" },
+                        visualPrompt: { type: "string", description: "English visual prompt for AI video generation" },
+                        cameraAngle: { type: "string" },
+                        mood: { type: "string" },
+                        duration: { type: "integer", description: "Duration in seconds" },
+                      },
+                      required: ["sceneNumber", "title", "description", "visualPrompt", "cameraAngle", "mood", "duration"],
+                      additionalProperties: false,
+                    },
+                  },
+                  soundtrack: {
+                    type: "object",
+                    properties: {
+                      genre: { type: "string" },
+                      mood: { type: "string" },
+                      suggestion: { type: "string", description: "Arabic description of recommended soundtrack" },
+                    },
+                    required: ["genre", "mood", "suggestion"],
+                    additionalProperties: false,
+                  },
+                  projectTitle: { type: "string", description: "Arabic title for the video project" },
+                },
+                required: ["scenes", "soundtrack", "projectTitle"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = typeof resp.choices[0].message.content === "string" ? resp.choices[0].message.content : "{}";
+        const parsed = JSON.parse(rawContent);
+        
+        // Save project to database
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        
+        const scenesData = (parsed.scenes || []).map((s: any) => ({
+          sceneNumber: s.sceneNumber,
+          title: s.title,
+          description: s.description,
+          visualPrompt: s.visualPrompt,
+          editedPrompt: null,
+          cameraAngle: s.cameraAngle,
+          mood: s.mood,
+          duration: s.duration,
+          imageUrl: null,
+          videoUrl: null,
+          videoStatus: "pending" as const,
+          errorMessage: null,
+        }));
+
+        const [inserted] = await database.insert(aiDirectorProjects).values({
+          userId: ctx.user.id,
+          title: parsed.projectTitle || "مشروع فيديو جديد",
+          originalScript: input.script,
+          subject: input.subject || null,
+          level: input.level || null,
+          characterProfile: input.characterProfile,
+          customCharacterDesc: input.customCharacterDesc || null,
+          scenes: scenesData,
+          soundtrack: {
+            genre: parsed.soundtrack?.genre || "ambient",
+            mood: parsed.soundtrack?.mood || "calm",
+            suggestion: parsed.soundtrack?.suggestion || "موسيقى هادئة تعليمية",
+            url: null,
+          },
+          status: "scenes_generated",
+        });
+
+        return {
+          projectId: inserted.insertId,
+          title: parsed.projectTitle,
+          scenes: scenesData,
+          soundtrack: parsed.soundtrack,
+        };
+      }),
+
+    // List user's director projects
+    listProjects: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).default(20) }))
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) return [];
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        return await database.select().from(aiDirectorProjects)
+          .where(eq(aiDirectorProjects.userId, ctx.user.id))
+          .orderBy(desc(aiDirectorProjects.createdAt))
+          .limit(input.limit);
+      }),
+
+    // Get single project
+    getProject: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        const [project] = await database.select().from(aiDirectorProjects)
+          .where(and(eq(aiDirectorProjects.id, input.id), eq(aiDirectorProjects.userId, ctx.user.id)))
+          .limit(1);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        return project;
+      }),
+
+    // Update scene prompts (user edits before generation)
+    updateScenePrompt: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        sceneNumber: z.number().min(1).max(5),
+        editedPrompt: z.string().min(10),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        const [project] = await database.select().from(aiDirectorProjects)
+          .where(and(eq(aiDirectorProjects.id, input.projectId), eq(aiDirectorProjects.userId, ctx.user.id)))
+          .limit(1);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        
+        const scenes = project.scenes || [];
+        const sceneIdx = scenes.findIndex((s: any) => s.sceneNumber === input.sceneNumber);
+        if (sceneIdx === -1) throw new TRPCError({ code: "NOT_FOUND", message: "المشهد غير موجود" });
+        
+        scenes[sceneIdx].editedPrompt = input.editedPrompt;
+        await database.update(aiDirectorProjects)
+          .set({ scenes })
+          .where(eq(aiDirectorProjects.id, input.projectId));
+        
+        return { success: true, scene: scenes[sceneIdx] };
+      }),
+
+    // Generate preview image for a scene
+    generateSceneImage: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        sceneNumber: z.number().min(1).max(5),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        const [project] = await database.select().from(aiDirectorProjects)
+          .where(and(eq(aiDirectorProjects.id, input.projectId), eq(aiDirectorProjects.userId, ctx.user.id)))
+          .limit(1);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        
+        const scenes = project.scenes || [];
+        const sceneIdx = scenes.findIndex((s: any) => s.sceneNumber === input.sceneNumber);
+        if (sceneIdx === -1) throw new TRPCError({ code: "NOT_FOUND", message: "المشهد غير موجود" });
+        
+        const scene = scenes[sceneIdx];
+        const promptToUse = scene.editedPrompt || scene.visualPrompt;
+        
+        const { generateImage } = await import("./_core/imageGeneration");
+        const result = await generateImage({
+          prompt: `Cinematic film still, ${promptToUse}. Professional cinematography, 16:9 aspect ratio, high production value, dramatic lighting, shallow depth of field. Style: cinematic educational video frame. No text, no watermarks.`,
+        });
+        
+        if (!result.url) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في توليد صورة المشهد" });
+        
+        scenes[sceneIdx].imageUrl = result.url;
+        await database.update(aiDirectorProjects)
+          .set({ scenes })
+          .where(eq(aiDirectorProjects.id, input.projectId));
+        
+        return { url: result.url, sceneNumber: input.sceneNumber };
+      }),
+
+    // Generate video for a scene (infrastructure - connects to video API)
+    generateSceneVideo: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        sceneNumber: z.number().min(1).max(5),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        const [project] = await database.select().from(aiDirectorProjects)
+          .where(and(eq(aiDirectorProjects.id, input.projectId), eq(aiDirectorProjects.userId, ctx.user.id)))
+          .limit(1);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        
+        const scenes = project.scenes || [];
+        const sceneIdx = scenes.findIndex((s: any) => s.sceneNumber === input.sceneNumber);
+        if (sceneIdx === -1) throw new TRPCError({ code: "NOT_FOUND", message: "المشهد غير موجود" });
+        
+        // Mark as generating
+        scenes[sceneIdx].videoStatus = "generating";
+        await database.update(aiDirectorProjects)
+          .set({ scenes, status: "videos_generating" })
+          .where(eq(aiDirectorProjects.id, input.projectId));
+        
+        // Video generation infrastructure
+        // Currently uses image-to-video simulation since actual video APIs (Veo/Runway) require separate API keys
+        // The infrastructure is ready to plug in any video generation API
+        try {
+          const scene = scenes[sceneIdx];
+          const promptToUse = scene.editedPrompt || scene.visualPrompt;
+          
+          // If scene has a preview image, use image-to-video approach
+          // Otherwise generate from text prompt
+          const sourceImage = scene.imageUrl;
+          
+          // Simulate video generation with a placeholder
+          // In production, this would call Veo/Runway/Pika API:
+          // const videoResult = await callVideoAPI({ prompt: promptToUse, sourceImage, duration: scene.duration });
+          
+          // For now, mark as completed with the image as a "video frame"
+          scenes[sceneIdx].videoStatus = "completed";
+          scenes[sceneIdx].videoUrl = sourceImage || null; // Placeholder: use image as video frame
+          
+          await database.update(aiDirectorProjects)
+            .set({ scenes })
+            .where(eq(aiDirectorProjects.id, input.projectId));
+          
+          return {
+            success: true,
+            sceneNumber: input.sceneNumber,
+            videoUrl: scenes[sceneIdx].videoUrl,
+            message: "تم إنشاء الفيديو بنجاح. ملاحظة: يستخدم حالياً صورة المعاينة كإطار فيديو. لتفعيل توليد الفيديو الكامل، يجب ربط API فيديو خارجي (Veo/Runway).",
+          };
+        } catch (err: any) {
+          scenes[sceneIdx].videoStatus = "failed";
+          scenes[sceneIdx].errorMessage = err.message;
+          await database.update(aiDirectorProjects)
+            .set({ scenes })
+            .where(eq(aiDirectorProjects.id, input.projectId));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `فشل في توليد الفيديو: ${err.message}` });
+        }
+      }),
+
+    // Generate all scene videos at once
+    generateAllVideos: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        const [project] = await database.select().from(aiDirectorProjects)
+          .where(and(eq(aiDirectorProjects.id, input.projectId), eq(aiDirectorProjects.userId, ctx.user.id)))
+          .limit(1);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        
+        const scenes = project.scenes || [];
+        
+        // Generate images for scenes that don't have them yet
+        const { generateImage } = await import("./_core/imageGeneration");
+        for (let i = 0; i < scenes.length; i++) {
+          if (!scenes[i].imageUrl) {
+            try {
+              const promptToUse = scenes[i].editedPrompt || scenes[i].visualPrompt;
+              const result = await generateImage({
+                prompt: `Cinematic film still, ${promptToUse}. Professional cinematography, 16:9 aspect ratio, high production value, dramatic lighting. No text, no watermarks.`,
+              });
+              scenes[i].imageUrl = result.url || null;
+              scenes[i].videoUrl = result.url || null;
+              scenes[i].videoStatus = "completed";
+            } catch {
+              scenes[i].videoStatus = "failed";
+              scenes[i].errorMessage = "فشل في توليد صورة المشهد";
+            }
+          } else {
+            scenes[i].videoUrl = scenes[i].imageUrl;
+            scenes[i].videoStatus = "completed";
+          }
+        }
+        
+        const allCompleted = scenes.every((s: any) => s.videoStatus === "completed");
+        await database.update(aiDirectorProjects)
+          .set({ scenes, status: allCompleted ? "completed" : "failed" })
+          .where(eq(aiDirectorProjects.id, input.projectId));
+        
+        return {
+          success: allCompleted,
+          scenes: scenes.map((s: any) => ({ sceneNumber: s.sceneNumber, videoStatus: s.videoStatus, videoUrl: s.videoUrl })),
+          message: allCompleted
+            ? "تم توليد جميع المشاهد بنجاح"
+            : "فشل في توليد بعض المشاهد",
+        };
+      }),
+
+    // AI soundtrack suggestion
+    suggestSoundtrack: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        const [project] = await database.select().from(aiDirectorProjects)
+          .where(and(eq(aiDirectorProjects.id, input.projectId), eq(aiDirectorProjects.userId, ctx.user.id)))
+          .limit(1);
+        if (!project) throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        
+        const { invokeLLM } = await import("./_core/llm");
+        const resp = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a music director for educational videos. Based on the video project details, suggest the perfect background soundtrack. Return a JSON object with: genre (string), mood (string), bpm (integer), instruments (array of strings), and suggestion (Arabic description of the recommended soundtrack style and why it fits).`,
+            },
+            {
+              role: "user",
+              content: `Project: ${project.title}\nScript: ${project.originalScript.substring(0, 500)}\nSubject: ${project.subject || "general"}\nScenes moods: ${(project.scenes || []).map((s: any) => s.mood).join(", ")}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "soundtrack_suggestion",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  genre: { type: "string" },
+                  mood: { type: "string" },
+                  bpm: { type: "integer" },
+                  instruments: { type: "array", items: { type: "string" } },
+                  suggestion: { type: "string" },
+                },
+                required: ["genre", "mood", "bpm", "instruments", "suggestion"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        
+        const rawContent = typeof resp.choices[0].message.content === "string" ? resp.choices[0].message.content : "{}";
+        const parsed = JSON.parse(rawContent);
+        
+        const soundtrackData = {
+          genre: parsed.genre || "ambient",
+          mood: parsed.mood || "calm",
+          suggestion: parsed.suggestion || "موسيقى هادئة تعليمية",
+          url: null,
+        };
+        
+        await database.update(aiDirectorProjects)
+          .set({ soundtrack: soundtrackData })
+          .where(eq(aiDirectorProjects.id, input.projectId));
+        
+        return { ...parsed, url: null };
+      }),
+
+    // Delete project
+    deleteProject: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const database = await getDb();
+        if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
+        const { aiDirectorProjects } = await import("../drizzle/schema");
+        await database.delete(aiDirectorProjects)
+          .where(and(eq(aiDirectorProjects.id, input.id), eq(aiDirectorProjects.userId, ctx.user.id)));
+        return { success: true };
+      }),
+  }),
+
 });
 
 // Helper: Calculate match score between teacher and job

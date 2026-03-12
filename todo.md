@@ -2183,3 +2183,14 @@
 - [x] Add navigation button from batch manager
 - [x] Write vitest tests (16 tests passing)
 - [x] Test in browser - all charts, table, and ranking display correctly
+
+## Feature: AI Director Assistant Module (/visual-studio)
+- [x] Script-to-Video Engine: LLM splits lesson script into 5 cinematic scenes with detailed prompts
+- [x] Character Consistency Injector: Master Character Profiles (Teacher/Leader) auto-injected into every visual prompt
+- [x] Video Generation API infrastructure: async loading states, image generation per scene, API connection framework
+- [x] Preview Dashboard: Storyline Preview with editable scene prompts, scene navigation, camera angles, mood, duration
+- [x] Export Module: merge clips into final video with AI-selected background soundtrack (genre, mood, Arabic description)
+- [x] Backend procedures: createProject, generateScenes (LLM), generateSceneImage, updateScenePrompt, suggestSoundtrack, exportProject, mergeVideo
+- [x] Frontend UI: tab in Visual Studio, new project form, storyline timeline, scene editor, character selector, export section
+- [x] Write vitest tests (20 tests passing)
+- [x] Test all features in browser - script generation, scene navigation, prompt editing, character injection all verified

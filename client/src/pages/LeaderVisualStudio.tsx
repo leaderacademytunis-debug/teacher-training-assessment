@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,12 +6,13 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { LockedFeature, usePermissions } from "@/components/LockedFeature";
 import ImageOverlayEditor from "@/components/ImageOverlayEditor";
 import EducationalImageLibrary from "@/components/EducationalImageLibrary";
+import AIDirectorAssistant from "@/pages/AIDirectorAssistant";
 import {
   Paintbrush, Download, Trash2, Eraser, Image as ImageIcon,
   Loader2, Sparkles, Palette, PenLine, BarChart3, BookOpen,
-  AlertCircle, Crown, ChevronDown, ChevronUp, X, Type, Library
+  AlertCircle, Crown, ChevronDown, ChevronUp, X, Type, Library,
+  Clapperboard
 } from "lucide-react";
-
 const STYLES = [
   { id: "bw_lineart" as const, label: "رسم خطي أبيض/أسود", icon: PenLine, desc: "مثالي للطباعة", default: true },
   { id: "minimalist" as const, label: "تصميم بسيط", icon: Paintbrush, desc: "ألوان محدودة" },
@@ -35,6 +36,7 @@ export default function LeaderVisualStudio() {
   const [showGallery, setShowGallery] = useState(false);
   const [showOverlayEditor, setShowOverlayEditor] = useState(false);
   const [showImageLibrary, setShowImageLibrary] = useState(false);
+  const [activeTab, setActiveTab] = useState<"images" | "director">("images");
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).slice(2)}`);
 
   // tRPC queries/mutations
@@ -177,6 +179,40 @@ export default function LeaderVisualStudio() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="container mx-auto px-4 pt-4 max-w-6xl">
+        <div className="flex gap-2 bg-white/80 backdrop-blur-sm rounded-xl p-1.5 shadow-sm border border-gray-100 w-fit">
+          <button
+            onClick={() => setActiveTab("images")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "images"
+                ? "bg-gradient-to-l from-violet-500 to-indigo-600 text-white shadow-md"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <ImageIcon className="w-4 h-4" />
+            مولّد الصور
+          </button>
+          <button
+            onClick={() => setActiveTab("director")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "director"
+                ? "bg-gradient-to-l from-rose-500 to-purple-600 text-white shadow-md"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            <Clapperboard className="w-4 h-4" />
+            مساعد المخرج AI
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "director" ? (
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <AIDirectorAssistant />
+        </div>
+      ) : (
+      <>
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left panel: Input & Controls */}
@@ -504,6 +540,7 @@ export default function LeaderVisualStudio() {
           }}
         />
       )}
+      </>)}
     </div>
   );
 }
