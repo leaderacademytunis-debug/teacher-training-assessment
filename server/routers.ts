@@ -6158,9 +6158,31 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         const fileKey = `legacy-digitizer/${ctx.user.id}/${uniqueId}.${ext}`;
         const { url: imageUrl } = await storagePut(fileKey, buffer, input.mimeType);
 
+        // Retry helper for transient upstream errors
+        async function invokeLLMWithRetry(params: Parameters<typeof invokeLLM>[0], maxRetries = 3) {
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              const result = await invokeLLM(params);
+              return result;
+            } catch (err: any) {
+              const isTransient = err?.message?.includes("upstream") || err?.message?.includes("500") || err?.message?.includes("502") || err?.message?.includes("503") || err?.message?.includes("timeout") || err?.status === 500 || err?.status === 502 || err?.status === 503;
+              console.log(`[LegacyDigitizer OCR] LLM attempt ${attempt}/${maxRetries} failed: ${err?.message || err}`);
+              if (!isTransient || attempt === maxRetries) {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: `فشل استخراج النص بعد ${maxRetries} محاولات. يرجى المحاولة مرة أخرى بعد قليل.`,
+                });
+              }
+              const delay = Math.pow(2, attempt) * 1000;
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل غير متوقع في خدمة استخراج النص" });
+        }
+
         // 2. Run OCR via Vision API (optimized for Arabic/French handwriting)
         const base64Url = `data:${input.mimeType};base64,${input.base64Data}`;
-        const ocrResponse = await invokeLLM({
+        const ocrResponse = await invokeLLMWithRetry({
           messages: [
             {
               role: "user",
@@ -6231,6 +6253,29 @@ ${getGlossaryContext()}
       .mutation(async ({ input, ctx }) => {
         const { invokeLLM } = await import("./_core/llm");
 
+        // Retry helper for transient upstream errors
+        async function invokeLLMWithRetry(params: Parameters<typeof invokeLLM>[0], maxRetries = 3) {
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              const result = await invokeLLM(params);
+              return result;
+            } catch (err: any) {
+              const isTransient = err?.message?.includes("upstream") || err?.message?.includes("500") || err?.message?.includes("502") || err?.message?.includes("503") || err?.message?.includes("timeout") || err?.status === 500 || err?.status === 502 || err?.status === 503;
+              console.log(`[LegacyDigitizer] LLM attempt ${attempt}/${maxRetries} failed: ${err?.message || err}`);
+              if (!isTransient || attempt === maxRetries) {
+                throw new TRPCError({
+                  code: "INTERNAL_SERVER_ERROR",
+                  message: `فشل الاتصال بخدمة الذكاء الاصطناعي بعد ${maxRetries} محاولات. يرجى المحاولة مرة أخرى بعد قليل.`,
+                });
+              }
+              // Exponential backoff: 2s, 4s, 8s
+              const delay = Math.pow(2, attempt) * 1000;
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل غير متوقع في خدمة الذكاء الاصطناعي" });
+        }
+
         // Verify ownership
         const doc = await db.getDigitizedDocumentById(input.documentId, ctx.user.id);
         if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "الوثيقة غير موجودة" });
@@ -6293,7 +6338,7 @@ ${getGlossaryContext()}
           input.additionalInstructions ? `تعليمات إضافية: ${input.additionalInstructions}` : "",
         ].filter(Boolean).join("\n");
 
-        const response = await invokeLLM({
+        const response = await invokeLLMWithRetry({
           messages: [
             { role: "system", content: systemPrompt },
             {

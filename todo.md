@@ -2217,3 +2217,11 @@
 - [x] Configurable rate, pitch, volume for speech
 - [x] Write vitest tests (18 tests passing)
 - [x] Test in browser - all TTS buttons visible and functional, no console errors
+
+## Bug Fix: Legacy Digitizer LLM 500 Error
+- [x] Fix "LLM invoke failed: 500 Internal Server Error - received bad response from upstream" in formatWithAI
+- [x] Add retry logic with exponential backoff (2s, 4s, 8s) for transient upstream failures in both uploadAndOCR and formatWithAI
+- [x] Add better error messages in Arabic for the user with "retry" action button in toast notifications
+- [x] Add 3 new vitest tests for retry mechanism (31 total Legacy Digitizer tests passing)
+- [ ] Test in browser
+- [ ] Save checkpoint

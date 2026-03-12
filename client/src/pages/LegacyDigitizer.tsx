@@ -221,7 +221,15 @@ export default function LegacyDigitizer() {
         }
       } catch { /* non-critical */ }
     } catch (error: any) {
-      toast.error(error.message || "فشل في استخراج النص", { id: "ocr" });
+      const errorMsg = error.message || "فشل في استخراج النص";
+      toast.error(errorMsg, { 
+        id: "ocr",
+        duration: 8000,
+        action: {
+          label: "إعادة المحاولة",
+          onClick: () => handleUploadAndOCR(),
+        },
+      });
     }
   }, [selectedFile, documentTitle, uploadOCR, refetchDocs, matchCompetencies, subject, level]);
 
@@ -244,7 +252,15 @@ export default function LegacyDigitizer() {
       setCurrentStep(3);
       toast.success("تم تنسيق الوثيقة بنجاح!", { id: "format" });
     } catch (error: any) {
-      toast.error(error.message || "فشل في تنسيق الوثيقة", { id: "format" });
+      const errorMsg = error.message || "فشل في تنسيق الوثيقة";
+      toast.error(errorMsg, { 
+        id: "format",
+        duration: 8000,
+        action: {
+          label: "إعادة المحاولة",
+          onClick: () => handleFormatWithAI(),
+        },
+      });
     }
   }, [documentId, extractedText, formatType, subject, level, additionalInstructions, formatAI]);
 
