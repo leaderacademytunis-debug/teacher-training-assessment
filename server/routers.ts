@@ -3753,11 +3753,16 @@ When creating an English lesson plan, use this structure:
         let extractedText = "";
 
         if (input.mimeType === "application/pdf" || input.fileName.endsWith(".pdf")) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const pdfParseModule = await import("pdf-parse") as any;
-          const pdfParse = pdfParseModule.default || pdfParseModule;
-          const data = await pdfParse(buffer);
-          extractedText = data.text;
+          const { PDFParse } = await import("pdf-parse");
+          const pdf = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
+          try {
+            await pdf.load();
+            const textResult = await pdf.getText();
+            // getText() returns { text, total, pages } in pdf-parse v2
+            extractedText = textResult?.text || "";
+          } finally {
+            await pdf.destroy().catch(() => {});
+          }
         } else if (
           input.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
           input.fileName.endsWith(".docx")
@@ -3779,7 +3784,7 @@ When creating an English lesson plan, use this structure:
         }
 
         if (!extractedText || extractedText.trim().length < 50) {
-          throw new Error("Impossible d'extraire le texte du fichier. Veuillez vérifier le format.");
+          throw new Error("لم يتم استخراج نص كافٍ من الملف. يرجى التحقق من الملف أو استخدام صورة بدلاً من PDF ممسوح ضوئياً.");
         }
 
         const subjectInfo = input.subject ? `Matière: ${input.subject}` : "";
@@ -4863,10 +4868,16 @@ with open("${pdfPath}", "wb") as out:
 
         // ── PDF ──────────────────────────────────────────────────────────
         if (input.mimeType === "application/pdf") {
-          const pdfParseModule = await import("pdf-parse") as any;
-          const pdfParse = pdfParseModule.default || pdfParseModule;
-          const data = await pdfParse(buffer);
-          extractedText = data.text;
+          const { PDFParse } = await import("pdf-parse");
+          const pdf = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
+          try {
+            await pdf.load();
+            const textResult = await pdf.getText();
+            // getText() returns { text, total, pages } in pdf-parse v2
+            extractedText = textResult?.text || "";
+          } finally {
+            await pdf.destroy().catch(() => {});
+          }
 
         // ── Word (docx) ───────────────────────────────────────────────────
         } else if (

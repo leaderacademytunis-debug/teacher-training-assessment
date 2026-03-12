@@ -2225,3 +2225,10 @@
 - [x] Add 3 new vitest tests for retry mechanism (31 total Legacy Digitizer tests passing)
 - [ ] Test in browser
 - [ ] Save checkpoint
+
+## Bug Fix: pdfParse is not a function in Smart Inspector
+- [x] Fix "pdfParse is not a function" error when uploading PDF in /inspector page
+- [x] Updated pdf-parse v2 API: use `new PDFParse({data, verbosity})` instead of old `pdfParse(buffer)` function call
+- [x] Fixed 3 files: routers.ts (evaluateFiche + extractTextFromFile), fileAnalysis.ts (analyzePDF)
+- [x] Write vitest tests (9 tests passing) for PDFParse v2 API
+- [ ] Save checkpoint

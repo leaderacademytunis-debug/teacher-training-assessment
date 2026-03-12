@@ -13,20 +13,21 @@ export interface FileAnalysisResult {
  * @returns Extracted text and page count
  */
 export async function analyzePDF(fileBuffer: Buffer): Promise<FileAnalysisResult> {
+  let pdf: InstanceType<typeof PDFParse> | null = null;
   try {
-    // PDFParse requires Uint8Array, not Buffer
+    // PDFParse v2 requires { data: Uint8Array, verbosity } options object
     const uint8Array = new Uint8Array(fileBuffer);
-    const parser = new PDFParse(uint8Array);
-    const result = await parser.getText();
-
-    const text = result.text?.trim() || "";
+    pdf = new PDFParse({ data: uint8Array, verbosity: 0 });
+    await pdf.load();
+    const textResult = await pdf.getText();
+    // getText() returns { text, total, pages } in pdf-parse v2
+    const text = (textResult?.text || "").trim();
     if (!text || text.length < 10) {
       throw new Error("PDF_EMPTY_TEXT");
     }
 
     return {
       text,
-      pageCount: result.total,
     };
   } catch (error: any) {
     if (error?.message === "PDF_EMPTY_TEXT") {
@@ -34,6 +35,8 @@ export async function analyzePDF(fileBuffer: Buffer): Promise<FileAnalysisResult
     }
     console.error("Error analyzing PDF:", error?.message || error);
     throw new Error(`فشل استخراج النص من ملف PDF: ${error?.message || "خطأ غير معروف"}`);
+  } finally {
+    if (pdf) await pdf.destroy().catch(() => {});
   }
 }
 
