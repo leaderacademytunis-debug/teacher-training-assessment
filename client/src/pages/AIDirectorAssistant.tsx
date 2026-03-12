@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,7 +31,6 @@ interface SceneData {
 export default function AIDirectorAssistant() {
   const { user } = useAuth();
 
-
   const [view, setView] = useState<ProjectView>("list");
   const [activeProjectId, setActiveProjectId] = useState<number | null>(null);
   const [activeSceneIdx, setActiveSceneIdx] = useState(0);
@@ -42,6 +41,24 @@ export default function AIDirectorAssistant() {
   const [level, setLevel] = useState("");
   const [characterProfile, setCharacterProfile] = useState<"teacher" | "leader" | "custom">("teacher");
   const [customCharacterDesc, setCustomCharacterDesc] = useState("");
+
+  // Check for prefill data from EduGPT lesson-to-video conversion
+  useEffect(() => {
+    try {
+      const prefillData = sessionStorage.getItem("ai_director_prefill");
+      if (prefillData) {
+        const data = JSON.parse(prefillData);
+        if (data.script) setScript(data.script);
+        if (data.subject) setSubject(data.subject);
+        if (data.level) setLevel(data.level);
+        setView("create");
+        sessionStorage.removeItem("ai_director_prefill");
+        toast.success("تم استيراد السكريبت من الجذاذة — اختر الشخصية واضغط إنشاء");
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  }, []);
 
   // Edit prompt state
   const [editingScene, setEditingScene] = useState<number | null>(null);

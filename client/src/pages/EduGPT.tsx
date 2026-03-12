@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Wand2, Copy, Download, ArrowRight, Loader2, BookOpen,
   GraduationCap, Sparkles, CheckCircle, FileText, Brain,
   ChevronLeft, RotateCcw, Lightbulb, Target, Clock, Users,
+  Film, Video, Clapperboard, X,
 } from "lucide-react";
 
 const LEVELS = [
@@ -39,6 +40,7 @@ const TIPS = [
 ];
 
 export default function EduGPT() {
+  const [, navigate] = useLocation();
   const [level, setLevel] = useState("");
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
@@ -118,6 +120,46 @@ export default function EduGPT() {
     setLevel(ex.level);
     setSubject(ex.subject);
     setTopic(ex.topic);
+  };
+
+  // ===== تحويل الجذاذة إلى سكريبت فيديو =====
+  const [videoScriptResult, setVideoScriptResult] = useState<any>(null);
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
+
+  const convertToVideoMutation = trpc.edugpt.lessonToVideoScript.useMutation({
+    onSuccess: (data) => {
+      setVideoScriptResult(data);
+      setShowVideoPreview(true);
+      toast.success("تم تحويل الجذاذة إلى سكريبت فيديو بنجاح!");
+    },
+    onError: (err) => {
+      toast.error("حدث خطأ أثناء التحويل: " + err.message);
+    },
+  });
+
+  const handleConvertToVideo = () => {
+    if (!result || result.length < 50) {
+      toast.error("يرجى توليد جذاذة أولاً قبل التحويل إلى فيديو");
+      return;
+    }
+    convertToVideoMutation.mutate({
+      lessonContent: result,
+      subject: subject || undefined,
+      level: level || undefined,
+      topic: topic || undefined,
+    });
+  };
+
+  const handleGoToDirector = () => {
+    if (!videoScriptResult) return;
+    // Encode the script data in sessionStorage to pass to AI Director
+    sessionStorage.setItem("ai_director_prefill", JSON.stringify({
+      script: videoScriptResult.narrativeScript,
+      subject: subject,
+      level: level,
+      title: videoScriptResult.videoTitle,
+    }));
+    navigate("/visual-studio?tab=director");
   };
 
   // ===== المتفقد الذكي =====
@@ -510,16 +552,114 @@ export default function EduGPT() {
 
               {/* Result footer (only when result exists) */}
               {hasResult && (
-                <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between" style={{ background: "#FAFBFF" }}>
-                  <p className="text-xs text-gray-400">
-                    ✅ تم التوليد بنجاح — يمكنك نسخ الجذاذة أو تحميلها بصيغة PDF
-                  </p>
-                  <Link href="/assistant">
-                    <button className="text-xs font-medium hover:underline flex items-center gap-1" style={{ color: "#1A237E" }}>
-                      <Brain className="w-3.5 h-3.5" />
-                      فتح في المساعد الكامل
-                    </button>
-                  </Link>
+                <div className="px-6 py-4 border-t border-gray-100 space-y-3" style={{ background: "#FAFBFF" }}>
+                  {/* Video conversion button */}
+                  <Button
+                    onClick={handleConvertToVideo}
+                    disabled={convertToVideoMutation.isPending}
+                    className="w-full h-12 text-sm font-bold rounded-xl shadow-lg transition-all gap-2"
+                    style={{ background: convertToVideoMutation.isPending ? "#9E9E9E" : "linear-gradient(135deg, #E65100 0%, #FF6D00 100%)", color: "white" }}
+                  >
+                    {convertToVideoMutation.isPending ? (
+                      <><Loader2 className="w-5 h-5 animate-spin" />جاري تحويل الجذاذة إلى سكريبت فيديو...</>
+                    ) : (
+                      <><Film className="w-5 h-5" />حوّل هذا الدرس إلى فيديو تعليمي</>
+                    )}
+                  </Button>
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-400">
+                      تم التوليد بنجاح — يمكنك نسخ الجذاذة أو تحميلها PDF أو تحويلها إلى فيديو
+                    </p>
+                    <Link href="/assistant">
+                      <button className="text-xs font-medium hover:underline flex items-center gap-1" style={{ color: "#1A237E" }}>
+                        <Brain className="w-3.5 h-3.5" />
+                        فتح في المساعد الكامل
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Video Script Preview Modal */}
+              {showVideoPreview && videoScriptResult && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" onClick={() => setShowVideoPreview(false)}>
+                  <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
+                    {/* Modal Header */}
+                    <div className="px-6 py-4 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #E65100 0%, #FF6D00 100%)" }}>
+                      <div className="flex items-center gap-3">
+                        <Film className="w-6 h-6 text-white" />
+                        <div>
+                          <h3 className="text-white font-bold text-base">{videoScriptResult.videoTitle}</h3>
+                          <p className="text-orange-100 text-xs">المدة: {videoScriptResult.estimatedDuration} ثانية • {videoScriptResult.targetAudience}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => setShowVideoPreview(false)} className="text-white/80 hover:text-white">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Modal Body */}
+                    <div className="p-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 140px)" }}>
+                      {/* Mood badge */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: "#FFF3E0", color: "#E65100" }}>
+                          المزاج: {videoScriptResult.suggestedMood}
+                        </span>
+                      </div>
+
+                      {/* Narrative Script */}
+                      <div className="mb-6">
+                        <h4 className="font-bold text-sm mb-2" style={{ color: "#1A237E" }}>السكريبت السردي</h4>
+                        <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 text-sm leading-relaxed" style={{ fontFamily: "Cairo, sans-serif" }}>
+                          {videoScriptResult.narrativeScript}
+                        </div>
+                      </div>
+
+                      {/* Key Scenes */}
+                      <div className="mb-6">
+                        <h4 className="font-bold text-sm mb-3" style={{ color: "#1A237E" }}>المشاهد الرئيسية ({videoScriptResult.keyScenes?.length || 0})</h4>
+                        <div className="space-y-3">
+                          {videoScriptResult.keyScenes?.map((scene: any, i: number) => (
+                            <div key={i} className="p-4 rounded-xl border border-orange-100" style={{ background: "#FFF8F0" }}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: "#FF6D00" }}>{i + 1}</span>
+                                <span className="font-bold text-sm" style={{ color: "#E65100" }}>{scene.title}</span>
+                              </div>
+                              <p className="text-sm text-gray-700 mb-1">{scene.narration}</p>
+                              <p className="text-xs text-gray-500 flex items-center gap-1">
+                                <Video className="w-3 h-3" />
+                                {scene.visualNote}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Modal Footer */}
+                    <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3" style={{ background: "#FAFBFF" }}>
+                      <Button
+                        onClick={handleGoToDirector}
+                        className="flex-1 h-11 text-sm font-bold rounded-xl gap-2"
+                        style={{ background: "linear-gradient(135deg, #1A237E 0%, #1565C0 100%)", color: "white" }}
+                      >
+                        <Clapperboard className="w-4 h-4" />
+                        انتقل إلى مساعد المخرج AI
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(videoScriptResult.narrativeScript);
+                          toast.success("تم نسخ السكريبت");
+                        }}
+                        variant="outline"
+                        className="h-11 px-4 text-sm gap-1.5"
+                      >
+                        <Copy className="w-4 h-4" />
+                        نسخ
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>{/* end grid */}

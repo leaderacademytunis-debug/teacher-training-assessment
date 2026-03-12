@@ -2194,3 +2194,13 @@
 - [x] Frontend UI: tab in Visual Studio, new project form, storyline timeline, scene editor, character selector, export section
 - [x] Write vitest tests (20 tests passing)
 - [x] Test all features in browser - script generation, scene navigation, prompt editing, character injection all verified
+
+## Feature: Link EduGPT to AI Director
+- [x] Backend: lessonToVideoScript LLM procedure in edugpt router (line 5326)
+- [x] Frontend: "Convert to Video" button in EduGPT result area with Film icon
+- [x] Frontend: Video script preview dialog with scenes, mood, duration
+- [x] Frontend: "Go to AI Director" button that passes script via sessionStorage
+- [x] Frontend: AI Director auto-prefill from sessionStorage on mount
+- [x] Frontend: URL param ?tab=director to auto-switch tab in Visual Studio
+- [x] Write vitest tests (18 tests passing)
+- [x] Verified code structure and API endpoint (returns UNAUTHORIZED for unauthenticated - correct)

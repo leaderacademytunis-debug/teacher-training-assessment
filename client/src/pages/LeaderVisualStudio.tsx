@@ -36,7 +36,10 @@ export default function LeaderVisualStudio() {
   const [showGallery, setShowGallery] = useState(false);
   const [showOverlayEditor, setShowOverlayEditor] = useState(false);
   const [showImageLibrary, setShowImageLibrary] = useState(false);
-  const [activeTab, setActiveTab] = useState<"images" | "director">("images");
+  const [activeTab, setActiveTab] = useState<"images" | "director">(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") === "director" ? "director" : "images";
+  });
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).slice(2)}`);
 
   // tRPC queries/mutations

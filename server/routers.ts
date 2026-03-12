@@ -5321,6 +5321,81 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
         const base64 = buffer.toString("base64");
         return { base64, filename: `اختبار_${input.subject}_${input.level}_${input.trimester}.docx` };
       }),
+
+    // Convert pedagogical lesson plan to narrative video script
+    lessonToVideoScript: protectedProcedure
+      .input(z.object({
+        lessonContent: z.string().min(50, "يجب أن يكون نص الجذاذة 50 حرفاً على الأقل"),
+        subject: z.string().optional(),
+        level: z.string().optional(),
+        topic: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const resp = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في تحويل الجذاذات التربوية التونسية إلى سكريبتات فيديو تعليمية سردية جذابة.
+
+مهمتك:
+1. تحليل الجذاذة/المذكرة التربوية المقدمة
+2. استخراج المفاهيم الأساسية والأنشطة والأهداف
+3. تحويلها إلى سكريبت فيديو تعليمي سردي بأسلوب قصصي شيّق
+
+قواعد التحويل:
+- حوّل المصطلحات البيداغوجية التقنية (كفاية، وضعية إدماجية، تقييم تكويني...) إلى لغة سردية بسيطة ومفهومة
+- اجعل السكريبت على شكل قصة تعليمية متسلسلة مع مقدمة وعقدة وحل
+- أضف عناصر تشويق وأسئلة تفاعلية موجهة للمتعلمين
+- حافظ على الدقة العلمية للمحتوى
+- اجعل المدة المقترحة بين 60-120 ثانية
+- استخدم العربية الفصحى المبسطة
+- أضف ملاحظات بصرية (مثل: يظهر رسم توضيحي، تتحرك الكاميرا...)
+
+أعد الإجابة بصيغة JSON.`,
+            },
+            {
+              role: "user",
+              content: `المادة: ${input.subject || "غير محدد"}\nالمستوى: ${input.level || "غير محدد"}\nالموضوع: ${input.topic || "غير محدد"}\n\nنص الجذاذة/المذكرة:\n${input.lessonContent}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "video_script",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  videoTitle: { type: "string", description: "عنوان الفيديو التعليمي بالعربية" },
+                  narrativeScript: { type: "string", description: "السكريبت السردي الكامل للفيديو بالعربية - نص متسلسل يصلح مباشرة لمساعد المخرج" },
+                  targetAudience: { type: "string", description: "الفئة المستهدفة" },
+                  estimatedDuration: { type: "integer", description: "المدة المقترحة بالثواني" },
+                  keyScenes: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string", description: "عنوان المشهد" },
+                        narration: { type: "string", description: "نص السرد" },
+                        visualNote: { type: "string", description: "ملاحظة بصرية" },
+                      },
+                      required: ["title", "narration", "visualNote"],
+                      additionalProperties: false,
+                    },
+                  },
+                  suggestedMood: { type: "string", description: "المزاج العام المقترح للفيديو" },
+                },
+                required: ["videoTitle", "narrativeScript", "targetAudience", "estimatedDuration", "keyScenes", "suggestedMood"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const rawContent = typeof resp.choices[0].message.content === "string" ? resp.choices[0].message.content : "{}";
+        const parsed = JSON.parse(rawContent);
+        return parsed;
+      }),
    }),
 
   visualStudio: router({
