@@ -61,6 +61,7 @@ import AdminBatchManager from "@/pages/AdminBatchManager";
 import MyAssignments from "@/pages/MyAssignments";
 import JoinBatch from "@/pages/JoinBatch";
 import BatchComparison from "@/pages/BatchComparison";
+import HandwritingAnalyzer from "@/pages/HandwritingAnalyzer";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -123,6 +124,7 @@ function Router() {
       <Route path="/my-assignments" component={MyAssignments} />
       <Route path="/join/:code" component={JoinBatch} />
       <Route path="/admin/batch-comparison" component={BatchComparison} />
+      <Route path="/handwriting-analyzer" component={HandwritingAnalyzer} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

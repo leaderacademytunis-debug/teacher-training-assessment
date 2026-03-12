@@ -1729,3 +1729,74 @@ export const aiDirectorProjects = mysqlTable("ai_director_projects", {
 });
 export type AiDirectorProject = typeof aiDirectorProjects.$inferSelect;
 export type InsertAiDirectorProject = typeof aiDirectorProjects.$inferInsert;
+
+
+/**
+ * Student profiles table - stores student information for handwriting analysis
+ */
+export const studentProfiles = mysqlTable("studentProfiles", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(), // teacher user ID
+  firstName: varchar("firstName", { length: 100 }).notNull(),
+  age: int("age").notNull(), // 5-12
+  grade: varchar("grade", { length: 50 }).notNull(), // e.g., "سنة 1 ابتدائي"
+  gender: mysqlEnum("gender", ["male", "female"]).notNull(),
+  notes: text("notes"), // teacher observations
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StudentProfile = typeof studentProfiles.$inferSelect;
+export type InsertStudentProfile = typeof studentProfiles.$inferInsert;
+
+/**
+ * Handwriting analyses table - stores AI analysis results of student handwriting
+ */
+export const handwritingAnalyses = mysqlTable("handwritingAnalyses", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(), // teacher user ID
+  studentId: int("studentId"), // optional link to studentProfiles
+  
+  // Student info (stored directly for cases without profile)
+  studentName: varchar("studentName", { length: 100 }),
+  studentAge: int("studentAge"),
+  studentGrade: varchar("studentGrade", { length: 50 }),
+  
+  // Image
+  imageUrl: text("imageUrl").notNull(), // S3 URL of uploaded handwriting image
+  writingType: mysqlEnum("writingType", ["copy", "dictation", "free_expression", "math"]).default("copy").notNull(),
+  teacherNotes: text("teacherNotes"),
+  
+  // Overall score
+  overallScore: int("overallScore"), // 0-100
+  
+  // 7 axis scores (0-100 each)
+  letterFormationScore: int("letterFormationScore"),
+  sizeProportionScore: int("sizeProportionScore"),
+  spacingOrganizationScore: int("spacingOrganizationScore"),
+  baselineScore: int("baselineScore"),
+  reversalsScore: int("reversalsScore"),
+  pressureSpeedScore: int("pressureSpeedScore"),
+  consistencyScore: int("consistencyScore"),
+  
+  // Disorder probabilities
+  disorders: json("disorders").$type<Array<{
+    name: string;
+    nameAr: string;
+    probability: "high" | "medium" | "low" | "none";
+    indicators: string[];
+  }>>(),
+  
+  // Detailed analysis report (markdown)
+  analysisReport: mediumtext("analysisReport"),
+  
+  // Pedagogical recommendations (markdown)
+  recommendations: mediumtext("recommendations"),
+  
+  // PDF export URL
+  pdfUrl: text("pdfUrl"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HandwritingAnalysis = typeof handwritingAnalyses.$inferSelect;
+export type InsertHandwritingAnalysis = typeof handwritingAnalyses.$inferInsert;

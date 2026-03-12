@@ -2231,4 +2231,24 @@
 - [x] Updated pdf-parse v2 API: use `new PDFParse({data, verbosity})` instead of old `pdfParse(buffer)` function call
 - [x] Fixed 3 files: routers.ts (evaluateFiche + extractTextFromFile), fileAnalysis.ts (analyzePDF)
 - [x] Write vitest tests (9 tests passing) for PDFParse v2 API
+- [x] Save checkpoint
+
+## Feature: محلل خط اليد الذكي (Handwriting Analysis for Learning Difficulties)
+- [x] Database schema: studentProfiles table (name, age, grade, gender)
+- [x] Database schema: handwritingAnalyses table (imageUrl, studentId, analysisResult, scores, recommendations)
+- [x] Backend: analyzeHandwriting procedure (upload image + GPT-4 Vision analysis)
+- [x] Backend: getStudentHistory procedure (retrieve analysis history for a student)
+- [x] Backend: getAnalysisDetails procedure (get single analysis details)
+- [x] Backend: exportAnalysisPdf procedure (export report as PDF with WeasyPrint)
+- [x] Frontend: /handwriting-analyzer page with professional RTL Arabic design
+- [x] Frontend: Image upload step with student info form (drag & drop, camera)
+- [x] Frontend: Analysis loading state with animated indicators (7 axes)
+- [x] Frontend: Results dashboard (overall score circle, 7 axis progress bars, color coding)
+- [x] Frontend: Disorder probability table (Dysgraphia, Dyslexia, ADHD, ASD)
+- [x] Frontend: Pedagogical recommendations section (collapsible with Streamdown)
+- [x] Frontend: Student history view with analysis cards
+- [x] Frontend: PDF export button
+- [x] Navigation: Added to EDUGPT dropdown menu and App.tsx route
+- [x] Ethical disclaimer: Always shows "not a medical diagnosis" warning
+- [x] Write vitest tests (18 tests passing)
 - [ ] Save checkpoint

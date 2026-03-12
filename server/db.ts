@@ -19,7 +19,9 @@ import {
   aiSuggestions, AiSuggestion, InsertAiSuggestion,
   templates, Template, InsertTemplate,
   conversations, Conversation, InsertConversation,
-  savedEvaluations, SavedEvaluation, InsertSavedEvaluation
+  savedEvaluations, SavedEvaluation, InsertSavedEvaluation,
+  studentProfiles, StudentProfile, InsertStudentProfile,
+  handwritingAnalyses, HandwritingAnalysis, InsertHandwritingAnalysis
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2172,4 +2174,65 @@ export async function getMarketplaceStats(): Promise<{
     totalContributors: contributors.size,
     topSubjects,
   };
+}
+
+
+// ==================== Handwriting Analysis Helpers ====================
+
+export async function createStudentProfile(data: InsertStudentProfile) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(studentProfiles).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function getStudentProfiles(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(studentProfiles).where(eq(studentProfiles.createdBy, userId)).orderBy(desc(studentProfiles.createdAt));
+}
+
+export async function getStudentProfile(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(studentProfiles).where(and(eq(studentProfiles.id, id), eq(studentProfiles.createdBy, userId)));
+  return results[0] || null;
+}
+
+export async function createHandwritingAnalysis(data: InsertHandwritingAnalysis) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(handwritingAnalyses).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function getHandwritingAnalyses(userId: number, studentId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [eq(handwritingAnalyses.createdBy, userId)];
+  if (studentId) {
+    conditions.push(eq(handwritingAnalyses.studentId, studentId));
+  }
+  return db.select().from(handwritingAnalyses).where(and(...conditions)).orderBy(desc(handwritingAnalyses.createdAt));
+}
+
+export async function getHandwritingAnalysis(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(handwritingAnalyses).where(and(eq(handwritingAnalyses.id, id), eq(handwritingAnalyses.createdBy, userId)));
+  return results[0] || null;
+}
+
+export async function getStudentAnalysisHistory(studentId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(handwritingAnalyses)
+    .where(and(eq(handwritingAnalyses.studentId, studentId), eq(handwritingAnalyses.createdBy, userId)))
+    .orderBy(handwritingAnalyses.createdAt);
+}
+
+export async function updateHandwritingAnalysisPdf(id: number, pdfUrl: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(handwritingAnalyses).set({ pdfUrl }).where(eq(handwritingAnalyses.id, id));
 }

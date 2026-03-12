@@ -12685,6 +12685,400 @@ Level: ${input.level || "primary school"}`
       }),
   }),
 
+  // ==================== Handwriting Analysis Router ====================
+  handwriting: router({
+    // Create or get student profiles
+    createStudent: protectedProcedure
+      .input(z.object({
+        firstName: z.string().min(1),
+        age: z.number().min(5).max(12),
+        grade: z.string().min(1),
+        gender: z.enum(["male", "female"]),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return db.createStudentProfile({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+      }),
+
+    getStudents: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getStudentProfiles(ctx.user.id);
+      }),
+
+    // Main analysis procedure
+    analyzeHandwriting: protectedProcedure
+      .input(z.object({
+        imageBase64: z.string(),
+        mimeType: z.string(),
+        studentId: z.number().optional(),
+        studentName: z.string().optional(),
+        studentAge: z.number().min(5).max(12).optional(),
+        studentGrade: z.string().optional(),
+        writingType: z.enum(["copy", "dictation", "free_expression", "math"]),
+        teacherNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // 1. Upload image to S3
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.imageBase64, "base64");
+        const ext = input.mimeType.includes("png") ? "png" : input.mimeType.includes("webp") ? "webp" : "jpg";
+        const fileName = `handwriting/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url: imageUrl } = await storagePut(fileName, buffer, input.mimeType);
+
+        // 2. Determine student info
+        let studentName = input.studentName || "تلميذ";
+        let studentAge = input.studentAge;
+        let studentGrade = input.studentGrade;
+        if (input.studentId) {
+          const student = await db.getStudentProfile(input.studentId, ctx.user.id);
+          if (student) {
+            studentName = student.firstName;
+            studentAge = student.age;
+            studentGrade = student.grade;
+          }
+        }
+
+        const writingTypeLabels: Record<string, string> = {
+          copy: "نسخ من السبورة",
+          dictation: "إملاء",
+          free_expression: "تعبير حر",
+          math: "تمارين رياضيات",
+        };
+
+        // 3. Send to GPT-4 Vision for analysis
+        const { invokeLLM } = await import("./_core/llm");
+        const base64Url = `data:${input.mimeType};base64,${input.imageBase64}`;
+
+        const analysisResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في علم النفس التربوي وتحليل خط اليد عند الأطفال، متخصص في الكشف المبكر عن صعوبات واضطرابات التعلم.
+أنت تعمل كأداة مساعدة للمعلم التونسي لتحليل كتابة التلاميذ.
+
+مهمتك: تحليل صورة خط يد تلميذ وتقديم تقرير مفصل.
+
+معلومات التلميذ:
+- الاسم: ${studentName}
+- العمر: ${studentAge || "غير محدد"} سنوات
+- المستوى: ${studentGrade || "غير محدد"}
+- نوع الكتابة: ${writingTypeLabels[input.writingType]}
+${input.teacherNotes ? `- ملاحظات المعلم: ${input.teacherNotes}` : ""}
+
+قم بتحليل الصورة وفق المحاور السبعة التالية وأعطِ كل محور درجة من 0 إلى 100:
+
+1. تشكيل الحروف (letterFormation): جودة رسم الحروف، وضوحها، حروف مقلوبة أو مشوهة
+2. الحجم والتناسب (sizeProportion): تناسق حجم الحروف، حروف كبيرة/صغيرة جداً
+3. التباعد والتنظيم (spacingOrganization): المسافات بين الكلمات والحروف، التنظيم على الصفحة
+4. خط الأساس (baseline): هل الكتابة على السطر أم تطفو فوقه أو تنزل تحته
+5. الانعكاسات (reversals): حروف مقلوبة أو معكوسة (مثل كتابة الحروف بشكل معاكس)
+6. الضغط والسرعة (pressureSpeed): آثار ضغط القلم، علامات التسرع أو البطء الشديد
+7. الاتساق العام (consistency): هل تتدهور الكتابة مع الوقت، تغير مفاجئ في الجودة
+
+ثم حدد احتمالية وجود كل اضطراب من الاضطرابات التالية:
+- عسر الكتابة (Dysgraphia)
+- عسر القراءة (Dyslexia) - من خلال مؤشرات الكتابة
+- اضطراب فرط الحركة وتشتت الانتباه (ADHD)
+- اضطراب طيف التوحد (ASD)
+
+وأخيراً قدم توصيات بيداغوجية عملية للمعلم.
+
+ملاحظة مهمة: خذ بعين الاعتبار عمر التلميذ عند التقييم. فمعايير الكتابة تختلف بين طفل في سن 5 سنوات وطفل في سن 10 سنوات.`,
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image_url",
+                  image_url: { url: base64Url, detail: "high" },
+                },
+                {
+                  type: "text",
+                  text: "حلل خط يد هذا التلميذ وفق المحاور السبعة المذكورة. أعطِ تقريراً مفصلاً.",
+                },
+              ],
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "handwriting_analysis",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  overallScore: { type: "integer", description: "الدرجة العامة لجودة الكتابة من 0 إلى 100" },
+                  axes: {
+                    type: "object",
+                    properties: {
+                      letterFormation: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      sizeProportion: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      spacingOrganization: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      baseline: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      reversals: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      pressureSpeed: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      consistency: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                    },
+                    required: ["letterFormation", "sizeProportion", "spacingOrganization", "baseline", "reversals", "pressureSpeed", "consistency"],
+                    additionalProperties: false,
+                  },
+                  disorders: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string" },
+                        nameAr: { type: "string" },
+                        probability: { type: "string", enum: ["high", "medium", "low", "none"] },
+                        indicators: { type: "array", items: { type: "string" } },
+                      },
+                      required: ["name", "nameAr", "probability", "indicators"],
+                      additionalProperties: false,
+                    },
+                  },
+                  detailedReport: { type: "string", description: "تقرير مفصل بالعربية عن حالة الكتابة" },
+                  recommendations: { type: "string", description: "توصيات بيداغوجية عملية للمعلم بالعربية" },
+                },
+                required: ["overallScore", "axes", "disorders", "detailedReport", "recommendations"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = analysisResponse?.choices?.[0]?.message?.content;
+        if (!content) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحليل خط اليد. يرجى المحاولة مرة أخرى." });
+        }
+
+        let analysis: any;
+        try {
+          analysis = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في قراءة نتائج التحليل. يرجى المحاولة مرة أخرى." });
+        }
+
+        // 4. Save to database
+        const result = await db.createHandwritingAnalysis({
+          createdBy: ctx.user.id,
+          studentId: input.studentId || null,
+          studentName,
+          studentAge: studentAge || null,
+          studentGrade: studentGrade || null,
+          imageUrl,
+          writingType: input.writingType,
+          teacherNotes: input.teacherNotes || null,
+          overallScore: analysis.overallScore,
+          letterFormationScore: analysis.axes.letterFormation.score,
+          sizeProportionScore: analysis.axes.sizeProportion.score,
+          spacingOrganizationScore: analysis.axes.spacingOrganization.score,
+          baselineScore: analysis.axes.baseline.score,
+          reversalsScore: analysis.axes.reversals.score,
+          pressureSpeedScore: analysis.axes.pressureSpeed.score,
+          consistencyScore: analysis.axes.consistency.score,
+          disorders: analysis.disorders,
+          analysisReport: analysis.detailedReport,
+          recommendations: analysis.recommendations,
+        });
+
+        return {
+          id: result.id,
+          overallScore: analysis.overallScore,
+          axes: analysis.axes,
+          disorders: analysis.disorders,
+          detailedReport: analysis.detailedReport,
+          recommendations: analysis.recommendations,
+          imageUrl,
+          studentName,
+          studentAge,
+          studentGrade,
+        };
+      }),
+
+    // Get analysis history
+    getAnalyses: protectedProcedure
+      .input(z.object({ studentId: z.number().optional() }))
+      .query(async ({ input, ctx }) => {
+        return db.getHandwritingAnalyses(ctx.user.id, input.studentId);
+      }),
+
+    // Get single analysis details
+    getAnalysis: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const analysis = await db.getHandwritingAnalysis(input.id, ctx.user.id);
+        if (!analysis) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "التحليل غير موجود" });
+        }
+        return analysis;
+      }),
+
+    // Get student analysis history for progress tracking
+    getStudentHistory: protectedProcedure
+      .input(z.object({ studentId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const student = await db.getStudentProfile(input.studentId, ctx.user.id);
+        if (!student) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "التلميذ غير موجود" });
+        }
+        const analyses = await db.getStudentAnalysisHistory(input.studentId, ctx.user.id);
+        return { student, analyses };
+      }),
+
+    // Export analysis as PDF
+    exportPdf: protectedProcedure
+      .input(z.object({ analysisId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const analysis = await db.getHandwritingAnalysis(input.analysisId, ctx.user.id);
+        if (!analysis) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "التحليل غير موجود" });
+        }
+
+        const disorderLabels: Record<string, string> = {
+          high: "مرتفع",
+          medium: "متوسط",
+          low: "منخفض",
+          none: "غير موجود",
+        };
+
+        const axisLabels = [
+          { key: "letterFormationScore", label: "تشكيل الحروف" },
+          { key: "sizeProportionScore", label: "الحجم والتناسب" },
+          { key: "spacingOrganizationScore", label: "التباعد والتنظيم" },
+          { key: "baselineScore", label: "خط الأساس" },
+          { key: "reversalsScore", label: "الانعكاسات" },
+          { key: "pressureSpeedScore", label: "الضغط والسرعة" },
+          { key: "consistencyScore", label: "الاتساق العام" },
+        ];
+
+        const disordersHtml = (analysis.disorders as any[] || []).map((d: any) => `
+          <tr>
+            <td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:bold;">${d.nameAr}</td>
+            <td style="padding:8px;border:1px solid #ddd;text-align:center;">
+              <span style="padding:4px 12px;border-radius:12px;background:${d.probability === 'high' ? '#fee2e2' : d.probability === 'medium' ? '#fef3c7' : '#d1fae5'};color:${d.probability === 'high' ? '#dc2626' : d.probability === 'medium' ? '#d97706' : '#059669'};">
+                ${disorderLabels[d.probability] || d.probability}
+              </span>
+            </td>
+            <td style="padding:8px;border:1px solid #ddd;text-align:right;font-size:13px;">${(d.indicators || []).join("، ")}</td>
+          </tr>
+        `).join("");
+
+        const scoresHtml = axisLabels.map(a => {
+          const score = (analysis as any)[a.key] || 0;
+          const color = score >= 70 ? "#059669" : score >= 40 ? "#d97706" : "#dc2626";
+          return `
+            <tr>
+              <td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:bold;">${a.label}</td>
+              <td style="padding:8px;border:1px solid #ddd;text-align:center;">
+                <div style="background:#e5e7eb;border-radius:8px;height:20px;width:100%;">
+                  <div style="background:${color};border-radius:8px;height:20px;width:${score}%;min-width:20px;text-align:center;color:white;font-size:12px;line-height:20px;">${score}%</div>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        const htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+    body { font-family: 'Noto Sans Arabic', sans-serif; direction: rtl; padding: 40px; color: #1f2937; line-height: 1.8; }
+    h1 { color: #1e40af; text-align: center; font-size: 24px; margin-bottom: 8px; }
+    h2 { color: #1e40af; font-size: 18px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; margin-top: 30px; }
+    .subtitle { text-align: center; color: #6b7280; margin-bottom: 30px; }
+    .score-circle { text-align: center; margin: 20px 0; }
+    .score-value { font-size: 48px; font-weight: bold; color: ${(analysis.overallScore || 0) >= 70 ? '#059669' : (analysis.overallScore || 0) >= 40 ? '#d97706' : '#dc2626'}; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    .info-table td { padding: 8px 12px; border: 1px solid #e5e7eb; }
+    .info-table td:first-child { background: #f3f4f6; font-weight: bold; width: 30%; }
+    .disclaimer { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 15px; margin-top: 30px; text-align: center; color: #92400e; }
+    .footer { text-align: center; margin-top: 40px; color: #9ca3af; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>تقرير تحليل خط اليد الذكي</h1>
+  <p class="subtitle">Leader Academy - الكشف المبكر عن صعوبات التعلم</p>
+
+  <h2>معلومات التلميذ</h2>
+  <table class="info-table">
+    <tr><td>الاسم</td><td>${analysis.studentName || "-"}</td></tr>
+    <tr><td>العمر</td><td>${analysis.studentAge || "-"} سنوات</td></tr>
+    <tr><td>المستوى</td><td>${analysis.studentGrade || "-"}</td></tr>
+    <tr><td>تاريخ التحليل</td><td>${new Date(analysis.createdAt).toLocaleDateString("ar-TN")}</td></tr>
+  </table>
+
+  <h2>الدرجة العامة</h2>
+  <div class="score-circle">
+    <div class="score-value">${analysis.overallScore || 0}/100</div>
+  </div>
+
+  <h2>تحليل المحاور السبعة</h2>
+  <table>${scoresHtml}</table>
+
+  <h2>الاضطرابات المحتملة</h2>
+  <table>
+    <thead><tr>
+      <th style="padding:8px;border:1px solid #ddd;background:#f3f4f6;text-align:right;">الاضطراب</th>
+      <th style="padding:8px;border:1px solid #ddd;background:#f3f4f6;text-align:center;">الاحتمال</th>
+      <th style="padding:8px;border:1px solid #ddd;background:#f3f4f6;text-align:right;">المؤشرات</th>
+    </tr></thead>
+    <tbody>${disordersHtml}</tbody>
+  </table>
+
+  <h2>التقرير المفصل</h2>
+  <div style="background:#f9fafb;padding:20px;border-radius:8px;white-space:pre-wrap;">${analysis.analysisReport || ""}</div>
+
+  <h2>التوصيات البيداغوجية</h2>
+  <div style="background:#ecfdf5;padding:20px;border-radius:8px;white-space:pre-wrap;">${analysis.recommendations || ""}</div>
+
+  <div class="disclaimer">
+    ⚠️ تنبيه مهم: هذا التقرير أداة مساعدة أولية وليس تشخيصاً طبياً رسمياً.
+    يُنصح باستشارة أخصائي نفسي تربوي أو أخصائي أرطوفونيا للتأكد من النتائج.
+  </div>
+
+  <div class="footer">
+    <p>Leader Academy - منصة الذكاء الاصطناعي التربوي #1 في تونس</p>
+    <p>تم إنشاء هذا التقرير تلقائياً بواسطة محلل خط اليد الذكي</p>
+  </div>
+</body>
+</html>`;
+
+        // Convert HTML to PDF using WeasyPrint
+        const fs = await import("fs");
+        const { execSync } = await import("child_process");
+        const tmpDir = "/tmp";
+        const htmlPath = `${tmpDir}/handwriting-report-${input.analysisId}.html`;
+        const pdfPath = `${tmpDir}/handwriting-report-${input.analysisId}.pdf`;
+
+        fs.writeFileSync(htmlPath, htmlContent, "utf-8");
+
+        try {
+          execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 });
+        } catch (e: any) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في إنشاء ملف PDF" });
+        }
+
+        const pdfBuffer = fs.readFileSync(pdfPath);
+        const { storagePut } = await import("./storage");
+        const pdfFileName = `handwriting-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.pdf`;
+        const { url: pdfUrl } = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
+
+        // Update DB with PDF URL
+        await db.updateHandwritingAnalysisPdf(input.analysisId, pdfUrl);
+
+        // Cleanup temp files
+        try { fs.unlinkSync(htmlPath); fs.unlinkSync(pdfPath); } catch {}
+
+        return { pdfUrl };
+      }),
+  }),
+
 });
 
 // Helper: Calculate match score between teacher and job
