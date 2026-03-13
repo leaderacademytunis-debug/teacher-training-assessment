@@ -2308,4 +2308,12 @@
 - [x] Improved LLM prompt to analyze audio directly and give realistic scores
 - [x] Added error logging for debugging
 - [x] All 53 vitest tests passing
+- [x] Save checkpoint (version: b8cb229e)
+
+## Bug Fix: Parent Report and PDF Export failures
+- [x] Fix exportPdf, exportParentReport, exportPEI - all used weasyprint which fails in production
+- [x] Added fallback: try weasyprint first, if it fails upload HTML as printable page to S3
+- [x] Fixed all 4 PDF export procedures (Inspector, Handwriting Report, Parent Report, PEI)
+- [x] Added @media print and @page CSS for proper A4 printing
+- [x] All 53 handwriting tests + 9 PDF parse tests passing
 - [ ] Save checkpoint

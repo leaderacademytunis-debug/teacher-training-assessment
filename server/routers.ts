@@ -4820,38 +4820,35 @@ ${input.planText}` },
   </div>
 </body>
 </html>`;
-        // Convert HTML to PDF using WeasyPrint or similar
+        // Convert HTML to PDF - try WeasyPrint first, fallback to HTML upload
         const { execSync } = await import("child_process");
         const tmpDir = "/tmp";
-        const htmlPath = `${tmpDir}/inspection-report-${Date.now()}.html`;
-        const pdfPath = `${tmpDir}/inspection-report-${Date.now()}.pdf`;
-        fs.writeFileSync(htmlPath, html, "utf-8");
+        const ts = Date.now();
+        const htmlPath = `${tmpDir}/inspection-report-${ts}.html`;
+        const pdfPath = `${tmpDir}/inspection-report-${ts}.pdf`;
+
+        // Add print-ready styles
+        const printableInspectorHtml = html.replace('</style>', `
+          @media print { body { padding: 15px; } }
+          @page { size: A4; margin: 1.5cm; }
+        </style>`);
+        fs.writeFileSync(htmlPath, printableInspectorHtml, "utf-8");
+
+        let url = "";
         try {
           execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 });
-        } catch (e) {
-          // Fallback: try with xhtml2pdf via python
-          try {
-            const pyScript = `
-import sys
-from xhtml2pdf import pisa
-with open("${htmlPath}", "r", encoding="utf-8") as f:
-    html = f.read()
-with open("${pdfPath}", "wb") as out:
-    pisa.CreatePDF(html, dest=out)
-`;
-            const pyPath = `${tmpDir}/convert-pdf-${Date.now()}.py`;
-            fs.writeFileSync(pyPath, pyScript);
-            execSync(`python3 "${pyPath}"`, { timeout: 30000 });
-          } catch {
-            throw new Error("تعذّر توليد ملف PDF. حاول مرة أخرى.");
-          }
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          const fileKey = `inspection-reports/report-${ts}-${Math.random().toString(36).slice(2, 8)}.pdf`;
+          const result = await storagePut(fileKey, pdfBuffer, "application/pdf");
+          url = result.url;
+          try { fs.unlinkSync(pdfPath); } catch {}
+        } catch {
+          // Fallback: upload HTML as printable page
+          const htmlKey = `inspection-reports/report-${ts}-${Math.random().toString(36).slice(2, 8)}.html`;
+          const result = await storagePut(htmlKey, Buffer.from(printableInspectorHtml, "utf-8"), "text/html");
+          url = result.url;
         }
-        const pdfBuffer = fs.readFileSync(pdfPath);
-        const fileKey = `inspection-reports/report-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.pdf`;
-        const { url } = await storagePut(fileKey, pdfBuffer, "application/pdf");
-        // Cleanup
         try { fs.unlinkSync(htmlPath); } catch {}
-        try { fs.unlinkSync(pdfPath); } catch {}
         return { url };
       }),
 
@@ -13049,31 +13046,43 @@ ${input.teacherNotes ? `- ملاحظات المعلم: ${input.teacherNotes}` : 
 </body>
 </html>`;
 
-        // Convert HTML to PDF using WeasyPrint
+        // Try WeasyPrint first, fallback to HTML upload
         const fs = await import("fs");
         const { execSync } = await import("child_process");
+        const { storagePut } = await import("./storage");
         const tmpDir = "/tmp";
         const htmlPath = `${tmpDir}/handwriting-report-${input.analysisId}.html`;
         const pdfPath = `${tmpDir}/handwriting-report-${input.analysisId}.pdf`;
 
-        fs.writeFileSync(htmlPath, htmlContent, "utf-8");
+        // Add print-ready styles to HTML
+        const printableHtml = htmlContent.replace('</style>', `
+          @media print {
+            body { padding: 20px; }
+            .disclaimer { page-break-inside: avoid; }
+          }
+          @page { size: A4; margin: 1.5cm; }
+        </style>`);
 
+        fs.writeFileSync(htmlPath, printableHtml, "utf-8");
+
+        let pdfUrl = "";
         try {
           execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 });
-        } catch (e: any) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في إنشاء ملف PDF" });
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          const pdfFileName = `handwriting-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.pdf`;
+          const result = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
+          pdfUrl = result.url;
+          try { fs.unlinkSync(pdfPath); } catch {}
+        } catch {
+          // Fallback: upload HTML as printable page
+          const htmlFileName = `handwriting-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.html`;
+          const result = await storagePut(htmlFileName, Buffer.from(printableHtml, "utf-8"), "text/html");
+          pdfUrl = result.url;
         }
+        try { fs.unlinkSync(htmlPath); } catch {}
 
-        const pdfBuffer = fs.readFileSync(pdfPath);
-        const { storagePut } = await import("./storage");
-        const pdfFileName = `handwriting-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.pdf`;
-        const { url: pdfUrl } = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
-
-        // Update DB with PDF URL
+        // Update DB with URL
         await db.updateHandwritingAnalysisPdf(input.analysisId, pdfUrl);
-
-        // Cleanup temp files
-        try { fs.unlinkSync(htmlPath); fs.unlinkSync(pdfPath); } catch {}
 
         return { pdfUrl };
       }),
@@ -13190,22 +13199,38 @@ ${input.teacherNotes ? `- ملاحظات المعلم: ${input.teacherNotes}` : 
 </body>
 </html>`;
 
+        // Add print-ready styles
+        const printableParentHtml = htmlContent.replace('</style>', `
+          @media print {
+            body { padding: 20px; }
+            .disclaimer { page-break-inside: avoid; }
+          }
+          @page { size: A4; margin: 1.5cm; }
+        </style>`);
+
         const fs = await import("fs");
         const { execSync } = await import("child_process");
+        const { storagePut } = await import("./storage");
         const tmpDir = "/tmp";
         const htmlPath = `${tmpDir}/parent-report-${input.analysisId}.html`;
         const pdfPath = `${tmpDir}/parent-report-${input.analysisId}.pdf`;
-        fs.writeFileSync(htmlPath, htmlContent, "utf-8");
+        fs.writeFileSync(htmlPath, printableParentHtml, "utf-8");
+
+        let pdfUrl = "";
         try {
           execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 });
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          const pdfFileName = `parent-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.pdf`;
+          const result = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
+          pdfUrl = result.url;
+          try { fs.unlinkSync(pdfPath); } catch {}
         } catch {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في إنشاء تقرير الأولياء" });
+          // Fallback: upload HTML as printable page
+          const htmlFileName = `parent-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.html`;
+          const result = await storagePut(htmlFileName, Buffer.from(printableParentHtml, "utf-8"), "text/html");
+          pdfUrl = result.url;
         }
-        const pdfBuffer = fs.readFileSync(pdfPath);
-        const { storagePut } = await import("./storage");
-        const pdfFileName = `parent-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.pdf`;
-        const { url: pdfUrl } = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
-        try { fs.unlinkSync(htmlPath); fs.unlinkSync(pdfPath); } catch {}
+        try { fs.unlinkSync(htmlPath); } catch {}
         return { pdfUrl };
       }),
 
@@ -13812,18 +13837,38 @@ ${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""
 </body>
 </html>`;
 
+        // Add print-ready styles
+        const printablePeiHtml = htmlContent.replace('</style>', `
+          @media print {
+            body { padding: 20px; }
+            .signatures { page-break-inside: avoid; }
+          }
+          @page { size: A4; margin: 1.5cm; }
+        </style>`);
+
         const fs = await import("fs");
         const { execSync } = await import("child_process");
+        const { storagePut } = await import("./storage");
         const htmlPath = `/tmp/pei-${input.id}.html`;
         const pdfPath = `/tmp/pei-${input.id}.pdf`;
-        fs.writeFileSync(htmlPath, htmlContent, "utf-8");
-        try { execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 }); } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في إنشاء PDF" }); }
-        const pdfBuffer = fs.readFileSync(pdfPath);
-        const { storagePut } = await import("./storage");
-        const pdfFileName = `pei-reports/${ctx.user.id}/${input.id}-${Date.now()}.pdf`;
-        const { url: pdfUrl } = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
+        fs.writeFileSync(htmlPath, printablePeiHtml, "utf-8");
+
+        let pdfUrl = "";
+        try {
+          execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 });
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          const pdfFileName = `pei-reports/${ctx.user.id}/${input.id}-${Date.now()}.pdf`;
+          const result = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
+          pdfUrl = result.url;
+          try { fs.unlinkSync(pdfPath); } catch {}
+        } catch {
+          // Fallback: upload HTML as printable page
+          const htmlFileName = `pei-reports/${ctx.user.id}/${input.id}-${Date.now()}.html`;
+          const result = await storagePut(htmlFileName, Buffer.from(printablePeiHtml, "utf-8"), "text/html");
+          pdfUrl = result.url;
+        }
+        try { fs.unlinkSync(htmlPath); } catch {}
         await db.updateInterventionPlan(input.id, ctx.user.id, { pdfUrl });
-        try { fs.unlinkSync(htmlPath); fs.unlinkSync(pdfPath); } catch {}
         return { pdfUrl };
       }),
 
