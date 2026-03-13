@@ -21,7 +21,11 @@ import {
   conversations, Conversation, InsertConversation,
   savedEvaluations, SavedEvaluation, InsertSavedEvaluation,
   studentProfiles, StudentProfile, InsertStudentProfile,
-  handwritingAnalyses, HandwritingAnalysis, InsertHandwritingAnalysis
+  handwritingAnalyses, HandwritingAnalysis, InsertHandwritingAnalysis,
+  therapeuticExercises, TherapeuticExercise, InsertTherapeuticExercise,
+  specialistContacts, SpecialistContact, InsertSpecialistContact,
+  voiceAnalyses, VoiceAnalysis, InsertVoiceAnalysis,
+  interventionPlans, InterventionPlan, InsertInterventionPlan
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2235,4 +2239,200 @@ export async function updateHandwritingAnalysisPdf(id: number, pdfUrl: string) {
   const db = await getDb();
   if (!db) return;
   await db.update(handwritingAnalyses).set({ pdfUrl }).where(eq(handwritingAnalyses.id, id));
+}
+
+
+// ========== THERAPEUTIC EXERCISES ==========
+
+export async function getTherapeuticExercises(filters?: {
+  targetDisorder?: string;
+  targetAxis?: string;
+  exerciseType?: string;
+  difficulty?: string;
+  age?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (filters?.targetDisorder) conditions.push(eq(therapeuticExercises.targetDisorder, filters.targetDisorder as any));
+  if (filters?.targetAxis) conditions.push(eq(therapeuticExercises.targetAxis, filters.targetAxis as any));
+  if (filters?.exerciseType) conditions.push(eq(therapeuticExercises.exerciseType, filters.exerciseType as any));
+  if (filters?.difficulty) conditions.push(eq(therapeuticExercises.difficulty, filters.difficulty as any));
+  if (filters?.age) {
+    conditions.push(sql`${therapeuticExercises.minAge} <= ${filters.age}`);
+    conditions.push(sql`${therapeuticExercises.maxAge} >= ${filters.age}`);
+  }
+  if (conditions.length > 0) {
+    return db.select().from(therapeuticExercises).where(and(...conditions));
+  }
+  return db.select().from(therapeuticExercises);
+}
+
+export async function createTherapeuticExercise(data: InsertTherapeuticExercise) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result: any = await db.insert(therapeuticExercises).values(data);
+  return { id: Number(result.insertId || result[0]?.insertId) };
+}
+
+// ========== SPECIALIST CONTACTS ==========
+
+export async function getSpecialistContacts(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(specialistContacts).where(eq(specialistContacts.createdBy, userId));
+}
+
+export async function createSpecialistContact(data: InsertSpecialistContact) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result: any = await db.insert(specialistContacts).values(data);
+  return { id: Number(result.insertId || result[0]?.insertId) };
+}
+
+export async function deleteSpecialistContact(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(specialistContacts).where(and(eq(specialistContacts.id, id), eq(specialistContacts.createdBy, userId)));
+}
+
+// ========== VOICE ANALYSES ==========
+
+export async function createVoiceAnalysis(data: InsertVoiceAnalysis) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result: any = await db.insert(voiceAnalyses).values(data);
+  return { id: Number(result.insertId || result[0]?.insertId) };
+}
+
+export async function getVoiceAnalysis(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(voiceAnalyses).where(and(eq(voiceAnalyses.id, id), eq(voiceAnalyses.createdBy, userId)));
+  return results[0] || null;
+}
+
+export async function getVoiceAnalyses(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(voiceAnalyses).where(eq(voiceAnalyses.createdBy, userId)).orderBy(desc(voiceAnalyses.createdAt));
+}
+
+// ========== INTERVENTION PLANS (PEI) ==========
+
+export async function createInterventionPlan(data: InsertInterventionPlan) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result: any = await db.insert(interventionPlans).values(data);
+  return { id: Number(result.insertId || result[0]?.insertId) };
+}
+
+export async function getInterventionPlans(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(interventionPlans).where(eq(interventionPlans.createdBy, userId)).orderBy(desc(interventionPlans.createdAt));
+}
+
+export async function getInterventionPlan(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(interventionPlans).where(and(eq(interventionPlans.id, id), eq(interventionPlans.createdBy, userId)));
+  return results[0] || null;
+}
+
+export async function updateInterventionPlan(id: number, userId: number, data: Partial<InsertInterventionPlan>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(interventionPlans).set(data).where(and(eq(interventionPlans.id, id), eq(interventionPlans.createdBy, userId)));
+}
+
+// ========== SCHOOL-LEVEL STATISTICS ==========
+
+export async function getSchoolHandwritingStats(userId: number) {
+  const db = await getDb();
+  if (!db) return { totalAnalyses: 0, totalStudents: 0, avgScore: 0, disorderDistribution: {} };
+  
+  const analyses = await db.select().from(handwritingAnalyses).where(eq(handwritingAnalyses.createdBy, userId));
+  
+  const totalAnalyses = analyses.length;
+  const uniqueStudents = new Set(analyses.map(a => a.studentName || a.studentId).filter(Boolean));
+  const totalStudents = uniqueStudents.size;
+  const avgScore = totalAnalyses > 0 ? Math.round(analyses.reduce((sum, a) => sum + (a.overallScore || 0), 0) / totalAnalyses) : 0;
+  
+  // Disorder distribution
+  const disorderCounts: Record<string, { high: number; medium: number; low: number; none: number }> = {};
+  for (const a of analyses) {
+    const disorders = a.disorders as any[] || [];
+    for (const d of disorders) {
+      if (!disorderCounts[d.nameAr]) disorderCounts[d.nameAr] = { high: 0, medium: 0, low: 0, none: 0 };
+      disorderCounts[d.nameAr][d.probability as keyof typeof disorderCounts[string]]++;
+    }
+  }
+  
+  // Score distribution by axis
+  const axisAverages = {
+    letterFormation: totalAnalyses > 0 ? Math.round(analyses.reduce((s, a) => s + (a.letterFormationScore || 0), 0) / totalAnalyses) : 0,
+    sizeProportion: totalAnalyses > 0 ? Math.round(analyses.reduce((s, a) => s + (a.sizeProportionScore || 0), 0) / totalAnalyses) : 0,
+    spacingOrganization: totalAnalyses > 0 ? Math.round(analyses.reduce((s, a) => s + (a.spacingOrganizationScore || 0), 0) / totalAnalyses) : 0,
+    baseline: totalAnalyses > 0 ? Math.round(analyses.reduce((s, a) => s + (a.baselineScore || 0), 0) / totalAnalyses) : 0,
+    reversals: totalAnalyses > 0 ? Math.round(analyses.reduce((s, a) => s + (a.reversalsScore || 0), 0) / totalAnalyses) : 0,
+    pressureSpeed: totalAnalyses > 0 ? Math.round(analyses.reduce((s, a) => s + (a.pressureSpeedScore || 0), 0) / totalAnalyses) : 0,
+    consistency: totalAnalyses > 0 ? Math.round(analyses.reduce((s, a) => s + (a.consistencyScore || 0), 0) / totalAnalyses) : 0,
+  };
+  
+  // Grade distribution
+  const gradeDistribution: Record<string, { count: number; avgScore: number }> = {};
+  for (const a of analyses) {
+    const grade = a.studentGrade || "غير محدد";
+    if (!gradeDistribution[grade]) gradeDistribution[grade] = { count: 0, avgScore: 0 };
+    gradeDistribution[grade].count++;
+    gradeDistribution[grade].avgScore += (a.overallScore || 0);
+  }
+  for (const grade of Object.keys(gradeDistribution)) {
+    gradeDistribution[grade].avgScore = Math.round(gradeDistribution[grade].avgScore / gradeDistribution[grade].count);
+  }
+  
+  // Monthly trend
+  const monthlyTrend: Record<string, { count: number; avgScore: number }> = {};
+  for (const a of analyses) {
+    const month = new Date(a.createdAt).toISOString().slice(0, 7); // YYYY-MM
+    if (!monthlyTrend[month]) monthlyTrend[month] = { count: 0, avgScore: 0 };
+    monthlyTrend[month].count++;
+    monthlyTrend[month].avgScore += (a.overallScore || 0);
+  }
+  for (const month of Object.keys(monthlyTrend)) {
+    monthlyTrend[month].avgScore = Math.round(monthlyTrend[month].avgScore / monthlyTrend[month].count);
+  }
+  
+  return {
+    totalAnalyses,
+    totalStudents,
+    avgScore,
+    disorderDistribution: disorderCounts,
+    axisAverages,
+    gradeDistribution,
+    monthlyTrend,
+  };
+}
+
+// ========== STUDENT PROGRESS (for charts) ==========
+
+export async function getStudentProgressData(studentName: string, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(handwritingAnalyses)
+    .where(and(
+      eq(handwritingAnalyses.createdBy, userId),
+      eq(handwritingAnalyses.studentName, studentName)
+    ))
+    .orderBy(handwritingAnalyses.createdAt);
+}
+
+// ========== AGE BENCHMARKS ==========
+
+export async function getAgeBenchmarkData(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get all analyses to compute age-based benchmarks
+  return db.select().from(handwritingAnalyses).where(eq(handwritingAnalyses.createdBy, userId));
 }

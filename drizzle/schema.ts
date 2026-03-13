@@ -1800,3 +1800,116 @@ export const handwritingAnalyses = mysqlTable("handwritingAnalyses", {
 });
 export type HandwritingAnalysis = typeof handwritingAnalyses.$inferSelect;
 export type InsertHandwritingAnalysis = typeof handwritingAnalyses.$inferInsert;
+
+
+/**
+ * Therapeutic exercises library - linked to disorder types and axes
+ */
+export const therapeuticExercises = mysqlTable("therapeuticExercises", {
+  id: int("id").autoincrement().primaryKey(),
+  titleAr: varchar("titleAr", { length: 200 }).notNull(),
+  titleFr: varchar("titleFr", { length: 200 }),
+  descriptionAr: mediumtext("descriptionAr").notNull(),
+  descriptionFr: mediumtext("descriptionFr"),
+  // Which disorder this exercise targets
+  targetDisorder: mysqlEnum("targetDisorder", ["dysgraphia", "dyslexia", "adhd", "asd", "general"]).notNull(),
+  // Which axis this exercise targets
+  targetAxis: mysqlEnum("targetAxis", ["letterFormation", "sizeProportion", "spacingOrganization", "baseline", "reversals", "pressureSpeed", "consistency", "general"]).notNull(),
+  // Exercise type
+  exerciseType: mysqlEnum("exerciseType", ["motor", "visual", "cognitive", "classroom_adaptation", "home_activity"]).default("motor").notNull(),
+  // Difficulty level
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("easy").notNull(),
+  // Age range
+  minAge: int("minAge").default(5),
+  maxAge: int("maxAge").default(12),
+  // Duration in minutes
+  durationMinutes: int("durationMinutes").default(15),
+  // Materials needed
+  materials: text("materials"),
+  // Step-by-step instructions (markdown)
+  instructions: mediumtext("instructions"),
+  // Is this a printable worksheet?
+  isPrintable: boolean("isPrintable").default(false),
+  printableUrl: text("printableUrl"), // S3 URL if printable
+  // Metadata
+  createdBy: int("createdBy"), // null = system-seeded
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type TherapeuticExercise = typeof therapeuticExercises.$inferSelect;
+export type InsertTherapeuticExercise = typeof therapeuticExercises.$inferInsert;
+
+/**
+ * Specialist contacts for automatic notifications
+ */
+export const specialistContacts = mysqlTable("specialistContacts", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(), // teacher user ID
+  name: varchar("name", { length: 200 }).notNull(),
+  specialty: mysqlEnum("specialty", ["orthophonist", "psychologist", "occupational_therapist", "other"]).notNull(),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 50 }),
+  schoolName: varchar("schoolName", { length: 200 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SpecialistContact = typeof specialistContacts.$inferSelect;
+export type InsertSpecialistContact = typeof specialistContacts.$inferInsert;
+
+/**
+ * Voice analyses - paired with handwriting analyses
+ */
+export const voiceAnalyses = mysqlTable("voiceAnalyses", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  handwritingAnalysisId: int("handwritingAnalysisId"), // optional link
+  studentId: int("studentId"),
+  studentName: varchar("studentName", { length: 100 }),
+  audioUrl: text("audioUrl").notNull(), // S3 URL
+  transcription: mediumtext("transcription"),
+  // Voice analysis scores
+  fluencyScore: int("fluencyScore"), // 0-100
+  pronunciationScore: int("pronunciationScore"), // 0-100
+  readingSpeedScore: int("readingSpeedScore"), // 0-100
+  comprehensionScore: int("comprehensionScore"), // 0-100
+  // AI analysis
+  voiceReport: mediumtext("voiceReport"),
+  voiceRecommendations: mediumtext("voiceRecommendations"),
+  // Combined report (when paired with handwriting)
+  combinedReport: mediumtext("combinedReport"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type VoiceAnalysis = typeof voiceAnalyses.$inferSelect;
+export type InsertVoiceAnalysis = typeof voiceAnalyses.$inferInsert;
+
+/**
+ * Individual Intervention Plans (PEI - خطة تدخل فردية)
+ */
+export const interventionPlans = mysqlTable("interventionPlans", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  studentId: int("studentId"),
+  studentName: varchar("studentName", { length: 100 }).notNull(),
+  studentAge: int("studentAge"),
+  studentGrade: varchar("studentGrade", { length: 50 }),
+  // Linked analyses
+  handwritingAnalysisId: int("handwritingAnalysisId"),
+  voiceAnalysisId: int("voiceAnalysisId"),
+  // Plan content (markdown)
+  diagnosis: mediumtext("diagnosis"), // Summary of findings
+  objectives: json("objectives").$type<Array<{ objective: string; timeline: string; status: string }>>(),
+  interventions: mediumtext("interventions"), // Detailed intervention strategies
+  classroomAdaptations: mediumtext("classroomAdaptations"),
+  homeActivities: mediumtext("homeActivities"),
+  followUpSchedule: json("followUpSchedule").$type<Array<{ date: string; activity: string; notes: string }>>(),
+  // Signatories
+  teacherName: varchar("teacherName", { length: 200 }),
+  specialistName: varchar("specialistName", { length: 200 }),
+  parentName: varchar("parentName", { length: 200 }),
+  // Status
+  status: mysqlEnum("status", ["draft", "active", "completed", "archived"]).default("draft").notNull(),
+  pdfUrl: text("pdfUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type InterventionPlan = typeof interventionPlans.$inferSelect;
+export type InsertInterventionPlan = typeof interventionPlans.$inferInsert;

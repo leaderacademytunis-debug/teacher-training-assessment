@@ -407,6 +407,13 @@
       "when": 1773358199322,
       "tag": "0057_foamy_mister_fear",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "5",
+      "when": 1773360575695,
+      "tag": "0058_striped_darkhawk",
+      "breakpoints": true
     }
   ]
 }

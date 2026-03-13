@@ -2251,4 +2251,52 @@
 - [x] Navigation: Added to EDUGPT dropdown menu and App.tsx route
 - [x] Ethical disclaimer: Always shows "not a medical diagnosis" warning
 - [x] Write vitest tests (18 tests passing)
+- [x] Save checkpoint (version: b5f3bbf3)
+
+## Handwriting Analyzer - 9 Improvements
+### Improvement 1: رسم بياني لتتبع التقدم
+- [x] Backend: getStudentProgress procedure (compare analyses over time)
+- [x] Frontend: Progress chart component (line chart for 7 axes with color coding)
+- [x] Frontend: Student portfolio view with timeline in History tab
+
+### Improvement 2: تقرير مبسط للأولياء
+- [x] Backend: exportParentReport procedure (simplified PDF in plain Arabic)
+- [x] Frontend: Parent report button in results view
+- [x] PDF: No technical terms, home activities suggestions, ethical disclaimer
+
+### Improvement 3: قاعدة بيانات تمارين علاجية
+- [x] Database: therapeuticExercises table (linked to disorder types)
+- [x] Backend: getExercisesForAnalysis procedure (AI-generated per analysis)
+- [x] Frontend: Exercises tab with categorized exercises and printable cards
+
+### Improvement 4: مقارنة مع المعايير العمرية
+- [x] Backend: getAgeBenchmarks procedure with scientific data for ages 5-12
+- [x] Frontend: Age Benchmarks tab with comparison table and color indicators
+
+### Improvement 5: تحليل متعدد العينات
+- [x] Backend: analyzeMultipleSamples procedure (2-5 samples)
+- [x] Frontend: Multi-upload UI with drag & drop for each sample type
+- [x] Combined comprehensive comparison report generation
+
+### Improvement 6: إشعار تلقائي للأخصائي
+- [x] Backend: addSpecialist, getSpecialists, removeSpecialist, notifySpecialist procedures
+- [x] Frontend: Specialists tab with contact management
+- [x] Auto-notification when disorder probability > 70%
+
+### Improvement 7: تحليل صوتي مرافق
+- [x] Backend: analyzeVoice procedure (transcription + LLM analysis)
+- [x] Frontend: Voice Analysis tab with audio upload and results display
+- [x] Combined writing + reading analysis with fluency/pronunciation/speed/comprehension scores
+
+### Improvement 8: خطة تدخل فردية (PEI)
+- [x] Backend: generatePEI, getPEIs, exportPEI procedures
+- [x] Frontend: PEI tab with form and AI-generated plan display
+- [x] Links to previous handwriting analyses for context
+
+### Improvement 9: لوحة إحصائيات المدير
+- [x] Backend: getSchoolStats procedure (aggregated statistics)
+- [x] Frontend: Dashboard tab with KPI cards, axis averages, disorder distribution table, grade distribution
+- [x] Real data from all analyses
+
+- [x] Write vitest tests for all improvements (53 tests passing)
 - [ ] Save checkpoint

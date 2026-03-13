@@ -13077,6 +13077,728 @@ ${input.teacherNotes ? `- ملاحظات المعلم: ${input.teacherNotes}` : 
 
         return { pdfUrl };
       }),
+
+    // ===== IMPROVEMENT 1: Student Progress Chart Data =====
+    getStudentProgress: protectedProcedure
+      .input(z.object({ studentName: z.string().min(1) }))
+      .query(async ({ input, ctx }) => {
+        const analyses = await db.getStudentProgressData(input.studentName, ctx.user.id);
+        return analyses.map(a => ({
+          id: a.id,
+          date: a.createdAt,
+          overallScore: a.overallScore || 0,
+          letterFormation: a.letterFormationScore || 0,
+          sizeProportion: a.sizeProportionScore || 0,
+          spacingOrganization: a.spacingOrganizationScore || 0,
+          baseline: a.baselineScore || 0,
+          reversals: a.reversalsScore || 0,
+          pressureSpeed: a.pressureSpeedScore || 0,
+          consistency: a.consistencyScore || 0,
+          writingType: a.writingType,
+        }));
+      }),
+
+    // ===== IMPROVEMENT 2: Parent-Friendly PDF Report =====
+    exportParentReport: protectedProcedure
+      .input(z.object({ analysisId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const analysis = await db.getHandwritingAnalysis(input.analysisId, ctx.user.id);
+        if (!analysis) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "التحليل غير موجود" });
+        }
+
+        // Generate parent-friendly report using LLM
+        const { invokeLLM } = await import("./_core/llm");
+        const parentReportResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت مستشار تربوي تكتب تقريراً مبسطاً لأولياء الأمور عن حالة كتابة طفلهم.
+اكتب بلغة عربية بسيطة وواضحة بدون مصطلحات تقنية.
+كن إيجابياً ومشجعاً مع ذكر نقاط القوة أولاً ثم نقاط التحسين.
+اقترح أنشطة منزلية بسيطة يمكن للأولياء ممارستها مع الطفل.
+لا تستخدم كلمات مخيفة مثل "اضطراب" أو "مرض" - استخدم "صعوبة" أو "تحدي".`
+            },
+            {
+              role: "user",
+              content: `اكتب تقريراً مبسطاً للأولياء عن طفل اسمه ${analysis.studentName || "الطفل"} عمره ${analysis.studentAge || "غير محدد"} سنوات في ${analysis.studentGrade || "المرحلة الابتدائية"}.
+
+النتائج:
+- الدرجة العامة: ${analysis.overallScore}/100
+- تشكيل الحروف: ${analysis.letterFormationScore}/100
+- الحجم والتناسب: ${analysis.sizeProportionScore}/100
+- التباعد والتنظيم: ${analysis.spacingOrganizationScore}/100
+- خط الأساس: ${analysis.baselineScore}/100
+- الانعكاسات: ${analysis.reversalsScore}/100
+- الضغط والسرعة: ${analysis.pressureSpeedScore}/100
+- الاتساق: ${analysis.consistencyScore}/100
+
+التقرير المفصل: ${analysis.analysisReport || ""}
+التوصيات: ${analysis.recommendations || ""}`
+            }
+          ]
+        });
+
+        const parentReport = parentReportResponse?.choices?.[0]?.message?.content || "";
+
+        const scoreColor = (s: number) => s >= 70 ? "#059669" : s >= 40 ? "#d97706" : "#dc2626";
+        const scoreLabel = (s: number) => s >= 80 ? "ممتاز" : s >= 70 ? "جيد" : s >= 50 ? "مقبول" : s >= 30 ? "يحتاج تحسين" : "يحتاج دعم";
+
+        const htmlContent = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+    body { font-family: 'Noto Sans Arabic', sans-serif; direction: rtl; padding: 40px; color: #1f2937; line-height: 2; }
+    h1 { color: #7c3aed; text-align: center; font-size: 26px; }
+    h2 { color: #7c3aed; font-size: 20px; border-bottom: 2px solid #a78bfa; padding-bottom: 8px; margin-top: 30px; }
+    .subtitle { text-align: center; color: #6b7280; margin-bottom: 30px; font-size: 16px; }
+    .score-box { text-align: center; background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-radius: 16px; padding: 30px; margin: 20px 0; }
+    .score-value { font-size: 56px; font-weight: bold; color: ${scoreColor(analysis.overallScore || 0)}; }
+    .score-label { font-size: 20px; color: ${scoreColor(analysis.overallScore || 0)}; margin-top: 8px; }
+    .info-card { background: #f9fafb; border-radius: 12px; padding: 20px; margin: 15px 0; }
+    .report-text { background: #faf5ff; border-radius: 12px; padding: 25px; line-height: 2.2; font-size: 16px; white-space: pre-wrap; }
+    .positive { color: #059669; }
+    .disclaimer { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; color: #92400e; font-size: 14px; }
+    .footer { text-align: center; margin-top: 40px; color: #9ca3af; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>تقرير متابعة كتابة الطفل</h1>
+  <p class="subtitle">تقرير مبسط لأولياء الأمور - Leader Academy</p>
+  
+  <div class="info-card">
+    <strong>اسم الطفل:</strong> ${analysis.studentName || "-"} &nbsp;&nbsp;
+    <strong>العمر:</strong> ${analysis.studentAge || "-"} سنوات &nbsp;&nbsp;
+    <strong>المستوى:</strong> ${analysis.studentGrade || "-"} &nbsp;&nbsp;
+    <strong>التاريخ:</strong> ${new Date(analysis.createdAt).toLocaleDateString("ar-TN")}
+  </div>
+
+  <div class="score-box">
+    <div class="score-value">${analysis.overallScore || 0}/100</div>
+    <div class="score-label">${scoreLabel(analysis.overallScore || 0)}</div>
+  </div>
+
+  <h2>ملاحظات وتوصيات للأولياء</h2>
+  <div class="report-text">${parentReport}</div>
+
+  <div class="disclaimer">
+    هذا التقرير أداة مساعدة تربوية وليس تشخيصاً طبياً. للمزيد من المعلومات تواصلوا مع معلم/ة الطفل.
+  </div>
+  <div class="footer"><p>Leader Academy - منصة الذكاء الاصطناعي التربوي</p></div>
+</body>
+</html>`;
+
+        const fs = await import("fs");
+        const { execSync } = await import("child_process");
+        const tmpDir = "/tmp";
+        const htmlPath = `${tmpDir}/parent-report-${input.analysisId}.html`;
+        const pdfPath = `${tmpDir}/parent-report-${input.analysisId}.pdf`;
+        fs.writeFileSync(htmlPath, htmlContent, "utf-8");
+        try {
+          execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 });
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في إنشاء تقرير الأولياء" });
+        }
+        const pdfBuffer = fs.readFileSync(pdfPath);
+        const { storagePut } = await import("./storage");
+        const pdfFileName = `parent-reports/${ctx.user.id}/${input.analysisId}-${Date.now()}.pdf`;
+        const { url: pdfUrl } = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
+        try { fs.unlinkSync(htmlPath); fs.unlinkSync(pdfPath); } catch {}
+        return { pdfUrl };
+      }),
+
+    // ===== IMPROVEMENT 3: Therapeutic Exercises =====
+    getExercises: protectedProcedure
+      .input(z.object({
+        targetDisorder: z.string().optional(),
+        targetAxis: z.string().optional(),
+        exerciseType: z.string().optional(),
+        difficulty: z.string().optional(),
+        age: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return db.getTherapeuticExercises(input);
+      }),
+
+    getExercisesForAnalysis: protectedProcedure
+      .input(z.object({ analysisId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const analysis = await db.getHandwritingAnalysis(input.analysisId, ctx.user.id);
+        if (!analysis) throw new TRPCError({ code: "NOT_FOUND", message: "التحليل غير موجود" });
+        
+        // Find weakest axes and matching disorders
+        const axes = [
+          { key: "letterFormation", score: analysis.letterFormationScore || 0 },
+          { key: "sizeProportion", score: analysis.sizeProportionScore || 0 },
+          { key: "spacingOrganization", score: analysis.spacingOrganizationScore || 0 },
+          { key: "baseline", score: analysis.baselineScore || 0 },
+          { key: "reversals", score: analysis.reversalsScore || 0 },
+          { key: "pressureSpeed", score: analysis.pressureSpeedScore || 0 },
+          { key: "consistency", score: analysis.consistencyScore || 0 },
+        ].sort((a, b) => a.score - b.score);
+        
+        const weakAxes = axes.filter(a => a.score < 60).map(a => a.key);
+        const disorders = (analysis.disorders as any[] || []).filter((d: any) => d.probability === "high" || d.probability === "medium");
+        
+        // Generate exercises with LLM if no seeded exercises exist
+        const { invokeLLM } = await import("./_core/llm");
+        const exerciseResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في العلاج الوظيفي والتربية الخاصة. قدم تمارين علاجية عملية مخصصة لتحسين كتابة الطفل.
+كل تمرين يجب أن يكون واضحاً وقابلاً للتطبيق في الفصل أو المنزل.
+اكتب بالعربية الفصحى البسيطة.`
+            },
+            {
+              role: "user",
+              content: `اقترح 8 تمارين علاجية لطفل عمره ${analysis.studentAge || 7} سنوات.
+المحاور الضعيفة: ${weakAxes.join("، ")}
+الاضطرابات المحتملة: ${disorders.map((d: any) => d.nameAr).join("، ") || "لا توجد"}
+
+أريد تمارين متنوعة: حركية، بصرية، معرفية، تكييفات صفية، وأنشطة منزلية.`
+            }
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "therapeutic_exercises",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  exercises: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string" },
+                        description: { type: "string" },
+                        type: { type: "string", enum: ["motor", "visual", "cognitive", "classroom_adaptation", "home_activity"] },
+                        difficulty: { type: "string", enum: ["easy", "medium", "hard"] },
+                        duration: { type: "integer" },
+                        materials: { type: "string" },
+                        steps: { type: "array", items: { type: "string" } },
+                        targetAxis: { type: "string" },
+                      },
+                      required: ["title", "description", "type", "difficulty", "duration", "materials", "steps", "targetAxis"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["exercises"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = exerciseResponse?.choices?.[0]?.message?.content;
+        let exercises: any[] = [];
+        try {
+          const parsed = JSON.parse(typeof content === "string" ? content : JSON.stringify(content));
+          exercises = parsed.exercises || [];
+        } catch {}
+
+        return { exercises, weakAxes, disorders: disorders.map((d: any) => d.nameAr) };
+      }),
+
+    // ===== IMPROVEMENT 4: Age Benchmarks =====
+    getAgeBenchmarks: protectedProcedure
+      .query(async ({ ctx }) => {
+        // Return scientific age benchmarks for handwriting development
+        const benchmarks = [
+          { age: 5, grade: "تحضيري", expectedScore: 30, letterFormation: 25, sizeProportion: 25, spacingOrganization: 20, baseline: 25, reversals: 20, pressureSpeed: 30, consistency: 25, notes: "مرحلة ما قبل الكتابة - الخربشة والأشكال البسيطة" },
+          { age: 6, grade: "سنة 1", expectedScore: 40, letterFormation: 35, sizeProportion: 35, spacingOrganization: 30, baseline: 35, reversals: 30, pressureSpeed: 40, consistency: 35, notes: "بداية تعلم الحروف - الانعكاسات طبيعية" },
+          { age: 7, grade: "سنة 2", expectedScore: 55, letterFormation: 50, sizeProportion: 50, spacingOrganization: 45, baseline: 50, reversals: 45, pressureSpeed: 55, consistency: 50, notes: "تحسن ملحوظ في تشكيل الحروف" },
+          { age: 8, grade: "سنة 3", expectedScore: 65, letterFormation: 60, sizeProportion: 60, spacingOrganization: 55, baseline: 60, reversals: 60, pressureSpeed: 65, consistency: 60, notes: "اكتساب الطلاقة في الكتابة" },
+          { age: 9, grade: "سنة 4", expectedScore: 72, letterFormation: 70, sizeProportion: 68, spacingOrganization: 65, baseline: 70, reversals: 70, pressureSpeed: 72, consistency: 68, notes: "الكتابة أصبحت أكثر آلية" },
+          { age: 10, grade: "سنة 5", expectedScore: 78, letterFormation: 75, sizeProportion: 75, spacingOrganization: 72, baseline: 76, reversals: 78, pressureSpeed: 78, consistency: 75, notes: "نضج حركي شبه مكتمل" },
+          { age: 11, grade: "سنة 6", expectedScore: 82, letterFormation: 80, sizeProportion: 80, spacingOrganization: 78, baseline: 80, reversals: 82, pressureSpeed: 82, consistency: 80, notes: "مستوى قريب من الكتابة الناضجة" },
+          { age: 12, grade: "إعدادي", expectedScore: 85, letterFormation: 83, sizeProportion: 83, spacingOrganization: 82, baseline: 83, reversals: 85, pressureSpeed: 85, consistency: 83, notes: "كتابة ناضجة" },
+        ];
+        return benchmarks;
+      }),
+
+    // ===== IMPROVEMENT 5: Multi-Sample Analysis =====
+    analyzeMultipleSamples: protectedProcedure
+      .input(z.object({
+        samples: z.array(z.object({
+          imageBase64: z.string(),
+          mimeType: z.string(),
+          writingType: z.enum(["copy", "dictation", "free_expression", "math"]),
+        })).min(2).max(5),
+        studentName: z.string().optional(),
+        studentAge: z.number().min(5).max(12).optional(),
+        studentGrade: z.string().optional(),
+        teacherNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        const { invokeLLM } = await import("./_core/llm");
+
+        // Upload all images
+        const uploadedImages: Array<{ url: string; writingType: string; base64Url: string }> = [];
+        for (const sample of input.samples) {
+          const buffer = Buffer.from(sample.imageBase64, "base64");
+          const ext = sample.mimeType.includes("png") ? "png" : "jpg";
+          const fileName = `handwriting/${ctx.user.id}/multi-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          const { url } = await storagePut(fileName, buffer, sample.mimeType);
+          uploadedImages.push({ url, writingType: sample.writingType, base64Url: `data:${sample.mimeType};base64,${sample.imageBase64}` });
+        }
+
+        const writingTypeLabels: Record<string, string> = {
+          copy: "نسخ", dictation: "إملاء", free_expression: "تعبير حر", math: "رياضيات",
+        };
+
+        // Build multi-image content for LLM
+        const imageContents: any[] = [];
+        for (let i = 0; i < uploadedImages.length; i++) {
+          imageContents.push(
+            { type: "text", text: `العينة ${i + 1} (${writingTypeLabels[uploadedImages[i].writingType]}):` },
+            { type: "image_url", image_url: { url: uploadedImages[i].base64Url, detail: "high" } }
+          );
+        }
+        imageContents.push({ type: "text", text: "حلل جميع العينات معاً وقدم تقريراً شاملاً يقارن بينها." });
+
+        const analysisResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في تحليل خط اليد عند الأطفال. لديك ${uploadedImages.length} عينات كتابة مختلفة لنفس التلميذ.
+حلل كل عينة على حدة ثم قدم تقريراً مقارناً شاملاً.
+التلميذ: ${input.studentName || "غير محدد"}, العمر: ${input.studentAge || "غير محدد"}, المستوى: ${input.studentGrade || "غير محدد"}
+${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""}
+
+قيّم المحاور السبعة لكل عينة وأعطِ تقييماً عاماً مجمعاً.`
+            },
+            { role: "user", content: imageContents }
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "multi_sample_analysis",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  overallScore: { type: "integer" },
+                  sampleScores: { type: "array", items: { type: "object", properties: { writingType: { type: "string" }, score: { type: "integer" }, notes: { type: "string" } }, required: ["writingType", "score", "notes"], additionalProperties: false } },
+                  axes: {
+                    type: "object",
+                    properties: {
+                      letterFormation: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      sizeProportion: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      spacingOrganization: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      baseline: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      reversals: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      pressureSpeed: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                      consistency: { type: "object", properties: { score: { type: "integer" }, observation: { type: "string" } }, required: ["score", "observation"], additionalProperties: false },
+                    },
+                    required: ["letterFormation", "sizeProportion", "spacingOrganization", "baseline", "reversals", "pressureSpeed", "consistency"],
+                    additionalProperties: false,
+                  },
+                  disorders: { type: "array", items: { type: "object", properties: { name: { type: "string" }, nameAr: { type: "string" }, probability: { type: "string", enum: ["high", "medium", "low", "none"] }, indicators: { type: "array", items: { type: "string" } } }, required: ["name", "nameAr", "probability", "indicators"], additionalProperties: false } },
+                  comparativeReport: { type: "string" },
+                  detailedReport: { type: "string" },
+                  recommendations: { type: "string" },
+                },
+                required: ["overallScore", "sampleScores", "axes", "disorders", "comparativeReport", "detailedReport", "recommendations"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = analysisResponse?.choices?.[0]?.message?.content;
+        if (!content) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحليل العينات" });
+        let analysis: any;
+        try { analysis = JSON.parse(typeof content === "string" ? content : JSON.stringify(content)); } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في قراءة النتائج" }); }
+
+        // Save the combined analysis
+        const result = await db.createHandwritingAnalysis({
+          createdBy: ctx.user.id,
+          studentName: input.studentName || "تلميذ",
+          studentAge: input.studentAge || null,
+          studentGrade: input.studentGrade || null,
+          imageUrl: uploadedImages[0].url,
+          writingType: "copy",
+          teacherNotes: `تحليل متعدد العينات (${uploadedImages.length} عينات): ${uploadedImages.map(i => writingTypeLabels[i.writingType]).join("، ")}`,
+          overallScore: analysis.overallScore,
+          letterFormationScore: analysis.axes.letterFormation.score,
+          sizeProportionScore: analysis.axes.sizeProportion.score,
+          spacingOrganizationScore: analysis.axes.spacingOrganization.score,
+          baselineScore: analysis.axes.baseline.score,
+          reversalsScore: analysis.axes.reversals.score,
+          pressureSpeedScore: analysis.axes.pressureSpeed.score,
+          consistencyScore: analysis.axes.consistency.score,
+          disorders: analysis.disorders,
+          analysisReport: analysis.detailedReport,
+          recommendations: analysis.recommendations,
+        });
+
+        return {
+          id: result.id,
+          ...analysis,
+          images: uploadedImages.map(i => ({ url: i.url, writingType: i.writingType })),
+        };
+      }),
+
+    // ===== IMPROVEMENT 6: Specialist Contacts & Notifications =====
+    getSpecialists: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getSpecialistContacts(ctx.user.id);
+      }),
+
+    addSpecialist: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        specialty: z.enum(["orthophonist", "psychologist", "occupational_therapist", "other"]),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        schoolName: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return db.createSpecialistContact({ ...input, createdBy: ctx.user.id });
+      }),
+
+    removeSpecialist: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.deleteSpecialistContact(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    notifySpecialist: protectedProcedure
+      .input(z.object({
+        specialistId: z.number(),
+        analysisId: z.number(),
+        message: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const specialist = (await db.getSpecialistContacts(ctx.user.id)).find(s => s.id === input.specialistId);
+        if (!specialist) throw new TRPCError({ code: "NOT_FOUND", message: "الأخصائي غير موجود" });
+        const analysis = await db.getHandwritingAnalysis(input.analysisId, ctx.user.id);
+        if (!analysis) throw new TRPCError({ code: "NOT_FOUND", message: "التحليل غير موجود" });
+
+        // For now, return the notification content (email integration can be added later)
+        const notificationContent = `تنبيه من المعلم بخصوص التلميذ ${analysis.studentName || "غير محدد"}\n\nالدرجة العامة: ${analysis.overallScore}/100\n\n${input.message || "يرجى مراجعة نتائج تحليل خط اليد للتلميذ."}\n\nالاضطرابات المحتملة:\n${(analysis.disorders as any[] || []).filter((d: any) => d.probability !== "none").map((d: any) => `- ${d.nameAr}: ${d.probability === "high" ? "مرتفع" : d.probability === "medium" ? "متوسط" : "منخفض"}`).join("\n")}`;
+
+        return { 
+          success: true, 
+          notificationContent,
+          specialistName: specialist.name,
+          specialistEmail: specialist.email,
+        };
+      }),
+
+    // ===== IMPROVEMENT 7: Voice Analysis =====
+    analyzeVoice: protectedProcedure
+      .input(z.object({
+        audioBase64: z.string(),
+        mimeType: z.string(),
+        studentName: z.string().optional(),
+        studentAge: z.number().optional(),
+        studentGrade: z.string().optional(),
+        handwritingAnalysisId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { storagePut } = await import("./storage");
+        const { invokeLLM } = await import("./_core/llm");
+        const { transcribeAudio } = await import("./_core/voiceTranscription");
+
+        // Upload audio to S3
+        const buffer = Buffer.from(input.audioBase64, "base64");
+        const ext = input.mimeType.includes("mp3") ? "mp3" : input.mimeType.includes("wav") ? "wav" : "webm";
+        const fileName = `voice-analysis/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url: audioUrl } = await storagePut(fileName, buffer, input.mimeType);
+
+        // Transcribe audio
+        let transcription = "";
+        try {
+          const result = await transcribeAudio({ audioUrl, language: "ar" });
+          transcription = result.text || "";
+        } catch {
+          transcription = "(فشل في استخراج النص من التسجيل الصوتي)";
+        }
+
+        // Analyze voice with LLM
+        const voiceAnalysisResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في علم النفس التربوي وتحليل القراءة عند الأطفال.
+حلل النص المستخرج من قراءة الطفل وقيّم: الطلاقة، النطق، سرعة القراءة، والفهم.
+التلميذ: ${input.studentName || "غير محدد"}, العمر: ${input.studentAge || "غير محدد"}, المستوى: ${input.studentGrade || "غير محدد"}`
+            },
+            {
+              role: "user",
+              content: `النص المستخرج من قراءة الطفل:\n"${transcription}"\n\nحلل هذه القراءة وقدم تقريراً مفصلاً.`
+            }
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "voice_analysis",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  fluencyScore: { type: "integer", description: "0-100" },
+                  pronunciationScore: { type: "integer", description: "0-100" },
+                  readingSpeedScore: { type: "integer", description: "0-100" },
+                  comprehensionScore: { type: "integer", description: "0-100" },
+                  report: { type: "string" },
+                  recommendations: { type: "string" },
+                },
+                required: ["fluencyScore", "pronunciationScore", "readingSpeedScore", "comprehensionScore", "report", "recommendations"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const voiceContent = voiceAnalysisResponse?.choices?.[0]?.message?.content;
+        let voiceResult: any = { fluencyScore: 0, pronunciationScore: 0, readingSpeedScore: 0, comprehensionScore: 0, report: "", recommendations: "" };
+        try { voiceResult = JSON.parse(typeof voiceContent === "string" ? voiceContent : JSON.stringify(voiceContent)); } catch {}
+
+        // If linked to handwriting analysis, generate combined report
+        let combinedReport = "";
+        if (input.handwritingAnalysisId) {
+          const hwAnalysis = await db.getHandwritingAnalysis(input.handwritingAnalysisId, ctx.user.id);
+          if (hwAnalysis) {
+            const combinedResponse = await invokeLLM({
+              messages: [
+                { role: "system", content: "أنت خبير في التشخيص التربوي الشامل. اربط بين نتائج تحليل خط اليد وتحليل القراءة الصوتية لتقديم تقرير تشخيصي متكامل." },
+                { role: "user", content: `نتائج تحليل خط اليد:\n- الدرجة العامة: ${hwAnalysis.overallScore}/100\n- التقرير: ${hwAnalysis.analysisReport}\n\nنتائج تحليل القراءة:\n- الطلاقة: ${voiceResult.fluencyScore}/100\n- النطق: ${voiceResult.pronunciationScore}/100\n- السرعة: ${voiceResult.readingSpeedScore}/100\n- الفهم: ${voiceResult.comprehensionScore}/100\n- التقرير: ${voiceResult.report}\n\nاكتب تقريراً تشخيصياً شاملاً يربط بين النتيجتين.` }
+              ]
+            });
+            combinedReport = combinedResponse?.choices?.[0]?.message?.content || "";
+          }
+        }
+
+        // Save to database
+        const saved = await db.createVoiceAnalysis({
+          createdBy: ctx.user.id,
+          handwritingAnalysisId: input.handwritingAnalysisId || null,
+          studentName: input.studentName || null,
+          audioUrl,
+          transcription,
+          fluencyScore: voiceResult.fluencyScore,
+          pronunciationScore: voiceResult.pronunciationScore,
+          readingSpeedScore: voiceResult.readingSpeedScore,
+          comprehensionScore: voiceResult.comprehensionScore,
+          voiceReport: voiceResult.report,
+          voiceRecommendations: voiceResult.recommendations,
+          combinedReport: combinedReport || null,
+        });
+
+        return {
+          id: saved.id,
+          transcription,
+          ...voiceResult,
+          combinedReport,
+          audioUrl,
+        };
+      }),
+
+    getVoiceAnalyses: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getVoiceAnalyses(ctx.user.id);
+      }),
+
+    // ===== IMPROVEMENT 8: Individual Intervention Plan (PEI) =====
+    generatePEI: protectedProcedure
+      .input(z.object({
+        studentName: z.string().min(1),
+        studentAge: z.number().optional(),
+        studentGrade: z.string().optional(),
+        handwritingAnalysisId: z.number().optional(),
+        voiceAnalysisId: z.number().optional(),
+        teacherName: z.string().optional(),
+        specialistName: z.string().optional(),
+        parentName: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { invokeLLM } = await import("./_core/llm");
+
+        // Gather data from linked analyses
+        let hwData = "";
+        let voiceData = "";
+        if (input.handwritingAnalysisId) {
+          const hw = await db.getHandwritingAnalysis(input.handwritingAnalysisId, ctx.user.id);
+          if (hw) hwData = `تحليل خط اليد: الدرجة ${hw.overallScore}/100\nالتقرير: ${hw.analysisReport}\nالتوصيات: ${hw.recommendations}`;
+        }
+        if (input.voiceAnalysisId) {
+          const va = await db.getVoiceAnalysis(input.voiceAnalysisId, ctx.user.id);
+          if (va) voiceData = `تحليل القراءة: الطلاقة ${va.fluencyScore}/100, النطق ${va.pronunciationScore}/100\nالتقرير: ${va.voiceReport}`;
+        }
+
+        const peiResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `أنت خبير في التربية الخاصة في تونس. أنشئ خطة تدخل فردية (PEI) شاملة وفق المعايير التونسية.
+الخطة يجب أن تكون عملية وقابلة للتطبيق في المدرسة التونسية.
+استخدم المصطلحات التربوية التونسية.`
+            },
+            {
+              role: "user",
+              content: `أنشئ خطة تدخل فردية للتلميذ:\nالاسم: ${input.studentName}\nالعمر: ${input.studentAge || "غير محدد"}\nالمستوى: ${input.studentGrade || "غير محدد"}\n\n${hwData}\n${voiceData}\n\nالمعلم: ${input.teacherName || "غير محدد"}\nالأخصائي: ${input.specialistName || "غير محدد"}`
+            }
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "intervention_plan",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  diagnosis: { type: "string" },
+                  objectives: { type: "array", items: { type: "object", properties: { objective: { type: "string" }, timeline: { type: "string" }, status: { type: "string" } }, required: ["objective", "timeline", "status"], additionalProperties: false } },
+                  interventions: { type: "string" },
+                  classroomAdaptations: { type: "string" },
+                  homeActivities: { type: "string" },
+                  followUpSchedule: { type: "array", items: { type: "object", properties: { date: { type: "string" }, activity: { type: "string" }, notes: { type: "string" } }, required: ["date", "activity", "notes"], additionalProperties: false } },
+                },
+                required: ["diagnosis", "objectives", "interventions", "classroomAdaptations", "homeActivities", "followUpSchedule"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const peiContent = peiResponse?.choices?.[0]?.message?.content;
+        let pei: any = {};
+        try { pei = JSON.parse(typeof peiContent === "string" ? peiContent : JSON.stringify(peiContent)); } catch {}
+
+        const saved = await db.createInterventionPlan({
+          createdBy: ctx.user.id,
+          studentName: input.studentName,
+          studentAge: input.studentAge || null,
+          studentGrade: input.studentGrade || null,
+          handwritingAnalysisId: input.handwritingAnalysisId || null,
+          voiceAnalysisId: input.voiceAnalysisId || null,
+          diagnosis: pei.diagnosis || "",
+          objectives: pei.objectives || [],
+          interventions: pei.interventions || "",
+          classroomAdaptations: pei.classroomAdaptations || "",
+          homeActivities: pei.homeActivities || "",
+          followUpSchedule: pei.followUpSchedule || [],
+          teacherName: input.teacherName || null,
+          specialistName: input.specialistName || null,
+          parentName: input.parentName || null,
+          status: "draft",
+        });
+
+        return { id: saved.id, ...pei };
+      }),
+
+    getPEIs: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getInterventionPlans(ctx.user.id);
+      }),
+
+    getPEI: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const plan = await db.getInterventionPlan(input.id, ctx.user.id);
+        if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "الخطة غير موجودة" });
+        return plan;
+      }),
+
+    exportPEI: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const plan = await db.getInterventionPlan(input.id, ctx.user.id);
+        if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "الخطة غير موجودة" });
+
+        const objectives = (plan.objectives as any[] || []).map((o: any, i: number) => `
+          <tr><td style="padding:8px;border:1px solid #ddd;">${i + 1}</td><td style="padding:8px;border:1px solid #ddd;">${o.objective}</td><td style="padding:8px;border:1px solid #ddd;">${o.timeline}</td><td style="padding:8px;border:1px solid #ddd;">${o.status}</td></tr>
+        `).join("");
+
+        const followUp = (plan.followUpSchedule as any[] || []).map((f: any) => `
+          <tr><td style="padding:8px;border:1px solid #ddd;">${f.date}</td><td style="padding:8px;border:1px solid #ddd;">${f.activity}</td><td style="padding:8px;border:1px solid #ddd;">${f.notes}</td></tr>
+        `).join("");
+
+        const htmlContent = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+    body { font-family: 'Noto Sans Arabic', sans-serif; direction: rtl; padding: 40px; color: #1f2937; line-height: 1.8; }
+    h1 { color: #7c3aed; text-align: center; font-size: 24px; border-bottom: 3px solid #7c3aed; padding-bottom: 10px; }
+    h2 { color: #1e40af; font-size: 18px; margin-top: 25px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th { background: #f3f4f6; padding: 10px; border: 1px solid #ddd; text-align: right; }
+    .section { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 15px 0; white-space: pre-wrap; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+    .sig-box { text-align: center; width: 30%; border-top: 2px solid #333; padding-top: 10px; }
+    .footer { text-align: center; margin-top: 40px; color: #9ca3af; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>خطة تدخل فردية (PEI)</h1>
+  <p style="text-align:center;color:#6b7280;">Leader Academy - الكشف المبكر عن صعوبات التعلم</p>
+  
+  <h2>معلومات التلميذ</h2>
+  <table>
+    <tr><td style="padding:8px;border:1px solid #ddd;background:#f3f4f6;font-weight:bold;width:25%;">الاسم</td><td style="padding:8px;border:1px solid #ddd;">${plan.studentName}</td><td style="padding:8px;border:1px solid #ddd;background:#f3f4f6;font-weight:bold;width:25%;">العمر</td><td style="padding:8px;border:1px solid #ddd;">${plan.studentAge || "-"} سنوات</td></tr>
+    <tr><td style="padding:8px;border:1px solid #ddd;background:#f3f4f6;font-weight:bold;">المستوى</td><td style="padding:8px;border:1px solid #ddd;">${plan.studentGrade || "-"}</td><td style="padding:8px;border:1px solid #ddd;background:#f3f4f6;font-weight:bold;">التاريخ</td><td style="padding:8px;border:1px solid #ddd;">${new Date(plan.createdAt).toLocaleDateString("ar-TN")}</td></tr>
+  </table>
+
+  <h2>التشخيص</h2>
+  <div class="section">${plan.diagnosis || "-"}</div>
+
+  <h2>الأهداف</h2>
+  <table><thead><tr><th>#</th><th>الهدف</th><th>المدة</th><th>الحالة</th></tr></thead><tbody>${objectives}</tbody></table>
+
+  <h2>استراتيجيات التدخل</h2>
+  <div class="section">${plan.interventions || "-"}</div>
+
+  <h2>التكييفات الصفية</h2>
+  <div class="section">${plan.classroomAdaptations || "-"}</div>
+
+  <h2>الأنشطة المنزلية</h2>
+  <div class="section">${plan.homeActivities || "-"}</div>
+
+  <h2>جدول المتابعة</h2>
+  <table><thead><tr><th>التاريخ</th><th>النشاط</th><th>ملاحظات</th></tr></thead><tbody>${followUp}</tbody></table>
+
+  <div class="signatures">
+    <div class="sig-box"><strong>المعلم/ة</strong><br/>${plan.teacherName || "___________"}</div>
+    <div class="sig-box"><strong>الأخصائي/ة</strong><br/>${plan.specialistName || "___________"}</div>
+    <div class="sig-box"><strong>الولي</strong><br/>${plan.parentName || "___________"}</div>
+  </div>
+  <div class="footer"><p>Leader Academy - منصة الذكاء الاصطناعي التربوي</p></div>
+</body>
+</html>`;
+
+        const fs = await import("fs");
+        const { execSync } = await import("child_process");
+        const htmlPath = `/tmp/pei-${input.id}.html`;
+        const pdfPath = `/tmp/pei-${input.id}.pdf`;
+        fs.writeFileSync(htmlPath, htmlContent, "utf-8");
+        try { execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, { timeout: 30000 }); } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في إنشاء PDF" }); }
+        const pdfBuffer = fs.readFileSync(pdfPath);
+        const { storagePut } = await import("./storage");
+        const pdfFileName = `pei-reports/${ctx.user.id}/${input.id}-${Date.now()}.pdf`;
+        const { url: pdfUrl } = await storagePut(pdfFileName, pdfBuffer, "application/pdf");
+        await db.updateInterventionPlan(input.id, ctx.user.id, { pdfUrl });
+        try { fs.unlinkSync(htmlPath); fs.unlinkSync(pdfPath); } catch {}
+        return { pdfUrl };
+      }),
+
+    // ===== IMPROVEMENT 9: School Dashboard Statistics =====
+    getSchoolStats: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getSchoolHandwritingStats(ctx.user.id);
+      }),
   }),
 
 });
