@@ -2299,4 +2299,13 @@
 - [x] Real data from all analyses
 
 - [x] Write vitest tests for all improvements (53 tests passing)
+- [x] Save checkpoint (version: c2550329)
+
+## Bug Fix: Voice Analysis returns empty transcription and 0 scores
+- [x] Fix transcription returning empty text - transcribeAudio returns error object instead of throwing, now properly checking for 'error' property
+- [x] Add LLM fallback transcription using file_url when Whisper fails
+- [x] Fix all scores showing 0 - now sending audio file directly to LLM analysis for comprehensive evaluation
+- [x] Improved LLM prompt to analyze audio directly and give realistic scores
+- [x] Added error logging for debugging
+- [x] All 53 vitest tests passing
 - [ ] Save checkpoint

@@ -13520,23 +13520,56 @@ ${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""
         let transcription = "";
         try {
           const result = await transcribeAudio({ audioUrl, language: "ar" });
-          transcription = result.text || "";
-        } catch {
+          // transcribeAudio returns error object instead of throwing
+          if ('error' in result) {
+            console.error("[VoiceAnalysis] Transcription error:", result.error, result.details);
+            transcription = "(فشل في استخراج النص: " + (result.details || result.error) + ")";
+          } else {
+            transcription = result.text || "";
+          }
+        } catch (err) {
+          console.error("[VoiceAnalysis] Transcription exception:", err);
           transcription = "(فشل في استخراج النص من التسجيل الصوتي)";
         }
 
-        // Analyze voice with LLM
+        // If transcription is still empty, try using LLM with audio file directly
+        if (!transcription || transcription.trim() === "") {
+          try {
+            const audioLLMResponse = await invokeLLM({
+              messages: [
+                { role: "system", content: "أنت مساعد متخصص في تحويل الكلام إلى نص. استمع للتسجيل الصوتي واكتب النص الذي يقرأه الطفل بالعربية بدقة." },
+                { role: "user", content: [
+                  { type: "text", text: "استمع لهذا التسجيل الصوتي واكتب النص الذي يقرأه الطفل بالضبط:" },
+                  { type: "file_url", file_url: { url: audioUrl, mime_type: input.mimeType.startsWith("audio/") ? input.mimeType as any : "audio/mpeg" } }
+                ]}
+              ]
+            });
+            const llmTranscription = audioLLMResponse?.choices?.[0]?.message?.content;
+            if (llmTranscription && typeof llmTranscription === "string" && llmTranscription.trim().length > 0) {
+              transcription = llmTranscription.trim();
+            }
+          } catch (llmErr) {
+            console.error("[VoiceAnalysis] LLM audio transcription fallback failed:", llmErr);
+          }
+        }
+
+        // Analyze voice with LLM - send both transcription and audio file for comprehensive analysis
+        const analysisUserContent: any[] = [
+          { type: "text", text: `النص المستخرج من قراءة الطفل:\n"${transcription}"\n\nاستمع للتسجيل الصوتي وحلل القراءة بشكل شامل. إذا كان النص المستخرج فارغاً، اعتمد على التسجيل الصوتي مباشرة للتحليل.` },
+          { type: "file_url", file_url: { url: audioUrl, mime_type: input.mimeType.startsWith("audio/") ? input.mimeType as any : "audio/mpeg" } }
+        ];
         const voiceAnalysisResponse = await invokeLLM({
           messages: [
             {
               role: "system",
               content: `أنت خبير في علم النفس التربوي وتحليل القراءة عند الأطفال.
-حلل النص المستخرج من قراءة الطفل وقيّم: الطلاقة، النطق، سرعة القراءة، والفهم.
+استمع للتسجيل الصوتي وحلل قراءة الطفل وقيّم: الطلاقة، النطق، سرعة القراءة، والفهم.
+أعط درجات واقعية بين 0 و100 بناء على ما تسمعه في التسجيل. لا تعط 0 إلا إذا لم يكن هناك أي صوت على الإطلاق.
 التلميذ: ${input.studentName || "غير محدد"}, العمر: ${input.studentAge || "غير محدد"}, المستوى: ${input.studentGrade || "غير محدد"}`
             },
             {
               role: "user",
-              content: `النص المستخرج من قراءة الطفل:\n"${transcription}"\n\nحلل هذه القراءة وقدم تقريراً مفصلاً.`
+              content: analysisUserContent
             }
           ],
           response_format: {
