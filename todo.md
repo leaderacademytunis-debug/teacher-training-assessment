@@ -2316,4 +2316,28 @@
 - [x] Fixed all 4 PDF export procedures (Inspector, Handwriting Report, Parent Report, PEI)
 - [x] Added @media print and @page CSS for proper A4 printing
 - [x] All 53 handwriting tests + 9 PDF parse tests passing
+- [x] Save checkpoint (version: 3e98c22f)
+
+## Improvement: Direct Print Button
+- [x] Add "طباعة مباشرة" button next to PDF export button in handwriting analysis results
+- [x] Add print button in voice analysis results
+- [x] Add print button in PEI report results
+- [x] Use handlePrintReport() with window.print() and printable HTML in a new window
+- [x] Style the print view with @media print and @page CSS for A4
+
+## Improvement: Browser Audio Recording
+- [x] Add MediaRecorder API integration for direct audio recording from browser
+- [x] Add recording UI with start/stop/pause buttons and timer (formatTime)
+- [x] Add animated recording indicator (red pulse dot) and time display
+- [x] Convert recorded audio to webm format with File object
+- [x] Audio preview with <audio> controls and delete button
+- [x] Integrate with existing voice analysis flow (OR divider between record/upload)
+
+## Improvement: Automatic Email Notification for Specialists
+- [x] Backend: Updated notifySpecialist to send professional HTML email via SMTP
+- [x] Auto-trigger email in analyzeHandwriting when disorder probability = "high"
+- [x] Email includes professional HTML template with student info, scores, disorders, and ethical disclaimer
+- [x] Frontend: Shows email sent status in toast (success/warning/info based on result)
+- [x] Frontend: Shows auto-notification toast when analysis detects high disorders
+- [x] Write vitest tests (59 tests passing)
 - [ ] Save checkpoint

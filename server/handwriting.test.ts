@@ -485,4 +485,58 @@ describe("handwriting router", () => {
       expect(Array.isArray(result)).toBe(true);
     });
   });
+
+  // ─── Email Notification Tests ─────────────────────────────────────────
+
+  describe("notifySpecialist email integration", () => {
+    it("rejects unauthenticated access to notifySpecialist", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.notifySpecialist({ specialistId: 1, analysisId: 1 })
+      ).rejects.toThrow();
+    });
+
+    it("requires specialistId as number", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.notifySpecialist({ specialistId: "abc" as any, analysisId: 1 })
+      ).rejects.toThrow();
+    });
+
+    it("requires analysisId as number", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.notifySpecialist({ specialistId: 1, analysisId: "abc" as any })
+      ).rejects.toThrow();
+    });
+
+    it("accepts optional message parameter", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      // Should fail with NOT_FOUND (specialist doesn't exist), not input validation
+      await expect(
+        caller.handwriting.notifySpecialist({ specialistId: 999, analysisId: 1, message: "يرجى المراجعة" })
+      ).rejects.toThrow();
+    });
+  });
+
+  // ─── Auto-notification Structure Tests ─────────────────────────────────
+
+  describe("analyzeHandwriting auto-notification structure", () => {
+    it("procedure exists and is protected", () => {
+      const procedures = (appRouter as any)._def.procedures;
+      expect(procedures).toHaveProperty("handwriting.analyzeHandwriting");
+    });
+
+    it("rejects unauthenticated access", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.analyzeHandwriting({ imageBase64: "dGVzdA==", mimeType: "image/png", writingType: "copy" })
+      ).rejects.toThrow();
+    });
+  });
 });

@@ -12881,6 +12881,50 @@ ${input.teacherNotes ? `- ملاحظات المعلم: ${input.teacherNotes}` : 
           recommendations: analysis.recommendations,
         });
 
+        // Auto-notify specialists if high disorder probability detected (> 70%)
+        const highDisorders = (analysis.disorders || []).filter((d: any) => d.probability === "high");
+        let autoNotified: string[] = [];
+        if (highDisorders.length > 0) {
+          try {
+            const specialists = await db.getSpecialistContacts(ctx.user.id);
+            const specialistsWithEmail = specialists.filter(s => s.email);
+            if (specialistsWithEmail.length > 0) {
+              const { sendEmail } = await import("./emailService");
+              const scoreColor = analysis.overallScore >= 70 ? "#059669" : analysis.overallScore >= 40 ? "#d97706" : "#dc2626";
+              const scoreLabel = analysis.overallScore >= 80 ? "ممتاز" : analysis.overallScore >= 70 ? "جيد" : analysis.overallScore >= 50 ? "مقبول" : analysis.overallScore >= 30 ? "ضعيف" : "ضعيف جداً";
+              const disordersHtml = highDisorders.map((d: any) => `<li style="color:#dc2626;font-weight:bold;">${d.nameAr}: احتمال مرتفع</li>`).join("");
+              for (const spec of specialistsWithEmail) {
+                try {
+                  const sent = await sendEmail({
+                    to: spec.email!,
+                    subject: `🚨 تنبيه تلقائي: اضطراب مرتفع لدى ${studentName || "تلميذ"} (${analysis.overallScore}/100)`,
+                    html: `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"></head>
+<body style="font-family:'Segoe UI',Tahoma,sans-serif;direction:rtl;padding:20px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:20px;text-align:center;">
+      <h1 style="color:#fff;margin:0;font-size:20px;">🚨 تنبيه تلقائي - اضطراب مرتفع</h1>
+    </div>
+    <div style="padding:25px;line-height:1.8;">
+      <p>السلام عليكم <strong>${spec.name}</strong>،</p>
+      <p>تم اكتشاف اضطرابات بنسبة عالية في تحليل خط يد التلميذ:</p>
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:15px;margin:15px 0;">
+        <p><strong>التلميذ:</strong> ${studentName || "غير محدد"} | <strong>العمر:</strong> ${studentAge || "-"} | <strong>المستوى:</strong> ${studentGrade || "-"}</p>
+        <p><strong>الدرجة:</strong> <span style="color:${scoreColor};font-weight:bold;font-size:18px;">${analysis.overallScore}/100 (${scoreLabel})</span></p>
+        <p><strong>الاضطرابات المرتفعة:</strong></p><ul>${disordersHtml}</ul>
+      </div>
+      <p>يُرجى مراجعة التلميذ في أقرب وقت.</p>
+      <p style="font-size:12px;color:#6b7280;margin-top:20px;">⚠️ هذا تحليل أولي بالذكاء الاصطناعي وليس تشخيصاً طبياً.</p>
+    </div>
+  </div>
+</body></html>`,
+                  });
+                  if (sent) autoNotified.push(spec.name);
+                } catch (e) { console.error("[AutoNotify] Failed for", spec.email, e); }
+              }
+            }
+          } catch (e) { console.error("[AutoNotify] Error:", e); }
+        }
+
         return {
           id: result.id,
           overallScore: analysis.overallScore,
@@ -12892,6 +12936,7 @@ ${input.teacherNotes ? `- ملاحظات المعلم: ${input.teacherNotes}` : 
           studentName,
           studentAge,
           studentGrade,
+          autoNotified,
         };
       }),
 
@@ -13509,11 +13554,70 @@ ${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""
         const analysis = await db.getHandwritingAnalysis(input.analysisId, ctx.user.id);
         if (!analysis) throw new TRPCError({ code: "NOT_FOUND", message: "التحليل غير موجود" });
 
-        // For now, return the notification content (email integration can be added later)
-        const notificationContent = `تنبيه من المعلم بخصوص التلميذ ${analysis.studentName || "غير محدد"}\n\nالدرجة العامة: ${analysis.overallScore}/100\n\n${input.message || "يرجى مراجعة نتائج تحليل خط اليد للتلميذ."}\n\nالاضطرابات المحتملة:\n${(analysis.disorders as any[] || []).filter((d: any) => d.probability !== "none").map((d: any) => `- ${d.nameAr}: ${d.probability === "high" ? "مرتفع" : d.probability === "medium" ? "متوسط" : "منخفض"}`).join("\n")}`;
+        const disorders = (analysis.disorders as any[] || []).filter((d: any) => d.probability !== "none");
+        const disordersList = disorders.map((d: any) => `- ${d.nameAr}: ${d.probability === "high" ? "مرتفع" : d.probability === "medium" ? "متوسط" : "منخفض"}`).join("\n");
+        const notificationContent = `تنبيه من المعلم بخصوص التلميذ ${analysis.studentName || "غير محدد"}\n\nالدرجة العامة: ${analysis.overallScore}/100\n\n${input.message || "يرجى مراجعة نتائج تحليل خط اليد للتلميذ."}\n\nالاضطرابات المحتملة:\n${disordersList}`;
+
+        // Send email notification if specialist has email
+        let emailSent = false;
+        if (specialist.email) {
+          try {
+            const { sendEmail } = await import("./emailService");
+            const scoreColor = analysis.overallScore >= 70 ? "#059669" : analysis.overallScore >= 40 ? "#d97706" : "#dc2626";
+            const scoreLabel = analysis.overallScore >= 80 ? "ممتاز" : analysis.overallScore >= 70 ? "جيد" : analysis.overallScore >= 50 ? "مقبول" : analysis.overallScore >= 30 ? "ضعيف" : "ضعيف جداً";
+            const disordersHtml = disorders.map((d: any) => {
+              const probColor = d.probability === "high" ? "#dc2626" : d.probability === "medium" ? "#d97706" : "#3b82f6";
+              const probLabel = d.probability === "high" ? "مرتفع" : d.probability === "medium" ? "متوسط" : "منخفض";
+              return `<tr><td style="padding:8px;border:1px solid #e5e7eb;">${d.nameAr}</td><td style="padding:8px;border:1px solid #e5e7eb;color:${probColor};font-weight:bold;">${probLabel}</td><td style="padding:8px;border:1px solid #e5e7eb;">${(d.indicators || []).join("، ")}</td></tr>`;
+            }).join("");
+
+            const emailHtml = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"></head>
+<body style="font-family:'Segoe UI',Tahoma,sans-serif;direction:rtl;padding:20px;color:#1a1a1a;line-height:1.8;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);padding:20px;text-align:center;">
+      <h1 style="color:#fff;margin:0;font-size:20px;">🧠 تنبيه من محلل خط اليد الذكي</h1>
+      <p style="color:#bfdbfe;margin:5px 0 0;font-size:14px;">Leader Academy - منصة الذكاء الاصطناعي التربوي</p>
+    </div>
+    <div style="padding:25px;">
+      <p style="font-size:16px;">السلام عليكم <strong>${specialist.name}</strong>،</p>
+      <p>يود المعلم <strong>${ctx.user.name || "غير محدد"}</strong> إبلاغكم بنتائج تحليل خط يد التلميذ:</p>
+      <div style="background:#f8fafc;border-radius:8px;padding:15px;margin:15px 0;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:5px 10px;font-weight:bold;">التلميذ:</td><td>${analysis.studentName || "غير محدد"}</td></tr>
+          <tr><td style="padding:5px 10px;font-weight:bold;">العمر:</td><td>${analysis.studentAge || "-"}</td></tr>
+          <tr><td style="padding:5px 10px;font-weight:bold;">المستوى:</td><td>${analysis.studentGrade || "-"}</td></tr>
+          <tr><td style="padding:5px 10px;font-weight:bold;">الدرجة العامة:</td><td style="color:${scoreColor};font-weight:bold;font-size:18px;">${analysis.overallScore}/100 (${scoreLabel})</td></tr>
+        </table>
+      </div>
+      ${disorders.length > 0 ? `<h3 style="color:#1e3a5f;">الاضطرابات المحتملة:</h3>
+      <table style="width:100%;border-collapse:collapse;margin:10px 0;">
+        <thead><tr style="background:#eff6ff;"><th style="padding:8px;border:1px solid #e5e7eb;text-align:right;">الاضطراب</th><th style="padding:8px;border:1px solid #e5e7eb;text-align:center;">الاحتمال</th><th style="padding:8px;border:1px solid #e5e7eb;text-align:right;">المؤشرات</th></tr></thead>
+        <tbody>${disordersHtml}</tbody>
+      </table>` : ""}
+      ${input.message ? `<div style="background:#fef3c7;border-radius:8px;padding:12px;margin:15px 0;"><strong>رسالة المعلم:</strong><p>${input.message}</p></div>` : ""}
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px;margin-top:20px;font-size:13px;">
+        ⚠️ تنبيه: هذا التقرير أولي ولا يُعتبر تشخيصاً طبياً. يُرجى إجراء تقييم متخصص للتأكد.
+      </div>
+    </div>
+    <div style="background:#f1f5f9;padding:15px;text-align:center;font-size:12px;color:#64748b;">
+      <p>Leader Academy © 2026 - منصة الذكاء الاصطناعي التربوي</p>
+    </div>
+  </div>
+</body></html>`;
+
+            emailSent = await sendEmail({
+              to: specialist.email,
+              subject: `🧠 تنبيه: نتائج تحليل خط يد ${analysis.studentName || "تلميذ"} - ${scoreLabel} (${analysis.overallScore}/100)`,
+              html: emailHtml,
+            });
+          } catch (emailErr) {
+            console.error("[HandwritingNotify] Email send error:", emailErr);
+          }
+        }
 
         return { 
           success: true, 
+          emailSent,
           notificationContent,
           specialistName: specialist.name,
           specialistEmail: specialist.email,

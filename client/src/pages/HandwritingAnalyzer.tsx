@@ -23,6 +23,8 @@ import {
   BarChart3, Users, Mic, ClipboardList, BookOpen, Send,
   Plus, Trash2, Phone, Mail, Building, Activity, Target,
   Home, LineChart, Dumbbell, UserPlus, FileDown, Volume2,
+  Printer, Square, Circle, Pause, Play, StopCircle, Timer,
+  BellRing, CheckCheck, AlertCircle,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -97,6 +99,75 @@ function getProbabilityBadge(probability: string) {
   }
 }
 
+// ─── Print Helper ────────────────────────────────────────────────────────────
+
+function handlePrintReport(title: string, contentHtml: string) {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) { toast.error("يرجى السماح بالنوافذ المنبثقة للطباعة"); return; }
+  printWindow.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Kufi Arabic', sans-serif; direction: rtl; padding: 30px; color: #1a1a1a; line-height: 1.8; }
+    h1 { font-size: 22px; color: #1e40af; border-bottom: 3px solid #1e40af; padding-bottom: 10px; margin-bottom: 20px; }
+    h2 { font-size: 18px; color: #1e3a5f; margin: 20px 0 10px; }
+    h3 { font-size: 16px; color: #374151; margin: 15px 0 8px; }
+    p { margin: 8px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { border: 1px solid #d1d5db; padding: 10px; text-align: right; }
+    th { background-color: #eff6ff; font-weight: 700; }
+    .score-high { color: #059669; font-weight: bold; }
+    .score-mid { color: #d97706; font-weight: bold; }
+    .score-low { color: #dc2626; font-weight: bold; }
+    .disclaimer { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-top: 20px; font-size: 13px; }
+    .header-logo { text-align: center; margin-bottom: 20px; }
+    .header-logo img { height: 50px; }
+    .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 2px solid #e5e7eb; font-size: 12px; color: #6b7280; }
+    @media print { body { padding: 15px; } @page { size: A4; margin: 1.5cm; } }
+  </style>
+</head>
+<body>
+  <div class="header-logo"><h1>${title}</h1></div>
+  ${contentHtml}
+  <div class="footer"><p>Leader Academy - منصة الذكاء الاصطناعي التربوي</p><p>© 2026 جميع الحقوق محفوظة</p></div>
+  <div class="disclaimer">⚠️ تنبيه: هذا التقرير أولي ولا يُعتبر تشخيصاً طبياً. يُرجى استشارة أخصائي مختص.</div>
+</body>
+</html>`);
+  printWindow.document.close();
+  setTimeout(() => { printWindow.print(); }, 500);
+}
+
+function buildAnalysisReportHtml(result: AnalysisResult): string {
+  const axisRows = AXIS_CONFIG.map(a => {
+    const score = (result.axes as any)?.[a.key]?.score ?? 0;
+    const obs = (result.axes as any)?.[a.key]?.observation ?? "";
+    const cls = score >= 70 ? "score-high" : score >= 40 ? "score-mid" : "score-low";
+    return `<tr><td>${a.label}</td><td class="${cls}">${score}/100</td><td>${obs}</td></tr>`;
+  }).join("");
+
+  const disorderRows = (result.disorders || []).map((d: Disorder) => {
+    const probLabel = d.probability === "high" ? "مرتفع" : d.probability === "medium" ? "متوسط" : d.probability === "low" ? "منخفض" : "غير موجود";
+    return `<tr><td>${d.nameAr}</td><td>${probLabel}</td><td>${(d.indicators || []).join("، ")}</td></tr>`;
+  }).join("");
+
+  const overallCls = result.overallScore >= 70 ? "score-high" : result.overallScore >= 40 ? "score-mid" : "score-low";
+
+  return `
+    <h2>معلومات التلميذ</h2>
+    <table><tr><th>الاسم</th><td>${result.studentName || "غير محدد"}</td><th>العمر</th><td>${result.studentAge || "-"}</td><th>المستوى</th><td>${result.studentGrade || "-"}</td></tr></table>
+    <h2>النتيجة العامة: <span class="${overallCls}">${result.overallScore}/100 (${getScoreLabel(result.overallScore)})</span></h2>
+    <h2>تحليل المحاور السبعة</h2>
+    <table><thead><tr><th>المحور</th><th>الدرجة</th><th>الملاحظة</th></tr></thead><tbody>${axisRows}</tbody></table>
+    <h2>الاضطرابات المحتملة</h2>
+    <table><thead><tr><th>الاضطراب</th><th>الاحتمال</th><th>المؤشرات</th></tr></thead><tbody>${disorderRows}</tbody></table>
+    ${result.recommendations ? `<h2>التوصيات البيداغوجية</h2><p>${result.recommendations.replace(/\n/g, "<br>")}</p>` : ""}
+  `;
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function HandwritingAnalyzer() {
@@ -118,7 +189,12 @@ export default function HandwritingAnalyzer() {
 
   // Mutations
   const analyzeMutation = trpc.handwriting.analyzeHandwriting.useMutation({
-    onSuccess: (data) => { setResult(data as AnalysisResult); setAnalysisStep("results"); toast.success("تم التحليل بنجاح!"); },
+    onSuccess: (data: any) => {
+      setResult(data as AnalysisResult); setAnalysisStep("results"); toast.success("تم التحليل بنجاح!");
+      if (data.autoNotified && data.autoNotified.length > 0) {
+        toast.info(`تم إرسال تنبيه تلقائي بالبريد إلى: ${data.autoNotified.join("، ")}`, { duration: 8000, icon: "🚨" });
+      }
+    },
     onError: (error) => { toast.error(error.message || "فشل في تحليل خط اليد."); setAnalysisStep("upload"); },
   });
   const exportPdfMutation = trpc.handwriting.exportPdf.useMutation({
@@ -252,6 +328,7 @@ export default function HandwritingAnalyzer() {
               onExportParent={() => exportParentMutation.mutate({ analysisId: result.id })}
               isExporting={exportPdfMutation.isPending} isExportingParent={exportParentMutation.isPending}
               onReset={handleReset}
+              onPrint={() => handlePrintReport("تقرير تحليل خط اليد - " + (result.studentName || "تلميذ"), buildAnalysisReportHtml(result))}
             />
           ) : null
         )}
@@ -370,7 +447,7 @@ function AnalyzingStep() {
 
 // ─── Results Step (with Progress Chart + Parent Report) ──────────────────────
 
-function ResultsStep({ result, showDetailedReport, showRecommendations, onToggleReport, onToggleRecommendations, onExportPdf, onExportParent, isExporting, isExportingParent, onReset }: any) {
+function ResultsStep({ result, showDetailedReport, showRecommendations, onToggleReport, onToggleRecommendations, onExportPdf, onExportParent, isExporting, isExportingParent, onReset, onPrint }: any) {
   const [showProgress, setShowProgress] = useState(false);
   const progressQuery = trpc.handwriting.getStudentProgress.useQuery(
     { studentName: result.studentName },
@@ -395,6 +472,9 @@ function ResultsStep({ result, showDetailedReport, showRecommendations, onToggle
           </Button>
           <Button variant="outline" size="sm" onClick={onExportPdf} disabled={isExporting}>
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Download className="h-4 w-4 ml-1" />}تصدير PDF
+          </Button>
+          <Button variant="outline" size="sm" onClick={onPrint} className="text-green-700 border-green-300 hover:bg-green-50">
+            <Printer className="h-4 w-4 ml-1" />طباعة مباشرة
           </Button>
           <Button variant="outline" size="sm" onClick={onReset}><PenTool className="h-4 w-4 ml-1" />تحليل جديد</Button>
         </div>
@@ -657,18 +737,89 @@ function VoiceAnalysisTab() {
   const [result, setResult] = useState<any>(null);
   const audioRef = useRef<HTMLInputElement>(null);
 
+  // Browser recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `recording-${Date.now()}.webm`, { type: "audio/webm" });
+        setAudioFile(file);
+        setAudioUrl(URL.createObjectURL(blob));
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.start(1000);
+      setIsRecording(true);
+      setIsPaused(false);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+    } catch (err) {
+      toast.error("يرجى السماح بالوصول إلى الميكروفون");
+    }
+  };
+
+  const pauseRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      if (isPaused) {
+        mediaRecorderRef.current.resume();
+        timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+      } else {
+        mediaRecorderRef.current.pause();
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+      setIsPaused(!isPaused);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      setIsPaused(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const resetRecording = () => {
+    setAudioFile(null);
+    setAudioUrl(null);
+    setRecordingTime(0);
+    setIsRecording(false);
+    setIsPaused(false);
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
   const mutation = trpc.handwriting.analyzeVoice.useMutation({
     onSuccess: (data) => { setResult(data); toast.success("تم تحليل القراءة بنجاح!"); },
     onError: (err) => { toast.error(err.message || "فشل في التحليل الصوتي"); },
   });
 
   const handleAnalyze = async () => {
-    if (!audioFile) { toast.error("يرجى رفع تسجيل صوتي"); return; }
+    if (!audioFile) { toast.error("يرجى تسجيل أو رفع ملف صوتي"); return; }
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = (ev.target?.result as string).split(",")[1];
       mutation.mutate({
-        audioBase64: base64, mimeType: audioFile.type,
+        audioBase64: base64, mimeType: audioFile.type || "audio/webm",
         studentName: studentName || undefined, studentAge: studentAge ? parseInt(studentAge) : undefined,
         studentGrade: studentGrade || undefined,
       });
@@ -687,7 +838,26 @@ function VoiceAnalysisTab() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold flex items-center gap-2"><Mic className="h-5 w-5 text-purple-600" />نتائج التحليل الصوتي</h2>
-          <Button variant="outline" onClick={() => { setResult(null); setAudioFile(null); }}>تحليل جديد</Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => {
+              const voiceHtml = `
+                <h2>نتائج التحليل الصوتي</h2>
+                <table><thead><tr><th>المحور</th><th>الدرجة</th></tr></thead>
+                <tbody>
+                  <tr><td>الطلاقة</td><td>${result.fluencyScore}/100</td></tr>
+                  <tr><td>النطق</td><td>${result.pronunciationScore}/100</td></tr>
+                  <tr><td>سرعة القراءة</td><td>${result.readingSpeedScore}/100</td></tr>
+                  <tr><td>الفهم</td><td>${result.comprehensionScore}/100</td></tr>
+                </tbody></table>
+                ${result.transcription ? `<h2>النص المستخرج</h2><p>${result.transcription}</p>` : ""}
+                ${result.report ? `<h2>التقرير</h2><p>${result.report.replace(/\n/g, "<br>")}</p>` : ""}
+              `;
+              handlePrintReport("تقرير التحليل الصوتي", voiceHtml);
+            }}>
+              <Printer className="h-4 w-4 ml-1" />طباعة مباشرة
+            </Button>
+            <Button variant="outline" onClick={() => { setResult(null); setAudioFile(null); }}>تحليل جديد</Button>
+          </div>
         </div>
         {result.transcription && (
           <Card><CardHeader><CardTitle className="text-lg">النص المستخرج</CardTitle></CardHeader>
@@ -720,24 +890,92 @@ function VoiceAnalysisTab() {
     <Card>
       <CardHeader><CardTitle className="flex items-center gap-2"><Mic className="h-5 w-5 text-purple-600" />تحليل القراءة الصوتية</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-gray-600 text-sm">سجّل قراءة التلميذ ثم ارفع الملف الصوتي لتحليل الطلاقة والنطق والسرعة والفهم.</p>
-        <div className="border-2 border-dashed border-purple-300 rounded-xl p-8 text-center bg-purple-50/50 cursor-pointer" onClick={() => audioRef.current?.click()}>
-          {audioFile ? (
-            <div><Mic className="h-10 w-10 text-purple-500 mx-auto mb-2" /><p className="text-purple-700 font-medium">{audioFile.name}</p>
-              <p className="text-sm text-purple-500">{(audioFile.size / 1024 / 1024).toFixed(2)} MB</p></div>
-          ) : (
-            <div><Volume2 className="h-10 w-10 text-purple-400 mx-auto mb-2" /><p className="text-purple-700 font-medium">اضغط لرفع تسجيل صوتي</p>
-              <p className="text-sm text-purple-500">MP3, WAV, WEBM, OGG - حتى 16 MB</p></div>
+        <p className="text-gray-600 text-sm">سجّل قراءة التلميذ مباشرة من المتصفح أو ارفع ملفاً صوتياً لتحليل الطلاقة والنطق والسرعة والفهم.</p>
+
+        {/* Recording Section */}
+        <div className="border-2 rounded-xl p-6 bg-gradient-to-br from-purple-50 to-indigo-50 space-y-4">
+          <div className="text-center">
+            <h3 className="font-bold text-purple-800 mb-2 flex items-center justify-center gap-2">
+              <Mic className="h-5 w-5" />تسجيل مباشر من المتصفح
+            </h3>
+            {isRecording && (
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className={`w-3 h-3 rounded-full ${isPaused ? "bg-amber-500" : "bg-red-500 animate-pulse"}`} />
+                <span className="text-2xl font-mono font-bold text-purple-900">{formatTime(recordingTime)}</span>
+                <span className="text-sm text-purple-600">{isPaused ? "مؤقت" : "جاري التسجيل..."}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-center gap-3">
+              {!isRecording && !audioFile && (
+                <Button onClick={startRecording} className="bg-red-500 hover:bg-red-600 text-white rounded-full h-14 w-14 p-0">
+                  <Mic className="h-6 w-6" />
+                </Button>
+              )}
+              {isRecording && (
+                <>
+                  <Button onClick={pauseRecording} variant="outline" className="rounded-full h-12 w-12 p-0 border-purple-300">
+                    {isPaused ? <Play className="h-5 w-5 text-green-600" /> : <Pause className="h-5 w-5 text-amber-600" />}
+                  </Button>
+                  <Button onClick={stopRecording} className="bg-gray-700 hover:bg-gray-800 text-white rounded-full h-14 w-14 p-0">
+                    <StopCircle className="h-6 w-6" />
+                  </Button>
+                </>
+              )}
+            </div>
+            {!isRecording && !audioFile && <p className="text-xs text-purple-500 mt-2">اضغط على الزر الأحمر لبدء التسجيل</p>}
+          </div>
+
+          {/* Audio Preview */}
+          {audioFile && !isRecording && (
+            <div className="bg-white rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCheck className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-gray-800">{audioFile.name}</span>
+                  <span className="text-sm text-gray-500">({(audioFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  {recordingTime > 0 && <Badge variant="outline" className="text-purple-600"><Timer className="h-3 w-3 ml-1" />{formatTime(recordingTime)}</Badge>}
+                </div>
+                <Button variant="ghost" size="sm" onClick={resetRecording} className="text-red-500 hover:text-red-700">
+                  <Trash2 className="h-4 w-4 ml-1" />حذف
+                </Button>
+              </div>
+              {audioUrl && <audio controls src={audioUrl} className="w-full" />}
+            </div>
           )}
         </div>
-        <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) setAudioFile(e.target.files[0]); }} />
+
+        {/* OR Divider */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 border-t border-gray-300" />
+          <span className="text-sm text-gray-500 font-medium">أو</span>
+          <div className="flex-1 border-t border-gray-300" />
+        </div>
+
+        {/* File Upload Section */}
+        <div className="border-2 border-dashed border-purple-300 rounded-xl p-6 text-center bg-purple-50/30 cursor-pointer hover:bg-purple-50/60 transition-colors" onClick={() => { if (!isRecording) audioRef.current?.click(); }}>
+          {!audioFile ? (
+            <div><Volume2 className="h-8 w-8 text-purple-400 mx-auto mb-2" /><p className="text-purple-700 font-medium">اضغط لرفع تسجيل صوتي من الجهاز</p>
+              <p className="text-sm text-purple-500">MP3, WAV, WEBM, OGG - حتى 16 MB</p></div>
+          ) : (
+            <div><CheckCheck className="h-8 w-8 text-green-500 mx-auto mb-2" /><p className="text-green-700 font-medium">تم تحميل الملف - اضغط لتغييره</p></div>
+          )}
+        </div>
+        <input ref={audioRef} type="file" accept="audio/*" className="hidden" onChange={(e) => {
+          if (e.target.files?.[0]) {
+            setAudioFile(e.target.files[0]);
+            setAudioUrl(URL.createObjectURL(e.target.files[0]));
+            setRecordingTime(0);
+          }
+        }} />
+
+        {/* Student Info */}
         <div className="grid grid-cols-3 gap-4">
           <Input placeholder="اسم التلميذ" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
           <Input type="number" placeholder="العمر" value={studentAge} onChange={(e) => setStudentAge(e.target.value)} />
           <Select value={studentGrade} onValueChange={setStudentGrade}><SelectTrigger><SelectValue placeholder="المستوى" /></SelectTrigger>
             <SelectContent>{GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent></Select>
         </div>
-        <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={handleAnalyze} disabled={!audioFile || mutation.isPending}>
+        <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={handleAnalyze} disabled={!audioFile || mutation.isPending || isRecording}>
           {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Mic className="h-4 w-4 ml-2" />}تحليل القراءة
         </Button>
       </CardContent>
@@ -849,7 +1087,15 @@ function SpecialistsTab() {
     onSuccess: () => { utils.handwriting.getSpecialists.invalidate(); toast.success("تم الحذف"); },
   });
   const notifyMutation = trpc.handwriting.notifySpecialist.useMutation({
-    onSuccess: (data) => { toast.success(`تم إعداد الإشعار لـ ${data.specialistName}`); },
+    onSuccess: (data) => {
+      if (data.emailSent) {
+        toast.success(`تم إرسال الإشعار بالبريد الإلكتروني إلى ${data.specialistName} (${data.specialistEmail})`);
+      } else if (data.specialistEmail) {
+        toast.warning(`تم إعداد الإشعار لـ ${data.specialistName} لكن فشل إرسال البريد. تحقق من إعدادات SMTP.`);
+      } else {
+        toast.success(`تم إعداد الإشعار لـ ${data.specialistName}. أضف بريده الإلكتروني للإرسال التلقائي.`);
+      }
+    },
     onError: () => toast.error("فشل في الإشعار"),
   });
 
@@ -952,6 +1198,18 @@ function PEITab() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportMutation.mutate({ id: result.id })} disabled={exportMutation.isPending}>
               {exportMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <FileDown className="h-4 w-4 ml-1" />}تصدير PDF
+            </Button>
+            <Button variant="outline" size="sm" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => {
+              const peiHtml = `
+                <h2>معلومات التلميذ</h2>
+                <table><tr><th>الاسم</th><td>${result.studentName || "-"}</td><th>العمر</th><td>${result.studentAge || "-"}</td><th>المستوى</th><td>${result.studentGrade || "-"}</td></tr></table>
+                ${result.diagnosis ? `<h2>التشخيص</h2><p>${result.diagnosis.replace(/\n/g, "<br>")}</p>` : ""}
+                ${result.objectives?.length ? `<h2>الأهداف</h2><table><thead><tr><th>الهدف</th><th>المدة</th><th>الحالة</th></tr></thead><tbody>${result.objectives.map((o: any) => `<tr><td>${o.objective}</td><td>${o.timeline}</td><td>${o.status}</td></tr>`).join("")}</tbody></table>` : ""}
+                ${result.activities?.length ? `<h2>الأنشطة</h2><table><thead><tr><th>النشاط</th><th>التكرار</th><th>المسؤول</th></tr></thead><tbody>${result.activities.map((a: any) => `<tr><td>${a.activity}</td><td>${a.frequency}</td><td>${a.responsible}</td></tr>`).join("")}</tbody></table>` : ""}
+              `;
+              handlePrintReport("خطة التدخل الفردية - " + (result.studentName || "تلميذ"), peiHtml);
+            }}>
+              <Printer className="h-4 w-4 ml-1" />طباعة مباشرة
             </Button>
             <Button variant="outline" size="sm" onClick={() => setResult(null)}>خطة جديدة</Button>
           </div>
