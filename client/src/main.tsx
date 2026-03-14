@@ -9,6 +9,31 @@ import { getLoginUrl } from "./const";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import "./index.css";
 
+// Global error handler for production debugging
+window.addEventListener('error', (event) => {
+  console.error('[Global Error]', event.error?.message || event.message, event.error?.stack);
+  const root = document.getElementById('root');
+  if (root && !root.hasChildNodes()) {
+    root.innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;direction:rtl">
+      <h2 style="color:#e53e3e">حدث خطأ في تحميل التطبيق</h2>
+      <p style="color:#666">${event.error?.message || event.message || 'Unknown error'}</p>
+      <button onclick="location.reload()" style="padding:10px 20px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;margin-top:16px">إعادة تحميل</button>
+    </div>`;
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[Unhandled Promise Rejection]', event.reason);
+  const root = document.getElementById('root');
+  if (root && !root.hasChildNodes()) {
+    root.innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;direction:rtl">
+      <h2 style="color:#e53e3e">حدث خطأ في تحميل التطبيق</h2>
+      <p style="color:#666">${event.reason?.message || String(event.reason) || 'Unknown error'}</p>
+      <button onclick="location.reload()" style="padding:10px 20px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;margin-top:16px">إعادة تحميل</button>
+    </div>`;
+  }
+});
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
@@ -53,12 +78,24 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
-  <trpc.Provider client={trpcClient} queryClient={queryClient}>
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <App />
-      </LanguageProvider>
-    </QueryClientProvider>
-  </trpc.Provider>
-);
+try {
+  createRoot(document.getElementById("root")!).render(
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
+  );
+} catch (err: any) {
+  console.error('[React Mount Error]', err);
+  const root = document.getElementById('root');
+  if (root) {
+    root.innerHTML = `<div style="padding:40px;text-align:center;font-family:sans-serif;direction:rtl">
+      <h2 style="color:#e53e3e">حدث خطأ في تحميل التطبيق</h2>
+      <p style="color:#666">${err?.message || 'Unknown error'}</p>
+      <button onclick="location.reload()" style="padding:10px 20px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;margin-top:16px">إعادة تحميل</button>
+    </div>`;
+  }
+}

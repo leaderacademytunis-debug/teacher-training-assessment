@@ -167,63 +167,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          // Vendor chunk splitting for better caching
-          if (id.includes('node_modules')) {
-            // React core
-            if (id.includes('react-dom') || id.includes('/react/')) {
-              return 'vendor-react';
-            }
-            // UI framework (radix + shadcn deps)
-            if (id.includes('@radix-ui') || id.includes('class-variance-authority') || id.includes('clsx') || id.includes('tailwind-merge')) {
-              return 'vendor-ui';
-            }
-            // Charts
-            if (id.includes('recharts') || id.includes('d3-')) {
-              return 'vendor-charts';
-            }
-            // Date utilities
-            if (id.includes('date-fns')) {
-              return 'vendor-date';
-            }
-            // Mermaid diagrams (large - separate chunk)
-            if (id.includes('mermaid') || id.includes('cytoscape') || id.includes('dagre') || id.includes('elkjs')) {
-              return 'vendor-mermaid';
-            }
-            // Code syntax highlighting (shiki)
-            if (id.includes('shiki') || id.includes('@shikijs')) {
-              return 'vendor-shiki';
-            }
-            // Math rendering (katex)
-            if (id.includes('katex')) {
-              return 'vendor-katex';
-            }
-            // Markdown rendering (streamdown, react-markdown, rehype, remark)
-            if (id.includes('streamdown') || id.includes('react-markdown') || id.includes('rehype') || id.includes('remark') || id.includes('unified') || id.includes('micromark') || id.includes('mdast') || id.includes('hast')) {
-              return 'vendor-markdown';
-            }
-            // Icons
-            if (id.includes('lucide-react')) {
-              return 'vendor-icons';
-            }
-            // Forms & validation
-            if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
-              return 'vendor-forms';
-            }
-            // tRPC & data fetching
-            if (id.includes('@trpc') || id.includes('@tanstack')) {
-              return 'vendor-data';
-            }
-            // Animation
-            if (id.includes('framer-motion')) {
-              return 'vendor-animation';
-            }
-          }
-        },
-      },
-    },
+
   },
   server: {
     host: true,

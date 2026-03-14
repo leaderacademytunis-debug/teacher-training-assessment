@@ -2431,4 +2431,12 @@
 - [x] Added evaluator to AI_TOOLS array in Home.tsx navigation
 - [x] All 8 vitest tests passing
 - [x] Server running without errors
-- [ ] Save checkpoint
+- [x] Save checkpoint (version: 5c8b1cfa)
+
+## CRITICAL BUG FIX: Persistent white page on leaderacademy.school (after publish)
+- [x] Deep diagnosis: manualChunks causing chunk loading conflicts with manus-runtime in production
+- [x] Removed manualChunks from vite.config.ts (React.lazy still provides code-splitting)
+- [x] Build succeeds: main bundle 1.86MB, 532 lazy-loaded chunks
+- [x] All 20 tests passing
+- [x] Dev server running correctly
+- [ ] Save checkpoint and redeploy
