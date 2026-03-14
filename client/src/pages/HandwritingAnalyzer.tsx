@@ -24,12 +24,12 @@ import {
   Plus, Trash2, Phone, Mail, Building, Activity, Target,
   Home, LineChart, Dumbbell, UserPlus, FileDown, Volume2,
   Printer, Square, Circle, Pause, Play, StopCircle, Timer,
-  BellRing, CheckCheck, AlertCircle,
+  BellRing, CheckCheck, AlertCircle, GitCompare, FileEdit, CalendarDays,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type MainTab = "analyze" | "multi" | "voice" | "history" | "exercises" | "specialists" | "pei" | "dashboard" | "benchmarks";
+type MainTab = "analyze" | "multi" | "voice" | "history" | "exercises" | "specialists" | "pei" | "dashboard" | "benchmarks" | "compare" | "worksheets" | "monthly";
 
 interface AxisScore { score: number; observation: string; }
 interface Disorder { name: string; nameAr: string; probability: "high" | "medium" | "low" | "none"; indicators: string[]; }
@@ -66,7 +66,10 @@ const TAB_CONFIG = [
   { key: "exercises" as MainTab, label: "تمارين علاجية", icon: Dumbbell },
   { key: "specialists" as MainTab, label: "الأخصائيون", icon: UserPlus },
   { key: "pei" as MainTab, label: "خطة تدخل", icon: ClipboardList },
+  { key: "compare" as MainTab, label: "مقارنة", icon: GitCompare },
+  { key: "worksheets" as MainTab, label: "أوراق عمل", icon: FileEdit },
   { key: "benchmarks" as MainTab, label: "المعايير العمرية", icon: Target },
+  { key: "monthly" as MainTab, label: "تقرير شهري", icon: CalendarDays },
   { key: "dashboard" as MainTab, label: "لوحة الإحصائيات", icon: Activity },
   { key: "history" as MainTab, label: "السجل", icon: History },
 ];
@@ -340,6 +343,9 @@ export default function HandwritingAnalyzer() {
         {activeTab === "benchmarks" && <BenchmarksTab />}
         {activeTab === "dashboard" && <DashboardTab />}
         {activeTab === "history" && <HistoryTab />}
+        {activeTab === "compare" && <CompareTab />}
+        {activeTab === "worksheets" && <WorksheetsTab />}
+        {activeTab === "monthly" && <MonthlyReportTab />}
       </main>
 
       {/* Ethical Disclaimer (always visible) */}
@@ -1515,6 +1521,599 @@ function HistoryTab() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+
+// ─── Compare Tab ─────────────────────────────────────────────────────────────
+
+function CompareTab() {
+  const { data: studentNames = [] } = trpc.handwriting.getStudentNames.useQuery();
+  const [student1, setStudent1] = useState("");
+  const [student2, setStudent2] = useState("");
+  const compareMutation = trpc.handwriting.compareStudents.useMutation({
+    onError: (err) => toast.error(err.message),
+  });
+
+  const result = compareMutation.data;
+
+  const axesAr: Record<string, string> = {
+    letterFormation: "تشكيل الحروف", sizeProportion: "الحجم والتناسب",
+    spacingOrganization: "التباعد والتنظيم", baseline: "خط الأساس",
+    reversals: "الانعكاسات", pressureSpeed: "الضغط والسرعة", consistency: "الاتساق",
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6 max-w-6xl" dir="rtl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-700">
+            <GitCompare className="h-6 w-6" />
+            مقارنة بين تلميذين
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Student Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="mb-2 block font-semibold">التلميذ الأول</Label>
+              <Select value={student1} onValueChange={setStudent1}>
+                <SelectTrigger><SelectValue placeholder="اختر التلميذ الأول" /></SelectTrigger>
+                <SelectContent>
+                  {studentNames.filter(n => n !== student2).map(name => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="mb-2 block font-semibold">التلميذ الثاني</Label>
+              <Select value={student2} onValueChange={setStudent2}>
+                <SelectTrigger><SelectValue placeholder="اختر التلميذ الثاني" /></SelectTrigger>
+                <SelectContent>
+                  {studentNames.filter(n => n !== student1).map(name => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => { if (student1 && student2) compareMutation.mutate({ studentName1: student1, studentName2: student2 }); }}
+            disabled={!student1 || !student2 || compareMutation.isPending}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            {compareMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري المقارنة...</> : <><GitCompare className="h-4 w-4 ml-2" />مقارنة</>}
+          </Button>
+
+          {studentNames.length < 2 && (
+            <div className="text-center py-8 text-gray-500">
+              <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p>يجب أن يكون لديك تحليلات لتلميذين على الأقل لإجراء المقارنة</p>
+            </div>
+          )}
+
+          {/* Results */}
+          {result && (
+            <div className="space-y-6 mt-6">
+              {/* Overall Score Comparison */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="py-4 text-center">
+                    <p className="font-bold text-lg text-blue-800">{result.student1.name}</p>
+                    <p className={`text-4xl font-bold mt-2 ${getScoreColor(result.student1.overallScore)}`}>{result.student1.overallScore}</p>
+                    <p className="text-sm text-gray-500 mt-1">{result.student1.grade} - {result.student1.age} سنوات</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardContent className="py-4 text-center">
+                    <p className="font-bold text-lg text-purple-800">{result.student2.name}</p>
+                    <p className={`text-4xl font-bold mt-2 ${getScoreColor(result.student2.overallScore)}`}>{result.student2.overallScore}</p>
+                    <p className="text-sm text-gray-500 mt-1">{result.student2.grade} - {result.student2.age} سنوات</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Axis-by-Axis Comparison */}
+              <Card>
+                <CardHeader><CardTitle className="text-lg">مقارنة المحاور</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {result.comparison.map((c: any) => (
+                      <div key={c.axis} className="space-y-1">
+                        <div className="flex justify-between items-center text-sm font-medium">
+                          <span>{c.axisAr}</span>
+                          <span className="text-xs text-gray-500">
+                            {c.better === 1 ? `${result.student1.name} أفضل` : c.better === 2 ? `${result.student2.name} أفضل` : "متساويان"}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          <div className="flex-1">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-blue-600">{result.student1.name}: {c.score1}</span>
+                            </div>
+                            <Progress value={c.score1} className="h-3 [&>div]:bg-blue-500" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-purple-600">{result.student2.name}: {c.score2}</span>
+                            </div>
+                            <Progress value={c.score2} className="h-3 [&>div]:bg-purple-500" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {result.summary.student1Strengths.length > 0 && (
+                  <Card className="bg-blue-50">
+                    <CardContent className="py-4">
+                      <p className="font-bold text-blue-700 mb-2">نقاط قوة {result.student1.name}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {result.summary.student1Strengths.map((s: string) => <Badge key={s} variant="secondary" className="bg-blue-100 text-blue-700">{s}</Badge>)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {result.summary.student2Strengths.length > 0 && (
+                  <Card className="bg-purple-50">
+                    <CardContent className="py-4">
+                      <p className="font-bold text-purple-700 mb-2">نقاط قوة {result.student2.name}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {result.summary.student2Strengths.map((s: string) => <Badge key={s} variant="secondary" className="bg-purple-100 text-purple-700">{s}</Badge>)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {result.summary.equalAxes.length > 0 && (
+                  <Card className="bg-gray-50">
+                    <CardContent className="py-4">
+                      <p className="font-bold text-gray-700 mb-2">محاور متساوية</p>
+                      <div className="flex flex-wrap gap-1">
+                        {result.summary.equalAxes.map((s: string) => <Badge key={s} variant="secondary">{s}</Badge>)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Print Button */}
+              <Button variant="outline" onClick={() => {
+                const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+                <style>@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+                * { font-family: 'Noto Sans Arabic', sans-serif; } body { direction: rtl; padding: 30px; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                th { background: #f0f9ff; } @page { size: A4; margin: 1.5cm; }</style></head><body>
+                <h1 style="text-align:center;color:#1e40af;">مقارنة بين ${result.student1.name} و ${result.student2.name}</h1>
+                <table><tr><th>المحور</th><th>${result.student1.name}</th><th>${result.student2.name}</th><th>الفرق</th></tr>
+                ${result.comparison.map((c: any) => `<tr><td>${c.axisAr}</td><td>${c.score1}</td><td>${c.score2}</td><td>${c.diff > 0 ? "+" : ""}${c.diff}</td></tr>`).join("")}
+                <tr style="font-weight:bold;background:#f0f9ff;"><td>المجموع</td><td>${result.student1.overallScore}</td><td>${result.student2.overallScore}</td><td>${result.student1.overallScore - result.student2.overallScore > 0 ? "+" : ""}${result.student1.overallScore - result.student2.overallScore}</td></tr>
+                </table><p style="text-align:center;color:#6b7280;font-size:12px;">Leader Academy 🇹🇳 - ${new Date().toLocaleDateString("ar-TN")}</p></body></html>`;
+                const w = window.open("", "_blank"); if (w) { w.document.write(html); w.document.close(); w.print(); }
+              }}>
+                <Printer className="h-4 w-4 ml-2" />طباعة المقارنة
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Worksheets Tab ──────────────────────────────────────────────────────────
+
+function WorksheetsTab() {
+  const [showForm, setShowForm] = useState(true);
+  const [studentName, setStudentName] = useState("");
+  const [studentAge, setStudentAge] = useState<number | undefined>();
+  const [studentGrade, setStudentGrade] = useState("");
+  const [selectedAxes, setSelectedAxes] = useState<string[]>([]);
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("easy");
+  const [generatedWorksheet, setGeneratedWorksheet] = useState<any>(null);
+
+  const { data: worksheets = [], refetch } = trpc.handwriting.getWorksheets.useQuery();
+  const generateMutation = trpc.handwriting.generateWorksheet.useMutation({
+    onSuccess: (data) => {
+      setGeneratedWorksheet(data);
+      setShowForm(false);
+      refetch();
+      toast.success("تم إنشاء ورقة العمل بنجاح!");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const deleteMutation = trpc.handwriting.deleteWorksheet.useMutation({
+    onSuccess: () => { refetch(); toast.success("تم حذف ورقة العمل"); },
+  });
+
+  const axes = [
+    { key: "letterFormation", label: "تشكيل الحروف" },
+    { key: "sizeProportion", label: "الحجم والتناسب" },
+    { key: "spacingOrganization", label: "التباعد والتنظيم" },
+    { key: "baseline", label: "خط الأساس" },
+    { key: "reversals", label: "الانعكاسات" },
+    { key: "pressureSpeed", label: "الضغط والسرعة" },
+    { key: "consistency", label: "الاتساق" },
+  ];
+
+  const toggleAxis = (key: string) => {
+    setSelectedAxes(prev => prev.includes(key) ? prev.filter(a => a !== key) : [...prev, key]);
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-6 max-w-6xl" dir="rtl">
+      {showForm && !generatedWorksheet ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <FileEdit className="h-6 w-6" />
+              إنشاء ورقة عمل مخصصة بالذكاء الاصطناعي
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="mb-2 block">اسم التلميذ (اختياري)</Label>
+                <Input value={studentName} onChange={e => setStudentName(e.target.value)} placeholder="اسم التلميذ" />
+              </div>
+              <div>
+                <Label className="mb-2 block">العمر</Label>
+                <Select value={studentAge?.toString() || ""} onValueChange={v => setStudentAge(parseInt(v))}>
+                  <SelectTrigger><SelectValue placeholder="العمر" /></SelectTrigger>
+                  <SelectContent>
+                    {[5,6,7,8,9,10,11,12].map(a => <SelectItem key={a} value={a.toString()}>{a} سنوات</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-2 block">المستوى</Label>
+                <Select value={difficulty} onValueChange={v => setDifficulty(v as any)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">سهل</SelectItem>
+                    <SelectItem value="medium">متوسط</SelectItem>
+                    <SelectItem value="hard">صعب</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-3 block font-semibold">المحاور المستهدفة (اختر واحداً على الأقل)</Label>
+              <div className="flex flex-wrap gap-2">
+                {axes.map(axis => (
+                  <button
+                    key={axis.key}
+                    onClick={() => toggleAxis(axis.key)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      selectedAxes.includes(axis.key)
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {axis.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              onClick={() => generateMutation.mutate({ studentName: studentName || undefined, studentAge, studentGrade: studentGrade || undefined, targetAxes: selectedAxes, difficulty })}
+              disabled={selectedAxes.length === 0 || generateMutation.isPending}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء بالذكاء الاصطناعي...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء ورقة العمل</>}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : generatedWorksheet ? (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold text-blue-700">{generatedWorksheet.title}</h2>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => {
+                if (generatedWorksheet.printableHtml) {
+                  const w = window.open("", "_blank"); if (w) { w.document.write(generatedWorksheet.printableHtml); w.document.close(); w.print(); }
+                }
+              }}>
+                <Printer className="h-4 w-4 ml-2" />طباعة
+              </Button>
+              <Button variant="outline" onClick={() => { setGeneratedWorksheet(null); setShowForm(true); }}>
+                <Plus className="h-4 w-4 ml-2" />ورقة جديدة
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {(generatedWorksheet.exercises || []).map((ex: any, i: number) => (
+              <Card key={i} className="hover:shadow-md transition-shadow">
+                <CardContent className="py-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="font-bold text-lg text-blue-800">التمرين {ex.number}: {ex.title}</h3>
+                    <Badge variant="secondary" className="bg-blue-50 text-blue-700">{ex.type}</Badge>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed mb-3">{ex.instruction}</p>
+                  <div className="flex gap-4 text-sm text-gray-500">
+                    <span className="flex items-center gap-1"><Timer className="h-4 w-4" />{ex.duration}</span>
+                    <span className="flex items-center gap-1"><PenTool className="h-4 w-4" />{ex.materials}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Saved Worksheets Library */}
+      {worksheets.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-bold text-gray-800 mb-4">مكتبة أوراق العمل المحفوظة ({worksheets.length})</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {worksheets.map((ws: any) => (
+              <Card key={ws.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="py-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-bold text-blue-700">{ws.title}</h4>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {ws.studentName && `${ws.studentName} - `}
+                        {ws.difficulty === "easy" ? "سهل" : ws.difficulty === "medium" ? "متوسط" : "صعب"}
+                        {" - "}{new Date(ws.createdAt).toLocaleDateString("ar-TN")}
+                      </p>
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(ws.targetAxes || []).map((a: string) => (
+                          <Badge key={a} variant="outline" className="text-xs">{axes.find(x => x.key === a)?.label || a}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        if (ws.printableHtml) {
+                          const w = window.open("", "_blank"); if (w) { w.document.write(ws.printableHtml); w.document.close(); w.print(); }
+                        }
+                      }}><Printer className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" className="text-red-500" onClick={() => deleteMutation.mutate({ id: ws.id })}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Monthly Report Tab ──────────────────────────────────────────────────────
+
+function MonthlyReportTab() {
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [report, setReport] = useState<any>(null);
+
+  const { data: savedReports = [], refetch } = trpc.handwriting.getMonthlyReports.useQuery();
+  const generateMutation = trpc.handwriting.generateMonthlyReport.useMutation({
+    onSuccess: (data) => { setReport(data); refetch(); toast.success("تم إنشاء التقرير الشهري بنجاح!"); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const monthNames = ["جانفي", "فيفري", "مارس", "أفريل", "ماي", "جوان", "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  const trendIcons: Record<string, any> = { improving: "📈", stable: "➡️", declining: "📉" };
+  const trendLabels: Record<string, string> = { improving: "تحسن", stable: "مستقر", declining: "تراجع" };
+
+  return (
+    <div className="container mx-auto px-4 py-6 max-w-6xl" dir="rtl">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-700">
+            <CalendarDays className="h-6 w-6" />
+            التقرير الدوري الشهري
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Month/Year Selection */}
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <Label className="mb-2 block">الشهر</Label>
+              <Select value={selectedMonth.toString()} onValueChange={v => setSelectedMonth(parseInt(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {monthNames.map((name, i) => <SelectItem key={i} value={(i + 1).toString()}>{name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Label className="mb-2 block">السنة</Label>
+              <Select value={selectedYear.toString()} onValueChange={v => setSelectedYear(parseInt(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[2024, 2025, 2026].map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => generateMutation.mutate({ month: selectedMonth, year: selectedYear })}
+              disabled={generateMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء التقرير</>}
+            </Button>
+          </div>
+
+          {/* Report Display */}
+          {report && (
+            <div className="space-y-6 mt-4">
+              <div className="text-center py-4 bg-gradient-to-l from-blue-50 to-purple-50 rounded-xl">
+                <h2 className="text-2xl font-bold text-blue-800">تقرير شهر {report.monthName} {report.year}</h2>
+              </div>
+
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="py-4 text-center">
+                    <p className="text-3xl font-bold text-blue-700">{report.totalAnalyses}</p>
+                    <p className="text-sm text-gray-600">تحليل</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardContent className="py-4 text-center">
+                    <p className="text-3xl font-bold text-purple-700">{report.totalStudents}</p>
+                    <p className="text-sm text-gray-600">تلميذ</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-emerald-50 border-emerald-200">
+                  <CardContent className="py-4 text-center">
+                    <p className={`text-3xl font-bold ${getScoreColor(report.avgScore)}`}>{report.avgScore}/100</p>
+                    <p className="text-sm text-gray-600">متوسط الدرجة</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Student Summaries Table */}
+              {report.studentSummaries && report.studentSummaries.length > 0 && (
+                <Card>
+                  <CardHeader><CardTitle className="text-lg">ملخص التلاميذ</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-gray-50">
+                            <th className="py-3 px-4 text-right font-semibold">التلميذ</th>
+                            <th className="py-3 px-4 text-center font-semibold">التحليلات</th>
+                            <th className="py-3 px-4 text-center font-semibold">آخر درجة</th>
+                            <th className="py-3 px-4 text-center font-semibold">الدرجة السابقة</th>
+                            <th className="py-3 px-4 text-center font-semibold">الاتجاه</th>
+                            <th className="py-3 px-4 text-right font-semibold">المخاوف</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {report.studentSummaries.map((s: any, i: number) => (
+                            <tr key={i} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-4 font-medium">{s.name}</td>
+                              <td className="py-3 px-4 text-center">{s.analysesCount}</td>
+                              <td className="py-3 px-4 text-center"><span className={`font-bold ${getScoreColor(s.latestScore)}`}>{s.latestScore}</span></td>
+                              <td className="py-3 px-4 text-center">{s.previousScore ?? "-"}</td>
+                              <td className="py-3 px-4 text-center">
+                                <span className={`px-2 py-1 rounded-full text-xs ${s.trend === "improving" ? "bg-emerald-100 text-emerald-700" : s.trend === "declining" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>
+                                  {trendIcons[s.trend]} {trendLabels[s.trend]}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                {s.mainConcerns?.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {s.mainConcerns.map((c: string, j: number) => <Badge key={j} variant="destructive" className="text-xs">{c}</Badge>)}
+                                  </div>
+                                ) : <span className="text-emerald-600 text-xs">لا توجد مخاوف</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Disorder Alerts */}
+              {report.disorderAlerts && report.disorderAlerts.length > 0 && (
+                <Card className="border-red-200 bg-red-50">
+                  <CardHeader><CardTitle className="text-lg text-red-700 flex items-center gap-2"><AlertTriangle className="h-5 w-5" />تنبيهات الاضطرابات</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {report.disorderAlerts.map((alert: any, i: number) => (
+                        <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                          <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+                          <span className="font-medium">{alert.studentName}</span>
+                          <Badge variant="destructive">{alert.disorder}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* AI Summary */}
+              {report.summary && (
+                <Card>
+                  <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Sparkles className="h-5 w-5 text-amber-500" />ملخص الذكاء الاصطناعي</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                      <Streamdown>{report.summary}</Streamdown>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recommendations */}
+              {report.recommendations && (
+                <Card className="bg-emerald-50 border-emerald-200">
+                  <CardHeader><CardTitle className="text-lg text-emerald-700 flex items-center gap-2"><CheckCircle2 className="h-5 w-5" />التوصيات</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                      <Streamdown>{report.recommendations}</Streamdown>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Print Button */}
+              <Button variant="outline" onClick={() => {
+                const html = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+                <style>@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+                * { font-family: 'Noto Sans Arabic', sans-serif; } body { direction: rtl; padding: 30px; max-width: 800px; margin: 0 auto; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; } th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+                th { background: #f0f9ff; } @page { size: A4; margin: 1.5cm; }</style></head><body>
+                <h1 style="text-align:center;color:#1e40af;">تقرير شهر ${report.monthName} ${report.year}</h1>
+                <div style="display:flex;justify-content:space-around;margin:20px 0;">
+                  <div style="text-align:center;"><strong style="font-size:24px;color:#2563eb;">${report.totalAnalyses}</strong><br/>تحليل</div>
+                  <div style="text-align:center;"><strong style="font-size:24px;color:#7c3aed;">${report.totalStudents}</strong><br/>تلميذ</div>
+                  <div style="text-align:center;"><strong style="font-size:24px;">${report.avgScore}/100</strong><br/>متوسط</div>
+                </div>
+                ${report.studentSummaries?.length > 0 ? `<table><tr><th>التلميذ</th><th>التحليلات</th><th>آخر درجة</th><th>الاتجاه</th></tr>
+                ${report.studentSummaries.map((s: any) => `<tr><td>${s.name}</td><td>${s.analysesCount}</td><td>${s.latestScore}</td><td>${trendLabels[s.trend]}</td></tr>`).join("")}</table>` : ""}
+                <h2>الملخص</h2><p>${report.summary || ""}</p>
+                <h2>التوصيات</h2><p>${report.recommendations || ""}</p>
+                <p style="text-align:center;color:#6b7280;font-size:12px;margin-top:30px;">Leader Academy 🇹🇳 - ${new Date().toLocaleDateString("ar-TN")}</p></body></html>`;
+                const w = window.open("", "_blank"); if (w) { w.document.write(html); w.document.close(); w.print(); }
+              }}>
+                <Printer className="h-4 w-4 ml-2" />طباعة التقرير
+              </Button>
+            </div>
+          )}
+
+          {/* Saved Reports */}
+          {savedReports.length > 0 && !report && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4">التقارير المحفوظة</h3>
+              <div className="space-y-3">
+                {savedReports.map((r: any) => (
+                  <Card key={r.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setReport(r)}>
+                    <CardContent className="py-4 flex justify-between items-center">
+                      <div>
+                        <p className="font-bold">{monthNames[(r.month || 1) - 1]} {r.year}</p>
+                        <p className="text-sm text-gray-500">{r.totalAnalyses} تحليل - {r.totalStudents} تلميذ - متوسط {r.avgScore}/100</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {(r.disorderAlerts as any[])?.length > 0 && <Badge variant="destructive">{(r.disorderAlerts as any[]).length} تنبيه</Badge>}
+                        <ArrowRight className="h-4 w-4 text-gray-400 rotate-180" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

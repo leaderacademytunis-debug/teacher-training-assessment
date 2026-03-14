@@ -414,6 +414,13 @@
       "when": 1773360575695,
       "tag": "0058_striped_darkhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "5",
+      "when": 1773454054970,
+      "tag": "0059_tiresome_maddog",
+      "breakpoints": true
     }
   ]
 }

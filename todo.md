@@ -2340,4 +2340,28 @@
 - [x] Frontend: Shows email sent status in toast (success/warning/info based on result)
 - [x] Frontend: Shows auto-notification toast when analysis detects high disorders
 - [x] Write vitest tests (59 tests passing)
+- [x] Save checkpoint (version: c9ebc710)
+
+## Improvement: Student Comparison View (مقارنة بين تلميذين)
+- [x] Backend: compareStudents procedure (fetch 2 students by name, compare latest analyses)
+- [x] Frontend: Comparison tab with 2 student name selectors from existing students list
+- [x] Frontend: Side-by-side score display (overall + 7 axes with progress bars)
+- [x] Frontend: Visual comparison with color-coded better/worse indicators
+- [x] Frontend: AI-generated comparison summary with Streamdown rendering
+
+## Improvement: AI-Generated Worksheets (أوراق عمل تفاعلية)
+- [x] Backend: generateWorksheet procedure (AI creates custom exercises based on weak axes + age)
+- [x] Backend: getWorksheets procedure (list saved worksheets per user)
+- [x] Database: handwritingWorksheets table for storing generated worksheets
+- [x] Frontend: Worksheet generation UI with axis checkboxes and age selector
+- [x] Frontend: Printable worksheet display with exercises (Streamdown rendering)
+- [x] Frontend: Saved worksheets library with print/delete options
+
+## Improvement: Monthly Progress Report (تقرير دوري شهري)
+- [x] Backend: generateMonthlyReport procedure (aggregate all students' progress for a given month/year)
+- [x] Backend: LLM-generated summary with trends and recommendations
+- [x] Database: monthlyProgressReports table for storing reports
+- [x] Frontend: Monthly report view with month/year selector and report display
+- [x] Frontend: Email sending option via sendMonthlyReportEmail procedure
+- [x] Write vitest tests for all improvements (77 tests passing)
 - [ ] Save checkpoint

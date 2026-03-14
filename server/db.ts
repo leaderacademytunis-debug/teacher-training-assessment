@@ -25,7 +25,9 @@ import {
   therapeuticExercises, TherapeuticExercise, InsertTherapeuticExercise,
   specialistContacts, SpecialistContact, InsertSpecialistContact,
   voiceAnalyses, VoiceAnalysis, InsertVoiceAnalysis,
-  interventionPlans, InterventionPlan, InsertInterventionPlan
+  interventionPlans, InterventionPlan, InsertInterventionPlan,
+  handwritingWorksheets, HandwritingWorksheet, InsertHandwritingWorksheet,
+  monthlyProgressReports, MonthlyProgressReport, InsertMonthlyProgressReport
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2435,4 +2437,99 @@ export async function getAgeBenchmarkData(userId: number) {
   if (!db) return [];
   // Get all analyses to compute age-based benchmarks
   return db.select().from(handwritingAnalyses).where(eq(handwritingAnalyses.createdBy, userId));
+}
+
+
+// ========== STUDENT COMPARISON ==========
+
+export async function getStudentLatestAnalysis(studentName: string, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(handwritingAnalyses)
+    .where(and(
+      eq(handwritingAnalyses.createdBy, userId),
+      eq(handwritingAnalyses.studentName, studentName)
+    ))
+    .orderBy(desc(handwritingAnalyses.createdAt))
+    .limit(1);
+  return results[0] || null;
+}
+
+export async function getAllStudentNames(userId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const results = await db.selectDistinct({ name: handwritingAnalyses.studentName })
+    .from(handwritingAnalyses)
+    .where(eq(handwritingAnalyses.createdBy, userId));
+  return results.map(r => r.name).filter(Boolean) as string[];
+}
+
+// ========== WORKSHEETS ==========
+
+export async function createWorksheet(data: InsertHandwritingWorksheet) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(handwritingWorksheets).values(data);
+  return { id: result.insertId, ...data };
+}
+
+export async function getWorksheets(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(handwritingWorksheets)
+    .where(eq(handwritingWorksheets.userId, userId))
+    .orderBy(desc(handwritingWorksheets.createdAt));
+}
+
+export async function getWorksheet(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.select().from(handwritingWorksheets)
+    .where(and(eq(handwritingWorksheets.id, id), eq(handwritingWorksheets.userId, userId)));
+  return result || null;
+}
+
+export async function deleteWorksheet(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(handwritingWorksheets)
+    .where(and(eq(handwritingWorksheets.id, id), eq(handwritingWorksheets.userId, userId)));
+  return true;
+}
+
+// ========== MONTHLY REPORTS ==========
+
+export async function createMonthlyReport(data: InsertMonthlyProgressReport) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.insert(monthlyProgressReports).values(data);
+  return { id: result.insertId, ...data };
+}
+
+export async function getMonthlyReports(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(monthlyProgressReports)
+    .where(eq(monthlyProgressReports.userId, userId))
+    .orderBy(desc(monthlyProgressReports.createdAt));
+}
+
+export async function getMonthlyReport(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [result] = await db.select().from(monthlyProgressReports)
+    .where(and(eq(monthlyProgressReports.id, id), eq(monthlyProgressReports.userId, userId)));
+  return result || null;
+}
+
+export async function getAnalysesForPeriod(userId: number, startDate: Date, endDate: Date) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(handwritingAnalyses)
+    .where(and(
+      eq(handwritingAnalyses.createdBy, userId),
+      sql`${handwritingAnalyses.createdAt} >= ${startDate}`,
+      sql`${handwritingAnalyses.createdAt} <= ${endDate}`
+    ))
+    .orderBy(handwritingAnalyses.createdAt);
 }

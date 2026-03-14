@@ -13981,6 +13981,375 @@ ${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""
       .query(async ({ ctx }) => {
         return db.getSchoolHandwritingStats(ctx.user.id);
       }),
+
+    // ===== NEW: Student Comparison =====
+    compareStudents: protectedProcedure
+      .input(z.object({
+        studentName1: z.string().min(1),
+        studentName2: z.string().min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const [analysis1, analysis2] = await Promise.all([
+          db.getStudentLatestAnalysis(input.studentName1, ctx.user.id),
+          db.getStudentLatestAnalysis(input.studentName2, ctx.user.id),
+        ]);
+        if (!analysis1) throw new TRPCError({ code: "NOT_FOUND", message: `لم يتم العثور على تحليل للتلميذ: ${input.studentName1}` });
+        if (!analysis2) throw new TRPCError({ code: "NOT_FOUND", message: `لم يتم العثور على تحليل للتلميذ: ${input.studentName2}` });
+
+        const axes = ["letterFormation", "sizeProportion", "spacingOrganization", "baseline", "reversals", "pressureSpeed", "consistency"];
+        const axesAr: Record<string, string> = {
+          letterFormation: "تشكيل الحروف",
+          sizeProportion: "الحجم والتناسب",
+          spacingOrganization: "التباعد والتنظيم",
+          baseline: "خط الأساس",
+          reversals: "الانعكاسات",
+          pressureSpeed: "الضغط والسرعة",
+          consistency: "الاتساق",
+        };
+
+        const comparison = axes.map(axis => {
+          const score1 = (analysis1 as any)[`${axis}Score`] || 0;
+          const score2 = (analysis2 as any)[`${axis}Score`] || 0;
+          return {
+            axis,
+            axisAr: axesAr[axis],
+            score1,
+            score2,
+            diff: score1 - score2,
+            better: score1 > score2 ? 1 : score2 > score1 ? 2 : 0,
+          };
+        });
+
+        return {
+          student1: { name: input.studentName1, overallScore: analysis1.overallScore || 0, age: analysis1.studentAge, grade: analysis1.studentGrade, date: analysis1.createdAt },
+          student2: { name: input.studentName2, overallScore: analysis2.overallScore || 0, age: analysis2.studentAge, grade: analysis2.studentGrade, date: analysis2.createdAt },
+          comparison,
+          summary: {
+            student1Strengths: comparison.filter(c => c.better === 1).map(c => c.axisAr),
+            student2Strengths: comparison.filter(c => c.better === 2).map(c => c.axisAr),
+            equalAxes: comparison.filter(c => c.better === 0).map(c => c.axisAr),
+          },
+        };
+      }),
+
+    getStudentNames: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getAllStudentNames(ctx.user.id);
+      }),
+
+    // ===== NEW: AI-Generated Worksheets =====
+    generateWorksheet: protectedProcedure
+      .input(z.object({
+        studentName: z.string().optional(),
+        studentAge: z.number().min(5).max(12).optional(),
+        studentGrade: z.string().optional(),
+        targetAxes: z.array(z.string()).min(1),
+        targetDisorders: z.array(z.string()).optional(),
+        difficulty: z.enum(["easy", "medium", "hard"]).default("easy"),
+        analysisId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const axesAr: Record<string, string> = {
+          letterFormation: "تشكيل الحروف",
+          sizeProportion: "الحجم والتناسب",
+          spacingOrganization: "التباعد والتنظيم",
+          baseline: "خط الأساس",
+          reversals: "الانعكاسات",
+          pressureSpeed: "الضغط والسرعة",
+          consistency: "الاتساق",
+        };
+        const difficultyAr: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب" };
+        const targetAxesAr = input.targetAxes.map(a => axesAr[a] || a).join("، ");
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: `أنت خبير في علاج صعوبات الكتابة واضطرابات التعلم. أنشئ ورقة عمل تفاعلية لتحسين مهارات الكتابة. أجب بصيغة JSON فقط.` },
+            { role: "user", content: `أنشئ ورقة عمل لتحسين الكتابة للتلميذ:
+- الاسم: ${input.studentName || "غير محدد"}
+- العمر: ${input.studentAge || "غير محدد"}
+- المستوى: ${input.studentGrade || "غير محدد"}
+- المحاور المستهدفة: ${targetAxesAr}
+- المستوى: ${difficultyAr[input.difficulty]}
+
+أنشئ 6 تمارين متنوعة (حركية، بصرية، كتابية) مناسبة للعمر والمستوى.
+
+أجب بهذا الشكل JSON:
+{
+  "title": "عنوان ورقة العمل بالعربية",
+  "exercises": [
+    {
+      "number": 1,
+      "title": "عنوان التمرين",
+      "instruction": "تعليمات مفصلة للتلميذ",
+      "type": "حركي / بصري / كتابي",
+      "duration": "5 دقائق",
+      "materials": "الأدوات المطلوبة"
+    }
+  ]
+}` },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "worksheet",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  exercises: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        number: { type: "integer" },
+                        title: { type: "string" },
+                        instruction: { type: "string" },
+                        type: { type: "string" },
+                        duration: { type: "string" },
+                        materials: { type: "string" },
+                      },
+                      required: ["number", "title", "instruction", "type", "duration", "materials"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["title", "exercises"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices?.[0]?.message?.content || "{}";
+        const worksheet = JSON.parse(content);
+
+        // Generate printable HTML
+        const exercisesHtml = (worksheet.exercises || []).map((ex: any) => `
+          <div style="border:2px solid #e5e7eb;border-radius:12px;padding:20px;margin:15px 0;page-break-inside:avoid;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <h3 style="color:#2563eb;margin:0;font-size:18px;">التمرين ${ex.number}: ${ex.title}</h3>
+              <span style="background:#dbeafe;color:#1d4ed8;padding:4px 12px;border-radius:20px;font-size:13px;">${ex.type}</span>
+            </div>
+            <p style="font-size:16px;line-height:2;color:#374151;margin:10px 0;">${ex.instruction}</p>
+            <div style="display:flex;gap:20px;font-size:13px;color:#6b7280;">
+              <span>⏱ ${ex.duration}</span>
+              <span>📝 ${ex.materials}</span>
+            </div>
+            <div style="margin-top:15px;border:2px dashed #d1d5db;border-radius:8px;min-height:100px;display:flex;align-items:center;justify-content:center;color:#9ca3af;">
+              مساحة العمل
+            </div>
+          </div>
+        `).join("");
+
+        const printableHtml = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap');
+  * { font-family: 'Noto Sans Arabic', sans-serif; box-sizing: border-box; }
+  body { direction: rtl; padding: 30px; max-width: 800px; margin: 0 auto; }
+  @media print { body { padding: 15px; } }
+  @page { size: A4; margin: 1.5cm; }
+</style></head><body>
+  <div style="text-align:center;margin-bottom:30px;">
+    <h1 style="color:#1e40af;font-size:24px;margin:0;">📝 ${worksheet.title}</h1>
+    <p style="color:#6b7280;margin:8px 0;">التلميذ: ${input.studentName || "___"} | المستوى: ${difficultyAr[input.difficulty]} | التاريخ: ${new Date().toLocaleDateString("ar-TN")}</p>
+    <p style="color:#9ca3af;font-size:13px;">المحاور المستهدفة: ${targetAxesAr}</p>
+  </div>
+  ${exercisesHtml}
+  <div style="text-align:center;margin-top:30px;padding:15px;background:#f0f9ff;border-radius:8px;">
+    <p style="color:#6b7280;font-size:12px;">تم إنشاء هذه الورقة بالذكاء الاصطناعي - Leader Academy 🇹🇳</p>
+  </div>
+</body></html>`;
+
+        // Save to database
+        const saved = await db.createWorksheet({
+          userId: ctx.user.id,
+          studentName: input.studentName || null,
+          studentAge: input.studentAge || null,
+          studentGrade: input.studentGrade || null,
+          targetAxes: input.targetAxes,
+          targetDisorders: input.targetDisorders || [],
+          difficulty: input.difficulty,
+          title: worksheet.title,
+          exercises: worksheet.exercises,
+          printableHtml,
+          analysisId: input.analysisId || null,
+        });
+
+        return { id: saved?.id, ...worksheet, printableHtml };
+      }),
+
+    getWorksheets: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getWorksheets(ctx.user.id);
+      }),
+
+    getWorksheet: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const ws = await db.getWorksheet(input.id, ctx.user.id);
+        if (!ws) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على ورقة العمل" });
+        return ws;
+      }),
+
+    deleteWorksheet: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.deleteWorksheet(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    // ===== NEW: Monthly Progress Report =====
+    generateMonthlyReport: protectedProcedure
+      .input(z.object({
+        month: z.number().min(1).max(12),
+        year: z.number().min(2020).max(2030),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const startDate = new Date(input.year, input.month - 1, 1);
+        const endDate = new Date(input.year, input.month, 0, 23, 59, 59);
+        const analyses = await db.getAnalysesForPeriod(ctx.user.id, startDate, endDate);
+
+        // Group by student
+        const studentMap = new Map<string, any[]>();
+        for (const a of analyses) {
+          const name = a.studentName || "غير محدد";
+          if (!studentMap.has(name)) studentMap.set(name, []);
+          studentMap.get(name)!.push(a);
+        }
+
+        // Build student summaries
+        const studentSummaries: any[] = [];
+        const allDisorderAlerts: any[] = [];
+        let totalScore = 0;
+        const axisAccum: Record<string, { sum: number; count: number }> = {};
+
+        for (const [name, studentAnalyses] of studentMap) {
+          const latest = studentAnalyses[studentAnalyses.length - 1];
+          const previous = studentAnalyses.length > 1 ? studentAnalyses[studentAnalyses.length - 2] : null;
+          const latestScore = latest.overallScore || 0;
+          const prevScore = previous?.overallScore || null;
+          const trend = prevScore === null ? "stable" : latestScore > prevScore ? "improving" : latestScore < prevScore ? "declining" : "stable";
+
+          // Collect disorders
+          const disorders = typeof latest.disorders === "string" ? JSON.parse(latest.disorders) : (latest.disorders || []);
+          const mainConcerns = disorders.filter((d: any) => d.probability === "high").map((d: any) => d.nameAr);
+          if (mainConcerns.length > 0) {
+            for (const d of disorders.filter((d: any) => d.probability === "high")) {
+              allDisorderAlerts.push({ studentName: name, disorder: d.nameAr, probability: d.probability });
+            }
+          }
+
+          studentSummaries.push({ name, analysesCount: studentAnalyses.length, latestScore, previousScore: prevScore, trend, mainConcerns });
+
+          // Accumulate axis scores
+          for (const a of studentAnalyses) {
+            totalScore += a.overallScore || 0;
+            const axes = ["letterFormation", "sizeProportion", "spacingOrganization", "baseline", "reversals", "pressureSpeed", "consistency"];
+            for (const axis of axes) {
+              const score = (a as any)[`${axis}Score`] || 0;
+              if (!axisAccum[axis]) axisAccum[axis] = { sum: 0, count: 0 };
+              axisAccum[axis].sum += score;
+              axisAccum[axis].count += 1;
+            }
+          }
+        }
+
+        const axisAverages: Record<string, number> = {};
+        for (const [axis, data] of Object.entries(axisAccum)) {
+          axisAverages[axis] = data.count > 0 ? Math.round(data.sum / data.count) : 0;
+        }
+
+        const avgScore = analyses.length > 0 ? Math.round(totalScore / analyses.length) : 0;
+
+        // Generate AI summary
+        const monthNames = ["جانفي", "فيفري", "مارس", "أفريل", "ماي", "جوان", "جويلية", "أوت", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        const monthName = monthNames[input.month - 1];
+
+        let summary = "";
+        let recommendations = "";
+        if (analyses.length > 0) {
+          const llmResponse = await invokeLLM({
+            messages: [
+              { role: "system", content: "أنت خبير بيداغوجي متخصص في اضطرابات التعلم. اكتب ملخصاً شهرياً بالعربية للمعلم عن تطور تلاميذه. أجب بصيغة JSON." },
+              { role: "user", content: `اكتب ملخصاً شهرياً لشهر ${monthName} ${input.year}:
+- عدد التحليلات: ${analyses.length}
+- عدد التلاميذ: ${studentMap.size}
+- متوسط الدرجة: ${avgScore}/100
+- التلاميذ: ${JSON.stringify(studentSummaries)}
+- التنبيهات: ${JSON.stringify(allDisorderAlerts)}
+
+أجب بهذا الشكل:
+{"summary": "ملخص شامل بالعربية", "recommendations": "توصيات بيداغوجية"}` },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "monthly_report",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    summary: { type: "string" },
+                    recommendations: { type: "string" },
+                  },
+                  required: ["summary", "recommendations"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          const parsed = JSON.parse(llmResponse.choices?.[0]?.message?.content || "{}");
+          summary = parsed.summary || "";
+          recommendations = parsed.recommendations || "";
+        } else {
+          summary = `لا توجد تحليلات مسجلة لشهر ${monthName} ${input.year}.`;
+          recommendations = "يُنصح بإجراء تحليلات دورية لمتابعة تطور التلاميذ.";
+        }
+
+        // Save report
+        const saved = await db.createMonthlyReport({
+          userId: ctx.user.id,
+          month: input.month,
+          year: input.year,
+          totalAnalyses: analyses.length,
+          totalStudents: studentMap.size,
+          avgScore,
+          studentSummaries,
+          axisAverages,
+          disorderAlerts: allDisorderAlerts,
+          summary,
+          recommendations,
+        });
+
+        return {
+          id: saved?.id,
+          month: input.month,
+          year: input.year,
+          monthName,
+          totalAnalyses: analyses.length,
+          totalStudents: studentMap.size,
+          avgScore,
+          studentSummaries,
+          axisAverages,
+          disorderAlerts: allDisorderAlerts,
+          summary,
+          recommendations,
+        };
+      }),
+
+    getMonthlyReports: protectedProcedure
+      .query(async ({ ctx }) => {
+        return db.getMonthlyReports(ctx.user.id);
+      }),
+
+    getMonthlyReport: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const report = await db.getMonthlyReport(input.id, ctx.user.id);
+        if (!report) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على التقرير" });
+        return report;
+      }),
   }),
 
 });

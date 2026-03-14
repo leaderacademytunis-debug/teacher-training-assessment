@@ -1913,3 +1913,69 @@ export const interventionPlans = mysqlTable("interventionPlans", {
 });
 export type InterventionPlan = typeof interventionPlans.$inferSelect;
 export type InsertInterventionPlan = typeof interventionPlans.$inferInsert;
+
+// ===== AI-Generated Worksheets =====
+export const handwritingWorksheets = mysqlTable("handwritingWorksheets", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  studentName: varchar("studentName", { length: 200 }),
+  studentAge: int("studentAge"),
+  studentGrade: varchar("studentGrade", { length: 100 }),
+  // Target weaknesses
+  targetAxes: json("targetAxes").$type<string[]>(),
+  targetDisorders: json("targetDisorders").$type<string[]>(),
+  difficulty: mysqlEnum("difficulty", ["easy", "medium", "hard"]).default("easy").notNull(),
+  // Generated content
+  title: varchar("title", { length: 300 }).notNull(),
+  exercises: json("exercises").$type<Array<{
+    number: number;
+    title: string;
+    instruction: string;
+    type: string;
+    duration: string;
+    materials: string;
+  }>>(),
+  // Printable HTML content
+  printableHtml: mediumtext("printableHtml"),
+  pdfUrl: text("pdfUrl"),
+  analysisId: int("analysisId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type HandwritingWorksheet = typeof handwritingWorksheets.$inferSelect;
+export type InsertHandwritingWorksheet = typeof handwritingWorksheets.$inferInsert;
+
+// ===== Monthly Progress Reports =====
+export const monthlyProgressReports = mysqlTable("monthlyProgressReports", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  // Report period
+  month: int("month").notNull(), // 1-12
+  year: int("year").notNull(),
+  // Aggregated data
+  totalAnalyses: int("totalAnalyses").default(0),
+  totalStudents: int("totalStudents").default(0),
+  avgScore: int("avgScore").default(0),
+  // Detailed stats
+  studentSummaries: json("studentSummaries").$type<Array<{
+    name: string;
+    analysesCount: number;
+    latestScore: number;
+    previousScore: number | null;
+    trend: "improving" | "stable" | "declining";
+    mainConcerns: string[];
+  }>>(),
+  axisAverages: json("axisAverages").$type<Record<string, number>>(),
+  disorderAlerts: json("disorderAlerts").$type<Array<{
+    studentName: string;
+    disorder: string;
+    probability: string;
+  }>>(),
+  // Report content
+  summary: mediumtext("summary"), // AI-generated summary
+  recommendations: mediumtext("recommendations"),
+  pdfUrl: text("pdfUrl"),
+  emailSent: boolean("emailSent").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MonthlyProgressReport = typeof monthlyProgressReports.$inferSelect;
+export type InsertMonthlyProgressReport = typeof monthlyProgressReports.$inferInsert;

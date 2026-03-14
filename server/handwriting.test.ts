@@ -539,4 +539,145 @@ describe("handwriting router", () => {
       ).rejects.toThrow();
     });
   });
+
+  // ─── Improvement: Student Comparison ──────────────────────────────────
+
+  describe("compareStudents", () => {
+    it("has compareStudents procedure", () => {
+      const procedures = (appRouter as any)._def.procedures;
+      expect(procedures).toHaveProperty("handwriting.compareStudents");
+    });
+
+    it("rejects unauthenticated access", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.compareStudents({ studentName1: "أحمد", studentName2: "سارة" })
+      ).rejects.toThrow();
+    });
+
+    it("rejects empty studentName1", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.compareStudents({ studentName1: "", studentName2: "سارة" })
+      ).rejects.toThrow();
+    });
+
+    it("rejects empty studentName2", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.compareStudents({ studentName1: "أحمد", studentName2: "" })
+      ).rejects.toThrow();
+    });
+
+    it("throws NOT_FOUND for non-existent students", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.compareStudents({ studentName1: "تلميذ_غير_موجود_1", studentName2: "تلميذ_غير_موجود_2" })
+      ).rejects.toThrow();
+    });
+  });
+
+  // ─── Improvement: AI Worksheets ───────────────────────────────────────
+
+  describe("generateWorksheet", () => {
+    it("has generateWorksheet procedure", () => {
+      const procedures = (appRouter as any)._def.procedures;
+      expect(procedures).toHaveProperty("handwriting.generateWorksheet");
+    });
+
+    it("has getWorksheets procedure", () => {
+      const procedures = (appRouter as any)._def.procedures;
+      expect(procedures).toHaveProperty("handwriting.getWorksheets");
+    });
+
+    it("rejects unauthenticated access to generateWorksheet", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateWorksheet({ targetAxes: ["letterFormation"], age: 7 })
+      ).rejects.toThrow();
+    });
+
+    it("rejects unauthenticated access to getWorksheets", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(caller.handwriting.getWorksheets()).rejects.toThrow();
+    });
+
+    it("rejects empty targetAxes array", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateWorksheet({ targetAxes: [], age: 7 })
+      ).rejects.toThrow();
+    });
+
+    it("rejects age below 5", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateWorksheet({ targetAxes: ["letterFormation"], age: 3 })
+      ).rejects.toThrow();
+    });
+
+    it("rejects age above 12", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateWorksheet({ targetAxes: ["letterFormation"], age: 15 })
+      ).rejects.toThrow();
+    });
+
+    it("getWorksheets returns array for authenticated user", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      const result = await caller.handwriting.getWorksheets();
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  // ─── Improvement: Monthly Report ──────────────────────────────────────
+
+  describe("generateMonthlyReport", () => {
+    it("has generateMonthlyReport procedure", () => {
+      const procedures = (appRouter as any)._def.procedures;
+      expect(procedures).toHaveProperty("handwriting.generateMonthlyReport");
+    });
+
+    it("rejects unauthenticated access", async () => {
+      const { ctx } = createUnauthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateMonthlyReport({ month: 3, year: 2026 })
+      ).rejects.toThrow();
+    });
+
+    it("rejects invalid month (0)", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateMonthlyReport({ month: 0, year: 2026 })
+      ).rejects.toThrow();
+    });
+
+    it("rejects invalid month (13)", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateMonthlyReport({ month: 13, year: 2026 })
+      ).rejects.toThrow();
+    });
+
+    it("rejects year below 2020", async () => {
+      const { ctx } = createAuthContext();
+      const caller = appRouter.createCaller(ctx);
+      await expect(
+        caller.handwriting.generateMonthlyReport({ month: 3, year: 2019 })
+      ).rejects.toThrow();
+    });
+  });
 });
