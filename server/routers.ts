@@ -14303,6 +14303,129 @@ ${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""
       }),
   }),
 
+  // ===== VIDEO EVALUATOR: مُقيِّم المعلم الرقمي =====
+  videoEvaluator: router({
+    chat: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+          attachments: z.array(z.object({
+            name: z.string(),
+            size: z.number(),
+            type: z.string(),
+            url: z.string().optional(),
+          })).optional(),
+        })),
+        targetAudience: z.string().optional(),
+        educationalObjective: z.string().optional(),
+        originalPrompt: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const contextInfo = [
+          input.targetAudience ? `الفئة المستهدفة: ${input.targetAudience}` : "",
+          input.educationalObjective ? `الهدف التعليمي: ${input.educationalObjective}` : "",
+          input.originalPrompt ? `الموجه الأصلي المستخدم: ${input.originalPrompt}` : "",
+        ].filter(Boolean).join("\n");
+        const systemPrompt = `# الهوية
+أنت **"مُقيِّم المعلم الرقمي"**، وكيل ذكاء اصطناعي خبير في إنتاج الفيديوهات التعليمية وهندسة الأوامر (Prompt Engineering). تعمل ضمن منصة **Leader Academy** في تونس.
+
+# دورك
+تقييم أعمال المعلمين المشاركين في دورة **إعداد الفيديوهات التعليمية بالذكاء الاصطناعي**. تتواصل دائماً بنبرة **محفزة، إيجابية، وداعمة**. ابدأ دائماً بالثناء على الجهد والإبداع، ثم قدم ملاحظاتك التصحيحية بلطف واحترافية.
+
+# المدخلات المطلوبة
+عند بدء المحادثة، اطلب من المتدرب بلطف تقديم:
+1. **ملف الفيديو** الذي قام بتوليده (أو رابطه)
+2. **الموجه (Prompt) الأساسي** الذي استخدمه لإنتاج الفيديو
+3. **الفئة المستهدفة** (مثل: تلاميذ المرحلة الابتدائية) و**الهدف التعليمي** من الفيديو
+
+${contextInfo ? `# معلومات مقدمة مسبقاً\n${contextInfo}\n` : ""}
+# منهجية التقييم
+بمجرد استلام المدخلات، قم بتحليل الفيديو والموجه، وقدم تقريرك بأسلوب مهني وودود بناءً على المحاور التالية:
+
+## 1. الإيجابيات (نقاط القوة)
+اذكر 2 إلى 3 تفاصيل مميزة في العمل (مثل: جودة الفكرة، اختيار الزوايا، وضوح الهدف، إلخ).
+
+## 2. الملاحظات الفنية والتربوية (للتطوير)
+- **هندسة الأوامر**: مدى مطابقة الفيديو للموجه الأصلي المكتوب.
+- **الملاءمة التربوية**: مدى مناسبة المحتوى البصري للفئة العمرية المستهدفة وقدرته على إيصال الرسالة.
+- **السياق الثقافي البصري**: دقق في مدى نجاح الفيديو في عكس البيئة المحلية المألوفة للمتلقي. تأكد من أن ملامح الشخصيات تونسية أصيلة وواقعية، وأن الأزياء والخلفيات تتناسب مع هذا السياق.
+- **الجودة التقنية**: رصد أي تشوهات بصرية ناتجة عن التوليد (مثل تشوه الأطراف أو عدم التناسق).
+
+## 3. اقتراحات التحسين وهندسة الأوامر
+هذه هي **القيمة المضافة الأهم**. قدم للمتدرب نسخة معدلة ومحسنة من الموجه (Prompt) الخاص به لتفادي الأخطاء التي ظهرت، مع شرح مبسط لسبب التعديل (مثل: إضافة كلمات مفتاحية معينة لتثبيت ملامح الشخصيات أو تحسين الإضاءة).
+
+# هيكلية المخرجات (شكل التقرير)
+قدم تقريرك بالشكل التالي:
+
+🌟 **رسالة ترحيب وتشجيع**: (ثناء قصير على المحاولة)
+
+✨ **ما أعجبني في عملك**: (نقاط القوة - 2 إلى 3 نقاط)
+
+💡 **ملاحظات للتطوير**: (التقييم الفني، التربوي، والثقافي بلطف)
+
+🛠️ **الموجه السحري**: (اقتراح الموجه المحسن مع التبرير)
+
+# تعليمات إضافية
+- استخدم اللغة العربية دائماً
+- كن محدداً في ملاحظاتك وتجنب العموميات
+- عند تحسين الموجه، اكتبه بالإنجليزية (لأن أدوات التوليد تعمل بالإنجليزية) مع ترجمة عربية
+- إذا لم يقدم المتدرب كل المدخلات المطلوبة، اطلبها بلطف قبل تقديم التقييم
+- عند تحليل الفيديو، ركز على العناصر البصرية والتربوية وليس فقط الجودة التقنية`;
+
+        // Build LLM messages with proper attachment handling
+        const llmMessages = input.messages.map(m => {
+          if (!m.attachments || m.attachments.length === 0) {
+            return { role: m.role as "user" | "assistant", content: m.content };
+          }
+          type ContentPart = 
+            | { type: "text"; text: string }
+            | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }
+            | { type: "file_url"; file_url: { url: string; mime_type: "application/pdf" | "audio/mpeg" | "audio/wav" | "audio/mp4" | "video/mp4" } };
+          const contentParts: ContentPart[] = [];
+          if (m.content) {
+            contentParts.push({ type: "text", text: m.content });
+          }
+          for (const att of m.attachments) {
+            if (!att.url) continue;
+            const mime = att.type || "";
+            if (mime.startsWith("image/")) {
+              contentParts.push({
+                type: "image_url",
+                image_url: { url: att.url, detail: "high" },
+              });
+            } else if (mime.startsWith("video/")) {
+              contentParts.push({
+                type: "file_url",
+                file_url: { url: att.url, mime_type: "video/mp4" },
+              });
+            } else if (mime === "application/pdf") {
+              contentParts.push({
+                type: "file_url",
+                file_url: { url: att.url, mime_type: "application/pdf" },
+              });
+            } else {
+              contentParts.push({
+                type: "text",
+                text: `[ملف مرفق: ${att.name} (${mime || "وثيقة"}) - يرجى تحليل محتواه والرد بناءً عليه]`,
+              });
+            }
+          }
+          return { role: m.role as "user" | "assistant", content: contentParts };
+        });
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...llmMessages,
+          ],
+        });
+        const content = response.choices[0].message.content;
+        const messageText = typeof content === "string" ? content : "";
+        return { message: messageText };
+      }),
+  }),
 });
 
 // Helper: Calculate match score between teacher and job

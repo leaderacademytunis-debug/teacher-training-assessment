@@ -67,6 +67,7 @@ const MyAssignments = lazy(() => import("@/pages/MyAssignments"));
 const JoinBatch = lazy(() => import("@/pages/JoinBatch"));
 const BatchComparison = lazy(() => import("@/pages/BatchComparison"));
 const HandwritingAnalyzer = lazy(() => import("@/pages/HandwritingAnalyzer"));
+const VideoEvaluator = lazy(() => import("@/pages/VideoEvaluator"));
 
 function PageLoader() {
   return (
@@ -137,6 +138,7 @@ function Router() {
         <Route path="/join/:code" component={JoinBatch} />
         <Route path="/admin/batch-comparison" component={BatchComparison} />
         <Route path="/handwriting-analyzer" component={HandwritingAnalyzer} />
+        <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

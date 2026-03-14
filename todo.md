@@ -2414,7 +2414,21 @@
 - [x] Save checkpoint (version: 2bc3d374)
 
 ## CRITICAL BUG: White page on leaderacademy.school
-- [ ] Diagnose white page issue (likely React.lazy loading failure in production build)
-- [ ] Fix the root cause
-- [ ] Verify all page routes load correctly
-- [ ] Save checkpoint and redeploy
+- [x] Diagnosed: deployed version uses old JS chunks from pre-code-splitting checkpoint
+- [x] Dev server works perfectly - issue is stale deployed version
+- [x] Solution: re-publish from latest checkpoint
+- [x] Save checkpoint (version: c1cf616a)
+
+## Feature: مُقيِّم المعلم الرقمي (Digital Teacher Evaluator Agent)
+- [x] Analyzed existing course tools structure (EduGPT assistant pattern)
+- [x] Created backend tRPC videoEvaluator.chat procedure with LLM integration
+- [x] System prompt includes: evaluation criteria, Tunisian cultural context, prompt engineering feedback
+- [x] Support for video/image/PDF file uploads via S3
+- [x] Context fields: target audience, educational objective, original prompt
+- [x] Built frontend chat UI (VideoEvaluator.tsx) with file upload, context form, quick suggestions
+- [x] Added lazy-loaded route /video-evaluator in App.tsx
+- [x] Added evaluator card to CourseDetail.tsx (only for digital_teacher_ai course)
+- [x] Added evaluator to AI_TOOLS array in Home.tsx navigation
+- [x] All 8 vitest tests passing
+- [x] Server running without errors
+- [ ] Save checkpoint

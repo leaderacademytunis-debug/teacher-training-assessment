@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Loader2, ArrowRight, FileText, Clock, Video, Lock } from "lucide-react";
+import { BookOpen, Loader2, ArrowRight, FileText, Clock, Video, Lock, Film, Sparkles } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
 
@@ -169,6 +169,40 @@ export default function CourseDetail() {
                   <Button size="lg" className="w-full">
                     <Video className="w-5 h-5 ml-2" />
                     مشاهدة الفيديوهات ({videos.length} فيديو)
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Video Evaluator - Only for Video AI course */}
+          {isApproved && course && (course.slug === 'digital_teacher_ai' || course.slug === 'digital_teacher_ai ') && (
+            <Card className="mb-8 border-2 overflow-hidden" style={{ borderColor: 'rgba(26,35,126,0.2)' }}>
+              <div className="p-1" style={{ background: 'linear-gradient(135deg, #1A237E 0%, #0D47A1 50%, #01579B 100%)' }}>
+                <div className="flex items-center gap-2 px-4 py-2">
+                  <Sparkles className="w-5 h-5 text-yellow-300" />
+                  <span className="text-white font-bold text-sm" style={{ fontFamily: 'Cairo, sans-serif' }}>وكيل ذكاء اصطناعي</span>
+                </div>
+              </div>
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #1A237E, #0D47A1)' }}>
+                    <Film className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl" style={{ color: '#1A237E', fontFamily: 'Cairo, sans-serif' }}>مُقيِّم المعلم الرقمي</CardTitle>
+                    <CardDescription className="mt-1 leading-relaxed">
+                      وكيل ذكاء اصطناعي خبير في تقييم الفيديوهات التعليمية وتحسين هندسة الأوامر (Prompt Engineering). أرسل فيديوك واحصل على تقييم شامل مع اقتراحات لتحسين الموجه.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Link href="/video-evaluator">
+                  <Button size="lg" className="w-full text-white" style={{ background: 'linear-gradient(135deg, #1A237E, #1565C0)' }}>
+                    <Film className="w-5 h-5 ml-2" />
+                    بدء التقييم مع المُقيِّم الرقمي
+                    <ArrowRight className="w-5 h-5 mr-2" />
                   </Button>
                 </Link>
               </CardContent>

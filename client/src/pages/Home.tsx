@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronDown, Star, Zap, Shield, ArrowLeft, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2, Briefcase, FileText,
+  Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2, Briefcase, FileText, Film,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -45,6 +45,7 @@ const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: strin
   { href: "/blind-grading", labelAr: "مساعد التصحيح الأعمى", labelFr: "Correction aveugle IA", labelEn: "Blind Grading Assistant", icon: FileCheck, descAr: "تصحيح ذكي لأوراق التلاميذ حسب المعايير التونسية", descFr: "Correction intelligente des copies selon les critères tunisiens", descEn: "AI-powered student paper grading with Tunisian criteria" },  { href: "/marketplace", labelAr: "سوق المحتوى الذهبي", labelFr: "Marché du contenu", labelEn: "Content Marketplace", icon: Store, descAr: "سوق مجتمعي لمشاركة وتحميل أفضل المحتويات التعليمية", descFr: "Marché communautaire pour partager le meilleur contenu éducatif", descEn: "Community marketplace for sharing best educational content" },
   { href: "/drama-engine", labelAr: "محرك الدراما التعليمية", labelFr: "Moteur de théâtre éducatif", labelEn: "Drama Engine", icon: Theater, descAr: "حوّل دروسك إلى مسرحيات تفاعلية مع توزيع الأدوار والوسائل", descFr: "Transformez vos leçons en pièces de théâtre interactives", descEn: "Transform lessons into interactive classroom plays" },
   { href: "/handwriting-analyzer", labelAr: "محلل خط اليد الذكي", labelFr: "Analyseur d'écriture IA", labelEn: "AI Handwriting Analyzer", icon: Brain, descAr: "تحليل خط يد التلميذ للكشف المبكر عن صعوبات واضطرابات التعلم", descFr: "Analyser l'écriture pour détecter les troubles d'apprentissage", descEn: "Analyze handwriting to detect learning difficulties" },
+  { href: "/video-evaluator", labelAr: "مُقيِّم المعلم الرقمي", labelFr: "Évaluateur vidéo IA", labelEn: "AI Video Evaluator", icon: Film, descAr: "تقييم الفيديوهات التعليمية وتحسين هندسة الأوامر (Prompt Engineering)", descFr: "Évaluer les vidéos éducatives et améliorer le Prompt Engineering", descEn: "Evaluate educational videos and improve Prompt Engineering" },
 ];
 
 // Certificate links grouped in a dropdown
