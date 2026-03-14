@@ -390,3 +390,20 @@
 .tiptap p {
   margin: 0.25em 0;
 }
+
+/* Ensure form buttons are always visible at the bottom of pages */
+[dir="rtl"] > .min-h-screen > .container:last-of-type,
+[dir="rtl"] > .min-h-screen > main > div:last-child {
+  padding-bottom: 5rem;
+}
+
+/* Sticky dialog footer to keep buttons always visible */
+[data-slot="dialog-content"] [data-slot="dialog-footer"] {
+  position: sticky;
+  bottom: -1.5rem;
+  margin: 0 -1.5rem -1.5rem;
+  padding: 1rem 1.5rem;
+  background: inherit;
+  border-top: 1px solid var(--border);
+  z-index: 1;
+}

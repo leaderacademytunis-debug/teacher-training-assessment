@@ -6537,28 +6537,13 @@ ${getGlossaryContext()}
 <body>${htmlContent}</body>
 </html>`;
 
-        const { default: puppeteer } = await import("puppeteer");
-        let browser;
-        try {
-          browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
-          const page = await browser.newPage();
-          await page.setContent(fullHtml, { waitUntil: "networkidle0" });
-          const pdfBuffer = await page.pdf({
-            format: "A4",
-            margin: { top: "2cm", right: "2cm", bottom: "2cm", left: "2cm" },
-            printBackground: true,
-          });
-
-          const { storagePut } = await import("./storage");
-          const pdfKey = `legacy-digitizer/${ctx.user.id}/exports/${doc.id}-${Date.now()}.pdf`;
-          const { url: pdfUrl } = await storagePut(pdfKey, Buffer.from(pdfBuffer), "application/pdf");
-
-          await db.updateDigitizedDocument(input.documentId, ctx.user.id, { pdfExportUrl: pdfUrl });
-
-          return { url: pdfUrl };
-        } finally {
-          if (browser) await browser.close();
-        }
+        const { htmlToPdf } = await import("./lib/htmlToPdf");
+        const s3Key = `legacy-digitizer/${ctx.user.id}/exports/${doc.id}-${Date.now()}`;
+        const { url: pdfUrl } = await htmlToPdf(fullHtml, s3Key, {
+          margins: { top: "2cm", right: "2cm", bottom: "2cm", left: "2cm" },
+        });
+        await db.updateDigitizedDocument(input.documentId, ctx.user.id, { pdfExportUrl: pdfUrl });
+        return { url: pdfUrl };
       }),
 
     // List user's digitized documents
@@ -6992,26 +6977,11 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
 </div>
 </body></html>`;
 
-      // Generate PDF using puppeteer
+      // Generate PDF using htmlToPdf helper (WeasyPrint with HTML fallback)
       try {
-        const puppeteer = await import("puppeteer");
-        const browser = await puppeteer.default.launch({
-          headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox"],
-        });
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
-        const pdfBuffer = await page.pdf({
-          format: "A4",
-          margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" },
-          printBackground: true,
-        });
-        await browser.close();
-
-        // Upload to S3
-        const { storagePut } = await import("./storage");
-        const fileName = `portfolios/${ctx.user.id}/portfolio-${Date.now()}.pdf`;
-        const { url } = await storagePut(fileName, Buffer.from(pdfBuffer), "application/pdf");
+        const { htmlToPdf } = await import("./lib/htmlToPdf");
+        const s3Key = `portfolios/${ctx.user.id}/portfolio-${Date.now()}`;
+        const { url } = await htmlToPdf(html, s3Key);
 
         // Update cached URL
         await db.updatePortfolio(ctx.user.id, {
@@ -8373,18 +8343,12 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
 </body>
 </html>`;
 
-        // Convert HTML to PDF using Puppeteer
-        const puppeteer = await import("puppeteer");
-        const browser = await puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
-        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: "15mm", bottom: "15mm", left: "10mm", right: "10mm" } });
-        await browser.close();
-
-        // Upload to S3
-        const { storagePut } = await import("./storage");
-        const fileKey = `grading-reports/${ctx.user.id}/${input.sessionId}/report-${Date.now()}.pdf`;
-        const { url } = await storagePut(fileKey, Buffer.from(pdfBuffer), "application/pdf");
+        // Convert HTML to PDF using htmlToPdf helper
+        const { htmlToPdf } = await import("./lib/htmlToPdf");
+        const s3Key = `grading-reports/${ctx.user.id}/${input.sessionId}/report-${Date.now()}`;
+        const { url } = await htmlToPdf(html, s3Key, {
+          margins: { top: "15mm", bottom: "15mm", left: "10mm", right: "10mm" },
+        });
 
         return { url, fileName: `${session.sessionTitle}-\u062a\u0642\u0631\u064a\u0631.pdf` };
       }),
@@ -8931,17 +8895,10 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
   </div>
 </body></html>`;
 
-        // Convert HTML to PDF using Puppeteer
-        const puppeteer = await import("puppeteer");
-        const browser = await puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
-        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" } });
-        await browser.close();
-        // Upload to S3
-        const { storagePut } = await import("./storage");
-        const fileKey = `inspector-reports/${ctx.user.id}/${input.sessionId}/inspector-${Date.now()}.pdf`;
-        const { url } = await storagePut(fileKey, Buffer.from(pdfBuffer), "application/pdf");
+        // Convert HTML to PDF using htmlToPdf helper
+        const { htmlToPdf } = await import("./lib/htmlToPdf");
+        const s3Key = `inspector-reports/${ctx.user.id}/${input.sessionId}/inspector-${Date.now()}`;
+        const { url } = await htmlToPdf(html, s3Key);
         return { url, fileName: `${session.sessionTitle}-\u062a\u0642\u0631\u064a\u0631-\u0627\u0644\u062a\u0641\u0642\u062f.pdf` };
       }),
   }),
@@ -9619,15 +9576,9 @@ ${input.lessonContent}
   </div>
 </body></html>`;
 
-        const puppeteer = await import("puppeteer");
-        const browser = await puppeteer.default.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: "networkidle0" });
-        const pdfBuffer = await page.pdf({ format: "A4", printBackground: true, margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" } });
-        await browser.close();
-        const { storagePut } = await import("./storage");
-        const fileKey = `drama-scripts/${ctx.user.id}/drama-${Date.now()}.pdf`;
-        const { url } = await storagePut(fileKey, Buffer.from(pdfBuffer), "application/pdf");
+        const { htmlToPdf } = await import("./lib/htmlToPdf");
+        const s3Key = `drama-scripts/${ctx.user.id}/drama-${Date.now()}`;
+        const { url } = await htmlToPdf(html, s3Key);
         return { url, fileName: `${input.lessonTitle}-\u0646\u0635-\u0645\u0633\u0631\u062d\u064a.pdf` };
       }),
 

@@ -161,7 +161,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Content */}
-        <div className="p-4 lg:p-6">
+        <div className="p-4 lg:p-6 pb-20">
           {activeTab === "overview" && <OverviewTab />}
           {activeTab === "users" && <UsersTab />}
           {activeTab === "payments" && <PaymentsTab />}

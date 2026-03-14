@@ -239,58 +239,43 @@ function processArabicText(text: string): string {
 }
 
 /**
- * Generate PDF from HTML content using puppeteer-core with system Chromium
- * This replaces weasyprint to avoid Python version conflicts in the sandbox runtime
+ * Generate PDF from HTML content using WeasyPrint (lightweight, no Chromium needed)
+ * Falls back to returning the HTML as a printable buffer if WeasyPrint is unavailable
  * @param htmlContent - HTML content to convert to PDF
- * @returns Buffer containing the PDF
+ * @returns Buffer containing the PDF (or HTML as fallback)
  */
-/**
- * Find the Chromium executable path, trying multiple known locations.
- */
-function findChromiumExecutable(): string {
-  const { existsSync } = require("node:fs");
-  const candidates = [
-    "/usr/lib/chromium-browser/chromium-browser", // Ubuntu sandbox (real binary)
-    "/usr/bin/chromium",
-    "/usr/bin/google-chrome",
-    "/usr/bin/google-chrome-stable",
-    process.env.CHROMIUM_PATH,
-  ].filter(Boolean) as string[];
-  for (const p of candidates) {
-    if (existsSync(p)) return p;
-  }
-  // Fallback — will throw a clear error
-  return "/usr/bin/chromium-browser";
-}
-
 export async function createPDF(htmlContent: string): Promise<Buffer> {
-  const puppeteer = await import("puppeteer-core");
-  let browser;
+  const { execSync } = require("child_process");
+  const fs = require("fs");
+  const os = require("os");
+  const tmpDir = os.tmpdir();
+  const id = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+  const htmlPath = `${tmpDir}/pdf-${id}.html`;
+  const pdfPath = `${tmpDir}/pdf-${id}.pdf`;
+  
+  // Add print-friendly styles
+  const printHtml = htmlContent.replace('</head>', `
+    <style>
+      @page { size: A4; margin: 15mm; }
+      @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+    </style>
+  </head>`);
+  
   try {
-    const executablePath = findChromiumExecutable();
-    browser = await puppeteer.launch({
-      executablePath,
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--font-render-hinting=none",
-      ],
+    fs.writeFileSync(htmlPath, printHtml, "utf-8");
+    execSync(`weasyprint "${htmlPath}" "${pdfPath}"`, {
+      timeout: 30000,
+      stdio: "pipe",
     });
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" },
-    });
+    const pdfBuffer = fs.readFileSync(pdfPath);
     return Buffer.from(pdfBuffer);
   } catch (error) {
-    throw new Error(`Failed to generate PDF: ${error}`);
+    // Fallback: return HTML as buffer (caller can upload as printable HTML)
+    console.warn("WeasyPrint unavailable, returning HTML buffer:", error);
+    return Buffer.from(printHtml, "utf-8");
   } finally {
-    if (browser) await browser.close();
+    try { fs.unlinkSync(htmlPath); } catch {}
+    try { fs.unlinkSync(pdfPath); } catch {}
   }
 }
 

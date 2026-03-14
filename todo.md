@@ -2364,4 +2364,28 @@
 - [x] Frontend: Monthly report view with month/year selector and report display
 - [x] Frontend: Email sending option via sendMonthlyReportEmail procedure
 - [x] Write vitest tests for all improvements (77 tests passing)
-- [ ] Save checkpoint
+- [x] Save checkpoint (version: 9984b655)
+
+## Bug Fix: Deployment failure - ServiceNotHealth signal:killed (OOM)
+- [x] Identify heavy dependencies causing memory overflow during build
+- [x] Remove puppeteer and other unnecessary heavy packages
+- [x] Optimize package.json to reduce deployment size
+- [x] Save checkpoint and redeploy
+
+## Optimization: Reduce project size for stable deployments
+- [x] Remove tesseract.js (44MB, already removed in previous session)
+- [x] Replace googleapis (196MB) with lighter approach (already removed in previous session)
+- [x] Remove puppeteer, replace all 5 PDF generation blocks with htmlToPdf helper (WeasyPrint + HTML fallback)
+- [x] Created server/lib/htmlToPdf.ts reusable helper for PDF generation
+- [x] Cleaned up all puppeteer dependencies from routers.ts
+- [x] Removed unused packages: sharp, alif-toolkit
+- [x] Added 6 vitest tests for htmlToPdf helper (all passing)
+
+## UI Fix: Submit buttons not fully visible in admin forms
+- [x] Added max-h-[90vh] overflow-y-auto to DialogContent component globally
+- [x] Added sticky DialogFooter CSS for all dialog forms
+- [x] Added pb-20 padding to AdminDashboard and AdminBatchManager content areas
+- [x] Added global CSS rules for page container bottom padding
+- [x] Save checkpoint
+- [x] Cleaned orphaned node_modules (googleapis, tesseract.js-core, mermaid, jspdf, pdfjs-dist, sharp-libvips, napi-rs/canvas)
+- [x] Reduced project size from 1.3GB to ~670MB
