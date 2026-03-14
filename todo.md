@@ -2411,4 +2411,10 @@
 - [x] Link template to course ID 30001 ("دورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي")
 - [x] All 6 vitest tests passing for English certificate content
 - [x] Visual verification: generated PDF matches the official .doc template
-- [ ] Save checkpoint
+- [x] Save checkpoint (version: 2bc3d374)
+
+## CRITICAL BUG: White page on leaderacademy.school
+- [ ] Diagnose white page issue (likely React.lazy loading failure in production build)
+- [ ] Fix the root cause
+- [ ] Verify all page routes load correctly
+- [ ] Save checkpoint and redeploy
