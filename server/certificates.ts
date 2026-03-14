@@ -178,49 +178,54 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   const page = pdfDoc.addPage([842, 595]);
   const { width, height } = page.getSize();
   
-  // Draw decorative borders with category-specific colors
-  const margin = 15;
-  const innerMargin = 30;
-  // Check if this is the comprehensive certificate (use gold borders)
-  const isComprehensiveCert = data.courseName.includes('أصحاب الشهادات العليا') || data.courseType === 'comprehensive';
-  const borderColors = isComprehensiveCert
-    ? { outer: rgb(0.6, 0.45, 0.05), inner: rgb(0.8, 0.65, 0.2) }
-    : getBorderColorForCategory(data.courseType);
+  // Skip standard borders and logo for English certificates (they have custom geometric design)
+  const isEnglishCert = content && content.language === 'en';
   
-  // Outer border (darker color)
-  page.drawRectangle({
-    x: margin,
-    y: margin,
-    width: width - 2 * margin,
-    height: height - 2 * margin,
-    borderColor: borderColors.outer,
-    borderWidth: 3,
-  });
-  
-  // Inner border (lighter color)
-  page.drawRectangle({
-    x: innerMargin,
-    y: innerMargin,
-    width: width - 2 * innerMargin,
-    height: height - 2 * innerMargin,
-    borderColor: borderColors.inner,
-    borderWidth: 1.5,
-  });
-  
-  // Embed and draw images
-  if (logoBytes) {
-    try {
-      const logoImage = await pdfDoc.embedPng(logoBytes);
-      const logoWidth = 200;
-      const logoHeight = logoWidth * (logoImage.height / logoImage.width);
-      page.drawImage(logoImage, {
-        x: 50, // Position on the left
-        y: height - 220,
-        width: logoWidth,
-        height: logoHeight,
-      });
-    } catch (error) {
-      console.error("Failed to embed logo:", error);
+  if (!isEnglishCert) {
+    // Draw decorative borders with category-specific colors
+    const margin = 15;
+    const innerMargin = 30;
+    // Check if this is the comprehensive certificate (use gold borders)
+    const isComprehensiveCert = data.courseName.includes('أصحاب الشهادات العليا') || data.courseType === 'comprehensive';
+    const borderColors = isComprehensiveCert
+      ? { outer: rgb(0.6, 0.45, 0.05), inner: rgb(0.8, 0.65, 0.2) }
+      : getBorderColorForCategory(data.courseType);
+    
+    // Outer border (darker color)
+    page.drawRectangle({
+      x: margin,
+      y: margin,
+      width: width - 2 * margin,
+      height: height - 2 * margin,
+      borderColor: borderColors.outer,
+      borderWidth: 3,
+    });
+    
+    // Inner border (lighter color)
+    page.drawRectangle({
+      x: innerMargin,
+      y: innerMargin,
+      width: width - 2 * innerMargin,
+      height: height - 2 * innerMargin,
+      borderColor: borderColors.inner,
+      borderWidth: 1.5,
+    });
+    
+    // Embed and draw images
+    if (logoBytes) {
+      try {
+        const logoImage = await pdfDoc.embedPng(logoBytes);
+        const logoWidth = 200;
+        const logoHeight = logoWidth * (logoImage.height / logoImage.width);
+        page.drawImage(logoImage, {
+          x: 50, // Position on the left
+          y: height - 220,
+          width: logoWidth,
+          height: logoHeight,
+        });
+      } catch (error) {
+        console.error("Failed to embed logo:", error);
+      }
     }
   }
   
@@ -243,6 +248,9 @@ export async function generateCertificatePDF(data: CertificateData): Promise<{ u
   } else if (content.language === 'fr') {
     // French certificate layout
     await drawFrenchCertificate(page, fallbackFont, mainFont, content, data, width, height, gray, lightGray, black);
+  } else if (content.language === 'en') {
+    // English certificate layout (Video AI course - custom geometric design)
+    await drawEnglishCertificate(page, fallbackFont, mainFont, content, data, width, height, gray, lightGray, black, pdfDoc, stampBytes);
   }
   
   // Second page removed per user request
@@ -947,4 +955,281 @@ async function drawComprehensiveCertificate(
   page.drawText(month, { x: cx, y: 50, size: 10, font, color: gray });
   cx -= sp + yearW;
   page.drawText(year, { x: cx, y: 50, size: 10, font, color: gray });
+}
+
+
+/**
+ * Draw English certificate content - Custom geometric design for Video AI course
+ * Matches the official Leader Academy certificate template with:
+ * - Light gray geometric angular background shapes
+ * - Gold/yellow accent triangles
+ * - Leader Academy logo top-left
+ * - English text layout (LTR)
+ * - "Leader Academy" and "Date" at bottom
+ */
+async function drawEnglishCertificate(
+  page: any,
+  latinFont: any,
+  arabicFont: any,
+  content: CertificateContent,
+  data: CertificateData,
+  width: number,
+  height: number,
+  gray: any,
+  lightGray: any,
+  black: any,
+  pdfDoc: any,
+  stampBytes: Buffer | null
+) {
+  // ===== GEOMETRIC BACKGROUND DESIGN =====
+  // Light gray background fill
+  page.drawRectangle({
+    x: 0, y: 0,
+    width, height,
+    color: rgb(0.97, 0.97, 0.97), // Very light gray background
+  });
+
+  // Thin border
+  page.drawRectangle({
+    x: 8, y: 8,
+    width: width - 16, height: height - 16,
+    borderColor: rgb(0.85, 0.85, 0.85),
+    borderWidth: 1,
+  });
+
+  // Geometric angular shapes - top right area (light gray triangles)
+  // Triangle 1 - top right
+  page.drawLine({ start: { x: width - 200, y: height }, end: { x: width, y: height - 150 }, thickness: 0.5, color: rgb(0.88, 0.88, 0.88) });
+  page.drawLine({ start: { x: width - 150, y: height }, end: { x: width, y: height - 100 }, thickness: 0.5, color: rgb(0.90, 0.90, 0.90) });
+  page.drawLine({ start: { x: width - 100, y: height }, end: { x: width, y: height - 60 }, thickness: 0.5, color: rgb(0.92, 0.92, 0.92) });
+
+  // Fill top-right corner with light gray triangular area
+  page.drawRectangle({
+    x: width - 250, y: height - 200,
+    width: 250, height: 200,
+    color: rgb(0.94, 0.94, 0.94),
+    opacity: 0.4,
+  });
+
+  // Gold accent triangle - top right
+  page.drawLine({ start: { x: width - 120, y: height - 80 }, end: { x: width - 60, y: height - 160 }, thickness: 2, color: rgb(0.85, 0.72, 0.35) });
+  page.drawLine({ start: { x: width - 60, y: height - 160 }, end: { x: width - 40, y: height - 100 }, thickness: 2, color: rgb(0.85, 0.72, 0.35) });
+
+  // Gold accent triangle - middle area
+  page.drawLine({ start: { x: width - 80, y: height / 2 + 30 }, end: { x: width - 30, y: height / 2 - 40 }, thickness: 1.5, color: rgb(0.85, 0.72, 0.35) });
+  page.drawLine({ start: { x: width - 30, y: height / 2 - 40 }, end: { x: width - 50, y: height / 2 + 10 }, thickness: 1.5, color: rgb(0.85, 0.72, 0.35) });
+
+  // Bottom left geometric shapes
+  page.drawRectangle({
+    x: 0, y: 0,
+    width: 200, height: 150,
+    color: rgb(0.94, 0.94, 0.94),
+    opacity: 0.4,
+  });
+
+  // Gold accent triangle - bottom left
+  page.drawLine({ start: { x: 40, y: 120 }, end: { x: 100, y: 50 }, thickness: 1.5, color: rgb(0.85, 0.72, 0.35) });
+  page.drawLine({ start: { x: 100, y: 50 }, end: { x: 70, y: 90 }, thickness: 1.5, color: rgb(0.85, 0.72, 0.35) });
+
+  // ===== LOGO =====
+  // Draw Leader Academy logo in top-left corner
+  const logoUrl = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/TABMpUkybTgmkLSW.png";
+  try {
+    const logoBytes = await downloadResource(logoUrl);
+    if (logoBytes) {
+      const logoImage = await pdfDoc.embedPng(logoBytes);
+      const logoWidth = 120;
+      const logoHeight = logoWidth * (logoImage.height / logoImage.width);
+      page.drawImage(logoImage, {
+        x: 30,
+        y: height - 30 - logoHeight,
+        width: logoWidth,
+        height: logoHeight,
+      });
+    }
+  } catch (error) {
+    console.error("Failed to embed logo in English cert:", error);
+  }
+
+  // ===== CONTENT =====
+  
+  // Main title - "CERTIFICAT" (large, bold-like, centered, underlined)
+  const titleText = content.title; // "CERTIFICAT"
+  const titleSize = 52;
+  const titleWidth = latinFont.widthOfTextAtSize(titleText, titleSize);
+  const titleX = (width - titleWidth) / 2;
+  const titleY = height - 160;
+  page.drawText(titleText, {
+    x: titleX,
+    y: titleY,
+    size: titleSize,
+    font: latinFont,
+    color: black,
+  });
+  
+  // Underline below title
+  page.drawLine({
+    start: { x: titleX - 10, y: titleY - 8 },
+    end: { x: titleX + titleWidth + 10, y: titleY - 8 },
+    thickness: 2,
+    color: black,
+  });
+
+  // Subtitle - "OF PARTICIPATION"
+  const subtitleText = content.subtitle; // "OF PARTICIPATION"
+  const subtitleSize = 20;
+  const subtitleWidth = latinFont.widthOfTextAtSize(subtitleText, subtitleSize);
+  page.drawText(subtitleText, {
+    x: (width - subtitleWidth) / 2,
+    y: height - 210,
+    size: subtitleSize,
+    font: latinFont,
+    color: black,
+  });
+
+  // "THIS CERTIFICATE WAS ACCREDITED TO"
+  const accreditedText = "THIS CERTIFICATE WAS ACCREDITED TO";
+  const accreditedSize = 11;
+  const accreditedWidth = latinFont.widthOfTextAtSize(accreditedText, accreditedSize);
+  page.drawText(accreditedText, {
+    x: (width - accreditedWidth) / 2,
+    y: height - 255,
+    size: accreditedSize,
+    font: latinFont,
+    color: gray,
+  });
+
+  // Participant name (use Arabic font for Arabic names, Latin for others)
+  const participantName = data.participantName;
+  // Try to detect if name contains Arabic characters
+  const hasArabic = /[\u0600-\u06FF]/.test(participantName);
+  const nameFont = hasArabic ? arabicFont : latinFont;
+  const displayName = hasArabic ? processArabicText(participantName) : participantName;
+  const nameSize = 26;
+  const nameWidth = nameFont.widthOfTextAtSize(displayName, nameSize);
+  page.drawText(displayName, {
+    x: (width - nameWidth) / 2,
+    y: height - 300,
+    size: nameSize,
+    font: nameFont,
+    color: black,
+  });
+
+  // Main text - "For active participation in a training course (15 hours) titled :"
+  const mainText = content.mainText;
+  const mainTextSize = 11;
+  const mainTextWidth = latinFont.widthOfTextAtSize(mainText, mainTextSize);
+  page.drawText(mainText, {
+    x: (width - mainTextWidth) / 2,
+    y: height - 340,
+    size: mainTextSize,
+    font: latinFont,
+    color: gray,
+  });
+
+  // Course title in guillemets - "«Educational Video Preparation Course using Artificial Intelligence»"
+  const courseTitle = `\u00ABEducational Video Preparation Course using Artificial Intelligence\u00BB`;
+  const courseTitleSize = 16;
+  const courseTitleWidth = latinFont.widthOfTextAtSize(courseTitle, courseTitleSize);
+  page.drawText(courseTitle, {
+    x: (width - courseTitleWidth) / 2,
+    y: height - 375,
+    size: courseTitleSize,
+    font: latinFont,
+    color: black,
+  });
+
+  // "The course covered the following topics:"
+  const topicsHeader = "The course covered the following topics:";
+  const topicsHeaderSize = 10;
+  page.drawText(topicsHeader, {
+    x: 60,
+    y: height - 415,
+    size: topicsHeaderSize,
+    font: latinFont,
+    color: gray,
+  });
+
+  // Draw axes/topics
+  let yPosition = height - 440;
+  for (const axis of content.axes) {
+    const maxWidth = width - 120;
+    const words = axis.split(' ');
+    let currentLine = '';
+    const lines: string[] = [];
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = latinFont.widthOfTextAtSize(testLine, 10);
+      if (testWidth > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    for (let i = 0; i < lines.length; i++) {
+      const lineText = i === 0 ? lines[i] : lines[i];
+      page.drawText(lineText, {
+        x: 60,
+        y: yPosition,
+        size: 10,
+        font: latinFont,
+        color: gray,
+      });
+      yPosition -= 14;
+    }
+    // Add a small dot separator between topics
+    if (axis !== content.axes[content.axes.length - 1]) {
+      yPosition -= 2;
+    }
+  }
+
+  // ===== FOOTER =====
+  
+  // "Leader Academy" - bottom left
+  const leaderText = "Leader Academy";
+  const leaderSize = 13;
+  page.drawText(leaderText, {
+    x: 80,
+    y: 60,
+    size: leaderSize,
+    font: latinFont,
+    color: black,
+  });
+
+  // Add stamp under Leader Academy if available
+  if (stampBytes) {
+    try {
+      const stampImage = await pdfDoc.embedPng(stampBytes);
+      const stampSize = 80;
+      page.drawImage(stampImage, {
+        x: 75,
+        y: 70,
+        width: stampSize,
+        height: stampSize * (stampImage.height / stampImage.width),
+        opacity: 0.6,
+      });
+    } catch (error) {
+      console.error("Failed to embed stamp:", error);
+    }
+  }
+
+  // Date - bottom right
+  const issueDate = data.completionDate;
+  const day = issueDate.getDate().toString().padStart(2, '0');
+  const month = (issueDate.getMonth() + 1).toString().padStart(2, '0');
+  const year = issueDate.getFullYear().toString();
+  const dateStr = `Date : ${day}/${month}/${year}`;
+  const dateSize = 12;
+  const dateWidth = latinFont.widthOfTextAtSize(dateStr, dateSize);
+  page.drawText(dateStr, {
+    x: width - 80 - dateWidth,
+    y: 60,
+    size: dateSize,
+    font: latinFont,
+    color: black,
+  });
 }

@@ -94,6 +94,32 @@ export const CERTIFICATE_CONTENTS: Record<string, CertificateContent> = {
     ]
   },
 
+  // 7. دورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي
+  'دورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي': {
+    language: 'en',
+    title: 'CERTIFICAT',
+    subtitle: 'OF PARTICIPATION',
+    mainText: 'For active participation in a training course (15 hours) titled :',
+    axes: [
+      'Understanding prompt engineering mechanisms to create effective and accurate educational content',
+      'Employing Artificial Intelligence tools in the creation of visual educational content',
+      'Principles and techniques for producing educational cartoon videos'
+    ]
+  },
+
+  // Variant with trailing space (as stored in DB)
+  'دورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي ': {
+    language: 'en',
+    title: 'CERTIFICAT',
+    subtitle: 'OF PARTICIPATION',
+    mainText: 'For active participation in a training course (15 hours) titled :',
+    axes: [
+      'Understanding prompt engineering mechanisms to create effective and accurate educational content',
+      'Employing Artificial Intelligence tools in the creation of visual educational content',
+      'Principles and techniques for producing educational cartoon videos'
+    ]
+  },
+
   // 6. الشهادة التجميعية - تأهيل أصحاب الشهادات العليا
   'تأهيل أصحاب الشهادات العليا': {
     language: 'ar',

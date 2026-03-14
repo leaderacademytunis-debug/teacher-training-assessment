@@ -2400,4 +2400,15 @@
 - [x] Main bundle reduced from 6,030KB to 253KB (96% reduction)
 - [x] node_modules reduced from 821MB to 783MB
 - [x] All 84 tests passing
+- [x] Save checkpoint (version: 9c43e5f0)
+
+## Feature: Link custom certificate template to Video AI course
+- [x] Analyze current certificate generation system and database schema
+- [x] Add English certificate content entry in certificateContent.ts (with trailing space variant)
+- [x] Implement drawEnglishCertificate function with geometric background, gold accents, Leader Academy logo
+- [x] Skip standard borders for English certificates (custom geometric design)
+- [x] Certificate matches official template: CERTIFICAT title, OF PARTICIPATION, guillemets course title, topics, Leader Academy footer, Date
+- [x] Link template to course ID 30001 ("دورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي")
+- [x] All 6 vitest tests passing for English certificate content
+- [x] Visual verification: generated PDF matches the official .doc template
 - [ ] Save checkpoint
