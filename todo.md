@@ -2389,3 +2389,15 @@
 - [x] Save checkpoint
 - [x] Cleaned orphaned node_modules (googleapis, tesseract.js-core, mermaid, jspdf, pdfjs-dist, sharp-libvips, napi-rs/canvas)
 - [x] Reduced project size from 1.3GB to ~670MB
+
+## Optimization: lucide-react tree-shaking & bundle code-splitting
+- [x] Analyzed all 114 files importing lucide-react - all use named imports (tree-shakeable)
+- [x] Verified lucide-react is already tree-shaken (only 15KB / 0.3% of 6MB bundle)
+- [x] Deduplicated lucide-react: removed duplicate v0.542.0 (43MB), kept v0.453.0 via pnpm override
+- [x] Converted 57 page imports to React.lazy() for code-splitting (only Home & NotFound eagerly loaded)
+- [x] Added Suspense with loading spinner for lazy-loaded pages
+- [x] Configured Vite manualChunks to split vendors: react, ui, charts, date, mermaid, shiki, katex, markdown, icons, forms, data, animation
+- [x] Main bundle reduced from 6,030KB to 253KB (96% reduction)
+- [x] node_modules reduced from 821MB to 783MB
+- [x] All 84 tests passing
+- [ ] Save checkpoint
