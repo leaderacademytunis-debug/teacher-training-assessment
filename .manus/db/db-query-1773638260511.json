@@ -1,0 +1,58 @@
+{
+  "query": "SELECT 'users' as tbl, COUNT(*) as cnt FROM users UNION ALL SELECT 'courses', COUNT(*) FROM courses UNION ALL SELECT 'enrollments', COUNT(*) FROM enrollments UNION ALL SELECT 'certificates', COUNT(*) FROM certificates UNION ALL SELECT 'marketplace_items', COUNT(*) FROM marketplace_items UNION ALL SELECT 'curriculum_plans', COUNT(*) FROM curriculum_plans UNION ALL SELECT 'saved_exams', COUNT(*) FROM saved_exams UNION ALL SELECT 'generated_images', COUNT(*) FROM generated_images UNION ALL SELECT 'conversations', COUNT(*) FROM conversations UNION ALL SELECT 'ai_activity_log', COUNT(*) FROM ai_activity_log UNION ALL SELECT 'batches', COUNT(*) FROM batches UNION ALL SELECT 'newsletter_subscribers', COUNT(*) FROM newsletter_subscribers",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT 'users' as tbl, COUNT(*) as cnt FROM users UNION ALL SELECT 'courses', COUNT(*) FROM courses UNION ALL SELECT 'enrollments', COUNT(*) FROM enrollments UNION ALL SELECT 'certificates', COUNT(*) FROM certificates UNION ALL SELECT 'marketplace_items', COUNT(*) FROM marketplace_items UNION ALL SELECT 'curriculum_plans', COUNT(*) FROM curriculum_plans UNION ALL SELECT 'saved_exams', COUNT(*) FROM saved_exams UNION ALL SELECT 'generated_images', COUNT(*) FROM generated_images UNION ALL SELECT 'conversations', COUNT(*) FROM conversations UNION ALL SELECT 'ai_activity_log', COUNT(*) FROM ai_activity_log UNION ALL SELECT 'batches', COUNT(*) FROM batches UNION ALL SELECT 'newsletter_subscribers', COUNT(*) FROM newsletter_subscribers",
+  "rows": [
+    {
+      "tbl": "marketplace_items",
+      "cnt": "46"
+    },
+    {
+      "tbl": "enrollments",
+      "cnt": "61"
+    },
+    {
+      "tbl": "users",
+      "cnt": "35"
+    },
+    {
+      "tbl": "certificates",
+      "cnt": "22"
+    },
+    {
+      "tbl": "courses",
+      "cnt": "10"
+    },
+    {
+      "tbl": "ai_activity_log",
+      "cnt": "0"
+    },
+    {
+      "tbl": "generated_images",
+      "cnt": "17"
+    },
+    {
+      "tbl": "saved_exams",
+      "cnt": "0"
+    },
+    {
+      "tbl": "curriculum_plans",
+      "cnt": "434"
+    },
+    {
+      "tbl": "newsletter_subscribers",
+      "cnt": "1"
+    },
+    {
+      "tbl": "batches",
+      "cnt": "5"
+    },
+    {
+      "tbl": "conversations",
+      "cnt": "52"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nmarketplace_items\t46\nenrollments\t61\nusers\t35\ncertificates\t22\ncourses\t10\nai_activity_log\t0\ngenerated_images\t17\nsaved_exams\t0\ncurriculum_plans\t434\nnewsletter_subscribers\t1\nbatches\t5\nconversations\t52\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

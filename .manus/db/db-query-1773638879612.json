@@ -1,0 +1,70 @@
+{
+  "query": "SELECT COUNT(*) as total, planTitle, subject, grade FROM curriculum_plans GROUP BY planTitle, subject, grade ORDER BY total DESC LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT COUNT(*) as total, planTitle, subject, grade FROM curriculum_plans GROUP BY planTitle, subject, grade ORDER BY total DESC LIMIT 10",
+  "rows": [
+    {
+      "total": "42",
+      "planTitle": "Another User Plan",
+      "subject": "اللغة العربية",
+      "grade": "السنة الأولى ابتدائي"
+    },
+    {
+      "total": "42",
+      "planTitle": "التوزيع السنوي - رياضيات سنة 5",
+      "subject": "الرياضيات",
+      "grade": "السنة الخامسة ابتدائي"
+    },
+    {
+      "total": "42",
+      "planTitle": "Test Delete Plan",
+      "subject": "اللغة العربية",
+      "grade": "السنة الأولى ابتدائي"
+    },
+    {
+      "total": "42",
+      "planTitle": "Test Coverage Plan",
+      "subject": "الإيقاظ العلمي",
+      "grade": "السنة الرابعة ابتدائي"
+    },
+    {
+      "total": "42",
+      "planTitle": "Test Textbook Plan",
+      "subject": "الرياضيات",
+      "grade": "السنة الرابعة ابتدائي"
+    },
+    {
+      "total": "42",
+      "planTitle": "Test Suggestions Plan",
+      "subject": "الإيقاظ العلمي",
+      "grade": "السنة السادسة ابتدائي"
+    },
+    {
+      "total": "42",
+      "planTitle": "Test Topics Plan",
+      "subject": "الرياضيات",
+      "grade": "السنة الخامسة ابتدائي"
+    },
+    {
+      "total": "42",
+      "planTitle": "Test Progress Plan",
+      "subject": "اللغة العربية",
+      "grade": "السنة الثالثة ابتدائي"
+    },
+    {
+      "total": "40",
+      "planTitle": "التوزيع السنوي الرسمي",
+      "subject": "الرياضيات",
+      "grade": "السنة الخامسة ابتدائي"
+    },
+    {
+      "total": "27",
+      "planTitle": "GPS Progress Test",
+      "subject": "العلوم",
+      "grade": "السنة الرابعة ابتدائي"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tplanTitle\tsubject\tgrade\n42\tAnother User Plan\tاللغة العربية\tالسنة الأولى ابتدائي\n42\tالتوزيع السنوي - رياضيات سنة 5\tالرياضيات\tالسنة الخامسة ابتدائي\n42\tTest Delete Plan\tاللغة العربية\tالسنة الأولى ابتدائي\n42\tTest Coverage Plan\tالإيقاظ العلمي\tالسنة الرابعة ابتدائي\n42\tTest Textbook Plan\tالرياضيات\tالسنة الرابعة ابتدائي\n42\tTest Suggestions Plan\tالإيقاظ العلمي\tالسنة السادسة ابتدائي\n42\tTest Topics Plan\tالرياضيات\tالسنة الخامسة ابتدائي\n42\tTest Progress Plan\tاللغة العربية\tالسنة الثالثة ابتدائي\n40\tالتوزيع السنوي الرسمي\tالرياضيات\tالسنة الخامسة ابتدائي\n27\tGPS Progress Test\tالعلوم\tالسنة الرابعة ابتدائي\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

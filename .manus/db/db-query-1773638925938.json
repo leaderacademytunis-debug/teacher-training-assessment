@@ -1,0 +1,22 @@
+{
+  "query": "SELECT 'curriculum_plans' as tbl, COUNT(*) as cnt FROM curriculum_plans UNION ALL SELECT 'gradingSessions', COUNT(*) FROM gradingSessions UNION ALL SELECT 'marketplace_items', COUNT(*) FROM marketplace_items",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT 'curriculum_plans' as tbl, COUNT(*) as cnt FROM curriculum_plans UNION ALL SELECT 'gradingSessions', COUNT(*) FROM gradingSessions UNION ALL SELECT 'marketplace_items', COUNT(*) FROM marketplace_items",
+  "rows": [
+    {
+      "tbl": "curriculum_plans",
+      "cnt": "0"
+    },
+    {
+      "tbl": "gradingSessions",
+      "cnt": "0"
+    },
+    {
+      "tbl": "marketplace_items",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\ncurriculum_plans\t0\ngradingSessions\t0\nmarketplace_items\t0\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

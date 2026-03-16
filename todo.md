@@ -2525,3 +2525,13 @@
 - [x] Verified build succeeds with no helmet references in output
 - [x] Verified dev server renders correctly
 - [ ] Republish to production and verify fix on leaderacademy.school
+
+## Database Cleanup for Production Launch
+- [x] Delete all duplicate curriculum plans (~40 copies of "التوزيع السنوي الرسمي") from curriculum_plans table
+- [x] Delete all related curriculum_topics and teacher_curriculum_progress for deleted plans
+- [x] Purge all grading sessions (gradingSessions) and related student submissions
+- [x] Delete all duplicate marketplace items (46 copies of "جذاذة درس الأعداد ذات 5 أرقام")
+- [x] Delete related marketplace_ratings and marketplace_downloads
+- [x] Verify curriculum-map page shows elegant empty state (already has: icon + "لا توجد مخططات بعد" + CTA buttons)
+- [x] Verify blind-grading page shows elegant empty state (already has: stats cards + "لا توجد جلسات تصحيح بعد" + CTA)
+- [x] Verify marketplace page shows elegant empty state (already has: icon + "كن أول من ينشر محتوى" + CTA)
