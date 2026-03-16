@@ -43,6 +43,7 @@ const NAV_LINKS: { href: string; labelAr: string; labelFr: string; labelEn: stri
   { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false, authOnly: false, icon: Megaphone },
   { href: "/about", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false, authOnly: false, icon: Info },
   { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false, authOnly: false, icon: DollarSign },
+  { href: "/contact", labelAr: "تواصل معنا", labelFr: "Contact", labelEn: "Contact", adminOnly: false, authOnly: false, icon: MessageSquare },
 ];
 
 // ===== CERTIFICATE LINKS =====

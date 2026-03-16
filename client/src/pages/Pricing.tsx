@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import {
   Check, Crown, Sparkles, BookOpen, GraduationCap, Package,
   Upload, ArrowRight, Shield, Zap, Star
@@ -132,32 +133,7 @@ export default function Pricing() {
         descriptionFr="Découvrez les plans d'abonnement Leader Academy. Commencez gratuitement ou choisissez le plan adapté à vos besoins."
         ogUrl="/pricing"
       />
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="container flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2 text-lg font-bold">
-            <Crown className="h-6 w-6 text-amber-500" />
-            Leader Academy
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/">
-              <Button variant="ghost" size="sm">الرئيسية</Button>
-            </Link>
-            {user ? (
-              <Link href="/assistant">
-                <Button size="sm" className="gap-1">
-                  <Sparkles className="h-4 w-4" />
-                  المساعد
-                </Button>
-              </Link>
-            ) : (
-              <Button size="sm" onClick={() => toast.info("يرجى تسجيل الدخول أولاً")}>
-                تسجيل الدخول
-              </Button>
-            )}
-          </nav>
-        </div>
-      </header>
+      <UnifiedNavbar />
 
       {/* Hero */}
       <section className="py-16 md:py-24 text-center">

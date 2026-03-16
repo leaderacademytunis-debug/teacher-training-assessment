@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import SEOHead from "@/components/SEOHead";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -455,17 +456,11 @@ export default function Marketplace() {
         descriptionFr="Découvrez et partagez les meilleures ressources éducatives tunisiennes. Fiches, examens et ressources pédagogiques."
         ogUrl="/marketplace"
       />
+      <UnifiedNavbar />
+
       {/* Hero Section */}
       <div className="bg-gradient-to-l from-amber-600 via-orange-500 to-amber-700 text-white py-12">
         <div className="container max-w-6xl mx-auto px-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Link href="/">
-              <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10 gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                الرئيسية
-              </Button>
-            </Link>
-          </div>
           <div className="flex items-center gap-4 mb-4">
             <div className="bg-white/20 rounded-2xl p-3">
               <Store className="h-10 w-10" />

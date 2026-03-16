@@ -958,25 +958,43 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                name: "الأستاذ محمد البوعزيزي",
-                role: "مدرس رياضيات — المرحلة الإعدادية، سوسة",
-                text: "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية!",
+                nameAr: "الأستاذ محمد البوعزيزي",
+                nameFr: "Mohamed Bouazizi",
+                nameEn: "Mohamed Bouazizi",
+                roleAr: "مدرس رياضيات — المرحلة الإعدادية، سوسة",
+                roleFr: "Enseignant de mathématiques — Collège, Sousse",
+                roleEn: "Math Teacher — Middle School, Sousse",
+                textAr: "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية!",
+                textFr: "Je passais deux heures à préparer une seule fiche. Avec EDUGPT, je fais le même travail en 5 minutes avec une qualité supérieure. C'est une vraie révolution !",
+                textEn: "I used to spend two hours preparing a single lesson plan. With EDUGPT, I do the same work in 5 minutes with superior quality. This is a real revolution!",
                 rating: 5,
                 avatar: "م",
                 color: "#1A237E",
               },
               {
-                name: "الأستاذة مريم العامري",
-                role: "مدرسة علوم — المرحلة الابتدائية، تونس"
-                , text: "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له. Leader Academy حوّلت طريقة تدريسي بالكامل.",
+                nameAr: "الأستاذة مريم العامري",
+                nameFr: "Mariem Amri",
+                nameEn: "Mariem Amri",
+                roleAr: "مدرسة علوم — المرحلة الابتدائية، تونس",
+                roleFr: "Enseignante de sciences — Primaire, Tunis",
+                roleEn: "Science Teacher — Primary School, Tunis",
+                textAr: "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له. Leader Academy حوّلت طريقة تدريسي بالكامل.",
+                textFr: "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision et offrir un soutien personnalisé. Leader Academy a transformé mon enseignement.",
+                textEn: "Instant assessment changed how I track my students. I can now know each student's level precisely and provide personalized support. Leader Academy completely transformed my teaching.",
                 rating: 5,
                 avatar: "م",
                 color: "#FF6D00",
               },
               {
-                name: "الأستاذ أحمد الطرابلسي",
-                role: "مدرس لغة عربية — الثانوية، صفاقس",
-                text: "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية. أنصح بها كل معلم تونسي.",
+                nameAr: "الأستاذ أحمد الطرابلسي",
+                nameFr: "Ahmed Trabelsi",
+                nameEn: "Ahmed Trabelsi",
+                roleAr: "مدرس لغة عربية — الثانوية، صفاقس",
+                roleFr: "Enseignant d'arabe — Lycée, Sfax",
+                roleEn: "Arabic Teacher — High School, Sfax",
+                textAr: "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية. أنصح بها كل معلم تونسي.",
+                textFr: "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique, les formateurs sont experts, et les outils sont révolutionnaires. Je la recommande à tout enseignant tunisien.",
+                textEn: "The AI integration in teaching course was a real turning point. The content is practical, the trainers are experts, and the tools are revolutionary. I recommend it to every Tunisian teacher.",
                 rating: 5,
                 avatar: "أ",
                 color: "#1565C0",
@@ -998,7 +1016,7 @@ export default function Home() {
 
                 {/* Text */}
                 <p className="text-gray-700 leading-relaxed mb-6 text-sm">
-                  “{testimonial.text}”
+                  “{t(testimonial.textAr, testimonial.textFr, testimonial.textEn)}”
                 </p>
 
                 {/* Author */}
@@ -1007,8 +1025,8 @@ export default function Home() {
                     {testimonial.avatar}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">{testimonial.name}</p>
-                    <p className="text-gray-500 text-xs">{testimonial.role}</p>
+                    <p className="font-bold text-gray-900 text-sm">{t(testimonial.nameAr, testimonial.nameFr, testimonial.nameEn)}</p>
+                    <p className="text-gray-500 text-xs">{t(testimonial.roleAr, testimonial.roleFr, testimonial.roleEn)}</p>
                   </div>
                 </div>
               </div>

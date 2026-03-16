@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import { Link, useLocation } from "wouter";
+import UnifiedNavbar from "@/components/UnifiedNavbar";
 import {
   Wand2, Copy, Download, ArrowRight, Loader2, BookOpen,
   GraduationCap, Sparkles, CheckCircle, FileText, Brain,
@@ -211,34 +212,7 @@ export default function EduGPT() {
         ogUrl="/edugpt"
       />
 
-      {/* ===== TOP NAV ===== */}
-      <header className="sticky top-0 z-50 shadow-sm" style={{ background: "#1A237E" }}>
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/">
-            <button className="flex items-center gap-2 text-white hover:text-blue-200 transition-colors">
-              <ChevronLeft className="w-4 h-4" />
-              <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png"
-                alt="Leader Academy"
-                className="h-7 w-auto"
-              />
-              <span className="text-sm font-medium hidden sm:inline">Leader Academy</span>
-            </button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium" style={{ background: "rgba(255,109,0,0.2)", color: "#FFB74D", border: "1px solid rgba(255,109,0,0.3)" }}>
-              <Brain className="w-3.5 h-3.5" />
-              <span>EDUGPT</span>
-            </div>
-            <Link href="/assistant">
-              <Button size="sm" variant="ghost" className="text-blue-200 hover:text-white hover:bg-white/10 h-8 text-xs">
-                <BookOpen className="w-3.5 h-3.5 ml-1" />
-                المساعد الكامل
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <UnifiedNavbar />
 
       {/* ===== PAGE HEADER ===== */}
       <div style={{ background: "linear-gradient(135deg, #1A237E 0%, #1565C0 100%)" }} className="pb-16 pt-10">
