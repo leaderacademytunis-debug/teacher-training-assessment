@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import Redirect from "./components/Redirect";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
@@ -68,6 +69,7 @@ const JoinBatch = lazy(() => import("@/pages/JoinBatch"));
 const BatchComparison = lazy(() => import("@/pages/BatchComparison"));
 const HandwritingAnalyzer = lazy(() => import("@/pages/HandwritingAnalyzer"));
 const VideoEvaluator = lazy(() => import("@/pages/VideoEvaluator"));
+const About = lazy(() => import("@/pages/About"));
 
 function PageLoader() {
   return (
@@ -139,6 +141,11 @@ function Router() {
         <Route path="/admin/batch-comparison" component={BatchComparison} />
         <Route path="/handwriting-analyzer" component={HandwritingAnalyzer} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
+        <Route path="/about" component={About} />
+        {/* Redirects for broken/legacy links */}
+        <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
+        <Route path="/career"><Redirect to="/jobs" /></Route>
+        <Route path="/management"><Redirect to="/managerial-dashboard" /></Route>
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

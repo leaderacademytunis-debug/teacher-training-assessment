@@ -1,0 +1,360 @@
+{
+  "query": "SELECT id, title, description, contributorName, status FROM marketplace_items WHERE contributorName LIKE '%Test%' OR title LIKE '%اختبار%' OR description LIKE '%محتوى للاختبار%' OR contributorName LIKE '%test%' LIMIT 50;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, title, description, contributorName, status FROM marketplace_items WHERE contributorName LIKE '%Test%' OR title LIKE '%اختبار%' OR description LIKE '%محتوى للاختبار%' OR contributorName LIKE '%test%' LIMIT 50;",
+  "rows": [
+    {
+      "id": "2",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "3",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "5",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "7",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "8",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "10",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "12",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "13",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "15",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "17",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "18",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "20",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "22",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "23",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "25",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "27",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "28",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "30",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "32",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "33",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "35",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "37",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "38",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "40",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "42",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "43",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "45",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "47",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "48",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "50",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "52",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "53",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "55",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "57",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "58",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "60",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "62",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "63",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "65",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "67",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "68",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "70",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "72",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "73",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "75",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "30002",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "30003",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "30005",
+      "title": "محتوى محمي",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "90002",
+      "title": "محتوى للاختبار",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "90003",
+      "title": "محتوى للتحميل",
+      "description": "NULL",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tdescription\tcontributorName\tstatus\n2\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n3\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n5\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n7\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n8\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n10\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n12\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n13\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n15\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n17\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n18\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n20\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n22\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n23\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n25\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n27\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n28\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n30\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n32\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n33\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n35\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n37\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n38\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n40\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n42\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n43\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n45\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n47\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n48\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n50\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n52\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n53\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n55\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n57\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n58\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n60\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n62\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n63\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n65\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n67\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n68\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n70\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n72\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n73\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n75\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n30002\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n30003\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n30005\tمحتوى محمي\tNULL\tTest Teacher\tapproved\n90002\tمحتوى للاختبار\tNULL\tTest Teacher\tapproved\n90003\tمحتوى للتحميل\tNULL\tTest Teacher\tapproved\n",
+  "stderr": "",
+  "execution_time_ms": 102
+}

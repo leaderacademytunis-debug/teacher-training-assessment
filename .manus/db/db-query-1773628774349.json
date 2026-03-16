@@ -1,0 +1,130 @@
+{
+  "query": "SELECT id, title, contributorName, status FROM marketplace_items WHERE contributorName LIKE '%Test Teacher%' OR contributorName LIKE '%test%' LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, title, contributorName, status FROM marketplace_items WHERE contributorName LIKE '%Test Teacher%' OR contributorName LIKE '%test%' LIMIT 20;",
+  "rows": [
+    {
+      "id": "2",
+      "title": "محتوى للاختبار",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "3",
+      "title": "محتوى للتحميل",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "5",
+      "title": "محتوى محمي",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "7",
+      "title": "محتوى للاختبار",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "8",
+      "title": "محتوى للتحميل",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "10",
+      "title": "محتوى محمي",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "12",
+      "title": "محتوى للاختبار",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "13",
+      "title": "محتوى للتحميل",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "15",
+      "title": "محتوى محمي",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "17",
+      "title": "محتوى للاختبار",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "18",
+      "title": "محتوى للتحميل",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "20",
+      "title": "محتوى محمي",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "22",
+      "title": "محتوى للاختبار",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "23",
+      "title": "محتوى للتحميل",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "25",
+      "title": "محتوى محمي",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "27",
+      "title": "محتوى للاختبار",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "28",
+      "title": "محتوى للتحميل",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "30",
+      "title": "محتوى محمي",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "32",
+      "title": "محتوى للاختبار",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    },
+    {
+      "id": "33",
+      "title": "محتوى للتحميل",
+      "contributorName": "Test Teacher",
+      "status": "approved"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\tcontributorName\tstatus\n2\tمحتوى للاختبار\tTest Teacher\tapproved\n3\tمحتوى للتحميل\tTest Teacher\tapproved\n5\tمحتوى محمي\tTest Teacher\tapproved\n7\tمحتوى للاختبار\tTest Teacher\tapproved\n8\tمحتوى للتحميل\tTest Teacher\tapproved\n10\tمحتوى محمي\tTest Teacher\tapproved\n12\tمحتوى للاختبار\tTest Teacher\tapproved\n13\tمحتوى للتحميل\tTest Teacher\tapproved\n15\tمحتوى محمي\tTest Teacher\tapproved\n17\tمحتوى للاختبار\tTest Teacher\tapproved\n18\tمحتوى للتحميل\tTest Teacher\tapproved\n20\tمحتوى محمي\tTest Teacher\tapproved\n22\tمحتوى للاختبار\tTest Teacher\tapproved\n23\tمحتوى للتحميل\tTest Teacher\tapproved\n25\tمحتوى محمي\tTest Teacher\tapproved\n27\tمحتوى للاختبار\tTest Teacher\tapproved\n28\tمحتوى للتحميل\tTest Teacher\tapproved\n30\tمحتوى محمي\tTest Teacher\tapproved\n32\tمحتوى للاختبار\tTest Teacher\tapproved\n33\tمحتوى للتحميل\tTest Teacher\tapproved\n",
+  "stderr": "",
+  "execution_time_ms": 65
+}

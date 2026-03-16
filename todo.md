@@ -2439,4 +2439,13 @@
 - [x] Build succeeds: main bundle 1.86MB, 532 lazy-loaded chunks
 - [x] All 20 tests passing
 - [x] Dev server running correctly
-- [ ] Save checkpoint and redeploy
+- [x] Save checkpoint (version: 3ccc8718) - needs re-publish
+
+## Fix Broken Links, 404 Page, About Page & DB Cleanup
+- [x] Add redirect from /certificates to /my-certificates
+- [x] Add redirect from /career to /jobs
+- [x] Add redirect from /management to /managerial-dashboard
+- [x] Create About page in Arabic about Leader Academy vision
+- [x] Create creative 404 NotFound page in Arabic with educational theme
+- [x] Wire NotFound component to catch-all route (*)
+- [x] Clean up test data from marketplace (Test Teacher / محتوى للاختبار) — deleted 84 items + 34 downloads + 1 rating

@@ -1,0 +1,22 @@
+{
+  "query": "SELECT COUNT(*) as total FROM marketplace_items; SELECT DISTINCT contributorName, COUNT(*) as cnt FROM marketplace_items GROUP BY contributorName;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT COUNT(*) as total FROM marketplace_items; SELECT DISTINCT contributorName, COUNT(*) as cnt FROM marketplace_items GROUP BY contributorName;",
+  "rows": [
+    {
+      "total": "30"
+    },
+    {
+      "total": "contributorName\tcnt"
+    },
+    {
+      "total": "أحمد المعلم\t28"
+    },
+    {
+      "total": "Ali Saadallah\t2"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n30\ncontributorName\tcnt\nأحمد المعلم\t28\nAli Saadallah\t2\n",
+  "stderr": "",
+  "execution_time_ms": 73
+}
