@@ -206,7 +206,7 @@ export default function UnifiedNavbar() {
           <nav className="hidden lg:flex items-center gap-1">
             {/* EDUGPT Dropdown */}
             <div className="relative group">
-              <Link href="/assistant">
+              <Link href="/teacher-tools">
                 <button className="flex items-center gap-1.5 text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.4)" }}>
                   <Sparkles className="w-4 h-4 text-orange-300" />
                   {t("أدوات EDUGPT", "Outils EDUGPT", "EDUGPT Tools")}
@@ -438,6 +438,15 @@ export default function UnifiedNavbar() {
                 <Sparkles className="w-4 h-4" />
                 {t("أدوات EDUGPT", "Outils EDUGPT", "EDUGPT Tools")}
               </p>
+              <Link href="/teacher-tools">
+                <button
+                  className="flex items-center gap-3 w-full text-right text-white bg-orange-500/20 hover:bg-orange-500/30 px-3 py-2.5 rounded-lg text-sm font-bold mb-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Sparkles className="w-4 h-4 text-orange-300" />
+                  {t("عرض جميع الأدوات", "Voir tous les outils", "View all tools")}
+                </button>
+              </Link>
               <div className="space-y-1 mr-4">
                 {AI_TOOLS.map((tool) => {
                   const IconComp = tool.icon;

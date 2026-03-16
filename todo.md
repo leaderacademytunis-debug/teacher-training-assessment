@@ -2535,3 +2535,11 @@
 - [x] Verify curriculum-map page shows elegant empty state (already has: icon + "لا توجد مخططات بعد" + CTA buttons)
 - [x] Verify blind-grading page shows elegant empty state (already has: stats cards + "لا توجد جلسات تصحيح بعد" + CTA)
 - [x] Verify marketplace page shows elegant empty state (already has: icon + "كن أول من ينشر محتوى" + CTA)
+
+## Redesign Teacher Tools as Internal App Store
+- [x] Redesign /teacher-tools page as App Store with categorized AI tool cards
+- [x] Add category sections: أدوات التحضير, أدوات التقييم, أدوات الإبداع + أدوات متخصصة
+- [x] Add "جديد" badge on exclusive tools (Drama Engine, Blind Grading)
+- [x] Update navbar EDUGPT Tools link to point to /teacher-tools (desktop + mobile)
+- [x] Verify all tool cards link to correct routes (11 tools total)
+- [x] Visual verification of new design
