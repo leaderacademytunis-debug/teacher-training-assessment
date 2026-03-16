@@ -184,6 +184,17 @@ function markdownToHtml(md: string): string {
  * Produces a professional, print-ready document without chat messages.
  */
 export async function exportCleanNotePDF(data: ConversationExportData): Promise<Buffer> {
+  // Generate QR code as data URL
+  let qrDataUrl = "";
+  try {
+    const QRCode = await import("qrcode");
+    qrDataUrl = await QRCode.default.toDataURL("https://leaderacademy.school", {
+      width: 80,
+      margin: 1,
+      color: { dark: "#1e3a5f", light: "#ffffff" },
+    });
+  } catch { /* QR generation failed, skip */ }
+
   const lessonContent = extractLastLessonPlan(data.messages);
   const bodyHtml = markdownToHtml(lessonContent);
 
@@ -192,13 +203,20 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
   const lang = isRTL ? "ar" : data.language === "fr" ? "fr" : "en";
 
   const institutionLabel = isRTL ? "ليدر أكاديمي — منصة تأهيل المدرسين" : "Leader Academy — Plateforme de Formation des Enseignants";
+  const headerTitle = isRTL ? "المساعد البيداغوجي الذكي — نسخة تونس 2026" : "L'Assistant Pédagogique Intelligent — Édition Tunisie 2026";
   const dateLabel = isRTL ? "تاريخ الإعداد" : "Date de préparation";
   const subjectLabel = isRTL ? "المادة" : "Matière";
   const levelLabel = isRTL ? "المستوى" : "Niveau";
   const schoolLabel = isRTL ? "المؤسسة" : "École";
   const teacherLabel = isRTL ? "المعلم" : "Enseignant(e)";
+  const footerText = isRTL
+    ? "تم التوليد بواسطة الذكاء الاصطناعي — Leader Academy"
+    : "Généré par Intelligence Artificielle — Leader Academy";
 
-  // Resolve display date: prefer exportDate field, fallback to createdAt
+  // Tunisia flag SVG inline (small)
+  const tunisiaFlag = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" width="22" height="15" style="vertical-align: middle;"><rect width="30" height="20" fill="#E70013"/><circle cx="15" cy="10" r="6" fill="#fff"/><circle cx="16" cy="10" r="4.8" fill="#E70013"/><polygon points="14,6.5 15.2,9.2 18,9.5 15.8,11.3 16.5,14 14,12.2 11.5,14 12.2,11.3 10,9.5 12.8,9.2" fill="#E70013"/></svg>`;
+
+  // Resolve display date
   const displayDate = data.exportDate
     ? new Date(data.exportDate).toLocaleDateString(isRTL ? "ar-TN" : "fr-TN")
     : data.createdAt.toLocaleDateString(isRTL ? "ar-TN" : "fr-TN");
@@ -215,7 +233,7 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
           font-family: ${isRTL ? "'Cairo', 'Amiri', Arial" : "'Arial', sans-serif"};
           direction: ${dir};
           text-align: ${isRTL ? "right" : "left"};
-          padding: 50px 55px;
+          padding: 0;
           max-width: 860px;
           margin: 0 auto;
           color: #1a1a2e;
@@ -223,39 +241,84 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
           line-height: 1.75;
         }
 
-        /* ── Header ── */
-        .header {
+        /* ── Smart Header ── */
+        .smart-header {
+          background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 50%, #3b82f6 100%);
+          color: white;
+          padding: 16px 30px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border-bottom: 3px solid #1e3a5f;
-          padding-bottom: 18px;
-          margin-bottom: 28px;
-          gap: 12px;
+          margin-bottom: 8px;
         }
-        .header-left {
+        .smart-header-right {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 14px;
         }
-        .school-logo {
-          height: 64px;
-          width: auto;
-          max-width: 120px;
+        .smart-header-logo-space {
+          width: 60px;
+          height: 60px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.15);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+        }
+        .smart-header-logo-space img {
+          max-width: 56px;
+          max-height: 56px;
           object-fit: contain;
         }
-        .header-institution {
-          font-size: 11px;
-          color: #555;
-          font-weight: 600;
+        .smart-header-title {
+          font-size: 14px;
+          font-weight: 700;
           letter-spacing: 0.3px;
         }
-        .header-meta {
-          font-size: 11px;
-          color: #555;
-          text-align: ${isRTL ? "left" : "right"};
+        .smart-header-subtitle {
+          font-size: 10px;
+          opacity: 0.85;
+          margin-top: 3px;
         }
-        .header-meta span { display: block; }
+        .smart-header-qr {
+          background: white;
+          border-radius: 6px;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .smart-header-qr img {
+          width: 58px;
+          height: 58px;
+        }
+
+        /* ── Meta info bar ── */
+        .meta-bar {
+          background: #f0f4ff;
+          border-bottom: 2px solid #c7d2fe;
+          padding: 10px 30px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
+          font-size: 11px;
+          color: #374151;
+          margin-bottom: 24px;
+        }
+        .meta-bar .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .meta-bar .meta-item strong {
+          color: #1e3a5f;
+        }
+
+        /* ── Body padding ── */
+        .body-content {
+          padding: 0 30px;
+        }
 
         /* ── Document title ── */
         .doc-title {
@@ -263,7 +326,7 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
           font-weight: 700;
           color: #1e3a5f;
           text-align: center;
-          margin-bottom: 32px;
+          margin-bottom: 28px;
           padding: 14px 20px;
           background: linear-gradient(135deg, #eef2ff 0%, #e0f2fe 100%);
           border-radius: 8px;
@@ -303,40 +366,68 @@ export async function exportCleanNotePDF(data: ConversationExportData): Promise<
         }
         table.md-table tr:nth-child(even) td { background-color: #f8fafc; }
 
-        /* ── Footer ── */
-        .footer {
+        /* ── Smart Footer ── */
+        .smart-footer {
           margin-top: 40px;
-          padding-top: 14px;
-          border-top: 1px solid #d1d5db;
+          padding: 14px 30px;
+          border-top: 2px solid #1e3a5f;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           font-size: 10px;
-          color: #9ca3af;
-          text-align: center;
+          color: #6b7280;
+          background: #f8fafc;
+        }
+        .smart-footer-text {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .smart-footer-link {
+          color: #2563eb;
+          text-decoration: none;
+          font-weight: 600;
         }
       </style>
     </head>
     <body>
-      <div class="header">
-        <div class="header-left">
-          ${data.schoolLogoUrl ? `<img src="${data.schoolLogoUrl}" alt="school logo" class="school-logo" />` : ""}
-          <div class="header-institution">${institutionLabel}</div>
+      <!-- Smart Header -->
+      <div class="smart-header">
+        <div class="smart-header-right">
+          <div class="smart-header-logo-space">
+            ${data.schoolLogoUrl ? `<img src="${data.schoolLogoUrl}" alt="logo" />` : `<span style="font-size:28px;">🎓</span>`}
+          </div>
+          <div>
+            <div class="smart-header-title">${headerTitle}</div>
+            <div class="smart-header-subtitle">${institutionLabel}</div>
+          </div>
         </div>
-        <div class="header-meta">
-          ${data.schoolName ? `<span>${schoolLabel}: <strong>${data.schoolName}</strong></span>` : ""}
-          ${data.teacherName ? `<span>${teacherLabel}: <strong>${data.teacherName}</strong></span>` : ""}
-          ${data.subject ? `<span>${subjectLabel}: <strong>${data.subject}</strong></span>` : ""}
-          ${data.level ? `<span>${levelLabel}: <strong>${data.level}</strong></span>` : ""}
-          <span>${dateLabel}: ${displayDate}</span>
+        ${qrDataUrl ? `<div class="smart-header-qr"><img src="${qrDataUrl}" alt="QR" /></div>` : ""}
+      </div>
+
+      <!-- Meta info bar -->
+      <div class="meta-bar">
+        ${data.schoolName ? `<div class="meta-item"><span>🏫</span> <strong>${data.schoolName}</strong></div>` : ""}
+        ${data.teacherName ? `<div class="meta-item"><span>👨‍🏫</span> <strong>${data.teacherName}</strong></div>` : ""}
+        ${data.subject ? `<div class="meta-item"><span>📚</span> ${subjectLabel}: <strong>${data.subject}</strong></div>` : ""}
+        ${data.level ? `<div class="meta-item"><span>📊</span> ${levelLabel}: <strong>${data.level}</strong></div>` : ""}
+        <div class="meta-item"><span>📅</span> ${dateLabel}: <strong>${displayDate}</strong></div>
+      </div>
+
+      <div class="body-content">
+        <div class="doc-title">${data.title}</div>
+        <div class="content">
+          ${bodyHtml}
         </div>
       </div>
 
-      <div class="doc-title">${data.title}</div>
-
-      <div class="content">
-        ${bodyHtml}
-      </div>
-
-      <div class="footer">
-        ${institutionLabel} &nbsp;|&nbsp; leaderacademy.school
+      <!-- Smart Footer -->
+      <div class="smart-footer">
+        <div class="smart-footer-text">
+          ${tunisiaFlag}
+          <span>${footerText}</span>
+        </div>
+        <a href="https://leaderacademy.school" class="smart-footer-link">leaderacademy.school</a>
       </div>
     </body>
     </html>

@@ -14,8 +14,9 @@ import { Link } from "wouter";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import {
   Check, Crown, Sparkles, BookOpen, GraduationCap, Package,
-  Upload, ArrowRight, Shield, Zap, Star
+  Upload, ArrowRight, Shield, Zap, Star, Award
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
   edugpt_pro: <Sparkles className="h-6 w-6" />,
@@ -40,8 +41,15 @@ const COLOR_MAP: Record<string, { bg: string; border: string; text: string; grad
   indigo: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-600", gradient: "from-indigo-500 to-indigo-600" },
 };
 
+// Old prices for strikethrough display (in millimes)
+const OLD_PRICES: Record<string, number> = {
+  full_bundle: 750000, // was 750 TND, now 690 TND
+  edugpt_pro: 199000, // was 199 TND, now 149 TND
+};
+
 export default function Pricing() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { data: plans, isLoading } = trpc.adminDashboard.listPricingPlans.useQuery();
   const { data: permissions } = trpc.adminDashboard.getMyPermissions.useQuery(undefined, { enabled: !!user });
   const [showPayment, setShowPayment] = useState(false);
@@ -170,20 +178,36 @@ export default function Pricing() {
                 let featuresList: string[] = [];
                 try { featuresList = plan.features ? JSON.parse(plan.features) : []; } catch { featuresList = []; }
 
+                const isEdugptPro = plan.serviceKey === "edugpt_pro" && plan.id === 1;
+                const oldPrice = OLD_PRICES[plan.serviceKey];
+                const smartBadgeText = t("الخيار الأذكى", "Le choix intelligent", "Smart Choice");
+
                 return (
                   <Card
                     key={plan.id}
                     className={`relative overflow-hidden transition-all hover:shadow-lg ${
-                      plan.isPopular ? `border-2 ${colors.border} shadow-md scale-[1.02]` : 'border'
+                      isEdugptPro
+                        ? 'border-2 border-blue-400 shadow-xl scale-[1.04] ring-2 ring-blue-200'
+                        : plan.isPopular ? `border-2 ${colors.border} shadow-md scale-[1.02]` : 'border'
                     }`}
                   >
                     {/* Top gradient bar */}
-                    <div className={`h-1.5 bg-gradient-to-l ${colors.gradient}`} />
+                    <div className={`h-1.5 bg-gradient-to-l ${isEdugptPro ? 'from-blue-500 via-indigo-500 to-purple-500' : colors.gradient}`} />
 
-                    {plan.isPopular && (
+                    {/* Smart Choice badge for EDUGPT PRO */}
+                    {isEdugptPro && (
+                      <div className="absolute top-4 left-4 z-10">
+                        <Badge className="bg-gradient-to-l from-blue-600 via-indigo-600 to-purple-600 text-white border-0 shadow-lg px-3 py-1 text-xs font-bold gap-1">
+                          <Award className="h-3.5 w-3.5" />
+                          {smartBadgeText}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {plan.isPopular && !isEdugptPro && (
                       <div className={`absolute top-5 left-5`}>
                         <Badge className={`bg-gradient-to-l ${colors.gradient} text-white border-0`}>
-                          {plan.badgeText || "الأكثر طلباً"}
+                          {plan.badgeText || t("الأكثر طلباً", "Le plus demandé", "Most Popular")}
                         </Badge>
                       </div>
                     )}
@@ -199,9 +223,17 @@ export default function Pricing() {
                     </CardHeader>
 
                     <CardContent className="space-y-5">
-                      {/* Price */}
+                      {/* Price with strikethrough old price */}
                       <div>
-                        <span className="text-4xl font-bold">{formatPrice(plan.price)}</span>
+                        {oldPrice && oldPrice > plan.price && (
+                          <div className="mb-1">
+                            <span className="text-lg text-muted-foreground line-through">{formatPrice(oldPrice)} {plan.currency}</span>
+                            <Badge variant="destructive" className="mr-2 text-xs">
+                              -{Math.round(((oldPrice - plan.price) / oldPrice) * 100)}%
+                            </Badge>
+                          </div>
+                        )}
+                        <span className={`text-4xl font-bold ${isEdugptPro ? 'text-blue-600' : ''}`}>{formatPrice(plan.price)}</span>
                         <span className="text-sm text-muted-foreground mr-1">
                           {plan.currency} / {BILLING_LABELS[plan.billingPeriod]}
                         </span>

@@ -27,8 +27,10 @@ import {
 import {
   Search, Star, Download, Eye, TrendingUp, BookOpen, FileText,
   GraduationCap, Filter, ArrowLeft, Award, User, ChevronDown,
-  Store, Sparkles, Clock, ThumbsUp, X, ExternalLink, MessageCircle, Send, Loader2
+  Store, Sparkles, Clock, ThumbsUp, X, ExternalLink, MessageCircle, Send, Loader2,
+  Trophy, Crown, Medal, Flame
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Content type labels
 const CONTENT_TYPES: Record<string, { label: string; color: string }> = {
@@ -66,8 +68,27 @@ const SORT_OPTIONS = [
   { value: "downloads", label: "الأكثر تحميلاً" },
 ];
 
+// Badge definitions for gamification
+const GAMIFICATION_BADGES: Record<string, { labelAr: string; labelFr: string; labelEn: string; icon: React.ReactNode; color: string }> = {
+  creative_teacher: {
+    labelAr: "معلم مبدع",
+    labelFr: "Enseignant créatif",
+    labelEn: "Creative Teacher",
+    icon: <Sparkles className="h-3 w-3" />,
+    color: "bg-purple-100 text-purple-700 border-purple-200",
+  },
+  subject_expert: {
+    labelAr: "خبير المادة",
+    labelFr: "Expert en matière",
+    labelEn: "Subject Expert",
+    icon: <Award className="h-3 w-3" />,
+    color: "bg-amber-100 text-amber-700 border-amber-200",
+  },
+};
+
 export default function Marketplace() {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContentType, setSelectedContentType] = useState<string>("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
@@ -95,6 +116,7 @@ export default function Marketplace() {
 
   const { data: listData, isLoading: listLoading } = trpc.marketplace.list.useQuery(filters);
   const { data: stats } = trpc.marketplace.getStats.useQuery();
+  const { data: topContributors } = trpc.marketplace.getTopContributors.useQuery();
   const { data: itemDetail } = trpc.marketplace.getById.useQuery(
     { id: selectedItem! },
     { enabled: !!selectedItem }
@@ -592,6 +614,91 @@ export default function Marketplace() {
         </div>
       </div>
 
+      {/* Top Contributors Section */}
+      {topContributors && topContributors.length > 0 && (
+        <div className="container max-w-6xl mx-auto px-4 pt-8">
+          <div className="bg-gradient-to-l from-amber-50 via-orange-50 to-yellow-50 rounded-2xl border border-amber-200 p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="bg-amber-100 rounded-xl p-2.5">
+                <Trophy className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-amber-900">
+                  {t("أفضل المعلمين هذا الشهر", "Meilleurs enseignants du mois", "Top Contributors This Month")}
+                </h2>
+                <p className="text-sm text-amber-600">
+                  {t("المعلمون الأكثر مساهمة وتأثيراً في المنصة", "Les enseignants les plus actifs et influents", "Most active and impactful teachers on the platform")}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {topContributors.slice(0, 5).map((contrib, idx) => (
+                <div
+                  key={contrib.userId}
+                  className={`relative bg-white rounded-xl p-4 border transition-all hover:shadow-md ${
+                    idx === 0 ? 'border-amber-300 shadow-md ring-1 ring-amber-200' :
+                    idx === 1 ? 'border-gray-300' :
+                    idx === 2 ? 'border-orange-200' : 'border-gray-200'
+                  }`}
+                >
+                  {/* Rank badge */}
+                  <div className={`absolute -top-2.5 -right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                    idx === 0 ? 'bg-amber-500 text-white' :
+                    idx === 1 ? 'bg-gray-400 text-white' :
+                    idx === 2 ? 'bg-orange-400 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {idx === 0 ? <Crown className="h-3.5 w-3.5" /> : idx + 1}
+                  </div>
+
+                  <div className="text-center">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                      idx === 0 ? 'bg-gradient-to-br from-amber-400 to-orange-500' :
+                      'bg-gradient-to-br from-blue-400 to-indigo-500'
+                    }`}>
+                      <span className="text-lg font-bold text-white">{contrib.name.charAt(0)}</span>
+                    </div>
+                    <h3 className="font-bold text-sm truncate">{contrib.name}</h3>
+                    {contrib.school && <p className="text-xs text-muted-foreground truncate">{contrib.school}</p>}
+
+                    {/* Badges */}
+                    <div className="flex flex-wrap justify-center gap-1 mt-2">
+                      {contrib.badges.map(badge => {
+                        const b = GAMIFICATION_BADGES[badge];
+                        if (!b) return null;
+                        return (
+                          <Badge key={badge} variant="outline" className={`text-[10px] gap-0.5 px-1.5 py-0 ${b.color}`}>
+                            {b.icon}
+                            {t(b.labelAr, b.labelFr, b.labelEn)}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-center gap-3 mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-0.5">
+                        <FileText className="h-3 w-3" />{contrib.totalItems}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <Star className="h-3 w-3 text-amber-500 fill-amber-500" />{contrib.avgRating.toFixed(1)}
+                      </span>
+                    </div>
+
+                    {/* Leader Points */}
+                    <div className="mt-2 bg-gradient-to-l from-amber-50 to-orange-50 rounded-lg px-2 py-1">
+                      <span className="text-xs font-bold text-amber-700 flex items-center justify-center gap-1">
+                        <Flame className="h-3 w-3" />
+                        {contrib.leaderPoints} {t("نقطة", "pts", "pts")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content Grid */}
       <div className="container max-w-6xl mx-auto px-4 py-8">
         {/* Results header */}
@@ -672,10 +779,21 @@ export default function Marketplace() {
                       </div>
                     </CardContent>
                     <CardFooter className="pt-0">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         <User className="h-3 w-3" />
                         <span>{item.contributorName || "معلم"}</span>
                         {item.contributorSchool && <span>• {item.contributorSchool}</span>}
+                        {/* Gamification badges on cards */}
+                        {topContributors?.find(tc => tc.userId === item.publishedBy)?.badges?.map(badge => {
+                          const b = GAMIFICATION_BADGES[badge];
+                          if (!b) return null;
+                          return (
+                            <Badge key={badge} variant="outline" className={`text-[10px] gap-0.5 px-1 py-0 ${b.color}`}>
+                              {b.icon}
+                              {t(b.labelAr, b.labelFr, b.labelEn)}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </CardFooter>
                   </Card>

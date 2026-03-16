@@ -8946,6 +8946,49 @@ ${goldenContributions.length > 0 ? `<div class="page page-break">
       return db.getMarketplaceStats();
     }),
 
+    // Get top contributors for gamification leaderboard
+    getTopContributors: publicProcedure.query(async () => {
+      const database = await getDb();
+      if (!database) return [];
+      const contributors = await database.select({
+        publishedBy: marketplaceItems.publishedBy,
+        avgRating: sql<number>`AVG(${marketplaceItems.averageRating})`,
+        totalItems: sql<number>`COUNT(*)`,
+        totalDownloads: sql<number>`SUM(${marketplaceItems.totalDownloads})`,
+        totalRatings: sql<number>`SUM(${marketplaceItems.totalRatings})`,
+      }).from(marketplaceItems)
+        .where(eq(marketplaceItems.status, "approved"))
+        .groupBy(marketplaceItems.publishedBy)
+        .orderBy(sql`COUNT(*) DESC, AVG(${marketplaceItems.averageRating}) DESC`)
+        .limit(10);
+      
+      const enriched = await Promise.all(contributors.map(async (c) => {
+        const [user] = await database.select({ name: users.name, arabicName: users.arabicName, schoolName: users.schoolName })
+          .from(users).where(eq(users.id, c.publishedBy));
+        const totalItems = Number(c.totalItems || 0);
+        const totalDownloads = Number(c.totalDownloads || 0);
+        const avgRating = Number(c.avgRating || 0);
+        const totalRatings = Number(c.totalRatings || 0);
+        // Points: 10 per published item, 5 per positive rating
+        const leaderPoints = totalItems * 10 + totalRatings * 5;
+        return {
+          userId: c.publishedBy,
+          name: user?.arabicName || user?.name || "معلم",
+          school: user?.schoolName || "",
+          avgRating,
+          totalItems,
+          totalDownloads,
+          totalRatings,
+          leaderPoints,
+          badges: [
+            ...(totalItems >= 5 ? ["creative_teacher"] : []),
+            ...(avgRating >= 4.5 && totalRatings >= 1 ? ["subject_expert"] : []),
+          ],
+        };
+      }));
+      return enriched.sort((a, b) => b.leaderPoints - a.leaderPoints);
+    }),
+
     // Get user's published items
     myItems: protectedProcedure.query(async ({ ctx }) => {
       return db.getUserMarketplaceItems(ctx.user.id);

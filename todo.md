@@ -2492,3 +2492,20 @@
 - [x] Wire Contact page route in App.tsx (already existed)
 - [x] Add Contact link to UnifiedNavbar
 - [x] Write tests for all changes (22 tests passing)
+
+## Advanced Features: PDF Export, Pricing Psychology, Marketplace Gamification
+- [x] EDUGPT: Install qrcode library for QR code generation
+- [x] EDUGPT: Use Amiri Arabic font via Google Fonts CDN in PDF template
+- [x] EDUGPT: Enhanced PDF export with smart blue header + logo space + title
+- [x] EDUGPT: Added footer with AI credit + Leader Academy + Tunisia flag emoji
+- [x] EDUGPT: Added QR code linking to leaderacademy.school
+- [x] EDUGPT: PDF export already integrated in EDUGPT assistant UI
+- [x] Pricing: Changed full_bundle price from 699997 to 690000 in DB
+- [x] Pricing: Added trilingual Smart Choice badge on EDUGPT PRO
+- [x] Pricing: EDUGPT PRO card highlighted with blue border, shadow-xl, ring-2
+- [x] Pricing: Added strikethrough old price with discount % badge
+- [x] Marketplace: Added "معلم مبدع" badge for 5+ items
+- [x] Marketplace: Added "خبير المادة" badge for 4.5+ rating
+- [x] Marketplace: Added "نقاط الريادة" points (10/content, 5/rating)
+- [x] Marketplace: Added Top Contributors leaderboard (top 5 with ranks)
+- [x] Write tests for all new features (34 tests passing)
