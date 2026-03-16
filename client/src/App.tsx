@@ -6,6 +6,7 @@ import Redirect from "./components/Redirect";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import FloatingWhatsApp from "./components/FloatingWhatsApp";
 
 // Eagerly loaded pages (critical path - home & auth)
 import Home from "./pages/Home";
@@ -169,6 +170,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Router />
+          <FloatingWhatsApp />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

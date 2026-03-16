@@ -2559,3 +2559,13 @@
 - [x] Add Instagram link https://www.instagram.com/leaderacademytn/
 - [x] Add YouTube link https://www.youtube.com/channel/UCEZWPqq_ONwn-CzD_GwLuVg
 - [x] Update all pages: Home footer (FB+IG+YT), Contact social section (FB+IG+YT+Website)
+
+## CRITICAL: EDUGPT Must Not Show Code/JSON
+- [x] Fix EDUGPT system prompt to strictly prohibit showing any code, JSON, or technical output
+- [x] Ensure all responses are purely pedagogical text formatted for teachers
+- [x] Test that lesson plan responses come as readable Arabic text, not JSON blocks
+
+## Floating WhatsApp Button
+- [x] Create FloatingWhatsApp component with animated hover effect
+- [x] Add to App.tsx so it appears on all pages
+- [x] WhatsApp number: +216 52 339 339
