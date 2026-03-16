@@ -14,8 +14,8 @@ describe("i18n System - LanguageContext", () => {
   it("should have Arabic as the fallback default language", () => {
     // The detectBrowserLanguage function should return "ar" as default
     expect(ctx).toContain('return "ar"');
-    // The getInitialLanguage should check localStorage first
-    expect(ctx).toContain("localStorage.getItem(STORAGE_KEY)");
+    // The getInitialLanguage should check localStorage via safeGetItem
+    expect(ctx).toContain("safeGetItem(STORAGE_KEY)");
   });
 
   it("should detect browser language (fr, en, ar)", () => {
@@ -26,13 +26,13 @@ describe("i18n System - LanguageContext", () => {
     expect(ctx).toContain('code === "ar"');
   });
 
-  it("should save language choice to localStorage", () => {
-    expect(ctx).toContain("localStorage.setItem(STORAGE_KEY, lang)");
+  it("should save language choice to localStorage via safeSetItem", () => {
+    expect(ctx).toContain("safeSetItem(STORAGE_KEY, lang)");
   });
 
   it("should update document direction for RTL/LTR", () => {
-    expect(ctx).toContain('document.documentElement.dir = lang === "ar" ? "rtl" : "ltr"');
-    expect(ctx).toContain("document.documentElement.lang = lang");
+    expect(ctx).toContain('document.documentElement.dir = language === "ar" ? "rtl" : "ltr"');
+    expect(ctx).toContain("document.documentElement.lang = language");
   });
 
   it("should export useLanguage hook and LanguageProvider", () => {

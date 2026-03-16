@@ -2514,3 +2514,14 @@
 - [x] Diagnose white page issue on production (localStorage SecurityError, GA placeholder, missing ErrorBoundary)
 - [x] Fix root cause (hardened LanguageContext, added ErrorBoundary, commented GA placeholder)
 - [x] Verify fix works (build succeeds, dev server renders correctly)
+
+## Bug Fix: Persistent White Page on Production (Round 2)
+- [x] Deep investigation: identified react-helmet-async incompatibility with React 19 and manualChunks conflict with manus-runtime
+- [x] Removed react-helmet-async package completely (pnpm remove)
+- [x] Replaced Helmet-based SEOHead with vanilla DOM manipulation (useEffect + document.title + meta tags)
+- [x] Removed manualChunks from vite.config.ts (causes chunk loading conflicts with manus-runtime in production)
+- [x] Updated seo-performance.test.ts (64 tests passing)
+- [x] Updated i18n-navbar.test.ts (21 tests passing)
+- [x] Verified build succeeds with no helmet references in output
+- [x] Verified dev server renders correctly
+- [ ] Republish to production and verify fix on leaderacademy.school

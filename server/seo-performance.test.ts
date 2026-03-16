@@ -115,7 +115,7 @@ describe("SEO: Structured Data (JSON-LD)", () => {
 });
 
 describe("Google Analytics GA4 placeholder", () => {
-  it("has gtag.js script tag", () => {
+  it("has gtag.js script tag (commented out)", () => {
     expect(INDEX_HTML).toContain("googletagmanager.com/gtag/js");
   });
 
@@ -123,44 +123,8 @@ describe("Google Analytics GA4 placeholder", () => {
     expect(INDEX_HTML).toContain("GA_MEASUREMENT_ID");
   });
 
-  it("has dataLayer initialization", () => {
+  it("has dataLayer initialization (commented out)", () => {
     expect(INDEX_HTML).toContain("window.dataLayer = window.dataLayer || []");
-  });
-});
-
-describe("Performance: Vite code splitting config", () => {
-  const viteConfig = fs.readFileSync(
-    path.join(PROJECT_ROOT, "vite.config.ts"),
-    "utf-8"
-  );
-
-  it("has manualChunks configuration", () => {
-    expect(viteConfig).toContain("manualChunks");
-  });
-
-  it("splits React into vendor-react chunk", () => {
-    expect(viteConfig).toContain("vendor-react");
-    expect(viteConfig).toContain("node_modules/react/");
-  });
-
-  it("splits Radix UI into vendor-radix chunk", () => {
-    expect(viteConfig).toContain("vendor-radix");
-    expect(viteConfig).toContain("@radix-ui/");
-  });
-
-  it("splits tRPC/TanStack into vendor-trpc chunk", () => {
-    expect(viteConfig).toContain("vendor-trpc");
-    expect(viteConfig).toContain("@trpc/");
-  });
-
-  it("splits Lucide icons into vendor-icons chunk", () => {
-    expect(viteConfig).toContain("vendor-icons");
-    expect(viteConfig).toContain("lucide-react");
-  });
-
-  it("splits charts into vendor-charts chunk", () => {
-    expect(viteConfig).toContain("vendor-charts");
-    expect(viteConfig).toContain("recharts");
   });
 });
 
@@ -191,7 +155,7 @@ describe("Performance: React.lazy usage in App.tsx", () => {
   });
 });
 
-describe("SEOHead component exists", () => {
+describe("SEOHead component uses vanilla DOM (not react-helmet-async)", () => {
   const seoHead = fs.readFileSync(
     path.join(PROJECT_ROOT, "client", "src", "components", "SEOHead.tsx"),
     "utf-8"
@@ -201,9 +165,14 @@ describe("SEOHead component exists", () => {
     expect(seoHead).toContain("export default function SEOHead");
   });
 
-  it("uses react-helmet-async Helmet", () => {
-    expect(seoHead).toContain('from "react-helmet-async"');
-    expect(seoHead).toContain("<Helmet>");
+  it("does NOT use react-helmet-async (removed for React 19 compatibility)", () => {
+    expect(seoHead).not.toContain('from "react-helmet-async"');
+    expect(seoHead).not.toContain("<Helmet>");
+  });
+
+  it("uses useEffect for DOM manipulation", () => {
+    expect(seoHead).toContain("useEffect");
+    expect(seoHead).toContain("document.title");
   });
 
   it("supports title prop", () => {
@@ -223,20 +192,24 @@ describe("SEOHead component exists", () => {
   });
 });
 
-describe("HelmetProvider is wired in main.tsx", () => {
+describe("main.tsx does NOT use HelmetProvider (removed for React 19 compatibility)", () => {
   const mainTsx = fs.readFileSync(
     path.join(PROJECT_ROOT, "client", "src", "main.tsx"),
     "utf-8"
   );
 
-  it("imports HelmetProvider", () => {
-    expect(mainTsx).toContain("HelmetProvider");
-    expect(mainTsx).toContain('from "react-helmet-async"');
+  it("does NOT import HelmetProvider", () => {
+    expect(mainTsx).not.toContain("HelmetProvider");
+    expect(mainTsx).not.toContain('from "react-helmet-async"');
   });
 
-  it("wraps App with HelmetProvider", () => {
-    expect(mainTsx).toContain("<HelmetProvider>");
-    expect(mainTsx).toContain("</HelmetProvider>");
+  it("has ErrorBoundary for error handling", () => {
+    expect(mainTsx).toContain("AppErrorBoundary");
+  });
+
+  it("has global error handlers", () => {
+    expect(mainTsx).toContain("window.addEventListener('error'");
+    expect(mainTsx).toContain("window.addEventListener('unhandledrejection'");
   });
 });
 

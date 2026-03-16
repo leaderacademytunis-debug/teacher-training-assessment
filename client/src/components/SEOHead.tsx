@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet-async";
+import { useEffect } from "react";
 
 interface SEOHeadProps {
   title?: string;
@@ -15,6 +15,16 @@ const DEFAULT_TITLE = "Leader Academy - منصة التعليم الذكي وا�
 const DEFAULT_DESCRIPTION = "المنصة التونسية الأولى للذكاء الاصطناعي في التعليم. أعدّ جذاذاتك في دقائق، قيّم تلاميذك بذكاء، وطوّر مهاراتك المهنية.";
 const DEFAULT_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/apple-touch-icon_ecd511e1.png";
 const SITE_URL = "https://leaderacademy.school";
+
+function setMetaTag(attr: string, attrValue: string, content: string) {
+  let el = document.querySelector(`meta[${attr}="${attrValue}"]`);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, attrValue);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+}
 
 export default function SEOHead({
   title,
@@ -34,30 +44,46 @@ export default function SEOHead({
 
   const fullUrl = ogUrl ? `${SITE_URL}${ogUrl}` : SITE_URL;
 
-  return (
-    <Helmet>
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      {descriptionFr && <meta name="description" lang="fr" content={descriptionFr} />}
+  useEffect(() => {
+    // Update document title
+    document.title = fullTitle;
 
-      {/* Open Graph */}
-      <meta property="og:type" content={ogType} />
-      <meta property="og:url" content={fullUrl} />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:locale" content="ar_TN" />
-      <meta property="og:locale:alternate" content="fr_FR" />
-      <meta property="og:locale:alternate" content="en_US" />
-      <meta property="og:site_name" content="Leader Academy" />
+    // Update meta tags
+    setMetaTag("name", "description", description);
+    if (descriptionFr) {
+      setMetaTag("name", "description-fr", descriptionFr);
+    }
 
-      {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
+    // Open Graph
+    setMetaTag("property", "og:type", ogType);
+    setMetaTag("property", "og:url", fullUrl);
+    setMetaTag("property", "og:title", fullTitle);
+    setMetaTag("property", "og:description", description);
+    setMetaTag("property", "og:image", ogImage);
+    setMetaTag("property", "og:locale", "ar_TN");
+    setMetaTag("property", "og:site_name", "Leader Academy");
 
-      {noIndex && <meta name="robots" content="noindex, nofollow" />}
-    </Helmet>
-  );
+    // Twitter Card
+    setMetaTag("name", "twitter:card", "summary_large_image");
+    setMetaTag("name", "twitter:title", fullTitle);
+    setMetaTag("name", "twitter:description", description);
+    setMetaTag("name", "twitter:image", ogImage);
+
+    // Robots
+    if (noIndex) {
+      setMetaTag("name", "robots", "noindex, nofollow");
+    } else {
+      const robotsMeta = document.querySelector('meta[name="robots"]');
+      if (robotsMeta && robotsMeta.getAttribute("content") === "noindex, nofollow") {
+        robotsMeta.remove();
+      }
+    }
+
+    // Cleanup: restore defaults on unmount
+    return () => {
+      document.title = DEFAULT_TITLE;
+    };
+  }, [fullTitle, description, descriptionFr, ogImage, fullUrl, ogType, noIndex]);
+
+  return null;
 }
