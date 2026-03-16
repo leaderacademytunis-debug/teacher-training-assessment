@@ -167,7 +167,35 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // React core
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
+            return 'vendor-react';
+          }
+          // Radix UI primitives
+          if (id.includes('node_modules/@radix-ui/')) {
+            return 'vendor-radix';
+          }
+          // tRPC + TanStack Query
+          if (id.includes('node_modules/@trpc/') || id.includes('node_modules/@tanstack/')) {
+            return 'vendor-trpc';
+          }
+          // Lucide icons
+          if (id.includes('node_modules/lucide-react/')) {
+            return 'vendor-icons';
+          }
+          // Other large vendor libs
+          if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-')) {
+            return 'vendor-charts';
+          }
+          if (id.includes('node_modules/streamdown/') || id.includes('node_modules/marked/')) {
+            return 'vendor-markdown';
+          }
+        },
+      },
+    },
   },
   server: {
     host: true,

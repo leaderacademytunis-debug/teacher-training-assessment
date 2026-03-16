@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,6 +126,12 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" dir="rtl">
+      <SEOHead
+        title="الأسعار وخطط الاشتراك"
+        description="اكتشف خطط الاشتراك في Leader Academy. ابدأ مجاناً أو اختر الخطة المناسبة لاحتياجاتك التعليمية."
+        descriptionFr="Découvrez les plans d'abonnement Leader Academy. Commencez gratuitement ou choisissez le plan adapté à vos besoins."
+        ogUrl="/pricing"
+      />
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="container flex items-center justify-between h-16">

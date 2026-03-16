@@ -2449,3 +2449,14 @@
 - [x] Create creative 404 NotFound page in Arabic with educational theme
 - [x] Wire NotFound component to catch-all route (*)
 - [x] Clean up test data from marketplace (Test Teacher / محتوى للاختبار) — deleted 84 items + 34 downloads + 1 rating
+
+## SEO & Performance Optimization
+- [x] Update index.html title to "Leader Academy - منصة التعليم الذكي والمساعد البيداغوجي في تونس"
+- [x] Add Arabic Meta Description
+- [x] Add French Meta Description
+- [x] Add Open Graph tags (og:title, og:description, og:image, og:locale for ar_TN, fr_FR, en_US)
+- [x] Install react-helmet-async and configure HelmetProvider
+- [x] Add dynamic SEO to key pages (EduGPT, Pricing, Home, About, Marketplace, NotFound)
+- [x] Configure Vite manualChunks for code splitting (React, Radix, tRPC, Lucide, Charts, Markdown)
+- [x] Verify React.lazy is used for heavy pages (already in place — 60+ pages lazy loaded)
+- [x] Add Google Analytics GA4 placeholder in index.html (replace GA_MEASUREMENT_ID with actual ID)

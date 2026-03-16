@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import SEOHead from "@/components/SEOHead";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
@@ -617,6 +618,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white font-[Cairo,Tajawal,sans-serif]" dir="rtl">
+      <SEOHead ogUrl="/" />
 
       {/* ===== HEADER ===== */}
       <header className="sticky top-0 z-50 shadow-lg" style={{ background: "#1A237E" }}>

@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import SEOHead from "@/components/SEOHead";
 import {
   GraduationCap, Target, Users, Brain, Award, Globe,
   ArrowLeft, Sparkles, BookOpen, Shield, Zap, Heart,
@@ -55,6 +56,12 @@ const TEAM = [
 export default function About() {
   return (
     <div className="min-h-screen bg-white" dir="rtl" style={{ fontFamily: "Cairo, Tajawal, sans-serif" }}>
+      <SEOHead
+        title="عن الأكاديمية"
+        description="تعرف على Leader Academy — المؤسسة التكوينية التونسية الرائدة في توظيف الذكاء الاصطناعي في التعليم. رؤيتنا، رسالتنا، وخدماتنا."
+        descriptionFr="Découvrez Leader Academy — l'institution tunisienne pionnière dans l'intégration de l'IA dans l'éducation."
+        ogUrl="/about"
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0D1B5E 0%, #1A237E 50%, #1565C0 100%)" }}>
         <div className="absolute inset-0 opacity-10">

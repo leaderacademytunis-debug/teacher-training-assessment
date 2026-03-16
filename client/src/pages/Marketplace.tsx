@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import SEOHead from "@/components/SEOHead";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -448,6 +449,12 @@ export default function Marketplace() {
   // Main Marketplace View
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white" dir="rtl">
+      <SEOHead
+        title="السوق الذهبي للمحتوى التعليمي"
+        description="اكتشف وشارك أفضل المحتويات التعليمية التونسية. جذاذات، اختبارات، وموارد بيداغوجية من معلمين تونسيين."
+        descriptionFr="Découvrez et partagez les meilleures ressources éducatives tunisiennes. Fiches, examens et ressources pédagogiques."
+        ogUrl="/marketplace"
+      />
       {/* Hero Section */}
       <div className="bg-gradient-to-l from-amber-600 via-orange-500 to-amber-700 text-white py-12">
         <div className="container max-w-6xl mx-auto px-4">

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import SEOHead from "@/components/SEOHead";
 import { Home, BookX, ArrowLeft, Search, Sparkles } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
@@ -18,6 +19,7 @@ export default function NotFound() {
 
   return (
     <div className="min-h-screen relative overflow-hidden" dir="rtl" style={{ fontFamily: "Cairo, Tajawal, sans-serif", background: "linear-gradient(135deg, #0D1B5E 0%, #1A237E 40%, #1565C0 100%)" }}>
+      <SEOHead title="404 - صفحة غير موجودة" noIndex />
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Floating chalk marks */}

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import SEOHead from "@/components/SEOHead";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -203,6 +204,12 @@ export default function EduGPT() {
 
   return (
     <div className="min-h-screen" style={{ background: "#F0F4FF" }} dir="rtl">
+      <SEOHead
+        title="EDUGPT - المساعد البيداغوجي الذكي"
+        description="المساعد الذكي للمعلم التونسي. أنشئ جذاذات الدروس، المخططات السنوية، والاختبارات بالذكاء الاصطناعي وفق البرامج الرسمية التونسية."
+        descriptionFr="L'assistant pédagogique intelligent pour les enseignants tunisiens. Créez vos fiches de cours et évaluations en minutes."
+        ogUrl="/edugpt"
+      />
 
       {/* ===== TOP NAV ===== */}
       <header className="sticky top-0 z-50 shadow-sm" style={{ background: "#1A237E" }}>
