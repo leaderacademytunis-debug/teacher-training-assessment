@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /managerial-dashboard/
+
+Sitemap: https://leaderacademy.school/sitemap.xml

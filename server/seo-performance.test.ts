@@ -261,3 +261,91 @@ describe("SEOHead is used in key pages", () => {
     expect(content).toContain("noIndex");
   });
 });
+
+describe("Sitemap: sitemap.xml", () => {
+  const sitemap = fs.readFileSync(
+    path.join(PROJECT_ROOT, "client", "public", "sitemap.xml"),
+    "utf-8"
+  );
+
+  it("is valid XML with urlset namespace", () => {
+    expect(sitemap).toContain('xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"');
+  });
+
+  it("includes homepage", () => {
+    expect(sitemap).toContain("<loc>https://leaderacademy.school/</loc>");
+  });
+
+  it("includes /about page", () => {
+    expect(sitemap).toContain("<loc>https://leaderacademy.school/about</loc>");
+  });
+
+  it("includes /edugpt page", () => {
+    expect(sitemap).toContain("<loc>https://leaderacademy.school/edugpt</loc>");
+  });
+
+  it("includes /pricing page", () => {
+    expect(sitemap).toContain("<loc>https://leaderacademy.school/pricing</loc>");
+  });
+
+  it("includes /marketplace page", () => {
+    expect(sitemap).toContain("<loc>https://leaderacademy.school/marketplace</loc>");
+  });
+
+  it("includes /my-certificates page", () => {
+    expect(sitemap).toContain("<loc>https://leaderacademy.school/my-certificates</loc>");
+  });
+
+  it("includes /jobs page", () => {
+    expect(sitemap).toContain("<loc>https://leaderacademy.school/jobs</loc>");
+  });
+
+  it("has priority values", () => {
+    expect(sitemap).toContain("<priority>");
+  });
+
+  it("has changefreq values", () => {
+    expect(sitemap).toContain("<changefreq>");
+  });
+});
+
+describe("Robots.txt", () => {
+  const robots = fs.readFileSync(
+    path.join(PROJECT_ROOT, "client", "public", "robots.txt"),
+    "utf-8"
+  );
+
+  it("allows all user agents", () => {
+    expect(robots).toContain("User-agent: *");
+  });
+
+  it("allows root", () => {
+    expect(robots).toContain("Allow: /");
+  });
+
+  it("disallows /api/", () => {
+    expect(robots).toContain("Disallow: /api/");
+  });
+
+  it("references sitemap with leaderacademy.school domain", () => {
+    expect(robots).toContain("Sitemap: https://leaderacademy.school/sitemap.xml");
+  });
+});
+
+describe("OG Image: updated in index.html", () => {
+  it("og:image points to the new OG image (not apple-touch-icon)", () => {
+    expect(INDEX_HTML).toContain('property="og:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/og-image-');
+  });
+
+  it("has og:image:width of 1200", () => {
+    expect(INDEX_HTML).toContain('property="og:image:width" content="1200"');
+  });
+
+  it("has og:image:height of 630", () => {
+    expect(INDEX_HTML).toContain('property="og:image:height" content="630"');
+  });
+
+  it("twitter:image also uses the new OG image", () => {
+    expect(INDEX_HTML).toContain('name="twitter:image" content="https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/og-image-');
+  });
+});

@@ -2460,3 +2460,9 @@
 - [x] Configure Vite manualChunks for code splitting (React, Radix, tRPC, Lucide, Charts, Markdown)
 - [x] Verify React.lazy is used for heavy pages (already in place — 60+ pages lazy loaded)
 - [x] Add Google Analytics GA4 placeholder in index.html (replace GA_MEASUREMENT_ID with actual ID)
+
+## Sitemap, OG Image & Robots.txt
+- [x] Create sitemap.xml with all public pages in client/public (25 URLs)
+- [x] Generate OG image 1200x630 with Leader Academy branding (AI-generated)
+- [x] Update robots.txt to reference sitemap.xml
+- [x] Update index.html og:image and twitter:image to use the new OG image with dimensions
