@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE curriculum_plans SET planTitle = 'التوزيع السنوي الرسمي' WHERE planTitle = 'Official Plan Test';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute UPDATE curriculum_plans SET planTitle = 'التوزيع السنوي الرسمي' WHERE planTitle = 'Official Plan Test';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 66
+}

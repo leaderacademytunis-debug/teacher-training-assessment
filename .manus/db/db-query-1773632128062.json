@@ -1,0 +1,52 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'curriculum_plans' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'curriculum_plans' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "createdBy"
+    },
+    {
+      "COLUMN_NAME": "schoolYear"
+    },
+    {
+      "COLUMN_NAME": "educationLevel"
+    },
+    {
+      "COLUMN_NAME": "grade"
+    },
+    {
+      "COLUMN_NAME": "subject"
+    },
+    {
+      "COLUMN_NAME": "planTitle"
+    },
+    {
+      "COLUMN_NAME": "totalPeriods"
+    },
+    {
+      "COLUMN_NAME": "totalTopics"
+    },
+    {
+      "COLUMN_NAME": "sourceDocumentUrl"
+    },
+    {
+      "COLUMN_NAME": "isOfficial"
+    },
+    {
+      "COLUMN_NAME": "isActive"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "updatedAt"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\ncreatedBy\nschoolYear\neducationLevel\ngrade\nsubject\nplanTitle\ntotalPeriods\ntotalTopics\nsourceDocumentUrl\nisOfficial\nisActive\ncreatedAt\nupdatedAt\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

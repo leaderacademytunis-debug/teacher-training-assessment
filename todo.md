@@ -2466,3 +2466,15 @@
 - [x] Generate OG image 1200x630 with Leader Academy branding (AI-generated)
 - [x] Update robots.txt to reference sitemap.xml
 - [x] Update index.html og:image and twitter:image to use the new OG image with dimensions
+
+## i18n System Fix & Unified Navbar
+- [x] Change default language from English to Arabic (ar)
+- [x] Add browser language detection (fr→French, en→English, else→Arabic)
+- [x] Save language choice in localStorage for persistence
+- [x] Fix missing translations: "Official Plan Test" → Arabic (updated in DB to التوزيع السنوي الرسمي)
+- [x] Keep Hero Section in Arabic, add French/English subtitle translations
+- [x] Keep Testimonials in Arabic across all languages
+- [x] Create unified responsive Navbar component (UnifiedNavbar.tsx) with i18n support
+- [x] Add EDUGPT Tools dropdown in Navbar (أدوات EDUGPT / Outils EDUGPT / EDUGPT Tools)
+- [x] Ensure Navbar is mobile responsive with language switcher (flags + sections)
+- [x] Integrate unified Navbar in Home.tsx (replaced inline header)

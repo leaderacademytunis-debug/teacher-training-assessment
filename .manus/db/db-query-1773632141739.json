@@ -1,0 +1,37 @@
+{
+  "query": "SELECT DISTINCT planTitle FROM curriculum_plans WHERE planTitle LIKE '%Official%' OR planTitle LIKE '%Test%' LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT DISTINCT planTitle FROM curriculum_plans WHERE planTitle LIKE '%Official%' OR planTitle LIKE '%Test%' LIMIT 20;",
+  "rows": [
+    {
+      "planTitle": "Test Coverage Plan"
+    },
+    {
+      "planTitle": "GPS Progress Test"
+    },
+    {
+      "planTitle": "Test Topics Plan"
+    },
+    {
+      "planTitle": "Test Progress Plan"
+    },
+    {
+      "planTitle": "Test Textbook Plan"
+    },
+    {
+      "planTitle": "Test Suggestions Plan"
+    },
+    {
+      "planTitle": "Test Delete Plan"
+    },
+    {
+      "planTitle": "Official Plan Test"
+    },
+    {
+      "planTitle": "GPS Test Plan"
+    }
+  ],
+  "messages": [],
+  "stdout": "planTitle\nTest Coverage Plan\nGPS Progress Test\nTest Topics Plan\nTest Progress Plan\nTest Textbook Plan\nTest Suggestions Plan\nTest Delete Plan\nOfficial Plan Test\nGPS Test Plan\n",
+  "stderr": "",
+  "execution_time_ms": 76
+}

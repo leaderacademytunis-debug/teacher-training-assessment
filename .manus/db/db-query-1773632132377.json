@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, planTitle FROM curriculum_plans LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, planTitle FROM curriculum_plans LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "planTitle": "التوزيع السنوي - رياضيات سنة 5"
+    },
+    {
+      "id": "2",
+      "planTitle": "Test Coverage Plan"
+    },
+    {
+      "id": "3",
+      "planTitle": "Test Topics Plan"
+    },
+    {
+      "id": "4",
+      "planTitle": "Test Progress Plan"
+    },
+    {
+      "id": "5",
+      "planTitle": "Test Suggestions Plan"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tplanTitle\n1\tالتوزيع السنوي - رياضيات سنة 5\n2\tTest Coverage Plan\n3\tTest Topics Plan\n4\tTest Progress Plan\n5\tTest Suggestions Plan\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}
