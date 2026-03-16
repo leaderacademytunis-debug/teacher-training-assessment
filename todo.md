@@ -2569,3 +2569,7 @@
 - [x] Create FloatingWhatsApp component with animated hover effect
 - [x] Add to App.tsx so it appears on all pages
 - [x] WhatsApp number: +216 52 339 339
+
+## Remove Floating WhatsApp Button
+- [x] Remove FloatingWhatsApp import and component from App.tsx
+- [x] Delete FloatingWhatsApp.tsx component file
