@@ -2553,3 +2553,9 @@
 - [x] Update About page with official registration details (Ministry license, tax ID, commercial register)
 - [x] Update Contact page with phone numbers (52339339/99997729) and WhatsApp (0021652339339)
 - [x] Update Footer with official legal info and contact numbers
+
+## Update Social Media Links
+- [x] Update Facebook link to https://www.facebook.com/leaderacademy.tn (was LeaderAcademyTunisia)
+- [x] Add Instagram link https://www.instagram.com/leaderacademytn/
+- [x] Add YouTube link https://www.youtube.com/channel/UCEZWPqq_ONwn-CzD_GwLuVg
+- [x] Update all pages: Home footer (FB+IG+YT), Contact social section (FB+IG+YT+Website)
