@@ -2509,3 +2509,8 @@
 - [x] Marketplace: Added "نقاط الريادة" points (10/content, 5/rating)
 - [x] Marketplace: Added Top Contributors leaderboard (top 5 with ranks)
 - [x] Write tests for all new features (34 tests passing)
+
+## Bug Fix: White/Blank Page on Production (leaderacademy.school)
+- [x] Diagnose white page issue on production (localStorage SecurityError, GA placeholder, missing ErrorBoundary)
+- [x] Fix root cause (hardened LanguageContext, added ErrorBoundary, commented GA placeholder)
+- [x] Verify fix works (build succeeds, dev server renders correctly)

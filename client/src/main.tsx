@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import React from "react";
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
 import superjson from "superjson";
@@ -10,7 +11,52 @@ import { getLoginUrl } from "./const";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import "./index.css";
 
-// Global error handler for production debugging
+// ── Error Boundary ──────────────────────────────────────────────
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("[ErrorBoundary]", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, textAlign: "center", fontFamily: "sans-serif", direction: "rtl" }}>
+          <h2 style={{ color: "#e53e3e" }}>حدث خطأ في تحميل التطبيق</h2>
+          <p style={{ color: "#666" }}>{this.state.error?.message || "خطأ غير معروف"}</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: "10px 20px",
+              background: "#3b82f6",
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              marginTop: 16,
+            }}
+          >
+            إعادة تحميل
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ── Global error handlers ───────────────────────────────────────
 window.addEventListener('error', (event) => {
   console.error('[Global Error]', event.error?.message || event.message, event.error?.stack);
   const root = document.getElementById('root');
@@ -35,6 +81,7 @@ window.addEventListener('unhandledrejection', (event) => {
   }
 });
 
+// ── Query Client ────────────────────────────────────────────────
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
@@ -64,6 +111,7 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+// ── tRPC Client ─────────────────────────────────────────────────
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
@@ -79,17 +127,20 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+// ── Mount ───────────────────────────────────────────────────────
 try {
   createRoot(document.getElementById("root")!).render(
-    <HelmetProvider>
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <LanguageProvider>
-            <App />
-          </LanguageProvider>
-        </QueryClientProvider>
-      </trpc.Provider>
-    </HelmetProvider>
+    <AppErrorBoundary>
+      <HelmetProvider>
+        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+          <QueryClientProvider client={queryClient}>
+            <LanguageProvider>
+              <App />
+            </LanguageProvider>
+          </QueryClientProvider>
+        </trpc.Provider>
+      </HelmetProvider>
+    </AppErrorBoundary>
   );
 } catch (err: any) {
   console.error('[React Mount Error]', err);

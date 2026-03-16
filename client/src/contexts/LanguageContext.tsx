@@ -11,6 +11,28 @@ interface LanguageContextType {
 const STORAGE_KEY = "app-language";
 
 /**
+ * Safely read from localStorage (may throw SecurityError in some environments)
+ */
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Safely write to localStorage
+ */
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Silently fail - storage may be unavailable
+  }
+}
+
+/**
  * Detect browser language and map to supported app language.
  * - French browser → "fr"
  * - English browser → "en"
@@ -18,7 +40,11 @@ const STORAGE_KEY = "app-language";
  */
 function detectBrowserLanguage(): AppLanguage {
   try {
-    const browserLangs = navigator.languages || [navigator.language];
+    const browserLangs =
+      (typeof navigator !== "undefined" && navigator.languages) ||
+      (typeof navigator !== "undefined" && navigator.language
+        ? [navigator.language]
+        : []);
     for (const lang of browserLangs) {
       const code = lang.toLowerCase().split("-")[0];
       if (code === "fr") return "fr";
@@ -32,13 +58,17 @@ function detectBrowserLanguage(): AppLanguage {
 }
 
 function getInitialLanguage(): AppLanguage {
-  // 1. Check localStorage first (user's explicit choice persists)
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved === "ar" || saved === "fr" || saved === "en") {
-    return saved;
+  try {
+    // 1. Check localStorage first (user's explicit choice persists)
+    const saved = safeGetItem(STORAGE_KEY);
+    if (saved === "ar" || saved === "fr" || saved === "en") {
+      return saved;
+    }
+    // 2. Auto-detect from browser language
+    return detectBrowserLanguage();
+  } catch {
+    return "ar";
   }
-  // 2. Auto-detect from browser language
-  return detectBrowserLanguage();
 }
 
 const LanguageContext = createContext<LanguageContextType>({
@@ -48,22 +78,30 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<AppLanguage>(getInitialLanguage);
+  const [language, setLanguageState] = useState<AppLanguage>(() => getInitialLanguage());
 
   const setLanguage = (lang: AppLanguage) => {
     setLanguageState(lang);
-    localStorage.setItem(STORAGE_KEY, lang);
+    safeSetItem(STORAGE_KEY, lang);
     // Update document direction
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = lang;
+    try {
+      document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+      document.documentElement.lang = lang;
+    } catch {
+      // SSR or restricted environment
+    }
   };
 
   useEffect(() => {
-    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-    document.documentElement.lang = language;
-    // Persist initial detected language so future visits remember it
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      localStorage.setItem(STORAGE_KEY, language);
+    try {
+      document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+      document.documentElement.lang = language;
+      // Persist initial detected language so future visits remember it
+      if (!safeGetItem(STORAGE_KEY)) {
+        safeSetItem(STORAGE_KEY, language);
+      }
+    } catch {
+      // Silently fail
     }
   }, [language]);
 
