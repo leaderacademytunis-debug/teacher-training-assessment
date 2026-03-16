@@ -2543,3 +2543,13 @@
 - [x] Update navbar EDUGPT Tools link to point to /teacher-tools (desktop + mobile)
 - [x] Verify all tool cards link to correct routes (11 tools total)
 - [x] Visual verification of new design
+
+## Animated Hover Preview for AI Tool Cards
+- [x] Add animated hover effect on each tool card showing preview/demo info
+- [x] Include tool screenshots or animated descriptions on hover (4-step demo preview)
+- [x] Ensure smooth CSS transitions and mobile-friendly fallback
+
+## Update Official Leader Academy Info
+- [x] Update About page with official registration details (Ministry license, tax ID, commercial register)
+- [x] Update Contact page with phone numbers (52339339/99997729) and WhatsApp (0021652339339)
+- [x] Update Footer with official legal info and contact numbers

@@ -2,11 +2,14 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
 import BackButton from "@/components/BackButton";
+import { useState } from "react";
 import {
   Bot, Search, FileEdit, Palette, BarChart3,
   FileCheck, Theater, Brain, Film, ScanLine,
   Calendar, BookOpen, Sparkles, ArrowLeft,
   Zap, ClipboardCheck, Lightbulb, type LucideIcon,
+  Play, CheckCircle2, Clock, Users, Star,
+  FileText, Image as ImageIcon, Mic, PenTool,
 } from "lucide-react";
 
 /* ───────── Tool definition ───────── */
@@ -23,6 +26,12 @@ interface ToolDef {
   isNew?: boolean;
   gradient: string;
   iconBg: string;
+  /* Preview data */
+  previewAr: string[];
+  previewFr: string[];
+  previewEn: string[];
+  previewIcon: LucideIcon;
+  demoSteps: number;
 }
 
 /* ───────── Category definition ───────── */
@@ -66,6 +75,11 @@ const CATEGORIES: CategoryDef[] = [
         descEn: "Your AI assistant for preparing lesson plans, schedules and courses automatically",
         gradient: "linear-gradient(135deg, #1A237E, #1565C0)",
         iconBg: "#E3F2FD",
+        previewAr: ["إعداد جذاذة درس كاملة", "توليد مخطط أسبوعي", "إنشاء أنشطة تفاعلية", "تصدير PDF / Word"],
+        previewFr: ["Préparer une fiche complète", "Générer un planning hebdo", "Créer des activités", "Export PDF / Word"],
+        previewEn: ["Prepare a full lesson plan", "Generate weekly schedule", "Create activities", "Export PDF / Word"],
+        previewIcon: FileText,
+        demoSteps: 4,
       },
       {
         id: "annual-plan",
@@ -79,6 +93,11 @@ const CATEGORIES: CategoryDef[] = [
         descEn: "Generate complete annual plan per official Tunisian curriculum",
         gradient: "linear-gradient(135deg, #0D47A1, #1976D2)",
         iconBg: "#BBDEFB",
+        previewAr: ["اختر المادة والمستوى", "توليد تلقائي للتوزيع", "تعديل حسب الحاجة", "طباعة جاهزة"],
+        previewFr: ["Choisir matière et niveau", "Génération automatique", "Modifier selon besoins", "Prêt à imprimer"],
+        previewEn: ["Choose subject & level", "Auto-generate plan", "Customize as needed", "Print-ready"],
+        previewIcon: Calendar,
+        demoSteps: 4,
       },
       {
         id: "curriculum-map",
@@ -92,6 +111,11 @@ const CATEGORIES: CategoryDef[] = [
         descEn: "Track your curriculum coverage progress with delay/advance alerts",
         gradient: "linear-gradient(135deg, #1565C0, #42A5F5)",
         iconBg: "#E1F5FE",
+        previewAr: ["تتبع التقدم بالنسبة المئوية", "تنبيهات التأخر والتقدم", "مقارنة مع الزملاء", "تقارير مفصّلة"],
+        previewFr: ["Suivi en pourcentage", "Alertes retard/avance", "Comparer avec collègues", "Rapports détaillés"],
+        previewEn: ["Track % progress", "Delay/advance alerts", "Compare with peers", "Detailed reports"],
+        previewIcon: BarChart3,
+        demoSteps: 4,
       },
     ],
   },
@@ -119,6 +143,11 @@ const CATEGORIES: CategoryDef[] = [
         descEn: "Analyze lesson plans, exams and schedules per official Tunisian standards",
         gradient: "linear-gradient(135deg, #4A148C, #7B1FA2)",
         iconBg: "#F3E5F5",
+        previewAr: ["رفع الجذاذة أو الاختبار", "تحليل وفق 4 أنواع وثائق", "تقرير مفصّل بالمعايير", "اقتراحات التحسين"],
+        previewFr: ["Téléverser fiche/examen", "Analyse selon 4 types", "Rapport détaillé", "Suggestions d'amélioration"],
+        previewEn: ["Upload lesson/exam", "Analyze 4 doc types", "Detailed criteria report", "Improvement suggestions"],
+        previewIcon: Search,
+        demoSteps: 4,
       },
       {
         id: "blind-grading",
@@ -133,6 +162,11 @@ const CATEGORIES: CategoryDef[] = [
         isNew: true,
         gradient: "linear-gradient(135deg, #6A1B9A, #AB47BC)",
         iconBg: "#E1BEE7",
+        previewAr: ["تصوير ورقة التلميذ", "تحليل ذكي بالمعايير مع1-مع3", "إسناد الأعداد تلقائياً", "تقرير فردي لكل تلميذ"],
+        previewFr: ["Photographier la copie", "Analyse IA critères M1-M3", "Notes automatiques", "Rapport par élève"],
+        previewEn: ["Photograph student paper", "AI analysis M1-M3", "Auto-grading", "Per-student report"],
+        previewIcon: FileCheck,
+        demoSteps: 4,
       },
       {
         id: "exam-builder",
@@ -146,6 +180,11 @@ const CATEGORIES: CategoryDef[] = [
         descEn: "Generate complete exams with illustrations and official grading table",
         gradient: "linear-gradient(135deg, #7B1FA2, #CE93D8)",
         iconBg: "#F8BBD0",
+        previewAr: ["اختر المادة والمستوى", "توليد سند وتعليمات", "إضافة رسومات تلقائية", "جدول إسناد الأعداد"],
+        previewFr: ["Choisir matière/niveau", "Générer contexte & questions", "Illustrations auto", "Barème officiel"],
+        previewEn: ["Choose subject/level", "Generate context & questions", "Auto illustrations", "Official grading table"],
+        previewIcon: FileEdit,
+        demoSteps: 4,
       },
     ],
   },
@@ -173,6 +212,11 @@ const CATEGORIES: CategoryDef[] = [
         descEn: "Generate educational images, infographics and learning cards in 6 AI styles",
         gradient: "linear-gradient(135deg, #E65100, #FF9800)",
         iconBg: "#FFF3E0",
+        previewAr: ["اختر نمط الصورة (6 أنماط)", "اكتب الوصف بالعربية", "توليد بالذكاء الاصطناعي", "تحميل بجودة عالية"],
+        previewFr: ["Choisir le style (6 styles)", "Décrire en texte", "Génération IA", "Télécharger en HD"],
+        previewEn: ["Choose style (6 styles)", "Describe in text", "AI generation", "Download in HD"],
+        previewIcon: ImageIcon,
+        demoSteps: 4,
       },
       {
         id: "drama-engine",
@@ -187,6 +231,11 @@ const CATEGORIES: CategoryDef[] = [
         isNew: true,
         gradient: "linear-gradient(135deg, #BF360C, #FF6D00)",
         iconBg: "#FFE0B2",
+        previewAr: ["أدخل موضوع الدرس", "توزيع الأدوار تلقائياً", "حوارات تعليمية مشوّقة", "وسائل مسرحية مقترحة"],
+        previewFr: ["Entrer le sujet du cours", "Distribution des rôles", "Dialogues éducatifs", "Accessoires suggérés"],
+        previewEn: ["Enter lesson topic", "Auto role assignment", "Educational dialogues", "Suggested props"],
+        previewIcon: Theater,
+        demoSteps: 4,
       },
       {
         id: "video-evaluator",
@@ -200,6 +249,11 @@ const CATEGORIES: CategoryDef[] = [
         descEn: "Evaluate educational videos and improve Prompt Engineering skills",
         gradient: "linear-gradient(135deg, #FF6D00, #FFB74D)",
         iconBg: "#FFECB3",
+        previewAr: ["رفع الفيديو التعليمي", "تحليل جودة المحتوى", "تقييم الأداء البيداغوجي", "نصائح لتحسين الأوامر"],
+        previewFr: ["Téléverser la vidéo", "Analyse de qualité", "Évaluation pédagogique", "Conseils d'amélioration"],
+        previewEn: ["Upload video", "Quality analysis", "Pedagogical evaluation", "Improvement tips"],
+        previewIcon: Film,
+        demoSteps: 4,
       },
     ],
   },
@@ -219,6 +273,11 @@ const BONUS_TOOLS: ToolDef[] = [
     descEn: "Analyze handwriting to detect learning difficulties early",
     gradient: "linear-gradient(135deg, #00695C, #26A69A)",
     iconBg: "#E0F2F1",
+    previewAr: ["تصوير عيّنة خط اليد", "تحليل ذكي للحروف", "كشف صعوبات التعلم", "تقرير مفصّل للمرافق"],
+    previewFr: ["Photographier l'écriture", "Analyse IA des lettres", "Détection troubles", "Rapport détaillé"],
+    previewEn: ["Photograph handwriting", "AI letter analysis", "Detect difficulties", "Detailed report"],
+    previewIcon: PenTool,
+    demoSteps: 4,
   },
   {
     id: "legacy-digitizer",
@@ -232,6 +291,11 @@ const BONUS_TOOLS: ToolDef[] = [
     descEn: "Scan and digitize old educational documents into editable formats",
     gradient: "linear-gradient(135deg, #004D40, #00897B)",
     iconBg: "#B2DFDB",
+    previewAr: ["مسح الوثيقة الورقية", "التعرف الذكي على النص", "تحويل إلى Word/PDF", "تعديل وإعادة استخدام"],
+    previewFr: ["Scanner le document", "Reconnaissance OCR", "Convertir en Word/PDF", "Modifier et réutiliser"],
+    previewEn: ["Scan document", "OCR recognition", "Convert to Word/PDF", "Edit and reuse"],
+    previewIcon: ScanLine,
+    demoSteps: 4,
   },
 ];
 
@@ -242,6 +306,9 @@ function getName(tool: ToolDef, lang: AppLanguage) {
 function getDesc(tool: ToolDef, lang: AppLanguage) {
   return lang === "fr" ? tool.descFr : lang === "en" ? tool.descEn : tool.descAr;
 }
+function getPreview(tool: ToolDef, lang: AppLanguage) {
+  return lang === "fr" ? tool.previewFr : lang === "en" ? tool.previewEn : tool.previewAr;
+}
 function getCatTitle(cat: CategoryDef, lang: AppLanguage) {
   return lang === "fr" ? cat.titleFr : lang === "en" ? cat.titleEn : cat.titleAr;
 }
@@ -249,17 +316,54 @@ function getCatSubtitle(cat: CategoryDef, lang: AppLanguage) {
   return lang === "fr" ? cat.subtitleFr : lang === "en" ? cat.subtitleEn : cat.subtitleAr;
 }
 
-/* ───────── Tool Card Component ───────── */
+function getIconColor(gradient: string): string {
+  if (gradient.includes("#1A237E")) return "#1A237E";
+  if (gradient.includes("#4A148C")) return "#6A1B9A";
+  if (gradient.includes("#E65100")) return "#E65100";
+  if (gradient.includes("#BF360C")) return "#BF360C";
+  if (gradient.includes("#FF6D00")) return "#FF6D00";
+  if (gradient.includes("#0D47A1")) return "#0D47A1";
+  if (gradient.includes("#00695C")) return "#00695C";
+  if (gradient.includes("#004D40")) return "#004D40";
+  if (gradient.includes("#7B1FA2")) return "#7B1FA2";
+  if (gradient.includes("#6A1B9A")) return "#6A1B9A";
+  return "#1565C0";
+}
+
+function getAccentColor(gradient: string): string {
+  if (gradient.includes("#1A237E") || gradient.includes("#0D47A1") || gradient.includes("#1565C0")) return "#1565C0";
+  if (gradient.includes("#4A148C") || gradient.includes("#6A1B9A") || gradient.includes("#7B1FA2")) return "#7B1FA2";
+  if (gradient.includes("#E65100") || gradient.includes("#BF360C") || gradient.includes("#FF6D00")) return "#E65100";
+  if (gradient.includes("#00695C") || gradient.includes("#004D40")) return "#00897B";
+  return "#1565C0";
+}
+
+/* ───────── Tool Card Component with Hover Preview ───────── */
 function ToolCard({ tool, lang }: { tool: ToolDef; lang: AppLanguage }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const previewSteps = getPreview(tool, lang);
+  const accentColor = getAccentColor(tool.gradient);
+  const iconColor = getIconColor(tool.gradient);
+  const PreviewIcon = tool.previewIcon;
+
   return (
     <Link href={tool.href}>
-      <div className="group relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-transparent transition-all duration-300 overflow-hidden cursor-pointer h-full">
+      <div
+        className="group relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-2xl hover:border-transparent transition-all duration-500 overflow-hidden cursor-pointer h-full"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         {/* Top gradient accent bar */}
-        <div className="h-1.5 w-full" style={{ background: tool.gradient }} />
+        <div className="h-1.5 w-full transition-all duration-500"
+          style={{
+            background: tool.gradient,
+            height: isHovered ? "4px" : "6px",
+          }}
+        />
 
         {/* New badge */}
         {tool.isNew && (
-          <div className="absolute top-4 left-3 z-10">
+          <div className="absolute top-4 left-3 z-20">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow-lg animate-pulse"
               style={{ background: "linear-gradient(135deg, #FF6D00, #FF9800)" }}>
               <Sparkles className="w-3 h-3" />
@@ -268,15 +372,18 @@ function ToolCard({ tool, lang }: { tool: ToolDef; lang: AppLanguage }) {
           </div>
         )}
 
-        <div className="p-5 flex flex-col h-full" dir="rtl">
+        {/* Normal content */}
+        <div className={`p-5 flex flex-col transition-all duration-500 ${isHovered ? "opacity-0 scale-95 absolute inset-0 pointer-events-none" : "opacity-100 scale-100"}`}
+          style={{ minHeight: "240px" }}
+        >
           {/* Icon */}
           <div className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm"
             style={{ background: tool.iconBg }}>
-            <tool.icon className="w-7 h-7" style={{ color: tool.gradient.includes("#1A237E") ? "#1A237E" : tool.gradient.includes("#4A148C") ? "#6A1B9A" : tool.gradient.includes("#E65100") ? "#E65100" : tool.gradient.includes("#00695C") ? "#00695C" : "#1565C0" }} />
+            <tool.icon className="w-7 h-7" style={{ color: iconColor }} />
           </div>
 
           {/* Title */}
-          <h3 className="text-base font-bold text-gray-900 mb-2 leading-snug group-hover:text-blue-800 transition-colors">
+          <h3 className="text-base font-bold text-gray-900 mb-2 leading-snug">
             {getName(tool, lang)}
           </h3>
 
@@ -287,9 +394,67 @@ function ToolCard({ tool, lang }: { tool: ToolDef; lang: AppLanguage }) {
 
           {/* Arrow indicator */}
           <div className="mt-4 flex items-center gap-2 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-            style={{ color: tool.gradient.includes("#1A237E") ? "#1565C0" : tool.gradient.includes("#4A148C") ? "#7B1FA2" : tool.gradient.includes("#E65100") ? "#E65100" : "#00897B" }}>
+            style={{ color: accentColor }}>
             <span>{lang === "fr" ? "Ouvrir l'outil" : lang === "en" ? "Open tool" : "افتح الأداة"}</span>
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          </div>
+        </div>
+
+        {/* Hover Preview Overlay */}
+        <div className={`absolute inset-0 top-[4px] flex flex-col transition-all duration-500 ${isHovered ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"}`}
+          style={{ background: `linear-gradient(135deg, ${accentColor}08, ${accentColor}15)` }}
+        >
+          <div className="p-5 flex flex-col h-full">
+            {/* Preview header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ background: tool.gradient }}>
+                <PreviewIcon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
+                  {lang === "fr" ? "Aperçu rapide" : lang === "en" ? "Quick Preview" : "معاينة سريعة"}
+                </p>
+                <p className="text-[11px] text-gray-400">
+                  {lang === "fr" ? "Comment ça marche" : lang === "en" ? "How it works" : "كيف تعمل الأداة"}
+                </p>
+              </div>
+            </div>
+
+            {/* Animated steps */}
+            <div className="flex-1 space-y-2.5">
+              {previewSteps.map((step, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3 transition-all duration-500"
+                  style={{
+                    opacity: isHovered ? 1 : 0,
+                    transform: isHovered ? "translateX(0)" : "translateX(20px)",
+                    transitionDelay: `${idx * 120}ms`,
+                  }}
+                >
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm"
+                    style={{ background: tool.gradient }}>
+                    {idx + 1}
+                  </div>
+                  <p className="text-sm text-gray-700 font-medium">{step}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA button */}
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Play className="w-3.5 h-3.5" style={{ color: accentColor }} />
+                <span className="text-xs font-bold" style={{ color: accentColor }}>
+                  {lang === "fr" ? "Essayer maintenant" : lang === "en" ? "Try now" : "جرّب الآن"}
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 hover:scale-110"
+                style={{ background: tool.gradient }}>
+                <ArrowLeft className="w-4 h-4 text-white" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -340,10 +505,13 @@ function TeacherTools() {
                 "Everything a Tunisian teacher needs in AI tools — from preparation to evaluation to creativity"
               )}
             </p>
+            <p className="text-sm text-blue-200/70 mt-3">
+              {t("مرّر فوق أي بطاقة لمعاينة كيفية عمل الأداة", "Survolez une carte pour voir comment l'outil fonctionne", "Hover over any card to preview how the tool works")}
+            </p>
           </div>
 
           {/* Quick stats */}
-          <div className="flex justify-center gap-8 mt-8">
+          <div className="flex justify-center gap-8 mt-8 flex-wrap">
             {CATEGORIES.map((cat) => {
               const CatIcon = cat.icon;
               return (

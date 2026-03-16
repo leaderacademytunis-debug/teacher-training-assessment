@@ -76,9 +76,9 @@ export default function Contact() {
     },
     {
       icon: Phone,
-      label: t("الهاتف / واتساب", "Téléphone / WhatsApp", "Phone / WhatsApp"),
-      value: t("متاح عبر البريد الإلكتروني", "Disponible par email", "Available via email"),
-      href: "#",
+      label: t("الهاتف", "Téléphone", "Phone"),
+      value: "52 339 339 / 99 997 729",
+      href: "tel:+21652339339",
       color: "#FF6D00",
       bg: "bg-orange-100",
     },
@@ -193,10 +193,16 @@ export default function Contact() {
                           "Your message has been received. Our team will contact you via email within 24 hours."
                         )}
                       </p>
-                      <div className="bg-blue-50 rounded-xl p-4 mb-6 text-sm text-blue-700">
+                      <div className="bg-blue-50 rounded-xl p-4 mb-4 text-sm text-blue-700">
                         {t("📧 يمكنك أيضاً التواصل المباشر عبر: ", "📧 Vous pouvez aussi nous contacter directement : ", "📧 You can also contact us directly: ")}
                         <a href="mailto:leaderacademy216@gmail.com" className="font-semibold underline">
                           leaderacademy216@gmail.com
+                        </a>
+                      </div>
+                      <div className="bg-green-50 rounded-xl p-4 mb-6 text-sm text-green-700">
+                        {t("📱 أو عبر الواتساب: ", "📱 Ou par WhatsApp : ", "📱 Or via WhatsApp: ")}
+                        <a href="https://wa.me/21652339339" target="_blank" rel="noopener noreferrer" className="font-semibold underline">
+                          +216 52 339 339
                         </a>
                       </div>
                       <Button onClick={() => setSubmitted(false)} style={{ background: "#1A237E" }} className="text-white">
@@ -383,17 +389,37 @@ export default function Contact() {
                 </CardContent>
               </Card>
 
+              {/* WhatsApp Direct */}
+              <a
+                href="https://wa.me/21652339339"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200 hover:bg-green-100 transition-colors group"
+              >
+                <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </div>
+                <div>
+                  <p className="font-bold text-green-800 text-sm">{t("تواصل عبر الواتساب", "Contactez via WhatsApp", "Contact via WhatsApp")}</p>
+                  <p className="text-green-600 text-xs font-semibold" dir="ltr">+216 52 339 339</p>
+                </div>
+              </a>
+
               {/* Leader Academy Card */}
               <Card className="shadow-lg border-0 overflow-hidden">
                 <div className="p-6" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
                   <h3 className="font-bold text-lg mb-2 text-white">Leader Academy</h3>
-                  <p className="text-blue-100 text-sm leading-relaxed">
+                  <p className="text-blue-100 text-sm leading-relaxed mb-3">
                     {t(
-                      "منصة تدريبية رائدة في توظيف الذكاء الاصطناعي في التدريس، مخصصة للمعلمين التونسيين.",
-                      "Plateforme de formation leader dans l'intégration de l'IA dans l'enseignement, dédiée aux enseignants tunisiens.",
-                      "A leading training platform for integrating AI in education, dedicated to Tunisian teachers."
+                      "هيكل تكوين خاص مرخّص في تعاطي نشاط التكوين المستمر، ترجع بالنظر إلى وزارة التكوين المهني والتشغيل.",
+                      "Centre de formation privé agréé pour la formation continue, sous la tutelle du Ministère de la Formation Professionnelle et de l'Emploi.",
+                      "Licensed private training center for continuous education, under the Ministry of Vocational Training and Employment."
                     )}
                   </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs px-2 py-1 rounded-full bg-white/20 text-white/90">عدد 6130916</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-white/20 text-white/90" dir="ltr">1457091MAM000</span>
+                  </div>
                 </div>
               </Card>
             </div>
@@ -403,8 +429,15 @@ export default function Contact() {
 
       {/* Footer */}
       <footer className="py-8 bg-gray-900 text-center">
-        <p className="text-gray-400 text-sm">
+        <p className="text-gray-400 text-sm mb-2">
           &copy; {new Date().getFullYear()} Leader Academy — {t("جميع الحقوق محفوظة", "Tous droits réservés", "All rights reserved")}
+        </p>
+        <p className="text-gray-500 text-xs">
+          {t(
+            "هيكل تكوين خاص مرخّص — وزارة التكوين المهني والتشغيل — عدد 6130916",
+            "Centre de formation privé agréé — Ministère de la Formation Professionnelle — N° 6130916",
+            "Licensed private training center — Ministry of Vocational Training — No. 6130916"
+          )}
         </p>
       </footer>
     </div>
