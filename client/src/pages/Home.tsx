@@ -1270,7 +1270,7 @@ export default function Home() {
       {/* ===== FEATURED CONTENT OF THE WEEK ===== */}
       <FeaturedContentSection t={t} />
 
-      {/* ===== TESTIMONIALS SECTION - TRUST WALL ===== */}
+      {/* ===== TESTIMONIALS SECTION - HYBRID TRUST WALL WITH REAL PHOTOS ===== */}
       <section className="py-24 lg:py-32 relative overflow-hidden" style={{ background: "#FFFFFF" }} dir={language === "ar" ? "rtl" : "ltr"}>
         {/* Subtle decorative elements */}
         <div className="absolute top-0 left-0 w-72 h-72 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #1A237E, transparent 70%)", transform: "translate(-30%, -30%)" }} />
@@ -1295,19 +1295,29 @@ export default function Home() {
             </p>
           </div>
 
-          {/* 3-Column Trust Wall Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
-            {(featuredReviews && featuredReviews.length > 0 ? featuredReviews : [
+          {/* 3-Column Hybrid Trust Wall Grid */}
+          {(() => {
+            const coursePhotos = [
+              "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-1_cc210bfe.jpg",
+              "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-2_7da659dd.jpg",
+              "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-7_fc279829.webp",
+            ];
+            const accentColors = ["#1A237E", "#FF6D00", "#1565C0"];
+            const avatarPhotos = [
+              "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-3_beade4d9.jpg",
+              "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-5_1ccdb6df.jpg",
+              "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-6_e21e67db.jpg",
+            ];
+            const staticTestimonials = [
               {
                 review: { id: -1, rating: 5, comment: t(
                   "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية في عالم التعليم!",
                   "Je passais deux heures à préparer une seule fiche. Avec EDUGPT, je fais le même travail en 5 minutes avec une qualité supérieure. C'est une vraie révolution!",
                   "I used to spend two hours preparing a single lesson plan. With EDUGPT, I do the same work in 5 minutes with superior quality. A true revolution!"
                 ), createdAt: new Date() },
-                user: { id: -1, name: t("الأستاذ محمد البوعزيزي", "Mohamed Bouazizi", "Mohamed Bouazizi"), arabicName: "الأستاذ محمد البوعزيزي" },
+                user: { id: -1, name: t("الأستاذة سمر", "Samar", "Samar"), arabicName: "الأستاذة سمر" },
                 course: { id: -1, titleAr: "EDUGPT" },
-                _jobTitle: t("أستاذ تعليم ابتدائي", "Enseignant du primaire", "Primary School Teacher"),
-                _avatarBg: "linear-gradient(135deg, #1A237E 0%, #283593 100%)",
+                _jobTitle: t("أستاذة تعليم ابتدائي", "Enseignante du primaire", "Primary School Teacher"),
               },
               {
                 review: { id: -2, rating: 5, comment: t(
@@ -1315,10 +1325,9 @@ export default function Home() {
                   "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision et offrir un soutien personnalisé.",
                   "Instant assessment changed how I track my students. I can now know each student's level precisely and offer personalized support."
                 ), createdAt: new Date() },
-                user: { id: -2, name: t("الأستاذة مريم العامري", "Mariem Amri", "Mariem Amri"), arabicName: "الأستاذة مريم العامري" },
+                user: { id: -2, name: t("الأستاذة هاجر", "Hajer", "Hajer"), arabicName: "الأستاذة هاجر" },
                 course: { id: -2, titleAr: t("التصحيح الأعمى", "Correction aveugle", "Blind Grading") },
                 _jobTitle: t("خبيرة تربوية", "Experte pédagogique", "Educational Expert"),
-                _avatarBg: "linear-gradient(135deg, #FF6D00 0%, #FF8F00 100%)",
               },
               {
                 review: { id: -3, rating: 5, comment: t(
@@ -1326,135 +1335,185 @@ export default function Home() {
                   "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique, les formateurs sont experts. Le meilleur investissement de ma carrière.",
                   "The AI integration in teaching course was a real turning point. Practical content, expert trainers. The best investment in my career."
                 ), createdAt: new Date() },
-                user: { id: -3, name: t("الأستاذ أحمد الطرابلسي", "Ahmed Trabelsi", "Ahmed Trabelsi"), arabicName: "الأستاذ أحمد الطرابلسي" },
+                user: { id: -3, name: t("الأستاذة سامية", "Sameh", "Sameh"), arabicName: "الأستاذة سامية" },
                 course: { id: -3, titleAr: t("الدورات التدريبية", "Formations", "Training Courses") },
-                _jobTitle: t("أستاذ تعليم ثانوي", "Enseignant du secondaire", "Secondary School Teacher"),
-                _avatarBg: "linear-gradient(135deg, #1565C0 0%, #1E88E5 100%)",
+                _jobTitle: t("أستاذة تعليم ثانوي", "Enseignante du secondaire", "Secondary School Teacher"),
               },
-            ] as any[]).map((item: any, i: number) => {
-              const accentColors = ["#1A237E", "#FF6D00", "#1565C0"];
-              const accentColor = accentColors[i % 3];
-              const avatarGradients = [
-                "linear-gradient(135deg, #1A237E 0%, #283593 100%)",
-                "linear-gradient(135deg, #FF6D00 0%, #FF8F00 100%)",
-                "linear-gradient(135deg, #1565C0 0%, #1E88E5 100%)",
-              ];
-              const displayName = item.user?.arabicName || item.user?.name || t("مشارك", "Participant", "Participant");
-              const initial = displayName.charAt(0);
-              const courseName = item.course?.titleAr || "";
-              const jobTitle = item._jobTitle || t("مشارك في الدورة", "Participant au cours", "Course participant");
-              
-              return (
-                <div
-                  key={item.review.id}
-                  className="group relative bg-white p-8 lg:p-9 transition-all duration-500 ease-out hover:-translate-y-3 cursor-default"
-                  style={{
-                    borderRadius: "20px",
-                    border: "1px solid rgba(0,0,0,0.06)",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.02)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,0,0,0.08), 0 20px 60px rgba(0,0,0,0.04), 0 0 0 2px ${accentColor}20`;
-                    e.currentTarget.style.borderColor = `${accentColor}35`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.02)";
-                    e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)";
-                  }}
-                >
-                  {/* Decorative accent line on top */}
-                  <div 
-                    className="absolute top-0 rounded-t-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{ 
-                      left: 0, right: 0, height: "3px",
-                      background: `linear-gradient(90deg, ${accentColor}, ${accentColor}80, ${accentColor}40)`,
-                    }} 
-                  />
-
-                  {/* Quote icon - elegant corner placement */}
-                  <div className="absolute top-6 left-6" style={{ transform: language === "ar" ? "none" : "scaleX(-1)" }}>
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accentColor}08, ${accentColor}04)` }}>
-                      <Quote className="w-6 h-6 opacity-40" style={{ color: accentColor }} />
-                    </div>
-                  </div>
-
-                  {/* 5 Golden Stars */}
-                  <div className="flex gap-1 mb-6 mt-2">
-                    {Array.from({ length: 5 }).map((_: any, s: number) => (
-                      <Star 
-                        key={s} 
-                        className="w-[18px] h-[18px] fill-current transition-transform duration-300" 
-                        style={{ 
-                          color: s < (item.review.rating || 5) ? "#F59E0B" : "#E5E7EB",
-                          transitionDelay: `${s * 50}ms`,
-                        }} 
-                      />
-                    ))}
-                  </div>
-
-                  {/* Review Text - Almarai 16px */}
-                  <p 
-                    className="text-gray-600 leading-[1.9] mb-7" 
-                    style={{ 
-                      fontFamily: "'Almarai', 'Cairo', sans-serif", 
-                      fontSize: "16px",
-                      lineHeight: "1.9",
-                    }}
-                  >
-                    <span className="text-xl font-bold opacity-30" style={{ color: accentColor }}>"</span>
-                    {item.review.comment}
-                    <span className="text-xl font-bold opacity-30" style={{ color: accentColor }}>"</span>
-                  </p>
-
-                  {/* Course badge */}
-                  {courseName && (
-                    <div className="mb-7">
-                      <span 
-                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide"
-                        style={{ 
-                          background: `${accentColor}08`, 
-                          color: accentColor,
-                          border: `1px solid ${accentColor}15`,
-                        }}
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {courseName}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Divider + Teacher Profile */}
-                  <div className="border-t border-gray-100/80 pt-6">
-                    <div className="flex items-center gap-4">
-                      {/* Circular Avatar - 60px */}
-                      <div 
-                        className="w-[60px] h-[60px] rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg transition-transform duration-300 group-hover:scale-110"
-                        style={{ 
-                          background: item._avatarBg || avatarGradients[i % 3],
-                          boxShadow: `0 4px 14px ${accentColor}30`,
-                        }}
-                      >
-                        {initial}
+            ];
+            const items = (featuredReviews && featuredReviews.length > 0 ? featuredReviews : staticTestimonials) as any[];
+            
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
+                {items.map((item: any, i: number) => {
+                  const accentColor = accentColors[i % 3];
+                  const displayName = item.user?.arabicName || item.user?.name || t("مشارك", "Participant", "Participant");
+                  const initial = displayName.charAt(0);
+                  const courseName = item.course?.titleAr || "";
+                  const jobTitle = item._jobTitle || t("مشارك في الدورة", "Participant au cours", "Course participant");
+                  const photoUrl = coursePhotos[i % coursePhotos.length];
+                  const avatarUrl = avatarPhotos[i % avatarPhotos.length];
+                  
+                  return (
+                    <div
+                      key={item.review.id}
+                      className="group relative bg-white overflow-hidden transition-all duration-500 ease-out hover:-translate-y-3 cursor-default"
+                      style={{
+                        borderRadius: "20px",
+                        border: "1px solid rgba(0,0,0,0.06)",
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.05), 0 10px 48px rgba(0,0,0,0.03)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = `0 16px 48px rgba(0,0,0,0.10), 0 24px 64px rgba(0,0,0,0.06), 0 0 0 2px ${accentColor}25`;
+                        e.currentTarget.style.borderColor = `${accentColor}40`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.05), 0 10px 48px rgba(0,0,0,0.03)";
+                        e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)";
+                      }}
+                    >
+                      {/* Course Photo - Top Section (3:2 Aspect Ratio) */}
+                      <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
+                        <img
+                          src={photoUrl}
+                          alt={t("صورة من الدورة التدريبية", "Photo de la formation", "Training course photo")}
+                          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                          loading="lazy"
+                        />
+                        {/* Gradient overlay at bottom of image */}
+                        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.05) 40%, transparent 60%)" }} />
+                        {/* Course badge on image */}
+                        {courseName && (
+                          <div className="absolute bottom-3 right-3">
+                            <span 
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md"
+                              style={{ 
+                                background: "rgba(255,255,255,0.92)", 
+                                color: accentColor,
+                                boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+                              }}
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              {courseName}
+                            </span>
+                          </div>
+                        )}
+                        {/* Decorative accent line */}
+                        <div 
+                          className="absolute bottom-0 left-0 right-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                          style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}80, ${accentColor}40)` }} 
+                        />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        {/* Bold Name */}
-                        <p className="font-extrabold text-gray-900 text-[15px] truncate" style={{ fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
-                          {displayName}
+
+                      {/* Card Content */}
+                      <div className="relative p-7 lg:p-8">
+                        {/* Avatar overlapping the image-content boundary */}
+                        <div className="absolute -top-8 right-7" style={{ direction: "ltr" }}>
+                          <div 
+                            className="w-[60px] h-[60px] rounded-full overflow-hidden flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
+                            style={{ 
+                              border: "3px solid #FFFFFF",
+                              boxShadow: `0 4px 16px ${accentColor}30`,
+                            }}
+                          >
+                            <img
+                              src={avatarUrl}
+                              alt={displayName}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Quote icon */}
+                        <div className="mb-4 mt-2">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accentColor}10, ${accentColor}05)` }}>
+                            <Quote className="w-5 h-5 opacity-50" style={{ color: accentColor }} />
+                          </div>
+                        </div>
+
+                        {/* Review Text - Almarai 16px */}
+                        <p 
+                          className="text-gray-600 leading-[1.9] mb-5" 
+                          style={{ 
+                            fontFamily: "'Almarai', 'Cairo', sans-serif", 
+                            fontSize: "16px",
+                            lineHeight: "1.9",
+                          }}
+                        >
+                          {item.review.comment}
                         </p>
-                        {/* Gray Job Title */}
-                        <p className="text-gray-400 text-[13px] mt-0.5 truncate" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                          {jobTitle}
-                        </p>
+
+                        {/* 5 Golden Stars */}
+                        <div className="flex gap-1 mb-6">
+                          {Array.from({ length: 5 }).map((_: any, s: number) => (
+                            <Star 
+                              key={s} 
+                              className="w-[17px] h-[17px] fill-current" 
+                              style={{ 
+                                color: s < (item.review.rating || 5) ? "#F59E0B" : "#E5E7EB",
+                              }} 
+                            />
+                          ))}
+                        </div>
+
+                        {/* Divider + Teacher Profile */}
+                        <div className="border-t border-gray-100 pt-5">
+                          <div className="flex items-center gap-3.5">
+                            {/* Small circular avatar for identity */}
+                            <div 
+                              className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0"
+                              style={{ 
+                                border: `2px solid ${accentColor}20`,
+                              }}
+                            >
+                              <img
+                                src={avatarUrl}
+                                alt={displayName}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {/* Bold Name */}
+                              <p className="font-extrabold text-gray-900 text-[15px] truncate" style={{ fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+                                {displayName}
+                              </p>
+                              {/* Gray Job Title */}
+                              <p className="text-gray-400 text-[13px] mt-0.5 truncate" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                                {jobTitle}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* Real Course Photos Gallery Strip */}
+          <div className="mt-16 mb-8">
+            <p className="text-center text-gray-400 text-sm mb-6 font-medium" style={{ fontFamily: "'Almarai', sans-serif" }}>
+              {t("لقطات حقيقية من دوراتنا التدريبية", "Photos réelles de nos formations", "Real photos from our training courses")}
+            </p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              {[
+                "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-4_f67039c1.jpg",
+                "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-3_beade4d9.jpg",
+                "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-5_1ccdb6df.jpg",
+                "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-photo-6_e21e67db.jpg",
+              ].map((url, idx) => (
+                <div key={idx} className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden group/thumb cursor-pointer transition-transform duration-300 hover:scale-105" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+                  <img src={url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover/thumb:scale-110" loading="lazy" />
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
           {/* Trust Metrics Bar */}
-          <div className="mt-20 py-8 px-6 rounded-2xl" style={{ background: "linear-gradient(135deg, rgba(26,35,126,0.03), rgba(21,101,192,0.02))" }}>
+          <div className="mt-12 py-8 px-6 rounded-2xl" style={{ background: "linear-gradient(135deg, rgba(26,35,126,0.03), rgba(21,101,192,0.02))" }}>
             <div className="flex flex-wrap justify-center items-center gap-10 lg:gap-16">
               {/* Metric 1 */}
               <div className="flex items-center gap-3">
@@ -1520,7 +1579,7 @@ export default function Home() {
             ابدأ رحلتك مع الذكاء الاصطناعي التربوي
           </h2>
           <p className="text-blue-100 text-xl mb-10 max-w-2xl mx-auto">
-            انضم إلى أكثر من 500 مدرّس تونسي يستخدمون Leader Academy لتحويل تجربتهم التدريسية
+            انضم إلى أكثر من 5000 مدرّس تونسي يستخدمون Leader Academy لتحويل تجربتهم التدريسية
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/assistant">

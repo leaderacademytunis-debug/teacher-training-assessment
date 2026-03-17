@@ -2715,3 +2715,18 @@
 - [x] Tool badges (EDUGPT, التصحيح الأعمى, الدورات التدريبية) with sparkle icons
 - [x] Trust bar with 4 stats (+5000, 4.9/5, 98%, 12)
 - [x] Fixed newsletter 500 to 5000 for consistency
+
+## Feature: Hybrid Testimonials with Real Course Photos
+- [x] Upload 7 course photos to S3 CDN
+- [x] Redesign testimonial cards with course photo at top (3:2 aspect ratio)
+- [x] White background (#FFFFFF) with 3-column grid
+- [x] Cards with 20px border-radius and soft shadow (floating effect)
+- [x] Quote icon + Almarai 16px text for testimonial
+- [x] 5 golden stars below testimonial text
+- [x] Circular avatar (60px) overlapping card frame elegantly
+- [x] Name (bold) + job title (gray) next to avatar
+- [x] Hover effect: image zoom-in + card elevation
+- [x] RTL/LTR compatibility for 3 languages
+- [x] Dynamic reviews from DB with static fallback using real photos
+- [x] Photo gallery section with 4 individual teacher photos
+- [x] Trust bar with 4 stats (+5000, 4.9/5, 98%, 12)
