@@ -217,7 +217,7 @@ const SMART_TOOLS: {
 ];
 
 const STATS = [
-  { value: "+500", labelAr: "مدرّس مُكوَّن", labelFr: "Enseignants formés" },
+  { value: "+5000", labelAr: "مدرّس مُكوَّن", labelFr: "Enseignants formés" },
   { value: "12", labelAr: "برنامج تدريبي", labelFr: "Programmes de formation" },
   { value: "98%", labelAr: "نسبة الرضا", labelFr: "Taux de satisfaction" },
   { value: "2026", labelAr: "متوافق مع البرامج", labelFr: "Conforme aux programmes" },
@@ -551,7 +551,7 @@ function NewsletterSection() {
         {/* Trust indicators */}
         <div className="flex flex-wrap justify-center gap-6 mt-8 text-blue-200 text-sm">
           <span className="flex items-center gap-2"><Shield className="w-4 h-4" />{t("لا رسائل مزعجة", "Pas de spam", "No spam")}</span>
-          <span className="flex items-center gap-2"><Users className="w-4 h-4" />{t("+500 مدرس تونسي", "+500 enseignants", "+500 teachers")}</span>
+          <span className="flex items-center gap-2"><Users className="w-4 h-4" />{t("+5000 مدرس تونسي", "+5000 enseignants", "+5000 teachers")}</span>
           <span className="flex items-center gap-2"><Award className="w-4 h-4" />{t("محتوى حصري", "Contenu exclusif", "Exclusive content")}</span>
         </div>
       </div>
@@ -830,7 +830,7 @@ export default function Home() {
                   <div className="flex items-center gap-0.5">
                     {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />)}
                   </div>
-                  <p className="text-gray-400 text-sm">{t("+500 مدرّس يثق بنا", "+500 enseignants nous font confiance", "+500 teachers trust us")}</p>
+                  <p className="text-gray-400 text-sm">{t("+5000 مدرّس يثق بنا", "+5000 enseignants nous font confiance", "+5000 teachers trust us")}</p>
                 </div>
               </div>
             </div>
@@ -1407,7 +1407,7 @@ export default function Home() {
               <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(26,35,126,0.06)" }}>
                 <Users className="w-4 h-4" style={{ color: "#1A237E" }} />
               </div>
-              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("+500 مدرّس تونسي", "+500 enseignants tunisiens", "+500 Tunisian teachers")}</span>
+              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("+5000 مدرّس تونسي", "+5000 enseignants tunisiens", "+5000 Tunisian teachers")}</span>
             </div>
             <div className="hidden sm:block w-px h-6 bg-gray-200" />
             <div className="flex items-center gap-2">
