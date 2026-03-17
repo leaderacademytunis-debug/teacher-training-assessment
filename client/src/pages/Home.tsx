@@ -1042,82 +1042,223 @@ export default function Home() {
       </section>
 
       {/* ===== PROGRAMS SECTION ===== */}
-      <section id="programs" className="py-20 bg-white">
+      <section id="programs" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium mb-4" style={{ background: "rgba(255,109,0,0.1)", color: "#FF6D00" }}>
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold mb-5" style={{ background: "rgba(255,109,0,0.08)", color: "#FF6D00" }}>
               <GraduationCap className="w-4 h-4" />
-              <span>برامجنا التدريبية</span>
+              <span>{t("برامجنا التدريبية", "Nos formations", "Training Programs")}</span>
             </div>
-            <h2 className="text-4xl font-black mb-4" style={{ color: "#1A237E", fontFamily: "Cairo, sans-serif" }}>
+            <h2 className="text-4xl md:text-5xl font-black mb-5" style={{ color: "#1A237E", fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
               {t("اختر برنامجك التدريبي", "Choisissez votre programme", "Choose Your Training Program")}
             </h2>
-            <p className="text-gray-600 text-lg">
-              {t("دورات متخصصة لكل مرحلة ومادة تعليمية", "Formations spécialisées pour chaque niveau et matière", "Specialized courses for every level and subject")}
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed">
+              {t(
+                "دورات متخصصة مصمّمة بعناية لتطوير مهاراتك التربوية والرقمية، مع شهادات معتمدة",
+                "Des formations spécialisées conçues pour développer vos compétences pédagogiques et numériques",
+                "Specialized courses designed to develop your pedagogical and digital skills, with certified diplomas"
+              )}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses?.map((course) => {
-              const Icon = courseIcons[course.category] || BookOpen;
-              const isEnrolled = enrolledCourseIds.has(course.id);
-              return (
-                <Card key={course.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
-                  {/* Card top accent */}
-                  <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #1A237E, #FF6D00)" }} />
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "rgba(26,35,126,0.08)" }}>
-                        <Icon className="w-6 h-6" style={{ color: "#1A237E" }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-900 text-base leading-tight mb-1" style={{ fontFamily: "Cairo, sans-serif" }}>{course.titleAr}</h3>
-                        {course.duration && (
-                          <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                            <span>⏱</span>
-                            {course.duration} {t("ساعة", "h", "h")}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed mb-5 line-clamp-2">
-                      {course.descriptionAr || t("دورة تدريبية متخصصة لتطوير مهارات المعلمين", "Formation spécialisée pour développer les compétences des enseignants", "Specialized training to develop teachers' skills")}
-                    </p>
-                    {user ? (
-                      isEnrolled ? (
-                        <Link href={`/courses/${course.id}`}>
-                          <Button className="w-full text-sm" variant="outline" style={{ borderColor: "#1A237E", color: "#1A237E" }}>
-                            {t("متابعة الدورة", "Continuer", "Continue")}
-                          </Button>
-                        </Link>
-                      ) : (
-                        <Link href={`/courses/${course.id}`}>
-                          <Button className="w-full text-sm text-white font-semibold" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                            {t("التسجيل في الدورة", "S'inscrire", "Enroll")}
-                          </Button>
-                        </Link>
-                      )
-                    ) : (
-                      <a href={getLoginUrl()}>
-                        <Button className="w-full text-sm text-white font-semibold" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
-                          {t("سجّل للالتحاق", "Se connecter", "Sign in to Enroll")}
-                        </Button>
-                      </a>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          {/* Featured Courses Grid - 4 cards */}
+          {(() => {
+            const FEATURED_COVERS: Record<string, { img: string; badgeAr: string; badgeFr: string; badgeEn: string; badgeColor: string; rating: number; students: number; descAr: string; descFr: string; descEn: string }> = {
+              "primary_teachers": {
+                img: "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-primary-teachers-22HWdhUvhChXUErJygCu7Z.webp",
+                badgeAr: "الأكثر شمولاً", badgeFr: "Le plus complet", badgeEn: "Most Comprehensive",
+                badgeColor: "#1A237E",
+                rating: 4.9, students: 342,
+                descAr: "برنامج شامل لتأهيل معلمي المرحلة الابتدائية وفق المنهج التونسي الرسمي",
+                descFr: "Programme complet pour qualifier les enseignants du primaire selon le curriculum tunisien",
+                descEn: "Comprehensive program to qualify primary teachers per the Tunisian curriculum"
+              },
+              "digital_teacher_ai": {
+                img: "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-ai-digital-teacher-KChS7RNLizhz8EaP2yDNfe.webp",
+                badgeAr: "الأكثر طلباً", badgeFr: "Le plus demandé", badgeEn: "Most Popular",
+                badgeColor: "#FF6D00",
+                rating: 4.8, students: 528,
+                descAr: "تعلّم توظيف الذكاء الاصطناعي في التدريس وإعداد الدروس الرقمية",
+                descFr: "Apprenez à utiliser l'IA dans l'enseignement et la préparation numérique",
+                descEn: "Learn to leverage AI in teaching and digital lesson preparation"
+              },
+              "special_needs_companions": {
+                img: "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-special-needs-5fM9gP4Ep9BwSgBvKbJcid.webp",
+                badgeAr: "فريد", badgeFr: "Unique", badgeEn: "Unique",
+                badgeColor: "#00897B",
+                rating: 4.7, students: 186,
+                descAr: "تأهيل مرافقي التلاميذ ذوي صعوبات التعلم بأحدث الأساليب التربوية",
+                descFr: "Former les accompagnants d'élèves en difficulté avec les méthodes modernes",
+                descEn: "Train learning support companions with the latest pedagogical methods"
+              },
+              "english_teachers": {
+                img: "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-english-training-9cPsmZ4bKgqCVy9M8z7Mue.webp",
+                badgeAr: "دولي", badgeFr: "International", badgeEn: "International",
+                badgeColor: "#5C6BC0",
+                rating: 4.6, students: 215,
+                descAr: "برنامج تدريب معلمي اللغة الإنجليزية بمعايير دولية وشهادة معتمدة",
+                descFr: "Programme de formation des enseignants d'anglais aux standards internationaux",
+                descEn: "English teacher training program with international standards and certification"
+              }
+            };
+            const featuredOrder = ["digital_teacher_ai", "primary_teachers", "special_needs_companions", "english_teachers"];
+            const featuredCourses = featuredOrder
+              .map(cat => courses?.find(c => c.category === cat))
+              .filter(Boolean);
 
-          {(!courses || courses.length === 0) && (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(26,35,126,0.08)" }}>
-                <BookOpen className="w-10 h-10" style={{ color: "#1A237E" }} />
-              </div>
-              <p className="text-gray-500 text-lg">{t("لا توجد دورات متاحة حالياً", "Aucune formation disponible", "No courses available")}</p>
-            </div>
-          )}
+            if (!featuredCourses || featuredCourses.length === 0) {
+              // Fallback: show first 4 courses from API
+              const fallback = courses?.slice(0, 4) || [];
+              if (fallback.length === 0 && !isLoading) {
+                return (
+                  <div className="text-center py-16">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(26,35,126,0.08)" }}>
+                      <BookOpen className="w-10 h-10" style={{ color: "#1A237E" }} />
+                    </div>
+                    <p className="text-gray-500 text-lg">{t("لا توجد دورات متاحة حالياً", "Aucune formation disponible", "No courses available")}</p>
+                  </div>
+                );
+              }
+            }
+
+            const displayCourses = featuredCourses.length > 0 ? featuredCourses : (courses?.slice(0, 4) || []);
+
+            return (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7">
+                  {displayCourses.map((course) => {
+                    if (!course) return null;
+                    const cover = FEATURED_COVERS[course.category];
+                    const isEnrolled = enrolledCourseIds.has(course.id);
+                    const rating = cover?.rating || 4.5;
+                    const students = cover?.students || 100;
+                    return (
+                      <div
+                        key={course.id}
+                        className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-400 flex flex-col"
+                        style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+                      >
+                        {/* Card Image Header */}
+                        <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                          <img
+                            src={cover?.img || "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/course-primary-teachers-22HWdhUvhChXUErJygCu7Z.webp"}
+                            alt={course.titleAr}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                          />
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          {/* Badge */}
+                          {cover && (
+                            <div
+                              className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg"
+                              style={{ background: cover.badgeColor }}
+                            >
+                              {t(cover.badgeAr, cover.badgeFr, cover.badgeEn)}
+                            </div>
+                          )}
+                          {/* Duration pill */}
+                          {course.duration && (
+                            <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>{course.duration} {t("ساعة", "h", "h")}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Card Content */}
+                        <div className="p-5 flex flex-col flex-1">
+                          <h3
+                            className="font-bold text-gray-900 text-base leading-snug mb-2 line-clamp-2"
+                            style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}
+                          >
+                            {course.titleAr}
+                          </h3>
+                          <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2 flex-1">
+                            {cover
+                              ? t(cover.descAr, cover.descFr, cover.descEn)
+                              : (course.descriptionAr || t("دورة تدريبية متخصصة", "Formation spécialisée", "Specialized training"))
+                            }
+                          </p>
+
+                          {/* Rating & Students */}
+                          <div className="flex items-center justify-between mb-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className="w-4 h-4"
+                                  style={{
+                                    color: s <= Math.floor(rating) ? "#F59E0B" : "#E5E7EB",
+                                    fill: s <= Math.floor(rating) ? "#F59E0B" : "none"
+                                  }}
+                                />
+                              ))}
+                              <span className="text-gray-600 font-semibold mr-1">{rating}</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-gray-400">
+                              <Users className="w-3.5 h-3.5" />
+                              <span className="text-xs">{students}+</span>
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          {user ? (
+                            isEnrolled ? (
+                              <Link href={`/courses/${course.id}`}>
+                                <button
+                                  className="w-full py-2.5 rounded-xl text-sm font-bold border-2 transition-all duration-200 hover:shadow-md"
+                                  style={{ borderColor: "#1A237E", color: "#1A237E", background: "transparent" }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = "#1A237E"; e.currentTarget.style.color = "#fff"; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1A237E"; }}
+                                >
+                                  {t("متابعة الدورة", "Continuer", "Continue")}
+                                </button>
+                              </Link>
+                            ) : (
+                              <Link href={`/courses/${course.id}`}>
+                                <button
+                                  className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 hover:shadow-lg hover:brightness-110"
+                                  style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}
+                                >
+                                  {t("تفاصيل الدورة", "Détails du cours", "Course Details")}
+                                </button>
+                              </Link>
+                            )
+                          ) : (
+                            <a href={getLoginUrl()}>
+                              <button
+                                className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200 hover:shadow-lg hover:brightness-110"
+                                style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}
+                              >
+                                {t("سجّل الآن", "S'inscrire", "Enroll Now")}
+                              </button>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* View All Ghost Button */}
+                <div className="text-center mt-14">
+                  <Link href="/courses">
+                    <button
+                      className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl text-base font-bold border-2 transition-all duration-300 hover:shadow-lg group/btn"
+                      style={{ borderColor: "#1A237E", color: "#1A237E", background: "transparent" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "#1A237E"; e.currentTarget.style.color = "#fff"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#1A237E"; }}
+                    >
+                      <span>{t("استكشف كافة الدورات", "Voir toutes les formations", "Explore All Courses")}</span>
+                      <ArrowLeft className="w-5 h-5 transition-transform group-hover/btn:-translate-x-1" />
+                    </button>
+                  </Link>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </section>
 

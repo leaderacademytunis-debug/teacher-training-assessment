@@ -2615,3 +2615,16 @@
 - [x] Equal margins and padding for visual balance
 - [x] Trilingual support (AR/FR/EN) for all card content
 - [x] All 21 i18n-navbar tests passing
+
+## Homepage Redesign Phase 3: Courses Section (Professional Gallery)
+- [x] Reduce displayed courses from 10 to 4 featured courses (3 showing, 4th awaiting DB entry)
+- [x] Generate 4 professional AI course cover images (16:9 aspect ratio)
+- [x] Upload images to S3 CDN via manus-upload-file --webdev
+- [x] Redesign course cards: white bg, 16px border-radius, soft shadow with hover lift
+- [x] Card header: professional image with gradient overlay on hover
+- [x] Card badges: colored category tags (الأكثر طلباً, الأكثر شمولاً, فريد)
+- [x] Card content: Almarai Bold title, short description, star rating, subscriber count
+- [x] Action buttons: "تفاصيل الدورة" / "متابعة الدورة" with hover effects
+- [x] Add "استكشف كافة الدورات" ghost button below grid
+- [x] All images same 16:9 aspect ratio (object-cover)
+- [x] All 21 i18n-navbar tests passing
