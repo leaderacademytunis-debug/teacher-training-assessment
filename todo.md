@@ -2628,3 +2628,21 @@
 - [x] Add "استكشف كافة الدورات" ghost button below grid
 - [x] All images same 16:9 aspect ratio (object-cover)
 - [x] All 21 i18n-navbar tests passing
+
+## Add 7 Courses + Bundle Program + Admin Course Management
+- [x] Read DB schema - added price, coverImageUrl, descriptionShortAr, isBundle, bundleCourseIds, axes, schedule, isFeatured, sortOrder, originalPrice fields
+- [x] Generate 8 professional course cover images (7 courses + 1 bundle)
+- [x] Upload images to S3 CDN
+- [x] Add 7 independent courses to DB with topics, pricing, hours, descriptions
+- [x] Add 1 bundle program (7-in-1) with special pricing (930→350 د.ت)
+- [x] Update homepage to show new courses (featured courses with images)
+- [x] Improve admin dashboard: comprehensive course management with 4-tab form (Basic, Pricing, Content/Axes, Display)
+- [x] Admin: cover image URL field with live preview
+- [x] Admin: manage course topics/axes (add/remove with drag handles)
+- [x] Admin: set pricing (original + discounted) with discount calculator
+- [x] Admin: bundle management (select courses, show total value)
+- [x] Admin: featured/sort order/schedule controls
+- [x] Admin: stats summary (active courses, bundles, featured, total revenue)
+- [x] Admin: filter by category + show inactive toggle
+- [x] Updated routers.ts create/update procedures with all new fields
+- [x] 941/953 tests passing (12 pre-existing failures unrelated to our changes)

@@ -123,6 +123,7 @@ export const appRouter = router({
       .input(z.object({
         titleAr: z.string(),
         descriptionAr: z.string().optional(),
+        descriptionShortAr: z.string().optional(),
         category: z.enum([
           "primary_teachers",
           "arabic_teachers", 
@@ -130,9 +131,19 @@ export const appRouter = router({
           "french_teachers",
           "preschool_facilitators",
           "special_needs_companions",
-          "digital_teacher_ai"
+          "digital_teacher_ai",
+          "bundle"
         ]),
         duration: z.number().optional(),
+        price: z.number().optional(),
+        originalPrice: z.number().optional(),
+        coverImageUrl: z.string().optional(),
+        axes: z.string().optional(),
+        schedule: z.string().optional(),
+        isBundle: z.boolean().optional(),
+        bundleCourseIds: z.string().optional(),
+        isFeatured: z.boolean().optional(),
+        sortOrder: z.number().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         return await db.createCourse({
@@ -146,7 +157,27 @@ export const appRouter = router({
         id: z.number(),
         titleAr: z.string().optional(),
         descriptionAr: z.string().optional(),
+        descriptionShortAr: z.string().optional(),
+        category: z.enum([
+          "primary_teachers",
+          "arabic_teachers", 
+          "science_teachers",
+          "french_teachers",
+          "preschool_facilitators",
+          "special_needs_companions",
+          "digital_teacher_ai",
+          "bundle"
+        ]).optional(),
         duration: z.number().optional(),
+        price: z.number().optional(),
+        originalPrice: z.number().optional(),
+        coverImageUrl: z.string().optional(),
+        axes: z.string().optional(),
+        schedule: z.string().optional(),
+        isBundle: z.boolean().optional(),
+        bundleCourseIds: z.string().optional(),
+        isFeatured: z.boolean().optional(),
+        sortOrder: z.number().optional(),
         isActive: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {

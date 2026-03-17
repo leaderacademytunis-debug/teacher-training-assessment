@@ -428,6 +428,13 @@
       "when": 1773712683844,
       "tag": "0060_tiresome_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "5",
+      "when": 1773759592511,
+      "tag": "0061_fancy_arachne",
+      "breakpoints": true
     }
   ]
 }

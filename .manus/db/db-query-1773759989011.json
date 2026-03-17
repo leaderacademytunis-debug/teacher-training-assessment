@@ -1,0 +1,120 @@
+{
+  "query": "SELECT id, titleAr, duration, price, originalPrice, isBundle, isFeatured, sortOrder FROM courses WHERE isActive = 1 ORDER BY sortOrder;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, titleAr, duration, price, originalPrice, isBundle, isFeatured, sortOrder FROM courses WHERE isActive = 1 ORDER BY sortOrder;",
+  "rows": [
+    {
+      "id": "30001",
+      "titleAr": "دورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي ",
+      "duration": "15",
+      "price": "0",
+      "originalPrice": "NULL",
+      "isBundle": "0",
+      "isFeatured": "0",
+      "sortOrder": "0"
+    },
+    {
+      "id": "60001",
+      "titleAr": "English Teacher Training Program",
+      "duration": "32",
+      "price": "0",
+      "originalPrice": "NULL",
+      "isBundle": "0",
+      "isFeatured": "0",
+      "sortOrder": "0"
+    },
+    {
+      "id": "90001",
+      "titleAr": "تأهيل أصحاب الشهادات العليا",
+      "duration": "120",
+      "price": "0",
+      "originalPrice": "NULL",
+      "isBundle": "0",
+      "isFeatured": "0",
+      "sortOrder": "0"
+    },
+    {
+      "id": "120001",
+      "titleAr": "البرنامج الشامل: 7 دورات في دورة واحدة",
+      "duration": "80",
+      "price": "350",
+      "originalPrice": "930",
+      "isBundle": "1",
+      "isFeatured": "1",
+      "sortOrder": "0"
+    },
+    {
+      "id": "1",
+      "titleAr": "تأهيل مدرّسي الابتدائي",
+      "duration": "16",
+      "price": "150",
+      "originalPrice": "200",
+      "isBundle": "0",
+      "isFeatured": "1",
+      "sortOrder": "1"
+    },
+    {
+      "id": "2",
+      "titleAr": "تأهيل مدرّسي العربية",
+      "duration": "16",
+      "price": "150",
+      "originalPrice": "200",
+      "isBundle": "0",
+      "isFeatured": "1",
+      "sortOrder": "2"
+    },
+    {
+      "id": "3",
+      "titleAr": "تأهيل مدرّسي العلوم",
+      "duration": "16",
+      "price": "150",
+      "originalPrice": "200",
+      "isBundle": "0",
+      "isFeatured": "1",
+      "sortOrder": "3"
+    },
+    {
+      "id": "4",
+      "titleAr": "تأهيل مدرّسي الفرنسية ",
+      "duration": "12",
+      "price": "120",
+      "originalPrice": "160",
+      "isBundle": "0",
+      "isFeatured": "1",
+      "sortOrder": "4"
+    },
+    {
+      "id": "5",
+      "titleAr": "تأهيل منشّطي التحضيري",
+      "duration": "12",
+      "price": "120",
+      "originalPrice": "160",
+      "isBundle": "0",
+      "isFeatured": "1",
+      "sortOrder": "5"
+    },
+    {
+      "id": "6",
+      "titleAr": "تأهيل مرافقي التلاميذ ذوي الصعوبات",
+      "duration": "12",
+      "price": "120",
+      "originalPrice": "160",
+      "isBundle": "0",
+      "isFeatured": "1",
+      "sortOrder": "6"
+    },
+    {
+      "id": "7",
+      "titleAr": "المعلم الرقمي والذكاء الاصطناعي",
+      "duration": "12",
+      "price": "120",
+      "originalPrice": "160",
+      "isBundle": "0",
+      "isFeatured": "1",
+      "sortOrder": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitleAr\tduration\tprice\toriginalPrice\tisBundle\tisFeatured\tsortOrder\n30001\tدورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي \t15\t0\tNULL\t0\t0\t0\n60001\tEnglish Teacher Training Program\t32\t0\tNULL\t0\t0\t0\n90001\tتأهيل أصحاب الشهادات العليا\t120\t0\tNULL\t0\t0\t0\n120001\tالبرنامج الشامل: 7 دورات في دورة واحدة\t80\t350\t930\t1\t1\t0\n1\tتأهيل مدرّسي الابتدائي\t16\t150\t200\t0\t1\t1\n2\tتأهيل مدرّسي العربية\t16\t150\t200\t0\t1\t2\n3\tتأهيل مدرّسي العلوم\t16\t150\t200\t0\t1\t3\n4\tتأهيل مدرّسي الفرنسية \t12\t120\t160\t0\t1\t4\n5\tتأهيل منشّطي التحضيري\t12\t120\t160\t0\t1\t5\n6\tتأهيل مرافقي التلاميذ ذوي الصعوبات\t12\t120\t160\t0\t1\t6\n7\tالمعلم الرقمي والذكاء الاصطناعي\t12\t120\t160\t0\t1\t7\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

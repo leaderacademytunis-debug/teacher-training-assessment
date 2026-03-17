@@ -41,6 +41,7 @@ export const courses = mysqlTable("courses", {
   id: int("id").autoincrement().primaryKey(),
   titleAr: varchar("titleAr", { length: 255 }).notNull(),
   descriptionAr: text("descriptionAr"),
+  descriptionShortAr: varchar("descriptionShortAr", { length: 500 }), // Short description for cards
   category: mysqlEnum("category", [
     "primary_teachers",
     "arabic_teachers", 
@@ -48,12 +49,21 @@ export const courses = mysqlTable("courses", {
     "french_teachers",
     "preschool_facilitators",
     "special_needs_companions",
-    "digital_teacher_ai"
+    "digital_teacher_ai",
+    "bundle"
   ]).notNull(),
   duration: int("duration"), // in hours
   axes: text("axes"), // JSON array of course axes/topics
   batchNumber: varchar("batchNumber", { length: 100 }), // Batch/promotion number
+  coverImageUrl: text("coverImageUrl"), // S3 URL for course cover image
+  price: int("price").default(0), // Price in TND (dinars)
+  originalPrice: int("originalPrice"), // Original price before discount
+  isBundle: boolean("isBundle").default(false).notNull(), // Is this a bundle of courses?
+  bundleCourseIds: text("bundleCourseIds"), // JSON array of course IDs in the bundle
+  schedule: varchar("schedule", { length: 255 }), // e.g., "كل أحد 9:00 - 13:00"
   isActive: boolean("isActive").default(true).notNull(),
+  isFeatured: boolean("isFeatured").default(false).notNull(), // Show on homepage
+  sortOrder: int("sortOrder").default(0), // Display order
   createdBy: int("createdBy").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
