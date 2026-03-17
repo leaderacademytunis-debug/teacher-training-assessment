@@ -27,7 +27,8 @@ import {
   voiceAnalyses, VoiceAnalysis, InsertVoiceAnalysis,
   interventionPlans, InterventionPlan, InsertInterventionPlan,
   handwritingWorksheets, HandwritingWorksheet, InsertHandwritingWorksheet,
-  monthlyProgressReports, MonthlyProgressReport, InsertMonthlyProgressReport
+  monthlyProgressReports, MonthlyProgressReport, InsertMonthlyProgressReport,
+  courseReviews, CourseReview, InsertCourseReview
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2532,4 +2533,201 @@ export async function getAnalysesForPeriod(userId: number, startDate: Date, endD
       sql`${handwritingAnalyses.createdAt} <= ${endDate}`
     ))
     .orderBy(handwritingAnalyses.createdAt);
+}
+
+
+// ========== COURSE REVIEWS ==========
+
+export async function createCourseReview(review: InsertCourseReview): Promise<CourseReview> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Check if user already reviewed this course
+  const existing = await db.select().from(courseReviews)
+    .where(and(eq(courseReviews.userId, review.userId), eq(courseReviews.courseId, review.courseId)))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    // Update existing review
+    await db.update(courseReviews).set({
+      rating: review.rating,
+      comment: review.comment,
+      updatedAt: new Date(),
+    }).where(eq(courseReviews.id, existing[0].id));
+    const [updated] = await db.select().from(courseReviews).where(eq(courseReviews.id, existing[0].id));
+    return updated;
+  }
+  
+  await db.insert(courseReviews).values(review);
+  const [created] = await db.select().from(courseReviews)
+    .where(and(eq(courseReviews.userId, review.userId), eq(courseReviews.courseId, review.courseId)));
+  return created;
+}
+
+export async function getCourseReviews(courseId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select({
+    review: courseReviews,
+    user: {
+      id: users.id,
+      name: users.name,
+      arabicName: users.arabicName,
+    }
+  })
+  .from(courseReviews)
+  .leftJoin(users, eq(courseReviews.userId, users.id))
+  .where(and(eq(courseReviews.courseId, courseId), eq(courseReviews.isApproved, true)))
+  .orderBy(desc(courseReviews.createdAt));
+}
+
+export async function getLatestReviews(limit: number = 6) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select({
+    review: courseReviews,
+    user: {
+      id: users.id,
+      name: users.name,
+      arabicName: users.arabicName,
+    },
+    course: {
+      id: courses.id,
+      titleAr: courses.titleAr,
+    }
+  })
+  .from(courseReviews)
+  .leftJoin(users, eq(courseReviews.userId, users.id))
+  .leftJoin(courses, eq(courseReviews.courseId, courses.id))
+  .where(and(eq(courseReviews.isApproved, true), eq(courseReviews.isFeatured, true)))
+  .orderBy(desc(courseReviews.createdAt))
+  .limit(limit);
+}
+
+export async function getFeaturedReviews(limit: number = 3) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get featured reviews first, then fill with highest-rated
+  const featured = await db.select({
+    review: courseReviews,
+    user: {
+      id: users.id,
+      name: users.name,
+      arabicName: users.arabicName,
+    },
+    course: {
+      id: courses.id,
+      titleAr: courses.titleAr,
+    }
+  })
+  .from(courseReviews)
+  .leftJoin(users, eq(courseReviews.userId, users.id))
+  .leftJoin(courses, eq(courseReviews.courseId, courses.id))
+  .where(and(eq(courseReviews.isApproved, true), eq(courseReviews.isFeatured, true)))
+  .orderBy(desc(courseReviews.rating), desc(courseReviews.createdAt))
+  .limit(limit);
+  
+  if (featured.length >= limit) return featured;
+  
+  // Fill with highest-rated approved reviews
+  const remaining = limit - featured.length;
+  const featuredIds = featured.map(f => f.review.id);
+  const additional = await db.select({
+    review: courseReviews,
+    user: {
+      id: users.id,
+      name: users.name,
+      arabicName: users.arabicName,
+    },
+    course: {
+      id: courses.id,
+      titleAr: courses.titleAr,
+    }
+  })
+  .from(courseReviews)
+  .leftJoin(users, eq(courseReviews.userId, users.id))
+  .leftJoin(courses, eq(courseReviews.courseId, courses.id))
+  .where(eq(courseReviews.isApproved, true))
+  .orderBy(desc(courseReviews.rating), desc(courseReviews.createdAt))
+  .limit(remaining + featuredIds.length);
+  
+  const filtered = additional.filter(a => !featuredIds.includes(a.review.id));
+  return [...featured, ...filtered.slice(0, remaining)];
+}
+
+export async function getCourseAverageRating(courseId: number) {
+  const db = await getDb();
+  if (!db) return { average: 0, count: 0 };
+  
+  const result = await db.select({
+    avgRating: sql<number>`AVG(${courseReviews.rating})`,
+    reviewCount: sql<number>`COUNT(${courseReviews.id})`,
+  })
+  .from(courseReviews)
+  .where(and(eq(courseReviews.courseId, courseId), eq(courseReviews.isApproved, true)));
+  
+  return {
+    average: Number(result[0]?.avgRating || 0),
+    count: Number(result[0]?.reviewCount || 0),
+  };
+}
+
+export async function getUserCourseReview(userId: number, courseId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const [result] = await db.select().from(courseReviews)
+    .where(and(eq(courseReviews.userId, userId), eq(courseReviews.courseId, courseId)));
+  return result || null;
+}
+
+export async function deleteReview(reviewId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(courseReviews).where(eq(courseReviews.id, reviewId));
+}
+
+export async function toggleReviewFeatured(reviewId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [review] = await db.select().from(courseReviews).where(eq(courseReviews.id, reviewId));
+  if (!review) throw new Error("Review not found");
+  
+  await db.update(courseReviews).set({ isFeatured: !review.isFeatured }).where(eq(courseReviews.id, reviewId));
+}
+
+export async function toggleReviewApproval(reviewId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [review] = await db.select().from(courseReviews).where(eq(courseReviews.id, reviewId));
+  if (!review) throw new Error("Review not found");
+  
+  await db.update(courseReviews).set({ isApproved: !review.isApproved }).where(eq(courseReviews.id, reviewId));
+}
+
+export async function getAllReviewsAdmin() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select({
+    review: courseReviews,
+    user: {
+      id: users.id,
+      name: users.name,
+      arabicName: users.arabicName,
+    },
+    course: {
+      id: courses.id,
+      titleAr: courses.titleAr,
+    }
+  })
+  .from(courseReviews)
+  .leftJoin(users, eq(courseReviews.userId, users.id))
+  .leftJoin(courses, eq(courseReviews.courseId, courses.id))
+  .orderBy(desc(courseReviews.createdAt));
 }

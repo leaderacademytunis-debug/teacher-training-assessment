@@ -2024,3 +2024,23 @@ export const videoEvaluations = mysqlTable("video_evaluations", {
 });
 export type VideoEvaluation = typeof videoEvaluations.$inferSelect;
 export type InsertVideoEvaluation = typeof videoEvaluations.$inferInsert;
+
+
+// ===== COURSE REVIEWS (مراجعات الدورات) =====
+/**
+ * Course reviews table - stores real participant reviews for courses
+ */
+export const courseReviews = mysqlTable("course_reviews", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  courseId: int("courseId").notNull(),
+  rating: int("rating").notNull(), // 1-5 stars
+  comment: text("comment"), // Optional review text
+  isApproved: boolean("isApproved").default(true).notNull(), // Admin moderation
+  isFeatured: boolean("isFeatured").default(false).notNull(), // Show on homepage
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CourseReview = typeof courseReviews.$inferSelect;
+export type InsertCourseReview = typeof courseReviews.$inferInsert;

@@ -2667,3 +2667,28 @@
 - [x] Redesign footer with 4-column layout (brand+social, quick links, AI tools, contact info)
 - [x] Bottom bar with copyright, commercial register, "Made in Tunisia" badge
 - [x] Ensure RTL consistency and responsive design
+
+## Feature: Real Participant Reviews System
+- [x] Create reviews table in database schema (userId, courseId, rating, comment, createdAt)
+- [x] Push database migration
+- [x] Add tRPC procedures: submitReview, getReviewsByCourse, getLatestReviews, deleteReview (featured)
+- [x] Build review submission form in course detail page (star rating + comment)
+- [x] Display reviews list in course detail page
+- [x] Replace static testimonials on homepage with real reviews from database (with static fallback)
+- [x] Add average rating calculation per course
+- [x] Prevent duplicate reviews (one review per user per course)
+- [x] Admin: ability to moderate/delete reviews
+
+## Feature: Direct Enrollment Form with Payment
+- [x] Create enrollment form dialog in course detail page
+- [x] Payment method selection (bank transfer, D17, Flouci, cash)
+- [x] Receipt image upload with preview
+- [x] Show enrollment confirmation with payment instructions
+- [x] Course summary with price in dialog header
+- [x] Free courses: direct enrollment without payment form
+
+## Feature: Similar Courses Section
+- [x] Add similar courses section at bottom of course detail page
+- [x] Query courses in same category, fill with other courses if needed
+- [x] Display up to 4 course cards with cover images, titles, prices, and duration
+- [x] Link to respective course detail pages

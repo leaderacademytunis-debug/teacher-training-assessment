@@ -82,14 +82,13 @@ describe("Testimonials Translation", () => {
     expect(content).toMatch(/What Teachers Say|Teacher Testimonials/);
   });
 
-  it("Testimonials section uses t() function for translations", () => {
+  it("Testimonials section uses dynamic reviews or static fallback", () => {
     const content = readFileSync(join(clientDir, "pages", "Home.tsx"), "utf-8");
-    // The testimonials section should use the t() translation function for individual testimonials
-    expect(content).toContain("testimonial.textAr");
-    expect(content).toContain("testimonial.textFr");
-    expect(content).toContain("testimonial.textEn");
-    expect(content).toContain("testimonial.nameAr");
-    expect(content).toContain("testimonial.roleFr");
+    // The testimonials section should use featuredReviews from database with static fallback
+    expect(content).toContain("featuredReviews");
+    expect(content).toContain("item.review.rating");
+    expect(content).toContain("item.review.comment");
+    expect(content).toContain("item.user");
   });
 });
 

@@ -14646,6 +14646,89 @@ ${contextInfo ? "\n# معلومات مقدمة\n" + contextInfo : ""}
         return { message: typeof content === "string" ? content : "" };
       }),
   }),
+
+  // ===== COURSE REVIEWS (مراجعات الدورات) =====
+  reviews: router({
+    // Submit or update a review (one per user per course)
+    submit: protectedProcedure
+      .input(z.object({
+        courseId: z.number(),
+        rating: z.number().min(1).max(5),
+        comment: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.createCourseReview({
+          userId: ctx.user.id,
+          courseId: input.courseId,
+          rating: input.rating,
+          comment: input.comment || null,
+        });
+      }),
+
+    // Get reviews for a specific course
+    byCourse: publicProcedure
+      .input(z.object({ courseId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getCourseReviews(input.courseId);
+      }),
+
+    // Get average rating for a course
+    averageRating: publicProcedure
+      .input(z.object({ courseId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getCourseAverageRating(input.courseId);
+      }),
+
+    // Get user's review for a course
+    myReview: protectedProcedure
+      .input(z.object({ courseId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        return await db.getUserCourseReview(ctx.user.id, input.courseId);
+      }),
+
+    // Get featured reviews for homepage
+    featured: publicProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getFeaturedReviews(input?.limit || 3);
+      }),
+
+    // Get latest reviews
+    latest: publicProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getLatestReviews(input?.limit || 6);
+      }),
+
+    // Admin: Get all reviews
+    adminList: adminProcedure.query(async () => {
+      return await db.getAllReviewsAdmin();
+    }),
+
+    // Admin: Delete a review
+    adminDelete: adminProcedure
+      .input(z.object({ reviewId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteReview(input.reviewId);
+        return { success: true };
+      }),
+
+    // Admin: Toggle featured status
+    adminToggleFeatured: adminProcedure
+      .input(z.object({ reviewId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.toggleReviewFeatured(input.reviewId);
+        return { success: true };
+      }),
+
+    // Admin: Toggle approval status
+    adminToggleApproval: adminProcedure
+      .input(z.object({ reviewId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.toggleReviewApproval(input.reviewId);
+        return { success: true };
+      }),
+  }),
 });
 
 // Helper: Calculate match score between teacher and job

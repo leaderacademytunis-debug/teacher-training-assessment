@@ -721,6 +721,7 @@ export default function Home() {
   const { data: enrollments } = trpc.enrollments.myEnrollments.useQuery(undefined, {
     enabled: !!user,
   });
+  const { data: featuredReviews } = trpc.reviews.featured.useQuery({ limit: 3 });
 
   const enrolledCourseIds = new Set(enrollments?.map(e => e.enrollment.courseId) || []);
 
@@ -1293,129 +1294,111 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Testimonials Grid */}
+          {/* Dynamic Reviews from Database OR Static Fallback */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
+            {(featuredReviews && featuredReviews.length > 0 ? featuredReviews : [
+              // Static fallback data when no reviews exist yet
               {
-                nameAr: "الأستاذ محمد البوعزيزي",
-                nameFr: "Mohamed Bouazizi",
-                nameEn: "Mohamed Bouazizi",
-                roleAr: "مدرس رياضيات — المرحلة الإعدادية، سوسة",
-                roleFr: "Enseignant de mathématiques — Collège, Sousse",
-                roleEn: "Math Teacher — Middle School, Sousse",
-                textAr: "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية!",
-                textFr: "Je passais deux heures à préparer une seule fiche. Avec EDUGPT, je fais le même travail en 5 minutes avec une qualité supérieure. C'est une vraie révolution !",
-                textEn: "I used to spend two hours preparing a single lesson plan. With EDUGPT, I do the same work in 5 minutes with superior quality. This is a real revolution!",
-                rating: 5,
-                avatar: "م",
-                initials: "م.ب",
-                accentColor: "#1A237E",
-                accentLight: "rgba(26,35,126,0.06)",
-                toolUsed: "EDUGPT",
-                toolUsedFr: "EDUGPT",
-                toolUsedEn: "EDUGPT",
+                review: { id: -1, rating: 5, comment: t(
+                  "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية!",
+                  "Je passais deux heures à préparer une seule fiche. Avec EDUGPT, je fais le même travail en 5 minutes avec une qualité supérieure.",
+                  "I used to spend two hours preparing a single lesson plan. With EDUGPT, I do the same work in 5 minutes."
+                ), createdAt: new Date() },
+                user: { id: -1, name: t("الأستاذ محمد البوعزيزي", "Mohamed Bouazizi", "Mohamed Bouazizi"), arabicName: "الأستاذ محمد البوعزيزي" },
+                course: { id: -1, titleAr: "EDUGPT" },
               },
               {
-                nameAr: "الأستاذة مريم العامري",
-                nameFr: "Mariem Amri",
-                nameEn: "Mariem Amri",
-                roleAr: "مدرسة علوم — المرحلة الابتدائية، تونس",
-                roleFr: "Enseignante de sciences — Primaire, Tunis",
-                roleEn: "Science Teacher — Primary School, Tunis",
-                textAr: "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له. Leader Academy حوّلت طريقة تدريسي بالكامل.",
-                textFr: "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision et offrir un soutien personnalisé.",
-                textEn: "Instant assessment changed how I track my students. I can now know each student's level precisely and provide personalized support.",
-                rating: 5,
-                avatar: "م",
-                initials: "م.ع",
-                accentColor: "#FF6D00",
-                accentLight: "rgba(255,109,0,0.06)",
-                toolUsed: "التصحيح الأعمى",
-                toolUsedFr: "Correction aveugle",
-                toolUsedEn: "Blind Grading",
+                review: { id: -2, rating: 5, comment: t(
+                  "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له.",
+                  "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision.",
+                  "Instant assessment changed how I track my students. I can now know each student's level precisely."
+                ), createdAt: new Date() },
+                user: { id: -2, name: t("الأستاذة مريم العامري", "Mariem Amri", "Mariem Amri"), arabicName: "الأستاذة مريم العامري" },
+                course: { id: -2, titleAr: t("التصحيح الأعمى", "Correction aveugle", "Blind Grading") },
               },
               {
-                nameAr: "الأستاذ أحمد الطرابلسي",
-                nameFr: "Ahmed Trabelsi",
-                nameEn: "Ahmed Trabelsi",
-                roleAr: "مدرس لغة عربية — الثانوية، صفاقس",
-                roleFr: "Enseignant d'arabe — Lycée, Sfax",
-                roleEn: "Arabic Teacher — High School, Sfax",
-                textAr: "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية. أنصح بها كل معلم تونسي.",
-                textFr: "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique, les formateurs sont experts, et les outils sont révolutionnaires.",
-                textEn: "The AI integration in teaching course was a real turning point. The content is practical, the trainers are experts, and the tools are revolutionary.",
-                rating: 5,
-                avatar: "أ",
-                initials: "أ.ط",
-                accentColor: "#1565C0",
-                accentLight: "rgba(21,101,192,0.06)",
-                toolUsed: "الدورات التدريبية",
-                toolUsedFr: "Formations",
-                toolUsedEn: "Training Courses",
+                review: { id: -3, rating: 5, comment: t(
+                  "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية.",
+                  "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique.",
+                  "The AI integration in teaching course was a real turning point. The content is practical."
+                ), createdAt: new Date() },
+                user: { id: -3, name: t("الأستاذ أحمد الطرابلسي", "Ahmed Trabelsi", "Ahmed Trabelsi"), arabicName: "الأستاذ أحمد الطرابلسي" },
+                course: { id: -3, titleAr: t("الدورات التدريبية", "Formations", "Training Courses") },
               },
-            ].map((testimonial, i) => (
-              <div
-                key={i}
-                className="group relative bg-white rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 border border-gray-100"
-                style={{
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.08), 0 0 0 1px ${testimonial.accentColor}15`;
-                  e.currentTarget.style.borderColor = `${testimonial.accentColor}30`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)";
-                  e.currentTarget.style.borderColor = "rgb(243,244,246)";
-                }}
-              >
-                {/* Decorative top accent line */}
-                <div className="absolute top-0 right-8 left-8 h-1 rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(90deg, ${testimonial.accentColor}, ${testimonial.accentColor}60)` }} />
+            ] as any[]).map((item: any, i: number) => {
+              const accentColors = ["#1A237E", "#FF6D00", "#1565C0"];
+              const accentColor = accentColors[i % 3];
+              const accentLight = i === 0 ? "rgba(26,35,126,0.06)" : i === 1 ? "rgba(255,109,0,0.06)" : "rgba(21,101,192,0.06)";
+              const displayName = item.user?.arabicName || item.user?.name || t("مشارك", "Participant", "Participant");
+              const initial = displayName.charAt(0);
+              const courseName = item.course?.titleAr || "";
+              
+              return (
+                <div
+                  key={item.review.id}
+                  className="group relative bg-white rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 border border-gray-100"
+                  style={{
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.08), 0 0 0 1px ${accentColor}15`;
+                    e.currentTarget.style.borderColor = `${accentColor}30`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)";
+                    e.currentTarget.style.borderColor = "rgb(243,244,246)";
+                  }}
+                >
+                  {/* Decorative top accent line */}
+                  <div className="absolute top-0 right-8 left-8 h-1 rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}60)` }} />
 
-                {/* Quote icon */}
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5" style={{ background: testimonial.accentLight }}>
-                  <Quote className="w-5 h-5" style={{ color: testimonial.accentColor }} />
-                </div>
+                  {/* Quote icon */}
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5" style={{ background: accentLight }}>
+                    <Quote className="w-5 h-5" style={{ color: accentColor }} />
+                  </div>
 
-                {/* Stars */}
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: testimonial.rating }).map((_, s) => (
-                    <Star key={s} className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />
-                  ))}
-                </div>
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-4">
+                    {Array.from({ length: item.review.rating }).map((_: any, s: number) => (
+                      <Star key={s} className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />
+                    ))}
+                  </div>
 
-                {/* Testimonial Text */}
-                <p className="text-gray-600 leading-[1.8] mb-6 text-[15px]" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
-                  "{t(testimonial.textAr, testimonial.textFr, testimonial.textEn)}"
-                </p>
+                  {/* Review Text */}
+                  <p className="text-gray-600 leading-[1.8] mb-6 text-[15px]" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+                    "{item.review.comment}"
+                  </p>
 
-                {/* Tool badge */}
-                <div className="mb-5">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: testimonial.accentLight, color: testimonial.accentColor }}>
-                    <Sparkles className="w-3 h-3" />
-                    {t(testimonial.toolUsed, testimonial.toolUsedFr, testimonial.toolUsedEn)}
-                  </span>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-gray-100 pt-5">
-                  <div className="flex items-center gap-3">
-                    {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${testimonial.accentColor}, ${testimonial.accentColor}BB)` }}>
-                      {testimonial.initials}
+                  {/* Course badge */}
+                  {courseName && (
+                    <div className="mb-5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: accentLight, color: accentColor }}>
+                        <Sparkles className="w-3 h-3" />
+                        {courseName}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: "'Cairo', sans-serif" }}>
-                        {t(testimonial.nameAr, testimonial.nameFr, testimonial.nameEn)}
-                      </p>
-                      <p className="text-gray-400 text-xs truncate">
-                        {t(testimonial.roleAr, testimonial.roleFr, testimonial.roleEn)}
-                      </p>
+                  )}
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-100 pt-5">
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}BB)` }}>
+                        {initial}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                          {displayName}
+                        </p>
+                        <p className="text-gray-400 text-xs truncate">
+                          {t("مشارك في الدورة", "Participant au cours", "Course participant")}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Trust bar */}

@@ -6,8 +6,15 @@ import { trpc } from "@/lib/trpc";
 import { 
   BookOpen, Loader2, ArrowRight, FileText, Clock, Video, Lock, Film, Sparkles,
   CheckCircle2, Users, Star, Calendar, Tag, Package, ChevronLeft, GraduationCap,
-  Award, Target, Zap
+  Award, Target, Zap, MessageSquare, Send, Quote, ThumbsUp, CreditCard, Upload,
+  Phone, Banknote, Wallet
 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -31,15 +38,90 @@ export default function CourseDetail() {
   });
   const { data: allCourses } = trpc.courses.list.useQuery();
   
+  // Reviews
+  const { data: courseReviews, refetch: refetchReviews } = trpc.reviews.byCourse.useQuery({ courseId });
+  const { data: avgRating } = trpc.reviews.averageRating.useQuery({ courseId });
+  const { data: myReview } = trpc.reviews.myReview.useQuery({ courseId }, { enabled: !!user });
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [hoverRating, setHoverRating] = useState(0);
+  
+  const submitReviewMutation = trpc.reviews.submit.useMutation({
+    onSuccess: () => {
+      toast.success(isAr ? "تم إرسال تقييمك بنجاح!" : "Votre avis a été soumis avec succès!");
+      refetchReviews();
+      setReviewRating(0);
+      setReviewComment("");
+    },
+    onError: (error) => {
+      toast.error((isAr ? "خطأ: " : "Erreur: ") + error.message);
+    },
+  });
+  
+  // Similar courses (same category, excluding current)
+  const similarCourses = useMemo(() => {
+    if (!allCourses || !course) return [];
+    return allCourses
+      .filter((c: any) => c.id !== courseId && c.category === course.category && !c.isBundle)
+      .slice(0, 4);
+  }, [allCourses, course, courseId]);
+  
+  // If no same-category courses, show other featured courses
+  const displaySimilarCourses = useMemo(() => {
+    if (similarCourses.length >= 2) return similarCourses;
+    if (!allCourses || !course) return [];
+    const others = allCourses
+      .filter((c: any) => c.id !== courseId && !c.isBundle)
+      .slice(0, 4);
+    return others;
+  }, [similarCourses, allCourses, course, courseId]);
+  
+  const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
+  const [enrollFormData, setEnrollFormData] = useState({
+    fullName: "",
+    phone: "",
+    paymentMethod: "bank_transfer" as string,
+    receiptUrl: "",
+    note: "",
+  });
+  const [uploading, setUploading] = useState(false);
+  
   const enrollMutation = trpc.enrollments.enroll.useMutation({
     onSuccess: () => {
-      toast.success(isAr ? "تم التسجيل في الدورة بنجاح!" : "Inscription réussie!");
+      toast.success(isAr ? "تم إرسال طلب التسجيل بنجاح! سيتم مراجعته قريباً." : "Demande envoyée avec succès! Elle sera examinée prochainement.");
+      setShowEnrollmentForm(false);
       window.location.reload();
     },
     onError: (error) => {
       toast.error((isAr ? "حدث خطأ أثناء التسجيل: " : "Erreur: ") + error.message);
     },
   });
+  
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(isAr ? "حجم الملف كبير جداً (5MB كحد أقصى)" : "Fichier trop volumineux (5MB max)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        setEnrollFormData(prev => ({ ...prev, receiptUrl: reader.result as string }));
+        toast.success(isAr ? "تم رفع الإيصال" : "État reçu téléchargé");
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        toast.error(isAr ? "فشل رفع الملف" : "Échec du téléchargement");
+        setUploading(false);
+      };
+    } catch {
+      toast.error(isAr ? "فشل رفع الملف" : "Échec du téléchargement");
+      setUploading(false);
+    }
+  };
 
   const enrollment = enrollments?.find((e: any) => e.enrollment.courseId === courseId);
   const isEnrolled = !!enrollment;
@@ -418,7 +500,13 @@ export default function CourseDetail() {
                     <Button 
                       className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-lg py-6 font-bold" 
                       size="lg"
-                      onClick={handleEnroll}
+                      onClick={() => {
+                        if (course.price && course.price > 0) {
+                          setShowEnrollmentForm(true);
+                        } else {
+                          handleEnroll();
+                        }
+                      }}
                       disabled={enrollMutation.isPending}
                     >
                       {enrollMutation.isPending ? (
@@ -428,8 +516,8 @@ export default function CourseDetail() {
                         </>
                       ) : (
                         <>
-                          <Zap className="w-5 h-5 ml-2" />
-                          {isAr ? "سجّل الآن" : "S'inscrire maintenant"}
+                          {course.price && course.price > 0 ? <CreditCard className="w-5 h-5 ml-2" /> : <Zap className="w-5 h-5 ml-2" />}
+                          {isAr ? (course.price && course.price > 0 ? "سجّل وادفع الآن" : "سجّل الآن مجاناً") : (course.price && course.price > 0 ? "S'inscrire et payer" : "S'inscrire gratuitement")}
                         </>
                       )}
                     </Button>
@@ -446,6 +534,7 @@ export default function CourseDetail() {
 
                   {isPending && (
                     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
+                      <Clock className="w-5 h-5 text-yellow-600 mx-auto mb-2" />
                       <p className="text-yellow-800 text-sm font-medium">
                         {isAr ? "تم إرسال طلب التسجيل. بانتظار موافقة المشرف." : "Demande envoyée. En attente d'approbation."}
                       </p>
@@ -466,6 +555,27 @@ export default function CourseDetail() {
                       <p className="text-red-800 text-sm font-medium">
                         {isAr ? "تم رفض طلب التسجيل. يرجى التواصل مع المشرف." : "Demande refusée. Contactez l'administrateur."}
                       </p>
+                    </div>
+                  )}
+
+                  {/* Payment Methods Info */}
+                  {course.price && course.price > 0 && !isEnrolled && (
+                    <div className="border border-gray-100 rounded-xl p-4 space-y-3">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase">{isAr ? "طرق الدفع المتاحة" : "Moyens de paiement"}</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 rounded-lg text-xs text-blue-700">
+                          <Banknote className="w-3.5 h-3.5" />
+                          {isAr ? "تحويل بنكي" : "Virement"}
+                        </div>
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 rounded-lg text-xs text-green-700">
+                          <Wallet className="w-3.5 h-3.5" />
+                          D17
+                        </div>
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 rounded-lg text-xs text-purple-700">
+                          <CreditCard className="w-3.5 h-3.5" />
+                          Flouci
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -507,6 +617,328 @@ export default function CourseDetail() {
           </div>
         </div>
       </section>
+
+      {/* ===== REVIEWS SECTION ===== */}
+      <section className="py-16 bg-gray-50" dir={isAr ? "rtl" : "ltr"}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3" style={{ fontFamily: 'Cairo, Almarai, sans-serif' }}>
+                <MessageSquare className="w-6 h-6 text-[#1e3a5f]" />
+                {isAr ? "آراء المشاركين" : "Avis des participants"}
+              </h2>
+              {avgRating && avgRating.count > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} className={`w-4 h-4 ${s <= Math.round(avgRating.average) ? 'fill-orange-400 text-orange-400' : 'text-gray-300'}`} />
+                    ))}
+                  </div>
+                  <span className="text-sm font-semibold text-gray-700">{avgRating.average.toFixed(1)}</span>
+                  <span className="text-sm text-gray-400">({avgRating.count} {isAr ? "تقييم" : "avis"})</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Review Form (for enrolled users) */}
+          {user && isApproved && !myReview && (
+            <Card className="rounded-2xl border-0 shadow-sm mb-8 overflow-hidden">
+              <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2a5a8f] px-6 py-3">
+                <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                  <ThumbsUp className="w-4 h-4" />
+                  {isAr ? "شاركنا رأيك في هذه الدورة" : "Partagez votre avis sur ce cours"}
+                </h3>
+              </div>
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">{isAr ? "تقييمك:" : "Votre note:"}</p>
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setReviewRating(s)}
+                        onMouseEnter={() => setHoverRating(s)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="p-1 transition-transform hover:scale-110"
+                      >
+                        <Star className={`w-7 h-7 transition-colors ${s <= (hoverRating || reviewRating) ? 'fill-orange-400 text-orange-400' : 'text-gray-300'}`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder={isAr ? "اكتب تعليقك هنا... (اختياري)" : "Écrivez votre commentaire ici... (optionnel)"}
+                  className="rounded-xl border-gray-200 focus:border-[#1e3a5f] min-h-[100px] resize-none"
+                  dir={isAr ? "rtl" : "ltr"}
+                />
+                <Button
+                  onClick={() => {
+                    if (reviewRating === 0) {
+                      toast.error(isAr ? "يرجى اختيار تقييم" : "Veuillez choisir une note");
+                      return;
+                    }
+                    submitReviewMutation.mutate({ courseId, rating: reviewRating, comment: reviewComment || undefined });
+                  }}
+                  disabled={submitReviewMutation.isPending || reviewRating === 0}
+                  className="mt-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {submitReviewMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                  ) : (
+                    <Send className="w-4 h-4 ml-2" />
+                  )}
+                  {isAr ? "إرسال التقييم" : "Envoyer l'avis"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* My existing review */}
+          {myReview && (
+            <Card className="rounded-2xl border-2 border-green-200 shadow-sm mb-8">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <span className="text-sm font-semibold text-green-700">{isAr ? "تقييمك" : "Votre avis"}</span>
+                </div>
+                <div className="flex gap-0.5 mb-2">
+                  {[1,2,3,4,5].map(s => (
+                    <Star key={s} className={`w-5 h-5 ${s <= myReview.rating ? 'fill-orange-400 text-orange-400' : 'text-gray-300'}`} />
+                  ))}
+                </div>
+                {myReview.comment && <p className="text-gray-600 text-sm leading-relaxed">{myReview.comment}</p>}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Reviews List */}
+          {courseReviews && courseReviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {courseReviews.map((item: any) => (
+                <Card key={item.review.id} className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#2a5a8f] flex items-center justify-center text-white font-bold text-lg shrink-0">
+                        {(item.user?.arabicName || item.user?.name || "?").charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-bold text-gray-800 text-sm truncate">{item.user?.arabicName || item.user?.name || (isAr ? "مشارك" : "Participant")}</h4>
+                          <span className="text-xs text-gray-400">{new Date(item.review.createdAt).toLocaleDateString('ar-TN')}</span>
+                        </div>
+                        <div className="flex gap-0.5 mb-2">
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} className={`w-3.5 h-3.5 ${s <= item.review.rating ? 'fill-orange-400 text-orange-400' : 'text-gray-200'}`} />
+                          ))}
+                        </div>
+                        {item.review.comment && (
+                          <p className="text-gray-600 text-sm leading-relaxed">{item.review.comment}</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-400">{isAr ? "لا توجد مراجعات بعد. كن أول من يقيّم!" : "Aucun avis pour le moment. Soyez le premier!"}</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ===== SIMILAR COURSES SECTION ===== */}
+      {displaySimilarCourses.length > 0 && (
+        <section className="py-16 bg-white" dir={isAr ? "rtl" : "ltr"}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-3" style={{ fontFamily: 'Cairo, Almarai, sans-serif' }}>
+              <Sparkles className="w-6 h-6 text-orange-500" />
+              {isAr ? "دورات مشابهة قد تهمّك" : "Cours similaires qui pourraient vous intéresser"}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {displaySimilarCourses.map((sc: any) => (
+                <Link key={sc.id} href={`/courses/${sc.id}`}>
+                  <Card className="rounded-2xl border-0 shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer overflow-hidden h-full">
+                    <div className="relative h-40 overflow-hidden">
+                      {sc.coverImageUrl ? (
+                        <img src={sc.coverImageUrl} alt={sc.titleAr} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#1e3a5f] to-[#2a5a8f] flex items-center justify-center">
+                          <BookOpen className="w-10 h-10 text-white/40" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      {sc.price ? (
+                        <Badge className="absolute bottom-3 left-3 bg-orange-500 text-white border-0 rounded-lg text-xs">
+                          {sc.price} {isAr ? "د.ت" : "DT"}
+                        </Badge>
+                      ) : (
+                        <Badge className="absolute bottom-3 left-3 bg-green-500 text-white border-0 rounded-lg text-xs">
+                          {isAr ? "مجاني" : "Gratuit"}
+                        </Badge>
+                      )}
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-bold text-gray-800 text-sm mb-2 line-clamp-2" style={{ fontFamily: 'Almarai, Cairo, sans-serif' }}>{sc.titleAr}</h3>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {sc.duration && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {sc.duration} {isAr ? "ساعة" : "h"}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+      {/* ===== ENROLLMENT DIALOG WITH PAYMENT ===== */}
+      <Dialog open={showEnrollmentForm} onOpenChange={setShowEnrollmentForm}>
+        <DialogContent dir={isAr ? "rtl" : "ltr"} className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <CreditCard className="h-5 w-5 text-orange-500" />
+              {isAr ? "نموذج التسجيل والدفع" : "Formulaire d'inscription et paiement"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Course Summary */}
+            <div className="bg-gradient-to-r from-[#1e3a5f]/5 to-[#2a5a8f]/5 p-4 rounded-xl border border-[#1e3a5f]/10">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-bold text-[#1e3a5f] text-sm">{course.titleAr}</p>
+                  {course.schedule && <p className="text-xs text-gray-500 mt-1">{course.schedule}</p>}
+                </div>
+                <div className="text-left">
+                  <p className="text-xl font-bold text-orange-500">{course.price} {isAr ? "د.ت" : "DT"}</p>
+                  {course.originalPrice && course.originalPrice > (course.price || 0) && (
+                    <p className="text-xs text-gray-400 line-through">{course.originalPrice} {isAr ? "د.ت" : "DT"}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Full Name */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{isAr ? "الاسم الكامل" : "Nom complet"}</Label>
+              <Input
+                placeholder={isAr ? "مثال: محمد بن علي" : "Ex: Mohamed Ben Ali"}
+                value={enrollFormData.fullName}
+                onChange={e => setEnrollFormData(prev => ({ ...prev, fullName: e.target.value }))}
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{isAr ? "رقم الهاتف" : "Numéro de téléphone"}</Label>
+              <Input
+                type="tel"
+                placeholder={isAr ? "مثال: 55 123 456" : "Ex: 55 123 456"}
+                value={enrollFormData.phone}
+                onChange={e => setEnrollFormData(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{isAr ? "طريقة الدفع" : "Mode de paiement"}</Label>
+              <Select value={enrollFormData.paymentMethod} onValueChange={v => setEnrollFormData(prev => ({ ...prev, paymentMethod: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank_transfer">
+                    <span className="flex items-center gap-2"><Banknote className="w-4 h-4" /> {isAr ? "تحويل بنكي" : "Virement bancaire"}</span>
+                  </SelectItem>
+                  <SelectItem value="d17">
+                    <span className="flex items-center gap-2"><Wallet className="w-4 h-4" /> D17</span>
+                  </SelectItem>
+                  <SelectItem value="flouci">
+                    <span className="flex items-center gap-2"><CreditCard className="w-4 h-4" /> Flouci</span>
+                  </SelectItem>
+                  <SelectItem value="cash">
+                    <span className="flex items-center gap-2"><Banknote className="w-4 h-4" /> {isAr ? "نقدي" : "Espèces"}</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Payment Instructions */}
+            <div className="bg-blue-50 p-3 rounded-xl text-sm">
+              <p className="font-semibold text-blue-800 mb-1">{isAr ? "تعليمات الدفع:" : "Instructions de paiement:"}</p>
+              <p className="text-blue-700 text-xs leading-relaxed">
+                {isAr ? (
+                  <>1. قم بالتحويل إلى الحساب البنكي أو عبر D17/Flouci<br/>2. ارفع صورة إيصال الدفع<br/>3. سيتم تفعيل تسجيلك خلال 24 ساعة</>
+                ) : (
+                  <>1. Effectuez le virement ou le paiement via D17/Flouci<br/>2. Téléchargez la preuve de paiement<br/>3. Votre inscription sera activée sous 24h</>
+                )}
+              </p>
+            </div>
+
+            {/* Receipt Upload */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{isAr ? "صورة إيصال الدفع *" : "Preuve de paiement *"}</Label>
+              <div className="border-2 border-dashed rounded-xl p-4 text-center hover:border-orange-300 transition-colors">
+                {enrollFormData.receiptUrl ? (
+                  <div className="space-y-2">
+                    <img src={enrollFormData.receiptUrl} alt={isAr ? "إيصال" : "Reçu"} className="max-h-32 mx-auto rounded-lg" />
+                    <Button variant="outline" size="sm" onClick={() => setEnrollFormData(prev => ({ ...prev, receiptUrl: "" }))}>
+                      {isAr ? "تغيير الصورة" : "Changer l'image"}
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer">
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">
+                      {uploading ? (isAr ? "جارٍ الرفع..." : "Téléchargement...") : (isAr ? "اضغط لرفع صورة الإيصال" : "Cliquez pour télécharger le reçu")}
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleReceiptUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Note */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">{isAr ? "ملاحظة (اختياري)" : "Note (optionnel)"}</Label>
+              <Textarea
+                placeholder={isAr ? "أي ملاحظة إضافية..." : "Remarque supplémentaire..."}
+                value={enrollFormData.note}
+                onChange={e => setEnrollFormData(prev => ({ ...prev, note: e.target.value }))}
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => handleEnroll()}
+              disabled={enrollMutation.isPending || !enrollFormData.receiptUrl}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 w-full text-white rounded-xl py-5 text-base font-bold"
+            >
+              {enrollMutation.isPending ? (
+                <><Loader2 className="w-5 h-5 ml-2 animate-spin" /> {isAr ? "جاري الإرسال..." : "Envoi..."}</>
+              ) : (
+                <><Send className="w-5 h-5 ml-2" /> {isAr ? "إرسال طلب التسجيل والدفع" : "Envoyer la demande"}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

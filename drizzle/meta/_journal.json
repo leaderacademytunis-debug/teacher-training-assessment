@@ -435,6 +435,13 @@
       "when": 1773759592511,
       "tag": "0061_fancy_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "5",
+      "when": 1773764311114,
+      "tag": "0062_orange_firelord",
+      "breakpoints": true
     }
   ]
 }
