@@ -2646,3 +2646,24 @@
 - [x] Admin: filter by category + show inactive toggle
 - [x] Updated routers.ts create/update procedures with all new fields
 - [x] 941/953 tests passing (12 pre-existing failures unrelated to our changes)
+
+## Feature: Direct Image Upload in Admin Course Management
+- [x] Add file upload tRPC procedure (accept image, upload to S3, return URL)
+- [x] Update ManageCourses.tsx: replace URL input with drag-and-drop image uploader
+- [x] Show upload progress and preview
+- [x] Validate file type (images only) and size limit
+
+## Feature: Professional Course Detail Page
+- [x] Create CourseDetail.tsx page component
+- [x] Add route /courses/:id in App.tsx
+- [x] Display course cover image, title, description, axes/topics list
+- [x] Show pricing with discount badge
+- [x] Add enrollment CTA button
+- [x] Show schedule and duration info
+- [x] Bundle page: show included courses list with individual prices
+
+## Feature: Redesign Testimonials + Footer
+- [x] Redesign testimonials section with modern card layout (3 cards, quote icons, star ratings, tool badges, trust bar)
+- [x] Redesign footer with 4-column layout (brand+social, quick links, AI tools, contact info)
+- [x] Bottom bar with copyright, commercial register, "Made in Tunisia" badge
+- [x] Ensure RTL consistency and responsive design

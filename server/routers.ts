@@ -186,6 +186,26 @@ export const appRouter = router({
         return { success: true };
       }),
     
+    uploadCoverImage: adminProcedure
+      .input(z.object({
+        base64Data: z.string(),
+        fileExtension: z.string(),
+        mimeType: z.string(),
+        courseId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.base64Data, 'base64');
+        const randomSuffix = Math.random().toString(36).substring(2, 10);
+        const fileName = `course-covers/${Date.now()}-${randomSuffix}.${input.fileExtension}`;
+        const { url } = await storagePut(fileName, buffer, input.mimeType);
+        // If courseId provided, update the course directly
+        if (input.courseId) {
+          await db.updateCourse(input.courseId, { coverImageUrl: url });
+        }
+        return { url };
+      }),
+
     getStatistics: adminProcedure
       .input(z.object({ courseId: z.number() }))
       .query(async ({ input }) => {

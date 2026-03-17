@@ -10,6 +10,7 @@ import {
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
   Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2, Briefcase, FileText, Film,
+  Quote, Heart, Phone, Mail, ExternalLink, ChevronRight, Send,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
@@ -1269,21 +1270,30 @@ export default function Home() {
       <FeaturedContentSection t={t} />
 
       {/* ===== TESTIMONIALS SECTION ===== */}
-      <section className="py-20 bg-gray-50" dir="rtl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-4" style={{ background: "rgba(26,35,126,0.08)", color: "#1A237E" }}>
-              <Star className="w-4 h-4" />
-              {t("ماذا يقول المربون عنا؟", "Ce que disent nos enseignants", "What Teachers Say")}
-            </span>
-            <h2 className="text-3xl lg:text-4xl font-black mb-4" style={{ fontFamily: "Cairo, sans-serif", color: "#1A237E" }}>
-              {t("ماذا يقول المربون عنا؟", "Témoignages de nos enseignants", "Teacher Testimonials")}
+      <section className="py-24 lg:py-28 relative overflow-hidden" style={{ background: "#FFFFFF" }} dir="rtl">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #1A237E 1px, transparent 0)", backgroundSize: "40px 40px" }} />
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold mb-5" style={{ background: "rgba(255,109,0,0.08)", color: "#FF6D00" }}>
+              <Heart className="w-4 h-4" />
+              <span>{t("آراء المدرسين", "Avis des enseignants", "Teacher Reviews")}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold mb-5 leading-tight" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+              {t("ماذا يقول المربّون عنّا؟", "Témoignages de nos enseignants", "What Teachers Say About Us")}
             </h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-              {t("آراء حقيقية من مدرسين تونسيين استخدموا منصة Leader Academy", "Avis réels d'enseignants tunisiens", "Real feedback from Tunisian teachers")}
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+              {t(
+                "آراء حقيقية من مدرّسين تونسيين غيّرت Leader Academy طريقة تدريسهم",
+                "Avis réels d'enseignants tunisiens dont Leader Academy a transformé l'enseignement",
+                "Real feedback from Tunisian teachers whose teaching was transformed by Leader Academy"
+              )}
             </p>
           </div>
 
+          {/* Testimonials Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
@@ -1298,7 +1308,12 @@ export default function Home() {
                 textEn: "I used to spend two hours preparing a single lesson plan. With EDUGPT, I do the same work in 5 minutes with superior quality. This is a real revolution!",
                 rating: 5,
                 avatar: "م",
-                color: "#1A237E",
+                initials: "م.ب",
+                accentColor: "#1A237E",
+                accentLight: "rgba(26,35,126,0.06)",
+                toolUsed: "EDUGPT",
+                toolUsedFr: "EDUGPT",
+                toolUsedEn: "EDUGPT",
               },
               {
                 nameAr: "الأستاذة مريم العامري",
@@ -1308,11 +1323,16 @@ export default function Home() {
                 roleFr: "Enseignante de sciences — Primaire, Tunis",
                 roleEn: "Science Teacher — Primary School, Tunis",
                 textAr: "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له. Leader Academy حوّلت طريقة تدريسي بالكامل.",
-                textFr: "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision et offrir un soutien personnalisé. Leader Academy a transformé mon enseignement.",
-                textEn: "Instant assessment changed how I track my students. I can now know each student's level precisely and provide personalized support. Leader Academy completely transformed my teaching.",
+                textFr: "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision et offrir un soutien personnalisé.",
+                textEn: "Instant assessment changed how I track my students. I can now know each student's level precisely and provide personalized support.",
                 rating: 5,
                 avatar: "م",
-                color: "#FF6D00",
+                initials: "م.ع",
+                accentColor: "#FF6D00",
+                accentLight: "rgba(255,109,0,0.06)",
+                toolUsed: "التصحيح الأعمى",
+                toolUsedFr: "Correction aveugle",
+                toolUsedEn: "Blind Grading",
               },
               {
                 nameAr: "الأستاذ أحمد الطرابلسي",
@@ -1322,19 +1342,40 @@ export default function Home() {
                 roleFr: "Enseignant d'arabe — Lycée, Sfax",
                 roleEn: "Arabic Teacher — High School, Sfax",
                 textAr: "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية. أنصح بها كل معلم تونسي.",
-                textFr: "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique, les formateurs sont experts, et les outils sont révolutionnaires. Je la recommande à tout enseignant tunisien.",
-                textEn: "The AI integration in teaching course was a real turning point. The content is practical, the trainers are experts, and the tools are revolutionary. I recommend it to every Tunisian teacher.",
+                textFr: "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique, les formateurs sont experts, et les outils sont révolutionnaires.",
+                textEn: "The AI integration in teaching course was a real turning point. The content is practical, the trainers are experts, and the tools are revolutionary.",
                 rating: 5,
                 avatar: "أ",
-                color: "#1565C0",
+                initials: "أ.ط",
+                accentColor: "#1565C0",
+                accentLight: "rgba(21,101,192,0.06)",
+                toolUsed: "الدورات التدريبية",
+                toolUsedFr: "Formations",
+                toolUsedEn: "Training Courses",
               },
             ].map((testimonial, i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 relative"
+                className="group relative bg-white rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 border border-gray-100"
+                style={{
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.08), 0 0 0 1px ${testimonial.accentColor}15`;
+                  e.currentTarget.style.borderColor = `${testimonial.accentColor}30`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)";
+                  e.currentTarget.style.borderColor = "rgb(243,244,246)";
+                }}
               >
+                {/* Decorative top accent line */}
+                <div className="absolute top-0 right-8 left-8 h-1 rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(90deg, ${testimonial.accentColor}, ${testimonial.accentColor}60)` }} />
+
                 {/* Quote icon */}
-                <div className="absolute top-6 left-6 text-5xl font-black opacity-10" style={{ color: testimonial.color, fontFamily: "Georgia, serif" }}>“</div>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5" style={{ background: testimonial.accentLight }}>
+                  <Quote className="w-5 h-5" style={{ color: testimonial.accentColor }} />
+                </div>
 
                 {/* Stars */}
                 <div className="flex gap-1 mb-4">
@@ -1343,23 +1384,62 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* Text */}
-                <p className="text-gray-700 leading-relaxed mb-6 text-sm">
-                  “{t(testimonial.textAr, testimonial.textFr, testimonial.textEn)}”
+                {/* Testimonial Text */}
+                <p className="text-gray-600 leading-[1.8] mb-6 text-[15px]" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+                  "{t(testimonial.textAr, testimonial.textFr, testimonial.textEn)}"
                 </p>
 
-                {/* Author */}
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" style={{ background: `linear-gradient(135deg, ${testimonial.color}, ${testimonial.color}99)` }}>
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm">{t(testimonial.nameAr, testimonial.nameFr, testimonial.nameEn)}</p>
-                    <p className="text-gray-500 text-xs">{t(testimonial.roleAr, testimonial.roleFr, testimonial.roleEn)}</p>
+                {/* Tool badge */}
+                <div className="mb-5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: testimonial.accentLight, color: testimonial.accentColor }}>
+                    <Sparkles className="w-3 h-3" />
+                    {t(testimonial.toolUsed, testimonial.toolUsedFr, testimonial.toolUsedEn)}
+                  </span>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-100 pt-5">
+                  <div className="flex items-center gap-3">
+                    {/* Avatar */}
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${testimonial.accentColor}, ${testimonial.accentColor}BB)` }}>
+                      {testimonial.initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                        {t(testimonial.nameAr, testimonial.nameFr, testimonial.nameEn)}
+                      </p>
+                      <p className="text-gray-400 text-xs truncate">
+                        {t(testimonial.roleAr, testimonial.roleFr, testimonial.roleEn)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Trust bar */}
+          <div className="mt-14 flex flex-wrap justify-center items-center gap-8 text-sm text-gray-400">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(26,35,126,0.06)" }}>
+                <Users className="w-4 h-4" style={{ color: "#1A237E" }} />
+              </div>
+              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("+500 مدرّس تونسي", "+500 enseignants tunisiens", "+500 Tunisian teachers")}</span>
+            </div>
+            <div className="hidden sm:block w-px h-6 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,109,0,0.06)" }}>
+                <Star className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />
+              </div>
+              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("تقييم 4.9/5 من المشاركين", "Note 4.9/5 des participants", "4.9/5 participant rating")}</span>
+            </div>
+            <div className="hidden sm:block w-px h-6 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(21,101,192,0.06)" }}>
+                <Shield className="w-4 h-4" style={{ color: "#1565C0" }} />
+              </div>
+              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("98% نسبة الرضا", "98% taux de satisfaction", "98% satisfaction rate")}</span>
+            </div>
           </div>
         </div>
       </section>
@@ -1396,66 +1476,157 @@ export default function Home() {
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer style={{ background: "#0D1B5E" }} className="text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png" alt="Leader Academy" className="h-10 w-auto" />
+      <footer style={{ background: "linear-gradient(180deg, #0A1647 0%, #0D1B5E 100%)" }} className="text-white" dir="rtl">
+        {/* Main Footer Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
+            
+            {/* Column 1: Brand */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-3 mb-5">
+                <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png" alt="Leader Academy" className="h-11 w-auto" />
                 <div>
-                  <p className="font-bold text-lg">Leader Academy</p>
-                  <p className="text-blue-300 text-xs">نحو تعليم رقمي متميز</p>
+                  <p className="font-bold text-lg" style={{ fontFamily: "'Cairo', sans-serif" }}>Leader Academy</p>
+                  <p className="text-blue-300 text-xs" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("نحو تعليم رقمي متميز", "Vers un enseignement num\u00e9rique d'excellence", "Towards excellent digital education")}</p>
                 </div>
               </div>
-              <p className="text-blue-200 text-sm leading-relaxed">
-                منصة تدريبية رائدة في توظيف الذكاء الاصطناعي في التدريس، مخصصة للمعلمين التونسيين.
+              <p className="text-blue-200/70 text-sm leading-relaxed mb-6" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                {t(
+                  "منصة تدريبية رائدة في توظيف الذكاء الاصطناعي في التدريس، مخصصة للمعلمين التونسيين. معتمدة من وزارة التكوين المهني.",
+                  "Plateforme de formation leader dans l'int\u00e9gration de l'IA dans l'enseignement, d\u00e9di\u00e9e aux enseignants tunisiens.",
+                  "Leading training platform for AI integration in teaching, dedicated to Tunisian teachers."
+                )}
               </p>
-            </div>
-            {/* Links */}
-            <div>
-              <h4 className="font-bold mb-4 text-white">روابط سريعة</h4>
-              <ul className="space-y-2 text-blue-200 text-sm">
-                <li><Link href="/assistant" className="hover:text-white transition-colors">EDUGPT — المساعد البيداغوجي</Link></li>
-                <li><Link href="/evaluate-fiche" className="hover:text-white transition-colors">تقييم الفيشة البيداغوجية</Link></li>
-                <li><Link href="/template-library" className="hover:text-white transition-colors">مكتبة القوالب</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition-colors">تواصل معنا</Link></li>
-              </ul>
-            </div>
-            {/* Contact */}
-            <div>
-              <h4 className="font-bold mb-4 text-white">تواصل معنا</h4>
-              <ul className="space-y-2 text-blue-200 text-sm">
-                <li className="flex items-center gap-2">
-                  <span>📧</span>
-                  <a href="mailto:leaderacademy216@gmail.com" className="hover:text-white transition-colors">leaderacademy216@gmail.com</a>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span>📞</span>
-                  <span dir="ltr">52 339 339 / 99 997 729</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <a href="https://wa.me/21652339339" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-2">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    <span dir="ltr">+216 52 339 339</span>
-                  </a>
-                </li>
-              </ul>
-              <div className="flex items-center gap-3 mt-4">
-                <a href="https://www.facebook.com/leaderacademy.tn" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="Facebook">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              {/* Social Icons */}
+              <div className="flex items-center gap-2.5">
+                <a href="https://www.facebook.com/leaderacademy.tn" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.12] transition-all duration-300 hover:-translate-y-0.5" aria-label="Facebook">
+                  <svg className="w-4 h-4 text-blue-300" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 </a>
-                <a href="https://www.instagram.com/leaderacademytn/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="Instagram">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                <a href="https://www.instagram.com/leaderacademytn/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.12] transition-all duration-300 hover:-translate-y-0.5" aria-label="Instagram">
+                  <svg className="w-4 h-4 text-blue-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
                 </a>
-                <a href="https://www.youtube.com/channel/UCEZWPqq_ONwn-CzD_GwLuVg" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" aria-label="YouTube">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                <a href="https://www.youtube.com/channel/UCEZWPqq_ONwn-CzD_GwLuVg" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.12] transition-all duration-300 hover:-translate-y-0.5" aria-label="YouTube">
+                  <svg className="w-4 h-4 text-blue-300" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                </a>
+                <a href="https://wa.me/21652339339" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.06] flex items-center justify-center hover:bg-white/[0.12] transition-all duration-300 hover:-translate-y-0.5" aria-label="WhatsApp">
+                  <svg className="w-4 h-4 text-blue-300" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                 </a>
               </div>
             </div>
+
+            {/* Column 2: Quick Links */}
+            <div>
+              <h4 className="font-bold mb-5 text-white text-sm tracking-wide" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                {t("روابط سريعة", "Liens rapides", "Quick Links")}
+              </h4>
+              <ul className="space-y-3">
+                {[
+                  { href: "/", labelAr: "الرئيسية", labelFr: "Accueil", labelEn: "Home" },
+                  { href: "/teacher-tools", labelAr: "الأدوات الذكية", labelFr: "Outils IA", labelEn: "AI Tools" },
+                  { href: "/courses", labelAr: "الدورات التدريبية", labelFr: "Formations", labelEn: "Courses" },
+                  { href: "/about", labelAr: "من نحن", labelFr: "\u00c0 propos", labelEn: "About Us" },
+                  { href: "/contact", labelAr: "تواصل معنا", labelFr: "Contact", labelEn: "Contact" },
+                ].map((link, i) => (
+                  <li key={i}>
+                    <Link href={link.href} className="text-blue-200/60 text-sm hover:text-white transition-colors duration-200 flex items-center gap-2 group" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      <ChevronLeft className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity -mr-1" />
+                      {t(link.labelAr, link.labelFr, link.labelEn)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 3: AI Tools */}
+            <div>
+              <h4 className="font-bold mb-5 text-white text-sm tracking-wide" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                {t("أدوات الذكاء الاصطناعي", "Outils d'IA", "AI Tools")}
+              </h4>
+              <ul className="space-y-3">
+                {[
+                  { href: "/assistant", labelAr: "EDUGPT — المساعد البيداغوجي", labelFr: "EDUGPT", labelEn: "EDUGPT" },
+                  { href: "/exam-builder", labelAr: "بناء الاختبارات", labelFr: "Cr\u00e9ateur d'examens", labelEn: "Exam Builder" },
+                  { href: "/inspector", labelAr: "المتفقد الذكي", labelFr: "Inspecteur IA", labelEn: "AI Inspector" },
+                  { href: "/visual-studio", labelAr: "Visual Studio", labelFr: "Visual Studio", labelEn: "Visual Studio" },
+                  { href: "/blind-grading", labelAr: "التصحيح الأعمى", labelFr: "Correction aveugle", labelEn: "Blind Grading" },
+                ].map((link, i) => (
+                  <li key={i}>
+                    <Link href={link.href} className="text-blue-200/60 text-sm hover:text-white transition-colors duration-200 flex items-center gap-2 group" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                      <ChevronLeft className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity -mr-1" />
+                      {t(link.labelAr, link.labelFr, link.labelEn)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 4: Contact */}
+            <div>
+              <h4 className="font-bold mb-5 text-white text-sm tracking-wide" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                {t("تواصل معنا", "Contactez-nous", "Contact Us")}
+              </h4>
+              <ul className="space-y-4">
+                <li>
+                  <a href="mailto:leaderacademy216@gmail.com" className="flex items-start gap-3 text-blue-200/60 hover:text-white transition-colors duration-200 group">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors">
+                      <Mail className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-300/50 mb-0.5" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("البريد الإلكتروني", "Email", "Email")}</p>
+                      <p className="text-sm" dir="ltr">leaderacademy216@gmail.com</p>
+                    </div>
+                  </a>
+                </li>
+                <li>
+                  <div className="flex items-start gap-3 text-blue-200/60">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-300/50 mb-0.5" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("الهاتف", "T\u00e9l\u00e9phone", "Phone")}</p>
+                      <p className="text-sm" dir="ltr">52 339 339 / 99 997 729</p>
+                    </div>
+                  </div>
+                </li>
+                <li>
+                  <div className="flex items-start gap-3 text-blue-200/60">
+                    <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-blue-300/50 mb-0.5" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("الموقع", "Localisation", "Location")}</p>
+                      <p className="text-sm" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("تونس، الجمهورية التونسية", "Tunisie", "Tunisia")}</p>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="border-t border-white/10 pt-6 text-center text-blue-300 text-sm">
-            <p>© 2026 Leader Academy. جميع الحقوق محفوظة. 🇹🇳</p>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-white/[0.06]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-blue-300/50 text-xs" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                {t(
+                  "\u00a9 2026 Leader Academy. جميع الحقوق محفوظة. سجل تجاري: B08107512016",
+                  "\u00a9 2026 Leader Academy. Tous droits r\u00e9serv\u00e9s. RC: B08107512016",
+                  "\u00a9 2026 Leader Academy. All rights reserved. CR: B08107512016"
+                )}
+              </p>
+              <div className="flex items-center gap-4 text-blue-300/50 text-xs">
+                <span className="flex items-center gap-1.5">
+                  <span>🇹🇳</span>
+                  <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("صنع في تونس", "Fabriqu\u00e9 en Tunisie", "Made in Tunisia")}</span>
+                </span>
+                <span className="hidden sm:inline">|</span>
+                <a href="https://leaderacademy.school" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors flex items-center gap-1">
+                  <ExternalLink className="w-3 h-3" />
+                  leaderacademy.school
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </footer>

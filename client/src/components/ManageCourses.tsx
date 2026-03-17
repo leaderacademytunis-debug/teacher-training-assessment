@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Plus, Pencil, Loader2, Trash2, RotateCcw, BookOpen, Users, Clock, Eye, EyeOff, Star, DollarSign, Image, Package, GripVertical, X, Tag, Calendar, Layers } from "lucide-react";
+import { Plus, Pencil, Loader2, Trash2, RotateCcw, BookOpen, Users, Clock, Eye, EyeOff, Star, DollarSign, Image, Package, GripVertical, X, Tag, Calendar, Layers, Upload, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 
 const categories = [
@@ -69,6 +69,8 @@ export default function ManageCourses() {
   const [formData, setFormData] = useState<CourseFormData>({ ...emptyForm });
   const [newAxis, setNewAxis] = useState("");
   const [activeTab, setActiveTab] = useState("basic");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: allCourses, isLoading } = trpc.courses.listAll.useQuery();
   const { data: activeCourses } = trpc.courses.list.useQuery();
@@ -122,6 +124,54 @@ export default function ManageCourses() {
     },
     onError: (error) => toast.error("حدث خطأ: " + error.message),
   });
+
+  const uploadImageMutation = trpc.courses.uploadCoverImage.useMutation({
+    onSuccess: (data) => {
+      setFormData(prev => ({ ...prev, coverImageUrl: data.url }));
+      toast.success("تم رفع الصورة بنجاح!");
+      setIsUploading(false);
+    },
+    onError: (error) => {
+      toast.error("فشل رفع الصورة: " + error.message);
+      setIsUploading(false);
+    },
+  });
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error("الرجاء اختيار ملف صورة فقط (JPG, PNG, WebP)");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن لا يتجاوز 5 ميجابايت");
+      return;
+    }
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1];
+      const ext = file.name.split('.').pop() || 'jpg';
+      uploadImageMutation.mutate({
+        base64Data: base64,
+        fileExtension: ext,
+        mimeType: file.type,
+        courseId: editingCourse?.id,
+      });
+    };
+    reader.readAsDataURL(file);
+  }, [editingCourse, uploadImageMutation]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files[0];
+    if (file) handleImageUpload(file);
+  }, [handleImageUpload]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
 
   const resetForm = () => {
     setFormData({ ...emptyForm });
@@ -474,25 +524,93 @@ export default function ManageCourses() {
                 {/* Tab 4: Display Settings */}
                 <TabsContent value="display" className="space-y-4">
                   <div>
-                    <Label htmlFor="coverImageUrl" className="font-semibold">رابط صورة الغلاف</Label>
-                    <Input
-                      id="coverImageUrl"
-                      value={formData.coverImageUrl}
-                      onChange={(e) => setFormData({ ...formData, coverImageUrl: e.target.value })}
-                      placeholder="https://example.com/course-cover.jpg"
-                      className="mt-1 rounded-xl"
-                      dir="ltr"
-                    />
-                    {formData.coverImageUrl && (
-                      <div className="mt-3 rounded-xl overflow-hidden border aspect-video max-w-sm">
-                        <img
-                          src={formData.coverImageUrl}
-                          alt="معاينة الغلاف"
-                          className="w-full h-full object-cover"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                        />
+                    <Label className="font-semibold mb-2 block">صورة غلاف الدورة</Label>
+                    {formData.coverImageUrl ? (
+                      <div className="relative group">
+                        <div className="rounded-xl overflow-hidden border-2 border-gray-200 aspect-video max-w-md">
+                          <img
+                            src={formData.coverImageUrl}
+                            alt="معاينة الغلاف"
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).src = ''; }}
+                          />
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="rounded-lg"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Upload className="w-4 h-4 ml-1" />
+                            تغيير الصورة
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="rounded-lg text-red-500 hover:text-red-700"
+                            onClick={() => setFormData(prev => ({ ...prev, coverImageUrl: '' }))}
+                          >
+                            <Trash2 className="w-4 h-4 ml-1" />
+                            حذف
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onClick={() => !isUploading && fileInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 max-w-md ${
+                          isUploading
+                            ? 'border-blue-400 bg-blue-50'
+                            : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/50'
+                        }`}
+                      >
+                        {isUploading ? (
+                          <div className="flex flex-col items-center gap-3">
+                            <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+                            <p className="text-sm text-blue-600 font-medium">جاري رفع الصورة...</p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center">
+                              <ImagePlus className="w-7 h-7 text-gray-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">اسحب الصورة هنا أو انقر للاختيار</p>
+                              <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP • الحد الأقصى 5 ميجابايت</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    {/* Fallback: manual URL input */}
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        className="text-xs text-gray-400 hover:text-gray-600 underline"
+                        onClick={() => {
+                          const url = prompt('أدخل رابط الصورة مباشرة:');
+                          if (url) setFormData(prev => ({ ...prev, coverImageUrl: url }));
+                        }}
+                      >
+                        أو أدخل رابط الصورة يدوياً
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>

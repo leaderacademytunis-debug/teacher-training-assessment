@@ -75,7 +75,7 @@ describe("Testimonials Translation", () => {
   it("Testimonials section has trilingual title", () => {
     const content = readFileSync(join(clientDir, "pages", "Home.tsx"), "utf-8");
     // Check for Arabic testimonials title
-    expect(content).toContain("ماذا يقول المربون عنا");
+    expect(content).toContain("ماذا يقول المربّون عنّا");
     // Check for French translation
     expect(content).toMatch(/Ce que disent nos enseignants|Témoignages/);
     // Check for English translation
