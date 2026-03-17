@@ -1979,3 +1979,38 @@ export const monthlyProgressReports = mysqlTable("monthlyProgressReports", {
 });
 export type MonthlyProgressReport = typeof monthlyProgressReports.$inferSelect;
 export type InsertMonthlyProgressReport = typeof monthlyProgressReports.$inferInsert;
+
+
+// ===== VIDEO EVALUATIONS (تقييم الفيديو التعليمي) =====
+export const videoEvaluations = mysqlTable("video_evaluations", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  batchId: int("batchId"),
+  videoUrl: text("videoUrl"),
+  videoDescription: text("videoDescription"),
+  originalPrompt: text("originalPrompt"),
+  improvedPrompt: text("improvedPrompt"),
+  // 5 criteria scores (0-20 each, total 100)
+  scoreVisualQuality: int("scoreVisualQuality").default(0).notNull(),
+  scoreNarrative: int("scoreNarrative").default(0).notNull(),
+  scorePedagogical: int("scorePedagogical").default(0).notNull(),
+  scoreEngagement: int("scoreEngagement").default(0).notNull(),
+  scoreTechnical: int("scoreTechnical").default(0).notNull(),
+  totalScore: int("totalScore").default(0).notNull(),
+  // AI feedback
+  feedbackVisualQuality: text("feedbackVisualQuality"),
+  feedbackNarrative: text("feedbackNarrative"),
+  feedbackPedagogical: text("feedbackPedagogical"),
+  feedbackEngagement: text("feedbackEngagement"),
+  feedbackTechnical: text("feedbackTechnical"),
+  overallFeedback: text("overallFeedback"),
+  // Metadata
+  attemptNumber: int("attemptNumber").default(1).notNull(),
+  toolUsed: varchar("toolUsed", { length: 100 }),
+  grade: varchar("grade", { length: 50 }),
+  subject: varchar("subject", { length: 100 }),
+  lessonTitle: varchar("lessonTitle", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type VideoEvaluation = typeof videoEvaluations.$inferSelect;
+export type InsertVideoEvaluation = typeof videoEvaluations.$inferInsert;

@@ -2573,3 +2573,16 @@
 ## Remove Floating WhatsApp Button
 - [x] Remove FloatingWhatsApp import and component from App.tsx
 - [x] Delete FloatingWhatsApp.tsx component file
+
+## Phase 1: Video Evaluator Major Overhaul
+- [x] Create video_evaluations table in drizzle/schema.ts (25 columns)
+- [x] Run pnpm db:push to create the table
+- [x] Update backend system prompt to return structured JSON rubric (5 criteria x 20 points)
+- [x] Add saveEvaluation procedure to save results to DB
+- [x] Add getMyEvaluations procedure to retrieve user's evaluation history
+- [x] Redesign VideoEvaluator.tsx: professional evaluation form + visual score display
+- [x] Add radar chart for 5 criteria visualization (Recharts RadarChart)
+- [x] Add animated score circles + progress bars for each criterion
+- [x] Add evaluation history tab with detail view + stats summary + averages radar
+- [x] Add re-evaluate button with auto-filled improved prompt
+- [x] Test evaluation flow: 49 vitest tests passing

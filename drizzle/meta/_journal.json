@@ -421,6 +421,13 @@
       "when": 1773454054970,
       "tag": "0059_tiresome_maddog",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "5",
+      "when": 1773712683844,
+      "tag": "0060_tiresome_luminals",
+      "breakpoints": true
     }
   ]
 }

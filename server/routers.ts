@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, submissionComments } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, submissionComments, videoEvaluations } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray, avg, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -14300,6 +14300,224 @@ ${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""
 
   // ===== VIDEO EVALUATOR: مُقيِّم المعلم الرقمي =====
   videoEvaluator: router({
+    // Structured evaluation with 5 criteria rubric
+    evaluate: protectedProcedure
+      .input(z.object({
+        videoUrl: z.string().optional(),
+        videoDescription: z.string().optional(),
+        originalPrompt: z.string(),
+        targetAudience: z.string(),
+        educationalObjective: z.string(),
+        toolUsed: z.string().optional(),
+        grade: z.string().optional(),
+        subject: z.string().optional(),
+        lessonTitle: z.string().optional(),
+        attachments: z.array(z.object({
+          name: z.string(),
+          size: z.number(),
+          type: z.string(),
+          url: z.string().optional(),
+        })).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const database = getDb();
+        
+        const systemPrompt = `# الهوية والدور
+انت "مُقيِّم المعلم الرقمي" في منصة Leader Academy تونس. خبير في تقييم الفيديوهات التعليمية المولّدة بالذكاء الاصطناعي.
+
+# المهمة
+قيّم الفيديو/العمل المقدّم وفق 5 معايير، كل معيار من 20 نقطة (المجموع 100).
+
+# المعايير الخمسة
+1. الجودة البصرية (scoreVisualQuality): وضوح الصورة، تناسق الألوان، غياب التشوهات، جودة الشخصيات والخلفيات
+2. السرد والسيناريو (scoreNarrative): تسلسل المشاهد، وضوح القصة، ترابط الأحداث، قوة البداية والنهاية
+3. الملاءمة التربوية (scorePedagogical): مناسبة المحتوى للفئة العمرية، وضوح الهدف التعليمي، دقة المعلومات العلمية
+4. التشويق والجذب (scoreEngagement): قدرة الفيديو على جذب انتباه المتعلم، عناصر التفاعل، الإيقاع
+5. الجودة التقنية للموجه (scoreTechnical): دقة الموجه المستخدم، استخدام الكلمات المفتاحية الصحيحة، هيكلة الموجه
+
+# سلّم التنقيط لكل معيار (من 20)
+- 0-4: ضعيف جداً - يحتاج إعادة كاملة
+- 5-8: ضعيف - يحتاج تحسينات جوهرية
+- 9-12: متوسط - مقبول مع ملاحظات مهمة
+- 13-16: جيد - عمل ناجح مع تحسينات طفيفة
+- 17-20: ممتاز - عمل متميز واحترافي
+
+# المعلومات المقدمة
+- الموجه الأصلي: ${input.originalPrompt}
+- الفئة المستهدفة: ${input.targetAudience}
+- الهدف التعليمي: ${input.educationalObjective}
+${input.toolUsed ? "- الأداة المستخدمة: " + input.toolUsed : ""}
+${input.grade ? "- المستوى: " + input.grade : ""}
+${input.subject ? "- المادة: " + input.subject : ""}
+${input.lessonTitle ? "- عنوان الدرس: " + input.lessonTitle : ""}
+${input.videoDescription ? "- وصف الفيديو: " + input.videoDescription : ""}
+
+# تعليمات المخرجات
+يجب أن ترد بـ JSON فقط (بدون أي نص إضافي) بالهيكل التالي:
+{
+  "scoreVisualQuality": <رقم 0-20>,
+  "scoreNarrative": <رقم 0-20>,
+  "scorePedagogical": <رقم 0-20>,
+  "scoreEngagement": <رقم 0-20>,
+  "scoreTechnical": <رقم 0-20>,
+  "feedbackVisualQuality": "<تعليق مفصّل بالعربية عن الجودة البصرية - 2-3 جمل>",
+  "feedbackNarrative": "<تعليق مفصّل عن السرد - 2-3 جمل>",
+  "feedbackPedagogical": "<تعليق مفصّل عن الملاءمة التربوية - 2-3 جمل>",
+  "feedbackEngagement": "<تعليق مفصّل عن التشويق - 2-3 جمل>",
+  "feedbackTechnical": "<تعليق مفصّل عن جودة الموجه - 2-3 جمل>",
+  "overallFeedback": "<تقييم عام شامل بنبرة محفزة وداعمة - 3-4 جمل تبدأ بالإيجابيات>",
+  "improvedPrompt": "<الموجه المحسّن بالإنجليزية مع شرح التعديلات>"
+}
+
+كن عادلاً ودقيقاً في التنقيط. ابدأ التعليقات بالإيجابيات ثم الملاحظات.`;
+
+        // Build content parts for attachments
+        type ContentPart = 
+          | { type: "text"; text: string }
+          | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }
+          | { type: "file_url"; file_url: { url: string; mime_type: "application/pdf" | "audio/mpeg" | "audio/wav" | "audio/mp4" | "video/mp4" } };
+        const contentParts: ContentPart[] = [{ type: "text", text: "قيّم هذا العمل وفق المعايير الخمسة وأعطِ الدرجات والتعليقات." }];
+        
+        if (input.attachments) {
+          for (const att of input.attachments) {
+            if (!att.url) continue;
+            const mime = att.type || "";
+            if (mime.startsWith("image/")) {
+              contentParts.push({ type: "image_url", image_url: { url: att.url, detail: "high" } });
+            } else if (mime.startsWith("video/")) {
+              contentParts.push({ type: "file_url", file_url: { url: att.url, mime_type: "video/mp4" } });
+            }
+          }
+        }
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: contentParts },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "video_evaluation",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  scoreVisualQuality: { type: "integer", description: "Score 0-20" },
+                  scoreNarrative: { type: "integer", description: "Score 0-20" },
+                  scorePedagogical: { type: "integer", description: "Score 0-20" },
+                  scoreEngagement: { type: "integer", description: "Score 0-20" },
+                  scoreTechnical: { type: "integer", description: "Score 0-20" },
+                  feedbackVisualQuality: { type: "string" },
+                  feedbackNarrative: { type: "string" },
+                  feedbackPedagogical: { type: "string" },
+                  feedbackEngagement: { type: "string" },
+                  feedbackTechnical: { type: "string" },
+                  overallFeedback: { type: "string" },
+                  improvedPrompt: { type: "string" },
+                },
+                required: ["scoreVisualQuality", "scoreNarrative", "scorePedagogical", "scoreEngagement", "scoreTechnical", "feedbackVisualQuality", "feedbackNarrative", "feedbackPedagogical", "feedbackEngagement", "feedbackTechnical", "overallFeedback", "improvedPrompt"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = response.choices[0].message.content;
+        let evaluation: any;
+        try {
+          evaluation = JSON.parse(typeof rawContent === "string" ? rawContent : "");
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحليل نتائج التقييم" });
+        }
+
+        const totalScore = (evaluation.scoreVisualQuality || 0) + (evaluation.scoreNarrative || 0) + (evaluation.scorePedagogical || 0) + (evaluation.scoreEngagement || 0) + (evaluation.scoreTechnical || 0);
+
+        // Count previous attempts by this user
+        const prevAttempts = await database.select({ cnt: count() }).from(videoEvaluations).where(eq(videoEvaluations.userId, ctx.user.id));
+        const attemptNumber = (prevAttempts[0]?.cnt || 0) + 1;
+
+        // Save to database
+        await database.insert(videoEvaluations).values({
+          userId: ctx.user.id,
+          videoUrl: input.videoUrl || null,
+          videoDescription: input.videoDescription || null,
+          originalPrompt: input.originalPrompt,
+          improvedPrompt: evaluation.improvedPrompt || null,
+          scoreVisualQuality: evaluation.scoreVisualQuality || 0,
+          scoreNarrative: evaluation.scoreNarrative || 0,
+          scorePedagogical: evaluation.scorePedagogical || 0,
+          scoreEngagement: evaluation.scoreEngagement || 0,
+          scoreTechnical: evaluation.scoreTechnical || 0,
+          totalScore,
+          feedbackVisualQuality: evaluation.feedbackVisualQuality || null,
+          feedbackNarrative: evaluation.feedbackNarrative || null,
+          feedbackPedagogical: evaluation.feedbackPedagogical || null,
+          feedbackEngagement: evaluation.feedbackEngagement || null,
+          feedbackTechnical: evaluation.feedbackTechnical || null,
+          overallFeedback: evaluation.overallFeedback || null,
+          attemptNumber,
+          toolUsed: input.toolUsed || null,
+          grade: input.grade || null,
+          subject: input.subject || null,
+          lessonTitle: input.lessonTitle || null,
+        });
+
+        return {
+          ...evaluation,
+          totalScore,
+          attemptNumber,
+        };
+      }),
+
+    // Get user's evaluation history
+    getMyEvaluations: protectedProcedure
+      .query(async ({ ctx }) => {
+        const database = getDb();
+        const evaluations = await database.select().from(videoEvaluations)
+          .where(eq(videoEvaluations.userId, ctx.user.id))
+          .orderBy(desc(videoEvaluations.createdAt));
+        return evaluations;
+      }),
+
+    // Get a single evaluation by ID
+    getEvaluation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const database = getDb();
+        const [evaluation] = await database.select().from(videoEvaluations)
+          .where(and(eq(videoEvaluations.id, input.id), eq(videoEvaluations.userId, ctx.user.id)));
+        if (!evaluation) throw new TRPCError({ code: "NOT_FOUND", message: "التقييم غير موجود" });
+        return evaluation;
+      }),
+
+    // Get user's stats summary
+    getMyStats: protectedProcedure
+      .query(async ({ ctx }) => {
+        const database = getDb();
+        const evaluations = await database.select().from(videoEvaluations)
+          .where(eq(videoEvaluations.userId, ctx.user.id))
+          .orderBy(desc(videoEvaluations.createdAt));
+        if (evaluations.length === 0) {
+          return { totalEvaluations: 0, averageScore: 0, bestScore: 0, latestScore: 0, improvement: 0, averages: { visual: 0, narrative: 0, pedagogical: 0, engagement: 0, technical: 0 } };
+        }
+        const totalEvaluations = evaluations.length;
+        const averageScore = Math.round(evaluations.reduce((sum, e) => sum + e.totalScore, 0) / totalEvaluations);
+        const bestScore = Math.max(...evaluations.map(e => e.totalScore));
+        const latestScore = evaluations[0].totalScore;
+        const improvement = evaluations.length >= 2 ? evaluations[0].totalScore - evaluations[evaluations.length - 1].totalScore : 0;
+        const averages = {
+          visual: Math.round(evaluations.reduce((s, e) => s + e.scoreVisualQuality, 0) / totalEvaluations),
+          narrative: Math.round(evaluations.reduce((s, e) => s + e.scoreNarrative, 0) / totalEvaluations),
+          pedagogical: Math.round(evaluations.reduce((s, e) => s + e.scorePedagogical, 0) / totalEvaluations),
+          engagement: Math.round(evaluations.reduce((s, e) => s + e.scoreEngagement, 0) / totalEvaluations),
+          technical: Math.round(evaluations.reduce((s, e) => s + e.scoreTechnical, 0) / totalEvaluations),
+        };
+        return { totalEvaluations, averageScore, bestScore, latestScore, improvement, averages };
+      }),
+
+    // Legacy chat endpoint (kept for backward compatibility)
     chat: protectedProcedure
       .input(z.object({
         messages: z.array(z.object({
@@ -14323,53 +14541,19 @@ ${input.teacherNotes ? `ملاحظات المعلم: ${input.teacherNotes}` : ""
           input.educationalObjective ? `الهدف التعليمي: ${input.educationalObjective}` : "",
           input.originalPrompt ? `الموجه الأصلي المستخدم: ${input.originalPrompt}` : "",
         ].filter(Boolean).join("\n");
-        const systemPrompt = `# الهوية
-أنت **"مُقيِّم المعلم الرقمي"**، وكيل ذكاء اصطناعي خبير في إنتاج الفيديوهات التعليمية وهندسة الأوامر (Prompt Engineering). تعمل ضمن منصة **Leader Academy** في تونس.
+        const chatSystemPrompt = `# الهوية
+انت مُقيِّم المعلم الرقمي في منصة Leader Academy تونس. خبير في الفيديوهات التعليمية وهندسة الأوامر.
 
 # دورك
-تقييم أعمال المعلمين المشاركين في دورة **إعداد الفيديوهات التعليمية بالذكاء الاصطناعي**. تتواصل دائماً بنبرة **محفزة، إيجابية، وداعمة**. ابدأ دائماً بالثناء على الجهد والإبداع، ثم قدم ملاحظاتك التصحيحية بلطف واحترافية.
+تقييم أعمال المعلمين في دورة إعداد الفيديوهات التعليمية بالذكاء الاصطناعي. تتواصل بنبرة محفزة وداعمة.
+${contextInfo ? "\n# معلومات مقدمة\n" + contextInfo : ""}
 
-# المدخلات المطلوبة
-عند بدء المحادثة، اطلب من المتدرب بلطف تقديم:
-1. **ملف الفيديو** الذي قام بتوليده (أو رابطه)
-2. **الموجه (Prompt) الأساسي** الذي استخدمه لإنتاج الفيديو
-3. **الفئة المستهدفة** (مثل: تلاميذ المرحلة الابتدائية) و**الهدف التعليمي** من الفيديو
+# تعليمات
+- استخدم العربية دائماً
+- كن محدداً في ملاحظاتك
+- عند تحسين الموجه اكتبه بالإنجليزية مع ترجمة عربية
+- لا تعرض أي كود أو JSON - قدم كل شيء كنص مقروء`;
 
-${contextInfo ? `# معلومات مقدمة مسبقاً\n${contextInfo}\n` : ""}
-# منهجية التقييم
-بمجرد استلام المدخلات، قم بتحليل الفيديو والموجه، وقدم تقريرك بأسلوب مهني وودود بناءً على المحاور التالية:
-
-## 1. الإيجابيات (نقاط القوة)
-اذكر 2 إلى 3 تفاصيل مميزة في العمل (مثل: جودة الفكرة، اختيار الزوايا، وضوح الهدف، إلخ).
-
-## 2. الملاحظات الفنية والتربوية (للتطوير)
-- **هندسة الأوامر**: مدى مطابقة الفيديو للموجه الأصلي المكتوب.
-- **الملاءمة التربوية**: مدى مناسبة المحتوى البصري للفئة العمرية المستهدفة وقدرته على إيصال الرسالة.
-- **السياق الثقافي البصري**: دقق في مدى نجاح الفيديو في عكس البيئة المحلية المألوفة للمتلقي. تأكد من أن ملامح الشخصيات تونسية أصيلة وواقعية، وأن الأزياء والخلفيات تتناسب مع هذا السياق.
-- **الجودة التقنية**: رصد أي تشوهات بصرية ناتجة عن التوليد (مثل تشوه الأطراف أو عدم التناسق).
-
-## 3. اقتراحات التحسين وهندسة الأوامر
-هذه هي **القيمة المضافة الأهم**. قدم للمتدرب نسخة معدلة ومحسنة من الموجه (Prompt) الخاص به لتفادي الأخطاء التي ظهرت، مع شرح مبسط لسبب التعديل (مثل: إضافة كلمات مفتاحية معينة لتثبيت ملامح الشخصيات أو تحسين الإضاءة).
-
-# هيكلية المخرجات (شكل التقرير)
-قدم تقريرك بالشكل التالي:
-
-🌟 **رسالة ترحيب وتشجيع**: (ثناء قصير على المحاولة)
-
-✨ **ما أعجبني في عملك**: (نقاط القوة - 2 إلى 3 نقاط)
-
-💡 **ملاحظات للتطوير**: (التقييم الفني، التربوي، والثقافي بلطف)
-
-🛠️ **الموجه السحري**: (اقتراح الموجه المحسن مع التبرير)
-
-# تعليمات إضافية
-- استخدم اللغة العربية دائماً
-- كن محدداً في ملاحظاتك وتجنب العموميات
-- عند تحسين الموجه، اكتبه بالإنجليزية (لأن أدوات التوليد تعمل بالإنجليزية) مع ترجمة عربية
-- إذا لم يقدم المتدرب كل المدخلات المطلوبة، اطلبها بلطف قبل تقديم التقييم
-- عند تحليل الفيديو، ركز على العناصر البصرية والتربوية وليس فقط الجودة التقنية`;
-
-        // Build LLM messages with proper attachment handling
         const llmMessages = input.messages.map(m => {
           if (!m.attachments || m.attachments.length === 0) {
             return { role: m.role as "user" | "assistant", content: m.content };
@@ -14379,46 +14563,28 @@ ${contextInfo ? `# معلومات مقدمة مسبقاً\n${contextInfo}\n` : "
             | { type: "image_url"; image_url: { url: string; detail: "auto" | "low" | "high" } }
             | { type: "file_url"; file_url: { url: string; mime_type: "application/pdf" | "audio/mpeg" | "audio/wav" | "audio/mp4" | "video/mp4" } };
           const contentParts: ContentPart[] = [];
-          if (m.content) {
-            contentParts.push({ type: "text", text: m.content });
-          }
+          if (m.content) contentParts.push({ type: "text", text: m.content });
           for (const att of m.attachments) {
             if (!att.url) continue;
             const mime = att.type || "";
             if (mime.startsWith("image/")) {
-              contentParts.push({
-                type: "image_url",
-                image_url: { url: att.url, detail: "high" },
-              });
+              contentParts.push({ type: "image_url", image_url: { url: att.url, detail: "high" } });
             } else if (mime.startsWith("video/")) {
-              contentParts.push({
-                type: "file_url",
-                file_url: { url: att.url, mime_type: "video/mp4" },
-              });
+              contentParts.push({ type: "file_url", file_url: { url: att.url, mime_type: "video/mp4" } });
             } else if (mime === "application/pdf") {
-              contentParts.push({
-                type: "file_url",
-                file_url: { url: att.url, mime_type: "application/pdf" },
-              });
+              contentParts.push({ type: "file_url", file_url: { url: att.url, mime_type: "application/pdf" } });
             } else {
-              contentParts.push({
-                type: "text",
-                text: `[ملف مرفق: ${att.name} (${mime || "وثيقة"}) - يرجى تحليل محتواه والرد بناءً عليه]`,
-              });
+              contentParts.push({ type: "text", text: `[ملف مرفق: ${att.name}]` });
             }
           }
           return { role: m.role as "user" | "assistant", content: contentParts };
         });
 
         const response = await invokeLLM({
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...llmMessages,
-          ],
+          messages: [{ role: "system", content: chatSystemPrompt }, ...llmMessages],
         });
         const content = response.choices[0].message.content;
-        const messageText = typeof content === "string" ? content : "";
-        return { message: messageText };
+        return { message: typeof content === "string" ? content : "" };
       }),
   }),
 });
