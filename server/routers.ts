@@ -4670,6 +4670,14 @@ ${input.planText}` },
         if (fs.existsSync(logoPath)) {
           const logoData = fs.readFileSync(logoPath);
           logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
+        } else {
+          try {
+            const resp = await fetch("https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/leader-academy-logo_866ef755.png");
+            if (resp.ok) {
+              const buf = Buffer.from(await resp.arrayBuffer());
+              logoBase64 = `data:image/png;base64,${buf.toString("base64")}`;
+            }
+          } catch {}
         }
         // Build HTML for PDF
         const reportHtml = input.report

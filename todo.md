@@ -2586,3 +2586,10 @@
 - [x] Add evaluation history tab with detail view + stats summary + averages radar
 - [x] Add re-evaluate button with auto-filled improved prompt
 - [x] Test evaluation flow: 49 vitest tests passing
+
+## Fix: Deployment Timeout (PrepareImageActivity)
+- [x] Diagnose large files: found 16 PDF test artifacts (8.7MB) + font files in project root
+- [x] Removed 16 PDF files from git tracking and added *.pdf to .gitignore
+- [x] Uploaded fonts/logo to S3 CDN and added CDN fallback in all code references
+- [x] Verified build succeeds locally (31s build time)
+- [ ] Save checkpoint and redeploy

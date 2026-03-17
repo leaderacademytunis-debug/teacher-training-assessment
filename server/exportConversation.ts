@@ -455,8 +455,8 @@ async function createPdfFromMarkdown(markdown: string, data: ConversationExportD
   const isRTL = data.language !== "fr" && data.language !== "en";
   const fontPath = path.join(__dirname_exp, "fonts", "Amiri-Regular.ttf");
   const fontBoldPath = path.join(__dirname_exp, "fonts", "Amiri-Bold.ttf");
-  const FONT_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/Amiri-Regular_cfc49f25.ttf";
-  const FONT_BOLD_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/Amiri-Bold_0cd66c9b.ttf";
+  const FONT_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/Amiri-Regular_dd82697b.ttf";
+  const FONT_BOLD_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/Amiri-Bold_46c37bd9.ttf";
 
   // Load font: prefer local file, fallback to CDN
   let fontSource: string | Buffer = fontPath;

@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import type { PedagogicalSheet, LessonPlan, TeacherExam } from "../drizzle/schema";
 
@@ -306,9 +307,11 @@ export async function generateAiSuggestionPDF(suggestion: AiSuggestionData): Pro
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
-      // Register Arabic font (Amiri)
+      // Register Arabic font (Amiri) - local first, CDN fallback
       const amiriFontPath = path.join(__dirname, "fonts", "Amiri-Regular.ttf");
-      doc.registerFont("Amiri", amiriFontPath);
+      if (fs.existsSync(amiriFontPath)) {
+        doc.registerFont("Amiri", amiriFontPath);
+      }
       doc.font("Amiri");
 
       const educationLevelMaps = {

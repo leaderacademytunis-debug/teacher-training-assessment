@@ -17,6 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const FONTS_DIR = path.join(__dirname, "fonts");
+const LOGO_CDN_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/leader-academy-logo_866ef755.png";
 
 // Academy brand colors
 const COLORS = {
@@ -37,11 +38,27 @@ const COLORS = {
 };
 
 function getLogoBase64(): string {
+  // Try local file first, then CDN fallback is handled by getLogoBase64Async
   const logoPath = path.join(FONTS_DIR, "leader-academy-logo.png");
   if (fs.existsSync(logoPath)) {
     const logoData = fs.readFileSync(logoPath);
     return `data:image/png;base64,${logoData.toString("base64")}`;
   }
+  return "";
+}
+
+async function getLogoBase64Async(): Promise<string> {
+  // Try local first
+  const local = getLogoBase64();
+  if (local) return local;
+  // Fallback to CDN
+  try {
+    const resp = await fetch(LOGO_CDN_URL);
+    if (resp.ok) {
+      const buf = Buffer.from(await resp.arrayBuffer());
+      return `data:image/png;base64,${buf.toString("base64")}`;
+    }
+  } catch {}
   return "";
 }
 
