@@ -10,6 +10,9 @@ import {
   TrendingUp, TrendingDown, Loader2, X, Download, PieChart,
   FileDown, Target, Award, Percent, Navigation, MessageCircle, AlertTriangle
 } from "lucide-react";
+import ToolPageHeader from "@/components/ToolPageHeader";
+
+const BLIND_GRADING_GRADIENT = "linear-gradient(135deg, #4338ca, #7c3aed, #1d4ed8)";
 
 // Tunisian mastery level colors
 const masteryColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -207,19 +210,13 @@ export default function BlindGrading() {
   if (activeView === "sessions") {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
-        {/* Header */}
-        <div className="bg-gradient-to-l from-indigo-600 via-purple-600 to-blue-700 text-white">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center gap-3 mb-2">
-              <Link href="/" className="text-white/80 hover:text-white transition-colors">
-                <ArrowRight className="w-6 h-6" />
-              </Link>
-              <FileCheck className="w-8 h-8" />
-              <h1 className="text-2xl md:text-3xl font-bold">مساعد التصحيح الأعمى</h1>
-            </div>
-            <p className="text-white/80 mr-11">تصحيح ذكي بالذكاء الاصطناعي حسب المعايير التونسية</p>
-          </div>
-        </div>
+        <ToolPageHeader
+          icon={FileCheck}
+          nameAr="مساعد التصحيح الأعمى"
+          descAr="تصحيح ذكي بالذكاء الاصطناعي حسب المعايير التونسية"
+          gradient={BLIND_GRADING_GRADIENT}
+          backTo="/"
+        />
 
         <div className="container mx-auto px-4 py-8 max-w-5xl">
           {/* Stats Cards */}
@@ -422,26 +419,14 @@ export default function BlindGrading() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
         {/* Header */}
-        <div className="bg-gradient-to-l from-indigo-600 via-purple-600 to-blue-700 text-white">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center gap-3 mb-1">
-              <button onClick={() => { setActiveView("sessions"); setSelectedSessionId(null); }}
-                className="text-white/80 hover:text-white transition-colors">
-                <ArrowRight className="w-6 h-6" />
-              </button>
-              <h1 className="text-xl md:text-2xl font-bold">{session?.sessionTitle || "..."}</h1>
-            </div>
-            <div className="flex items-center gap-4 mr-9 text-white/70 text-sm">
-              {session && (
-                <>
-                  <span>{session.subject}</span>
-                  <span>|</span>
-                  <span>{session.grade}</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        <ToolPageHeader
+          icon={FileCheck}
+          nameAr={session?.sessionTitle || "..."}
+          gradient={BLIND_GRADING_GRADIENT}
+          onBack={() => { setActiveView("sessions"); setSelectedSessionId(null); }}
+          subtitle={session ? `${session.subject} | ${session.grade}` : undefined}
+        />
+
 
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           {/* Privacy Toggle & Actions */}
@@ -637,25 +622,13 @@ export default function BlindGrading() {
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
-        {/* Header */}
-        <div className="bg-gradient-to-l from-indigo-600 via-purple-600 to-blue-700 text-white">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center gap-3">
-              <button onClick={() => { setActiveView("session-detail"); setSelectedSubmissionId(null); }}
-                className="text-white/80 hover:text-white transition-colors">
-                <ArrowRight className="w-6 h-6" />
-              </button>
-              <h1 className="text-xl font-bold">
-                {hideNames ? `تلميذ ${sub?.studentNumber}` : (sub?.studentName || `تلميذ ${sub?.studentNumber}`)}
-              </h1>
-              {sub?.overallMasteryLevel && (
-                <span className={`px-3 py-1 rounded-lg text-sm font-bold ${getMasteryStyle(sub.overallMasteryLevel).bg} ${getMasteryStyle(sub.overallMasteryLevel).text}`}>
-                  {sub.overallMasteryLevel} - {getMasteryStyle(sub.overallMasteryLevel).label}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        <ToolPageHeader
+          icon={FileCheck}
+          nameAr={hideNames ? `تلميذ ${sub?.studentNumber}` : (sub?.studentName || `تلميذ ${sub?.studentNumber}`)}
+          gradient={BLIND_GRADING_GRADIENT}
+          onBack={() => { setActiveView("session-detail"); setSelectedSubmissionId(null); }}
+          subtitle={sub?.overallMasteryLevel ? `${sub.overallMasteryLevel} - ${getMasteryStyle(sub.overallMasteryLevel).label}` : undefined}
+        />
 
         <div className="container mx-auto px-4 py-6 max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -835,21 +808,13 @@ export default function BlindGrading() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
         {/* Header */}
-        <div className="bg-gradient-to-l from-blue-600 via-indigo-600 to-purple-700 text-white">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center gap-3 mb-1">
-              <button onClick={() => setActiveView("session-detail")}
-                className="text-white/80 hover:text-white transition-colors">
-                <ArrowRight className="w-6 h-6" />
-              </button>
-              <PieChart className="w-7 h-7" />
-              <h1 className="text-xl md:text-2xl font-bold">تحليل إحصائي للفصل</h1>
-            </div>
-            {stats && (
-              <p className="text-white/70 text-sm mr-10">{stats.session.title} | {stats.session.subject} | {stats.session.grade}</p>
-            )}
-          </div>
-        </div>
+        <ToolPageHeader
+          icon={PieChart}
+          nameAr="تحليل إحصائي للفصل"
+          gradient={BLIND_GRADING_GRADIENT}
+          onBack={() => setActiveView("session-detail")}
+          subtitle={stats ? `${stats.session.title} | ${stats.session.subject} | ${stats.session.grade}` : undefined}
+        />
 
         <div className="container mx-auto px-4 py-6 max-w-6xl">
           {isLoading ? (

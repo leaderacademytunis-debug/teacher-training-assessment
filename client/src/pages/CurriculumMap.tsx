@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -19,6 +19,28 @@ import {
   CheckCircle2, Clock, AlertCircle, Loader2, Sparkles, BookMarked,
   BarChart3, GraduationCap, Compass, ArrowLeft
 } from "lucide-react";
+import UnifiedToolLayout, { type ToolConfig } from "@/components/UnifiedToolLayout";
+
+// ─── Tool Config ─────────────────────────────────────────────────────────────
+
+const CURRICULUM_CONFIG: ToolConfig = {
+  id: "curriculum-map",
+  icon: Compass,
+  nameAr: "خريطة المنهج الذكية",
+  nameFr: "Curriculum GPS",
+  nameEn: "Curriculum GPS",
+  descAr: "تتبع تقدمك في المنهج الدراسي وفق البرنامج الرسمي التونسي",
+  descFr: "Suivez votre progression dans le programme scolaire",
+  descEn: "Track your curriculum progress",
+  accentColor: "#1565C0",
+  gradient: "linear-gradient(135deg, #1565C0, #1A237E)",
+  loaderMessages: [
+    "جارٍ تحليل المخطط السنوي...",
+    "استخراج المواضيع والوحدات...",
+    "ربط الكفايات بالأهداف...",
+    "إعداد خريطة المنهج...",
+  ],
+};
 
 // ===== CONSTANTS =====
 const SUBJECTS = [
@@ -168,7 +190,6 @@ export default function CurriculumMap() {
         return;
       }
 
-      // Create the plan first
       const plan = await createPlanMutation.mutateAsync({
         planTitle: `التوزيع السنوي - ${importSubject} ${importGrade}`,
         schoolYear: "2025-2026",
@@ -179,7 +200,6 @@ export default function CurriculumMap() {
       });
 
       if (plan) {
-        // Add extracted topics
         await addTopicsMutation.mutateAsync({
           planId: plan.id,
           topics: topics.map((t: any, i: number) => ({
@@ -240,435 +260,428 @@ export default function CurriculumMap() {
   const plans = plansQuery.data || [];
   const selectedPlan = planDetailsQuery.data;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20" dir="rtl">
-      {/* Header */}
-      <div className="bg-gradient-to-l from-blue-700 via-blue-600 to-indigo-700 text-white">
-        <div className="container max-w-7xl py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20" onClick={() => navigate("/")}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Compass className="h-7 w-7" />
-                  <h1 className="text-2xl font-bold">خريطة المنهج الذكية</h1>
-                </div>
-                <p className="text-blue-100 text-sm">Curriculum GPS - تتبع تقدمك في المنهج الدراسي</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="border-white/30 text-white hover:bg-white/20 bg-transparent">
-                    <Upload className="h-4 w-4 ml-2" />
-                    استيراد مخطط
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl" dir="rtl">
-                  <DialogHeader>
-                    <DialogTitle className="text-right">استيراد مخطط سنوي بالذكاء الاصطناعي</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      الصق محتوى المخطط السنوي (من ملف PDF أو Word) وسيقوم الذكاء الاصطناعي بتحليله واستخراج المواضيع تلقائياً.
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Select value={importGrade} onValueChange={setImportGrade}>
-                        <SelectTrigger><SelectValue placeholder="المستوى الدراسي" /></SelectTrigger>
-                        <SelectContent>
-                          {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Select value={importSubject} onValueChange={setImportSubject}>
-                        <SelectTrigger><SelectValue placeholder="المادة" /></SelectTrigger>
-                        <SelectContent>
-                          {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Textarea
-                      value={importText}
-                      onChange={e => setImportText(e.target.value)}
-                      placeholder="الصق محتوى المخطط السنوي هنا..."
-                      className="min-h-[200px] text-right"
-                      dir="rtl"
-                    />
-                    <Button
-                      onClick={handleImportPlan}
-                      disabled={parseAnnualPlanMutation.isPending || createPlanMutation.isPending}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      {parseAnnualPlanMutation.isPending ? (
-                        <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري التحليل بالذكاء الاصطناعي...</>
-                      ) : (
-                        <><Sparkles className="h-4 w-4 ml-2" />تحليل واستيراد</>
-                      )}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+  // ─── Input Panel: Plans sidebar + action buttons ─────────────────────────
 
-              <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <DialogTrigger asChild>
-                  <Button className="bg-white text-blue-700 hover:bg-blue-50">
-                    <Plus className="h-4 w-4 ml-2" />
-                    مخطط جديد
-                  </Button>
-                </DialogTrigger>
-                <DialogContent dir="rtl">
-                  <DialogHeader>
-                    <DialogTitle className="text-right">إنشاء مخطط سنوي جديد</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Input
-                      value={newPlan.planTitle}
-                      onChange={e => setNewPlan(p => ({ ...p, planTitle: e.target.value }))}
-                      placeholder="عنوان المخطط"
-                      dir="rtl"
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Select value={newPlan.grade} onValueChange={v => setNewPlan(p => ({ ...p, grade: v }))}>
-                        <SelectTrigger><SelectValue placeholder="المستوى" /></SelectTrigger>
-                        <SelectContent>
-                          {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <Select value={newPlan.subject} onValueChange={v => setNewPlan(p => ({ ...p, subject: v }))}>
-                        <SelectTrigger><SelectValue placeholder="المادة" /></SelectTrigger>
-                        <SelectContent>
-                          {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Input
-                      value={newPlan.schoolYear}
-                      onChange={e => setNewPlan(p => ({ ...p, schoolYear: e.target.value }))}
-                      placeholder="السنة الدراسية"
-                      dir="rtl"
-                    />
-                    <Button onClick={handleCreatePlan} disabled={createPlanMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700">
-                      {createPlanMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إنشاء المخطط"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+  const inputPanel = (
+    <div className="space-y-4" dir="rtl" style={{ fontFamily: "'Almarai', sans-serif" }}>
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5">
+              <Upload className="h-3.5 w-3.5" />
+              استيراد مخطط
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-right">استيراد مخطط سنوي بالذكاء الاصطناعي</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                الصق محتوى المخطط السنوي (من ملف PDF أو Word) وسيقوم الذكاء الاصطناعي بتحليله واستخراج المواضيع تلقائياً.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={importGrade} onValueChange={setImportGrade}>
+                  <SelectTrigger><SelectValue placeholder="المستوى الدراسي" /></SelectTrigger>
+                  <SelectContent>
+                    {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={importSubject} onValueChange={setImportSubject}>
+                  <SelectTrigger><SelectValue placeholder="المادة" /></SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Textarea
+                value={importText}
+                onChange={e => setImportText(e.target.value)}
+                placeholder="الصق محتوى المخطط السنوي هنا..."
+                className="min-h-[200px] text-right"
+                dir="rtl"
+              />
+              <Button
+                onClick={handleImportPlan}
+                disabled={parseAnnualPlanMutation.isPending || createPlanMutation.isPending}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {parseAnnualPlanMutation.isPending ? (
+                  <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري التحليل بالذكاء الاصطناعي...</>
+                ) : (
+                  <><Sparkles className="h-4 w-4 ml-2" />تحليل واستيراد</>
+                )}
+              </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="flex-1 text-xs gap-1.5 bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-3.5 w-3.5" />
+              مخطط جديد
+            </Button>
+          </DialogTrigger>
+          <DialogContent dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="text-right">إنشاء مخطط سنوي جديد</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                value={newPlan.planTitle}
+                onChange={e => setNewPlan(p => ({ ...p, planTitle: e.target.value }))}
+                placeholder="عنوان المخطط"
+                dir="rtl"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={newPlan.grade} onValueChange={v => setNewPlan(p => ({ ...p, grade: v }))}>
+                  <SelectTrigger><SelectValue placeholder="المستوى" /></SelectTrigger>
+                  <SelectContent>
+                    {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={newPlan.subject} onValueChange={v => setNewPlan(p => ({ ...p, subject: v }))}>
+                  <SelectTrigger><SelectValue placeholder="المادة" /></SelectTrigger>
+                  <SelectContent>
+                    {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                value={newPlan.schoolYear}
+                onChange={e => setNewPlan(p => ({ ...p, schoolYear: e.target.value }))}
+                placeholder="السنة الدراسية"
+                dir="rtl"
+              />
+              <Button onClick={handleCreatePlan} disabled={createPlanMutation.isPending} className="w-full bg-blue-600 hover:bg-blue-700">
+                {createPlanMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إنشاء المخطط"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="container max-w-7xl py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar: Plans List */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Map className="h-4 w-4 text-blue-600" />
-                  مخططاتي السنوية
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="max-h-[500px]">
-                  {plans.length === 0 ? (
-                    <div className="p-6 text-center text-muted-foreground">
-                      <BookOpen className="h-10 w-10 mx-auto mb-2 opacity-40" />
-                      <p className="text-sm">لا توجد مخططات بعد</p>
-                      <p className="text-xs mt-1">أنشئ مخططاً جديداً أو استورد واحداً</p>
+      {/* Plans List */}
+      <div className="space-y-2">
+        <p className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
+          <Map className="w-3.5 h-3.5 text-blue-600" />
+          مخططاتي السنوية
+        </p>
+        <ScrollArea className="max-h-[400px]">
+          {plans.length === 0 ? (
+            <div className="p-6 text-center text-muted-foreground bg-gray-50 rounded-xl">
+              <BookOpen className="h-10 w-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">لا توجد مخططات بعد</p>
+              <p className="text-xs mt-1">أنشئ مخططاً جديداً أو استورد واحداً</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {plans.map(plan => (
+                <div
+                  key={plan.id}
+                  className={`p-3 rounded-xl cursor-pointer transition-all border ${
+                    selectedPlanId === plan.id
+                      ? "bg-blue-50 border-blue-300 shadow-sm"
+                      : "bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/30"
+                  }`}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{plan.planTitle}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">{plan.subject}</Badge>
+                        <span className="text-xs text-muted-foreground">{plan.grade}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className="text-xs text-muted-foreground">{plan.totalTopics} موضوع</span>
+                        {plan.isOfficial && (
+                          <Badge className="text-[10px] bg-green-100 text-green-800 px-1">رسمي</Badge>
+                        )}
+                      </div>
                     </div>
-                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={e => { e.stopPropagation(); handleDeletePlan(plan.id); }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+
+      {/* Smart Suggestions */}
+      {suggestions.length > 0 && (
+        <div className="space-y-2 p-3 rounded-xl border border-amber-200 bg-amber-50/50">
+          <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+            <Lightbulb className="w-3.5 h-3.5" />
+            اقتراحات ذكية
+          </p>
+          <p className="text-xs text-amber-700">الدروس التالية في المنهج:</p>
+          {suggestions.map((topic: any) => (
+            <div key={topic.id} className="p-2 bg-white rounded-lg border border-amber-200">
+              <p className="text-sm font-medium">{topic.topicTitle}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="text-[10px]">الفترة {topic.periodNumber}</Badge>
+                {topic.textbookPages && (
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <BookMarked className="h-3 w-3" />{topic.textbookPages}
+                  </span>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full mt-1 text-xs text-amber-700 hover:bg-amber-100"
+                onClick={() => navigate(`/teacher-tools?topic=${encodeURIComponent(topic.topicTitle)}`)}
+              >
+                <Sparkles className="h-3 w-3 ml-1" />
+                إعداد هذا الدرس
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  // ─── Custom Result: The main curriculum dashboard ────────────────────────
+
+  const customResultRenderer = (
+    <div className="space-y-5" dir="rtl" style={{ fontFamily: "'Almarai', sans-serif" }}>
+      {!selectedPlanId ? (
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+          <Compass className="h-16 w-16 mx-auto text-blue-300 mb-4" />
+          <h3 className="text-xl font-bold mb-2">اختر مخططاً أو أنشئ واحداً جديداً</h3>
+          <p className="text-muted-foreground mb-4">
+            خريطة المنهج الذكية تساعدك على تتبع تقدمك في تغطية المنهج الدراسي
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button onClick={() => setShowCreateDialog(true)} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 ml-2" />إنشاء مخطط
+            </Button>
+            <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+              <Upload className="h-4 w-4 ml-2" />استيراد مخطط
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Coverage Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-xs">التقدم الكلي</p>
+                    <p className="text-3xl font-bold mt-1">{coverage?.percentage || 0}%</p>
+                  </div>
+                  <BarChart3 className="h-10 w-10 text-blue-200" />
+                </div>
+                <Progress value={coverage?.percentage || 0} className="mt-3 h-2 bg-blue-400" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground text-xs">إجمالي المواضيع</p>
+                    <p className="text-2xl font-bold mt-1">{coverage?.total || 0}</p>
+                  </div>
+                  <Target className="h-8 w-8 text-gray-400" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground text-xs">مكتمل</p>
+                    <p className="text-2xl font-bold mt-1 text-emerald-600">{coverage?.completed || 0}</p>
+                  </div>
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground text-xs">قيد الإنجاز</p>
+                    <p className="text-2xl font-bold mt-1 text-amber-600">{coverage?.inProgress || 0}</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-amber-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Plan Title */}
+          {selectedPlan && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold">{selectedPlan.plan.planTitle}</h2>
+                    <div className="flex items-center gap-3 mt-1">
+                      <Badge>{selectedPlan.plan.subject}</Badge>
+                      <span className="text-sm text-muted-foreground">{selectedPlan.plan.grade}</span>
+                      <span className="text-sm text-muted-foreground">{selectedPlan.plan.schoolYear}</span>
+                    </div>
+                  </div>
+                  <GraduationCap className="h-8 w-8 text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Periods Accordion */}
+          <div className="space-y-3">
+            {periods.length === 0 && planDetailsQuery.isLoading && (
+              <Card className="p-8 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
+                <p className="mt-2 text-muted-foreground">جاري تحميل المنهج...</p>
+              </Card>
+            )}
+
+            {periods.length === 0 && !planDetailsQuery.isLoading && selectedPlan?.topics.length === 0 && (
+              <Card className="p-8 text-center">
+                <AlertCircle className="h-10 w-10 mx-auto text-amber-400 mb-2" />
+                <h3 className="font-bold mb-1">لا توجد مواضيع في هذا المخطط</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  استخدم ميزة الاستيراد الذكي لإضافة المواضيع تلقائياً من مخطط سنوي
+                </p>
+                <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+                  <Upload className="h-4 w-4 ml-2" />استيراد المواضيع
+                </Button>
+              </Card>
+            )}
+
+            {periods.map(period => (
+              <Card key={period.periodNumber} className="overflow-hidden">
+                <div
+                  className="p-4 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between"
+                  onClick={() => togglePeriod(period.periodNumber)}
+                >
+                  <div className="flex items-center gap-3">
+                    {expandedPeriods[period.periodNumber] ? (
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <ChevronLeft className="h-5 w-5 text-gray-400" />
+                    )}
+                    <div>
+                      <h3 className="font-bold">{period.periodName}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {period.completed}/{period.total} موضوع مكتمل
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32">
+                      <Progress value={period.percentage} className="h-2" />
+                    </div>
+                    <Badge variant={period.percentage === 100 ? "default" : "outline"} className={period.percentage === 100 ? "bg-emerald-600" : ""}>
+                      {period.percentage}%
+                    </Badge>
+                  </div>
+                </div>
+
+                {expandedPeriods[period.periodNumber] && (
+                  <div className="border-t">
                     <div className="divide-y">
-                      {plans.map(plan => (
-                        <div
-                          key={plan.id}
-                          className={`p-3 cursor-pointer transition-colors hover:bg-blue-50/50 ${
-                            selectedPlanId === plan.id ? "bg-blue-50 border-r-2 border-blue-600" : ""
-                          }`}
-                          onClick={() => setSelectedPlanId(plan.id)}
-                        >
-                          <div className="flex items-start justify-between">
+                      {period.topics.map((topic: any) => {
+                        const status = topic.progress?.status || "not_started";
+                        return (
+                          <div key={topic.id} className="p-3 px-6 flex items-center gap-3 hover:bg-gray-50/50">
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{plan.planTitle}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs">{plan.subject}</Badge>
-                                <span className="text-xs text-muted-foreground">{plan.grade}</span>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm">{topic.topicTitle}</p>
+                                <Badge className={`text-[10px] ${STATUS_COLORS[status]}`}>
+                                  {STATUS_LABELS[status]}
+                                </Badge>
                               </div>
-                              <div className="flex items-center gap-1 mt-1">
-                                <span className="text-xs text-muted-foreground">{plan.totalTopics} موضوع</span>
-                                {plan.isOfficial && (
-                                  <Badge className="text-[10px] bg-green-100 text-green-800 px-1">رسمي</Badge>
+                              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                {topic.competency && (
+                                  <span className="text-xs text-muted-foreground">
+                                    <Target className="h-3 w-3 inline ml-0.5" />{topic.competency}
+                                  </span>
+                                )}
+                                {topic.competencyCode && (
+                                  <Badge variant="outline" className="text-[10px]">{topic.competencyCode}</Badge>
+                                )}
+                                {topic.textbookPages && (
+                                  <span className="text-xs text-blue-600 flex items-center gap-0.5">
+                                    <BookMarked className="h-3 w-3" />{topic.textbookName}: {topic.textbookPages}
+                                  </span>
+                                )}
+                                {topic.sessionCount && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {topic.sessionCount} حصة × {topic.sessionDuration} د
+                                  </span>
                                 )}
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
-                              onClick={e => { e.stopPropagation(); handleDeletePlan(plan.id); }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Select
+                                value={status}
+                                onValueChange={v => handleUpdateStatus(topic.id, v)}
+                              >
+                                <SelectTrigger className="h-8 w-28 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="not_started">لم يبدأ</SelectItem>
+                                  <SelectItem value="in_progress">قيد الإنجاز</SelectItem>
+                                  <SelectItem value="completed">مكتمل</SelectItem>
+                                  <SelectItem value="skipped">تخطي</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 text-xs text-blue-600"
+                                onClick={() => navigate(`/teacher-tools?topic=${encodeURIComponent(topic.topicTitle)}`)}
+                              >
+                                <FileText className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Smart Suggestions Card */}
-            {suggestions.length > 0 && (
-              <Card className="mt-4 border-amber-200 bg-amber-50/50">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2 text-amber-800">
-                    <Lightbulb className="h-4 w-4" />
-                    اقتراحات ذكية
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="text-xs text-amber-700 mb-2">الدروس التالية في المنهج:</p>
-                  {suggestions.map((topic: any) => (
-                    <div key={topic.id} className="p-2 bg-white rounded-lg border border-amber-200">
-                      <p className="text-sm font-medium">{topic.topicTitle}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-[10px]">الفترة {topic.periodNumber}</Badge>
-                        {topic.textbookPages && (
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <BookMarked className="h-3 w-3" />{topic.textbookPages}
-                          </span>
-                        )}
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="w-full mt-1 text-xs text-amber-700 hover:bg-amber-100"
-                        onClick={() => navigate(`/teacher-tools?topic=${encodeURIComponent(topic.topicTitle)}`)}
-                      >
-                        <Sparkles className="h-3 w-3 ml-1" />
-                        إعداد هذا الدرس
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {!selectedPlanId ? (
-              <Card className="p-12 text-center">
-                <Compass className="h-16 w-16 mx-auto text-blue-300 mb-4" />
-                <h3 className="text-xl font-bold mb-2">اختر مخططاً أو أنشئ واحداً جديداً</h3>
-                <p className="text-muted-foreground mb-4">
-                  خريطة المنهج الذكية تساعدك على تتبع تقدمك في تغطية المنهج الدراسي
-                </p>
-                <div className="flex justify-center gap-3">
-                  <Button onClick={() => setShowCreateDialog(true)} className="bg-blue-600 hover:bg-blue-700">
-                    <Plus className="h-4 w-4 ml-2" />إنشاء مخطط
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowImportDialog(true)}>
-                    <Upload className="h-4 w-4 ml-2" />استيراد مخطط
-                  </Button>
-                </div>
-              </Card>
-            ) : (
-              <>
-                {/* Coverage Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-blue-100 text-xs">التقدم الكلي</p>
-                          <p className="text-3xl font-bold mt-1">{coverage?.percentage || 0}%</p>
-                        </div>
-                        <BarChart3 className="h-10 w-10 text-blue-200" />
-                      </div>
-                      <Progress value={coverage?.percentage || 0} className="mt-3 h-2 bg-blue-400" />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-muted-foreground text-xs">إجمالي المواضيع</p>
-                          <p className="text-2xl font-bold mt-1">{coverage?.total || 0}</p>
-                        </div>
-                        <Target className="h-8 w-8 text-gray-400" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-muted-foreground text-xs">مكتمل</p>
-                          <p className="text-2xl font-bold mt-1 text-emerald-600">{coverage?.completed || 0}</p>
-                        </div>
-                        <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-muted-foreground text-xs">قيد الإنجاز</p>
-                          <p className="text-2xl font-bold mt-1 text-amber-600">{coverage?.inProgress || 0}</p>
-                        </div>
-                        <Clock className="h-8 w-8 text-amber-400" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Plan Title */}
-                {selectedPlan && (
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-lg font-bold">{selectedPlan.plan.planTitle}</h2>
-                          <div className="flex items-center gap-3 mt-1">
-                            <Badge>{selectedPlan.plan.subject}</Badge>
-                            <span className="text-sm text-muted-foreground">{selectedPlan.plan.grade}</span>
-                            <span className="text-sm text-muted-foreground">{selectedPlan.plan.schoolYear}</span>
-                          </div>
-                        </div>
-                        <GraduationCap className="h-8 w-8 text-blue-400" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  </div>
                 )}
-
-                {/* Periods Accordion */}
-                <div className="space-y-3">
-                  {periods.length === 0 && planDetailsQuery.isLoading && (
-                    <Card className="p-8 text-center">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
-                      <p className="mt-2 text-muted-foreground">جاري تحميل المنهج...</p>
-                    </Card>
-                  )}
-
-                  {periods.length === 0 && !planDetailsQuery.isLoading && selectedPlan?.topics.length === 0 && (
-                    <Card className="p-8 text-center">
-                      <AlertCircle className="h-10 w-10 mx-auto text-amber-400 mb-2" />
-                      <h3 className="font-bold mb-1">لا توجد مواضيع في هذا المخطط</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        استخدم ميزة الاستيراد الذكي لإضافة المواضيع تلقائياً من مخطط سنوي
-                      </p>
-                      <Button variant="outline" onClick={() => setShowImportDialog(true)}>
-                        <Upload className="h-4 w-4 ml-2" />استيراد المواضيع
-                      </Button>
-                    </Card>
-                  )}
-
-                  {periods.map(period => (
-                    <Card key={period.periodNumber} className="overflow-hidden">
-                      <div
-                        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between"
-                        onClick={() => togglePeriod(period.periodNumber)}
-                      >
-                        <div className="flex items-center gap-3">
-                          {expandedPeriods[period.periodNumber] ? (
-                            <ChevronDown className="h-5 w-5 text-gray-400" />
-                          ) : (
-                            <ChevronLeft className="h-5 w-5 text-gray-400" />
-                          )}
-                          <div>
-                            <h3 className="font-bold">{period.periodName}</h3>
-                            <p className="text-xs text-muted-foreground">
-                              {period.completed}/{period.total} موضوع مكتمل
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-32">
-                            <Progress value={period.percentage} className="h-2" />
-                          </div>
-                          <Badge variant={period.percentage === 100 ? "default" : "outline"} className={period.percentage === 100 ? "bg-emerald-600" : ""}>
-                            {period.percentage}%
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {expandedPeriods[period.periodNumber] && (
-                        <div className="border-t">
-                          <div className="divide-y">
-                            {period.topics.map((topic: any) => {
-                              const status = topic.progress?.status || "not_started";
-                              return (
-                                <div key={topic.id} className="p-3 px-6 flex items-center gap-3 hover:bg-gray-50/50">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <p className="font-medium text-sm">{topic.topicTitle}</p>
-                                      <Badge className={`text-[10px] ${STATUS_COLORS[status]}`}>
-                                        {STATUS_LABELS[status]}
-                                      </Badge>
-                                    </div>
-                                    <div className="flex items-center gap-3 mt-1 flex-wrap">
-                                      {topic.competency && (
-                                        <span className="text-xs text-muted-foreground">
-                                          <Target className="h-3 w-3 inline ml-0.5" />{topic.competency}
-                                        </span>
-                                      )}
-                                      {topic.competencyCode && (
-                                        <Badge variant="outline" className="text-[10px]">{topic.competencyCode}</Badge>
-                                      )}
-                                      {topic.textbookPages && (
-                                        <span className="text-xs text-blue-600 flex items-center gap-0.5">
-                                          <BookMarked className="h-3 w-3" />{topic.textbookName}: {topic.textbookPages}
-                                        </span>
-                                      )}
-                                      {topic.sessionCount && (
-                                        <span className="text-xs text-muted-foreground">
-                                          {topic.sessionCount} حصة × {topic.sessionDuration} د
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Select
-                                      value={status}
-                                      onValueChange={v => handleUpdateStatus(topic.id, v)}
-                                    >
-                                      <SelectTrigger className="h-8 w-28 text-xs">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="not_started">لم يبدأ</SelectItem>
-                                        <SelectItem value="in_progress">قيد الإنجاز</SelectItem>
-                                        <SelectItem value="completed">مكتمل</SelectItem>
-                                        <SelectItem value="skipped">تخطي</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-8 text-xs text-blue-600"
-                                      onClick={() => navigate(`/teacher-tools?topic=${encodeURIComponent(topic.topicTitle)}`)}
-                                    >
-                                      <FileText className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  ))}
-                </div>
-              </>
-            )}
+              </Card>
+            ))}
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
+  );
+
+  // ─── Render ──────────────────────────────────────────────────────────────
+
+  return (
+    <UnifiedToolLayout
+      config={CURRICULUM_CONFIG}
+      inputPanel={inputPanel}
+      resultContent={selectedPlanId ? "loaded" : null}
+      isGenerating={planDetailsQuery.isLoading}
+      onRegenerate={() => {
+        utils.curriculum.getPlanDetails.invalidate();
+        utils.curriculum.getCoverage.invalidate();
+        utils.curriculum.getCoverageByPeriod.invalidate();
+      }}
+      customResultRenderer={customResultRenderer}
+      editable={false}
+    />
   );
 }

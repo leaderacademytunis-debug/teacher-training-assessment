@@ -11,6 +11,9 @@ import {
   Image, Save, Heart, Trash2, Store, Share2,
   HelpCircle, CheckCircle, Library, Eye, Printer, Film
 } from "lucide-react";
+import ToolPageHeader from "@/components/ToolPageHeader";
+
+const DRAMA_GRADIENT = "linear-gradient(135deg, #9333ea, #ec4899)";
 import { toast } from "sonner";
 
 type DramaScript = {
@@ -289,33 +292,22 @@ export default function DramaEngine() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50" dir="rtl">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-purple-100 sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="text-gray-500 hover:text-purple-600 transition-colors">
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Theater className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">محرك الدراما التعليمية</h1>
-                <p className="text-xs text-gray-500">حوّل الدرس إلى مسرحية تفاعلية</p>
-              </div>
-            </div>
-          </div>
+      <ToolPageHeader
+        icon={Theater}
+        nameAr="محرك الدراما التعليمية"
+        descAr="حوّل الدرس إلى مسرحية تفاعلية"
+        gradient={DRAMA_GRADIENT}
+        backTo="/"
+        actions={
           <div className="flex items-center gap-2">
-            {/* View toggle */}
-            <div className="flex items-center bg-gray-100 rounded-xl p-1">
+            <div className="flex items-center bg-white/15 rounded-xl p-1">
               <button onClick={() => setViewMode("create")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === "create" ? "bg-white text-purple-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === "create" ? "bg-white text-purple-700 shadow-sm" : "text-white/80 hover:text-white"}`}>
                 <Wand2 className="w-3.5 h-3.5" />
                 إنشاء
               </button>
               <button onClick={() => setViewMode("library")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === "library" ? "bg-white text-purple-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${viewMode === "library" ? "bg-white text-purple-700 shadow-sm" : "text-white/80 hover:text-white"}`}>
                 <Library className="w-3.5 h-3.5" />
                 مكتبتي
               </button>
@@ -323,29 +315,29 @@ export default function DramaEngine() {
             {script && viewMode === "create" && (
               <>
                 <button onClick={handleSaveScript} disabled={saveScriptMutation.isPending}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 rounded-xl hover:bg-green-100 transition-colors font-medium text-sm border border-green-200 disabled:opacity-50">
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-colors font-medium text-sm disabled:opacity-50">
                   {saveScriptMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   حفظ
                 </button>
                 <button onClick={handleExportPDF} disabled={exportPdfMutation.isPending}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-700 rounded-xl hover:bg-red-100 transition-colors font-medium text-sm border border-red-200 disabled:opacity-50">
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-colors font-medium text-sm disabled:opacity-50">
                   {exportPdfMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                   PDF
                 </button>
                 <button onClick={() => { setPublishTitle(script.title); setPublishDesc(script.synopsis); setShowPublishDialog(true); }}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 transition-colors font-medium text-sm border border-amber-200">
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-colors font-medium text-sm">
                   <Store className="w-4 h-4" />
                   نشر
                 </button>
                 <button onClick={resetAll}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-700 rounded-xl hover:bg-gray-100 transition-colors font-medium text-sm border border-gray-200">
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-colors font-medium text-sm">
                   <RefreshCw className="w-4 h-4" />
                 </button>
               </>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* ===== LIBRARY VIEW ===== */}

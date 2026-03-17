@@ -1,5 +1,8 @@
 import { useState, useRef, useMemo, useCallback } from "react";
 import { Loader2, Paperclip, X, Image as ImageIcon, Video, FileText, File, Film, Target, BarChart3, History, ChevronLeft, Star, TrendingUp, Award, Eye, BookOpen, Zap, Wrench, Upload, Copy, RefreshCw, ChevronRight, Sparkles } from "lucide-react";
+import ToolPageHeader from "@/components/ToolPageHeader";
+
+const VIDEO_EVALUATOR_GRADIENT = "linear-gradient(135deg, #1A237E, #0D47A1, #01579B)";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -396,29 +399,15 @@ export default function VideoEvaluator() {
 
   return (
     <div className="h-full flex flex-col" dir="rtl">
-      {/* Header */}
-      <div className="border-b px-6 py-4 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A237E 0%, #0D47A1 50%, #01579B 100%)" }}>
-        {/* Decorative elements */}
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-          <div className="absolute top-2 left-10 w-32 h-32 rounded-full border border-white/30" />
-          <div className="absolute bottom-0 right-20 w-24 h-24 rounded-full border border-white/20" />
-        </div>
-        <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/15 backdrop-blur-sm">
-              <Film className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white" style={{ fontFamily: "Cairo, sans-serif" }}>
-                مُقيِّم المعلم الرقمي
-              </h1>
-              <p className="text-sm text-blue-200">
-                تقييم احترافي للفيديوهات التعليمية بشبكة 5 معايير
-              </p>
-            </div>
-          </div>
-          {myStats && myStats.totalEvaluations > 0 && (
-            <div className="hidden md:flex items-center gap-5 text-white/90 text-sm">
+      <ToolPageHeader
+        icon={Film}
+        nameAr="مُقيِّم المعلم الرقمي"
+        descAr="تقييم احترافي للفيديوهات التعليمية بشبكة 5 معايير"
+        gradient={VIDEO_EVALUATOR_GRADIENT}
+        backTo="/"
+        actions={
+          myStats && myStats.totalEvaluations > 0 ? (
+            <div className="hidden md:flex items-center gap-3 text-white/90 text-sm">
               <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-3 py-1.5">
                 <BarChart3 className="w-4 h-4" />
                 <span className="font-medium">{myStats.totalEvaluations}</span>
@@ -436,9 +425,9 @@ export default function VideoEvaluator() {
                 </div>
               )}
             </div>
-          )}
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* Tabs */}
       <div className="border-b bg-background px-6">
@@ -958,7 +947,7 @@ export default function VideoEvaluator() {
                 {myEvaluations && myEvaluations.length > 0 ? (
                   <div className="space-y-3">
                     <h3 className="font-bold text-base text-gray-800" style={{ fontFamily: "Cairo, sans-serif" }}>جميع التقييمات</h3>
-                    {myEvaluations.map((ev) => (
+                    {myEvaluations.map((ev: any) => (
                       <HistoryCard key={ev.id} evaluation={ev} onClick={() => setSelectedHistoryId(ev.id)} />
                     ))}
                   </div>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -9,8 +10,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, Download, Sparkles, Edit2, Check, X, FileText, BookOpen, ClipboardCheck } from "lucide-react";
-import BackButton from "@/components/BackButton";
+import { Download, Edit2, Check, X, FileText, BookOpen, ClipboardCheck, Trash2, Plus, Loader2 } from "lucide-react";
+import UnifiedToolLayout, { type ToolConfig } from "@/components/UnifiedToolLayout";
+
+// ─── Tool Config ──────────────────────────────────────────────────────────────
+
+const TOOL_CONFIG: ToolConfig = {
+  id: "annual-plan-generator",
+  icon: BookOpen,
+  nameAr: "توليد المخطط السنوي التلقائي",
+  nameFr: "Générateur de Plan Annuel",
+  nameEn: "Annual Plan Generator",
+  descAr: "إنشاء مخططات سنوية مفصلة للمواد والمستويات التعليمية المختلفة وفقًا للمنهج التونسي.",
+  descFr: "Générez des plans annuels détaillés pour diverses matières et niveaux scolaires selon le programme tunisien.",
+  descEn: "Generate detailed annual plans for various subjects and grade levels according to the Tunisian curriculum.",
+  accentColor: "#1B4F72",
+  gradient: "linear-gradient(135deg, #1B4F72, #2E86C1)",
+  loaderMessages: [
+    "جاري تحليل المنهج الرسمي للمادة المختارة...",
+    "تحديد الكفايات ومكوناتها الأساسية...",
+    "توزيع الوحدات التعليمية على الثلاثيات...",
+    "صياغة الأهداف المميزة لكل درس...",
+    "تحديد المحتويات المعرفية والمهارية...",
+    "تقدير عدد الحصص اللازمة لكل نشاط...",
+    "مراجعة تسلسل وتوازن المخطط...",
+    "المخطط السنوي جاهز تقريباً...",
+  ],
+};
+
+// ─── Types & Constants ──────────────────────────────────────────────────────────
 
 interface PlanRow {
   trimester: string;
@@ -51,6 +79,8 @@ const ACTIVITY_COLORS: Record<string, string> = {
   "علوم الحياة": "bg-emerald-100 text-emerald-800",
   "علوم المادة": "bg-violet-100 text-violet-800",
 };
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AnnualPlanGenerator() {
   const [, navigate] = useLocation();
@@ -110,7 +140,6 @@ export default function AnnualPlanGenerator() {
       setIsGeneratingEval(false);
       setEvalDialogOpen(false);
       toast.success("تم توليد ورقة التقييم بنجاح!");
-      // Navigate to evaluation page with the generated data
       const evalData = encodeURIComponent(JSON.stringify(data.evaluation));
       navigate(`/evaluation-from-sheet?data=${evalData}&includeAnswerKey=${includeAnswerKey}`);
     },
@@ -249,391 +278,187 @@ export default function AnnualPlanGenerator() {
 
   const selectedRow = selectedRowIdx !== null ? rows[selectedRowIdx] : null;
 
+  const inputPanel = (
+    <div className="space-y-4">
+      <Card className="shadow-md border-0">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-[#1B4F72]">إعدادات المخطط</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-right">
+          <div>
+            <Label htmlFor="subject" className="mb-1.5 block text-sm font-medium text-gray-600">المادة</Label>
+            <Select value={subject} onValueChange={setSubject} dir="rtl">
+              <SelectTrigger id="subject">
+                <SelectValue placeholder="اختر المادة..." />
+              </SelectTrigger>
+              <SelectContent>
+                {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="grade" className="mb-1.5 block text-sm font-medium text-gray-600">المستوى</Label>
+            <Select value={grade} onValueChange={setGrade} dir="rtl">
+              <SelectTrigger id="grade">
+                <SelectValue placeholder="اختر المستوى..." />
+              </SelectTrigger>
+              <SelectContent>
+                {GRADES.map(g => <SelectItem key={g} value={g}>{`السنة ${g}`}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="schoolYear" className="mb-1.5 block text-sm font-medium text-gray-600">السنة الدراسية</Label>
+            <Input id="schoolYear" value={schoolYear} onChange={e => setSchoolYear(e.target.value)} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {rows.length > 0 && (
+        <Card className="shadow-md border-0">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-[#1B4F72]">ملخص الحصص</CardTitle>
+          </CardHeader>
+          <CardContent className="text-right">
+            <div className="flex justify-between items-center mb-2 text-sm font-bold">
+              <span>المجموع العام:</span>
+              <span>{totalSessions} حصة</span>
+            </div>
+            <div className="space-y-1 text-xs">
+              {Object.entries(trimesterSummary).map(([tri, count]) => (
+                <div key={tri} className="flex justify-between items-center text-gray-600">
+                  <span>الثلاثي {tri}:</span>
+                  <span>{count} حصة</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="shadow-md border-0 bg-blue-50/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-[#1B4F72]">التعليمات</CardTitle>
+        </CardHeader>
+        <CardContent className="text-xs text-gray-600 space-y-2 text-right">
+          <p>1. اختر المادة والمستوى الدراسي.</p>
+          <p>2. اضغط على زر "توليد المخطط" لإنشاء نسخة أولية.</p>
+          <p>3. يمكنك تعديل أي خانة بالضغط عليها مباشرة.</p>
+          <p>4. يمكنك توليد تقييم تكويني أو إشهادي لأي درس.</p>
+          <p>5. عند الانتهاء، يمكنك تصدير المخطط كملف Word.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const customResultRenderer = rows.length > 0 ? (
+    <div className="bg-white rounded-2xl shadow-lg">
+      <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h2 className="text-lg font-bold text-gray-800">المخطط السنوي لمادة {subject} - السنة {grade}</h2>
+        <div className="flex items-center gap-2">
+          <Button onClick={addRow} size="sm" variant="outline" className="gap-1.5"><Plus className="w-4 h-4" />إضافة صف</Button>
+          <Button onClick={handleExportWord} size="sm" variant="default" className="bg-[#2E86C1] hover:bg-[#1B4F72] gap-1.5">
+            <Download className="w-4 h-4" />
+            تصدير Word
+          </Button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-right text-sm">
+          <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
+            <tr>
+              <th className="p-3">الثلاثي</th>
+              <th className="p-3">الوحدة</th>
+              <th className="p-3">النشاط</th>
+              <th className="p-3">مكون الكفاية</th>
+              <th className="p-3">الهدف المميز</th>
+              <th className="p-3">المحتوى</th>
+              <th className="p-3">الحصص</th>
+              <th className="p-3">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {rows.map((row, rowIdx) => (
+              <tr key={rowIdx} className="hover:bg-gray-50">
+                <td className="p-2 align-top"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${TRIMESTER_COLORS[row.trimester] || "bg-gray-100"}`}>{`الثلاثي ${row.trimester}`}</span></td>
+                <td className="p-2 align-top min-w-[120px]">{renderCell(row, rowIdx, "unit")}</td>
+                <td className="p-2 align-top min-w-[120px]">{renderCell(row, rowIdx, "activity")}</td>
+                <td className="p-2 align-top min-w-[200px]">{renderCell(row, rowIdx, "competencyComponent")}</td>
+                <td className="p-2 align-top min-w-[200px]">{renderCell(row, rowIdx, "distinguishedObjective")}</td>
+                <td className="p-2 align-top min-w-[250px]">{renderCell(row, rowIdx, "content")}</td>
+                <td className="p-2 align-top min-w-[80px]">{renderCell(row, rowIdx, "sessions")}</td>
+                <td className="p-2 align-top"><div className="flex items-center gap-1.5"><Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => openEvalDialog(rowIdx)}><ClipboardCheck className="w-3 h-3" />تقييم</Button><Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:bg-red-100 hover:text-red-600" onClick={() => deleteRow(rowIdx)}><Trash2 className="w-4 h-4" /></Button></div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ) : undefined;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-6" dir="rtl">
-      {/* Header */}
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="bg-gradient-to-r from-[#1B4F72] to-[#2E86C1] rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-3">
-            <BackButton to="/teacher-tools" label="أدوات المدرس" className="text-white/80 hover:text-white hover:bg-white/10" />
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <BookOpen className="w-8 h-8 text-yellow-300" />
-            <div>
-              <h1 className="text-2xl font-bold">توليد المخطط السنوي التلقائي</h1>
-              <p className="text-blue-200 text-sm">المحرك البيداغوجي الذكي — Leader Academy — نسخة تونس 2026</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <>
+      <UnifiedToolLayout
+        config={TOOL_CONFIG}
+        inputPanel={inputPanel}
+        resultContent={rows.length > 0 ? "results" : null} // Dummy content to trigger result view
+        isGenerating={generateMutation.isPending}
+        onRegenerate={handleGenerate}
+        customResultRenderer={customResultRenderer}
+        onDownloadWord={rows.length > 0 ? handleExportWord : undefined}
+      />
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Control Panel */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="shadow-md border-0">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base text-[#1B4F72] flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow-500" />
-                إعدادات المخطط
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">المادة الدراسية</Label>
-                <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger className="text-right">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUBJECTS.map(s => (
-                      <SelectItem key={s} value={s} className="text-right">{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">السنة الدراسية</Label>
-                <Select value={grade} onValueChange={setGrade}>
-                  <SelectTrigger className="text-right">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GRADES.map(g => (
-                      <SelectItem key={g} value={g} className="text-right">السنة {g}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">السنة الدراسية</Label>
-                <Input
-                  value={schoolYear}
-                  onChange={(e) => setSchoolYear(e.target.value)}
-                  className="text-right"
-                  placeholder="2025-2026"
-                />
-              </div>
-
-              <Button
-                onClick={handleGenerate}
-                disabled={generateMutation.isPending}
-                className="w-full bg-[#1B4F72] hover:bg-[#154360] text-white"
-              >
-                {generateMutation.isPending ? (
-                  <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري التوليد...</>
-                ) : (
-                  <><Sparkles className="w-4 h-4 ml-2" />توليد المخطط تلقائياً</>
-                )}
-              </Button>
-
-              {rows.length > 0 && (
-                <Button
-                  onClick={handleExportWord}
-                  disabled={exportMutation.isPending}
-                  variant="outline"
-                  className="w-full border-[#F39C12] text-[#F39C12] hover:bg-[#FEF9E7]"
-                >
-                  {exportMutation.isPending ? (
-                    <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري التصدير...</>
-                  ) : (
-                    <><Download className="w-4 h-4 ml-2" />تحميل بصيغة Word</>
-                  )}
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Summary */}
-          {rows.length > 0 && (
-            <Card className="shadow-md border-0">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-[#1B4F72]">ملخص المخطط</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-[#1B4F72]">{totalSessions}</span>
-                  <span className="text-gray-600">إجمالي الحصص</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-[#1B4F72]">{rows.length}</span>
-                  <span className="text-gray-600">إجمالي الصفوف</span>
-                </div>
-                <div className="border-t pt-2 space-y-1">
-                  {Object.entries(trimesterSummary).map(([tri, count]) => (
-                    <div key={tri} className="flex justify-between text-xs">
-                      <span className="font-medium">{count} حصة</span>
-                      <Badge className={`text-xs ${TRIMESTER_COLORS[tri] || "bg-gray-100 text-gray-700"}`}>{tri}</Badge>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  onClick={addRow}
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-xs mt-2"
-                >
-                  + إضافة صف
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Instructions */}
-          <Card className="shadow-md border-0 bg-amber-50">
-            <CardContent className="pt-4">
-              <p className="text-xs text-amber-800 leading-relaxed">
-                <strong>كيفية الاستخدام:</strong><br />
-                1. اختر المادة والسنة<br />
-                2. اضغط "توليد المخطط"<br />
-                3. انقر على أي خانة لتعديلها<br />
-                4. اضغط Enter لحفظ التعديل<br />
-                5. اضغط <ClipboardCheck className="w-3 h-3 inline" /> لتوليد ورقة تقييم<br />
-                6. صدّر إلى Word بشعار Leader Academy
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Table */}
-        <div className="lg:col-span-3">
-          {generateMutation.isPending && (
-            <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl shadow-md">
-              <Loader2 className="w-12 h-12 animate-spin text-[#2E86C1] mb-4" />
-              <p className="text-[#1B4F72] font-semibold">جاري توليد المخطط السنوي...</p>
-              <p className="text-gray-500 text-sm mt-1">يستخرج النظام الأهداف والمحتويات من البرنامج الرسمي</p>
-            </div>
-          )}
-
-          {!generateMutation.isPending && rows.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-64 bg-white rounded-2xl shadow-md border-2 border-dashed border-gray-200">
-              <FileText className="w-16 h-16 text-gray-300 mb-4" />
-              <p className="text-gray-500 font-medium">لم يتم توليد أي مخطط بعد</p>
-              <p className="text-gray-400 text-sm mt-1">اختر المادة والسنة ثم اضغط "توليد المخطط تلقائياً"</p>
-            </div>
-          )}
-
-          {rows.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-              {/* Table Header Info */}
-              <div className="bg-[#1B4F72] text-white px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-yellow-300" />
-                  <span className="font-bold">مخطط سنوي — {subject} — السنة {grade} ابتدائي</span>
-                </div>
-                <span className="text-blue-200 text-sm">{schoolYear}</span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm" dir="rtl">
-                  <thead>
-                    <tr className="bg-[#2E86C1] text-white">
-                      <th className="px-3 py-2 text-center font-semibold text-xs w-16">الثلاثي</th>
-                      <th className="px-3 py-2 text-center font-semibold text-xs w-20">الفترة</th>
-                      <th className="px-3 py-2 text-center font-semibold text-xs w-24">النشاط</th>
-                      <th className="px-3 py-2 text-right font-semibold text-xs">مكوّن الكفاية</th>
-                      <th className="px-3 py-2 text-right font-semibold text-xs">الهدف المميز</th>
-                      <th className="px-3 py-2 text-right font-semibold text-xs">المحتوى</th>
-                      <th className="px-3 py-2 text-center font-semibold text-xs w-16">الحصص</th>
-                      <th className="px-3 py-2 text-center font-semibold text-xs w-20">إجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className={`border-b border-gray-100 hover:bg-blue-50/30 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}`}
-                      >
-                        <td className="px-2 py-2 text-center">
-                          <Badge className={`text-xs ${TRIMESTER_COLORS[row.trimester] || "bg-gray-100 text-gray-700"}`}>
-                            {row.trimester}
-                          </Badge>
-                        </td>
-                        <td className="px-2 py-2 text-center text-xs text-gray-600">{renderCell(row, idx, "unit")}</td>
-                        <td className="px-2 py-2">{renderCell(row, idx, "activity")}</td>
-                        <td className="px-2 py-2 max-w-[160px]">{renderCell(row, idx, "competencyComponent")}</td>
-                        <td className="px-2 py-2 max-w-[180px]">{renderCell(row, idx, "distinguishedObjective")}</td>
-                        <td className="px-2 py-2 max-w-[200px]">{renderCell(row, idx, "content")}</td>
-                        <td className="px-2 py-2 text-center">
-                          <div className="flex items-center justify-center">
-                            {renderCell(row, idx, "sessions")}
-                          </div>
-                        </td>
-                        <td className="px-2 py-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            {/* زر توليد التقييم */}
-                            <button
-                              onClick={() => openEvalDialog(idx)}
-                              title="توليد ورقة تقييم لهذا الدرس"
-                              className="text-green-600 hover:text-green-800 hover:bg-green-50 rounded p-1 transition-colors"
-                            >
-                              <ClipboardCheck className="w-4 h-4" />
-                            </button>
-                            {/* زر الحذف */}
-                            <button
-                              onClick={() => deleteRow(idx)}
-                              title="حذف هذا الصف"
-                              className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded p-1 transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Footer */}
-              <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t">
-                <p className="text-xs text-gray-500">
-                  انقر على أي خانة لتعديلها • اضغط Enter لحفظ التعديل •
-                  <span className="text-green-600 font-medium"> اضغط <ClipboardCheck className="w-3 h-3 inline" /> لتوليد ورقة تقييم</span>
-                </p>
-                <Button
-                  onClick={handleExportWord}
-                  disabled={exportMutation.isPending}
-                  size="sm"
-                  className="bg-[#F39C12] hover:bg-[#D68910] text-white"
-                >
-                  {exportMutation.isPending ? (
-                    <><Loader2 className="w-3 h-3 ml-1 animate-spin" />تصدير...</>
-                  ) : (
-                    <><Download className="w-3 h-3 ml-1" />تحميل Word • ليدر أكاديمي</>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Dialog: إعدادات توليد التقييم */}
+      {/* Evaluation Generation Dialog */}
       <Dialog open={evalDialogOpen} onOpenChange={setEvalDialogOpen}>
-        <DialogContent className="max-w-lg w-full" dir="rtl">
-          <DialogHeader className="border-b pb-3 mb-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2 text-[#1B4F72]">
-                <ClipboardCheck className="w-5 h-5 text-green-600" />
-                توليد ورقة تقييم — SC2M223
-              </DialogTitle>
-              <button
-                onClick={() => setEvalDialogOpen(false)}
-                className="rounded-full p-1.5 hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
-                aria-label="إغلاق"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>توليد تقييم من درس</DialogTitle>
           </DialogHeader>
-
           {selectedRow && (
-            <div className="space-y-4 overflow-y-auto max-h-[60vh] px-1 py-2">
-              {/* معلومات الدرس */}
-              <div className="bg-blue-50 rounded-lg p-3 text-sm">
-                <p className="font-semibold text-[#1B4F72] mb-1">الدرس المختار:</p>
-                <p className="text-gray-700 text-xs leading-relaxed">
-                  <span className="font-medium">{subject}</span> — السنة {grade} —
-                  الثلاثي {selectedRow.trimester}
-                </p>
-                <p className="text-gray-600 text-xs mt-1">
-                  <span className="font-medium">الهدف المميز:</span> {selectedRow.distinguishedObjective || "غير محدد"}
-                </p>
-              </div>
-
-              {/* نوع التقييم */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">نوع التقييم</Label>
-                <Select value={evalType} onValueChange={(v) => setEvalType(v as typeof evalType)}>
-                  <SelectTrigger className="text-right">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="formative" className="text-right">تكويني (نهاية الثلاثي)</SelectItem>
-                    <SelectItem value="summative" className="text-right">إجمالي (نهاية السنة)</SelectItem>
-                    <SelectItem value="diagnostic" className="text-right">تشخيصي (بداية السنة)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* عدد الأسئلة */}
-              <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">
-                  عدد الأسئلة: {questionCount}
-                </Label>
-                <input
-                  type="range"
-                  min={3}
-                  max={15}
-                  value={questionCount}
-                  onChange={(e) => setQuestionCount(Number(e.target.value))}
-                  className="w-full accent-[#1B4F72]"
-                />
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span>3</span>
-                  <span>15</span>
+            <div className="py-4 space-y-4 text-right">
+              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md border">
+                <strong>الدرس المستهدف:</strong> {selectedRow.content} ({selectedRow.activity})
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="eval-type">نوع التقييم</Label>
+                  <Select value={evalType} onValueChange={(v) => setEvalType(v as any)} dir="rtl">
+                    <SelectTrigger id="eval-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="formative">تكويني</SelectItem>
+                      <SelectItem value="summative">إشهادي</SelectItem>
+                      <SelectItem value="diagnostic">تشخيصي</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="q-count">عدد الأسئلة</Label>
+                  <Input id="q-count" type="number" value={questionCount} onChange={e => setQuestionCount(Number(e.target.value))} />
                 </div>
               </div>
-
-              {/* اسم المدرسة */}
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">اسم المدرسة (اختياري)</Label>
-                <Input
-                  value={schoolName}
-                  onChange={(e) => setSchoolName(e.target.value)}
-                  placeholder="مثال: المدرسة الابتدائية النموذجية"
-                  className="text-right text-sm"
-                />
+                <Label htmlFor="teacher-name">اسم المدرس (اختياري)</Label>
+                <Input id="teacher-name" value={teacherName} onChange={e => setTeacherName(e.target.value)} placeholder="مثال: الأستاذ علي سعدالله" />
               </div>
-
-              {/* اسم المدرس */}
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">اسم المدرس (اختياري)</Label>
-                <Input
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  placeholder="مثال: الأستاذ محمد بن علي"
-                  className="text-right text-sm"
-                />
+                <Label htmlFor="school-name">اسم المدرسة (اختياري)</Label>
+                <Input id="school-name" value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="مثال: مدرسة النجاح الابتدائية" />
               </div>
-
-              {/* تضمين مفتاح الإجابة */}
-              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                <span className="text-sm font-medium text-gray-700">تضمين شبكة التصحيح</span>
-                <button
-                  onClick={() => setIncludeAnswerKey(!includeAnswerKey)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${includeAnswerKey ? "bg-green-500" : "bg-gray-300"}`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${includeAnswerKey ? "translate-x-7" : "translate-x-1"}`} />
-                </button>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="include-key" checked={includeAnswerKey} onChange={e => setIncludeAnswerKey(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                <Label htmlFor="include-key" className="mb-0">تضمين الإصلاح</Label>
               </div>
             </div>
           )}
-
-          <DialogFooter className="gap-2 flex-row-reverse">
-            <Button
-              onClick={handleGenerateEvaluation}
-              disabled={isGeneratingEval}
-              className="bg-green-600 hover:bg-green-700 text-white flex-1"
-            >
-              {isGeneratingEval ? (
-                <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري التوليد...</>
-              ) : (
-                <><ClipboardCheck className="w-4 h-4 ml-2" />توليد ورقة التقييم</>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setEvalDialogOpen(false)}
-              disabled={isGeneratingEval}
-            >
-              إلغاء
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEvalDialogOpen(false)} disabled={isGeneratingEval}>إلغاء</Button>
+            <Button onClick={handleGenerateEvaluation} disabled={isGeneratingEval} className="gap-2 bg-[#1B4F72] hover:bg-[#2E86C1]">
+              {isGeneratingEval && <Loader2 className="w-4 h-4 animate-spin" />} 
+              توليد ورقة التقييم
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

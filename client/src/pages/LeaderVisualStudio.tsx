@@ -13,6 +13,9 @@ import {
   AlertCircle, Crown, ChevronDown, ChevronUp, X, Type, Library,
   Clapperboard
 } from "lucide-react";
+import ToolPageHeader from "@/components/ToolPageHeader";
+
+const VISUAL_STUDIO_GRADIENT = "linear-gradient(135deg, #7c3aed, #4338ca)";
 const STYLES = [
   { id: "bw_lineart" as const, label: "رسم خطي أبيض/أسود", icon: PenLine, desc: "مثالي للطباعة", default: true },
   { id: "minimalist" as const, label: "تصميم بسيط", icon: Paintbrush, desc: "ألوان محدودة" },
@@ -139,48 +142,29 @@ export default function LeaderVisualStudio() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-blue-50" dir="rtl">
-      {/* Header */}
-      <div className="bg-gradient-to-l from-violet-600 to-indigo-700 text-white">
-        <div className="container mx-auto px-4 py-6 sm:py-8">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Paintbrush className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold">Leader Visual Studio</h1>
-                  <p className="text-violet-200 text-xs sm:text-sm">مولّد الصور التعليمية بالذكاء الاصطناعي</p>
-                </div>
+      <ToolPageHeader
+        icon={Paintbrush}
+        nameAr="Leader Visual Studio"
+        descAr="مولّد الصور التعليمية بالذكاء الاصطناعي"
+        gradient={VISUAL_STUDIO_GRADIENT}
+        backTo="/"
+        actions={
+          usage ? (
+            <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm text-white">
+              <div className="flex items-center gap-2">
+                {usage.tier === "pro" ? (
+                  <Crown className="w-4 h-4 text-yellow-300" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-violet-200" />
+                )}
+                <span>
+                  {usage.tier === "pro" ? "Pro — غير محدود" : `${usage.remaining} / ${usage.limit} صور متبقية`}
+                </span>
               </div>
             </div>
-            
-            {/* Usage counter */}
-            {usage && (
-              <div className="bg-white/15 backdrop-blur-sm rounded-xl px-4 py-2 text-sm">
-                <div className="flex items-center gap-2">
-                  {usage.tier === "pro" ? (
-                    <Crown className="w-4 h-4 text-yellow-300" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-violet-200" />
-                  )}
-                  <span>
-                    {usage.tier === "pro" ? "Pro — غير محدود" : `${usage.remaining} / ${usage.limit} صور متبقية هذا الشهر`}
-                  </span>
-                </div>
-                {usage.tier === "free" && (
-                  <div className="w-full bg-white/20 rounded-full h-1.5 mt-2">
-                    <div
-                      className="bg-yellow-300 h-1.5 rounded-full transition-all"
-                      style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* Tab Navigation */}
       <div className="container mx-auto px-4 pt-4 max-w-6xl">

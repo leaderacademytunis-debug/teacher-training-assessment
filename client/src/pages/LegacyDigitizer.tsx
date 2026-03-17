@@ -23,6 +23,9 @@ import {
   FolderUp, CheckCircle2, XCircle, Clock,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import ToolPageHeader from "@/components/ToolPageHeader";
+
+const DIGITIZER_GRADIENT = "linear-gradient(135deg, #2563eb, #4338ca)";
 
 // ===== CONSTANTS =====
 const SUBJECTS = [
@@ -489,39 +492,25 @@ export default function LegacyDigitizer() {
   // ===== RENDER =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20" dir="rtl">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b sticky top-0 z-30">
-        <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 ml-1" />
-                الرئيسية
-              </Button>
-            </Link>
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-                <ScanLine className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Legacy Digitizer</h1>
-                <p className="text-xs text-gray-500">رقمنة الوثائق التعليمية القديمة</p>
-              </div>
-            </div>
-          </div>
-
+      <ToolPageHeader
+        icon={ScanLine}
+        nameAr="Legacy Digitizer"
+        descAr="رقمنة الوثائق التعليمية القديمة"
+        gradient={DIGITIZER_GRADIENT}
+        backTo="/"
+        actions={
           <div className="flex items-center gap-2">
             <Button
               variant={batchMode ? "default" : "outline"}
               size="sm"
               onClick={() => { setBatchMode(!batchMode); if (!batchMode) { resetAll(); } }}
-              className={batchMode ? "bg-amber-600 hover:bg-amber-700" : ""}
+              className={batchMode ? "bg-amber-600 hover:bg-amber-700" : "bg-white/15 text-white border-white/30 hover:bg-white/25"}
             >
               <FolderUp className="w-4 h-4 ml-1" />
               {batchMode ? "وضع الدفعة" : "رفع جماعي"}
             </Button>
-            <Button variant="outline" size="sm" onClick={() => { resetAll(); setBatchMode(false); setBatchFiles([]); }}>
+            <Button variant="outline" size="sm" onClick={() => { resetAll(); setBatchMode(false); setBatchFiles([]); }}
+              className="bg-white/15 text-white border-white/30 hover:bg-white/25">
               <RotateCcw className="w-4 h-4 ml-1" />
               جديد
             </Button>
@@ -529,12 +518,13 @@ export default function LegacyDigitizer() {
               variant="ghost"
               size="sm"
               onClick={() => setShowSidebar(!showSidebar)}
+              className="text-white hover:bg-white/15"
             >
               {showSidebar ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             </Button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="max-w-[1600px] mx-auto px-4 py-6 flex gap-6">
         {/* Sidebar - Document History */}

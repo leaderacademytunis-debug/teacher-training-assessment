@@ -2752,3 +2752,28 @@
 - [x] Hover animations on social icons and links
 - [x] Copyright with commercial register number
 - [x] leaderacademy.school link in bottom bar
+
+## Feature: Unified Tool Page Template (Single Tool Page)
+- [x] Create UnifiedToolLayout component with split-screen design
+- [x] Right panel: Clean input form (title, level, subject) with RTL support
+- [x] Left panel: AI-generated results display area
+- [x] Smart Loader with animated rotating status messages during generation
+- [x] Floating Action Bar: Copy text, Download PDF/Word, Regenerate button
+- [x] Paper-like results container with clear headings and auto-colored titles
+- [x] Inline editing capability for results before saving
+- [x] Very light background for work area to reduce distraction
+- [x] Responsive design (stacked on mobile, split on desktop)
+- [x] Apply template to all 11 AI tools (10 tools + EduGPT chat kept as-is)
+- [x] Tool 1: تحضير الدروس الفوري (Lesson Prep) — ToolPageHeader
+- [x] Tool 2: بنك التقييمات الذكي (Exam Builder) — UnifiedToolLayout
+- [x] Tool 3: المتفقد الذكي (AI Inspector) — UnifiedToolLayout
+- [x] Tool 4: استوديو الصور التعليمية (Visual Studio) — ToolPageHeader
+- [x] Tool 5: مساعد التصحيح الأعمى (Blind Grading) — ToolPageHeader
+- [x] Tool 6: خريطة المنهج الذكية (Curriculum Map) — UnifiedToolLayout
+- [x] Tool 7: رقمنة الوثائق التعليمية (Document Digitizer) — ToolPageHeader
+- [x] Tool 8: محرك الدراما التعليمية (Drama Engine) — ToolPageHeader
+- [x] Tool 9: محلل خط اليد الذكي (Handwriting Analyzer) — ToolPageHeader
+- [x] Tool 10: التوزيع السنوي الذكي (Annual Plan) — UnifiedToolLayout
+- [x] Tool 11: مُقيِّم الفيديو التعليمي (Video Evaluator) — ToolPageHeader
+- [x] Created reusable ToolPageHeader component for complex multi-view tools
+- [x] EduGPT Assistant kept with original chat UI (not applicable for tool layout)

@@ -26,6 +26,7 @@ import {
   Printer, Square, Circle, Pause, Play, StopCircle, Timer,
   BellRing, CheckCheck, AlertCircle, GitCompare, FileEdit, CalendarDays,
 } from "lucide-react";
+import ToolPageHeader from "@/components/ToolPageHeader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -174,7 +175,7 @@ function buildAnalysisReportHtml(result: AnalysisResult): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function HandwritingAnalyzer() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<MainTab>("analyze");
   const [analysisStep, setAnalysisStep] = useState<"upload" | "analyzing" | "results">("upload");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -277,18 +278,13 @@ export default function HandwritingAnalyzer() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50" dir="rtl">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-blue-100 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/"><Button variant="ghost" size="sm" className="text-gray-600">الرئيسية <ArrowRight className="h-4 w-4 mr-1" /></Button></Link>
-          </div>
-          <div className="flex items-center gap-2">
-            <Brain className="h-6 w-6 text-blue-600" />
-            <h1 className="text-lg font-bold text-blue-900">محلل خط اليد الذكي</h1>
-          </div>
-        </div>
-      </header>
+      <ToolPageHeader
+        icon={Brain}
+        nameAr="محلل خط اليد الذكي"
+        descAr="تحليل ذكي لخط اليد بالذكاء الاصطناعي"
+        gradient="linear-gradient(135deg, #1e40af, #4338ca)"
+        backTo="/"
+      />
 
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200 overflow-x-auto">

@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, FileText, Download, Wand2, ChevronRight, BookOpen, Target, Layers, CheckCircle2, Edit3, ClipboardCheck, GraduationCap, Stethoscope, Award } from "lucide-react";
+import ToolPageHeader from "@/components/ToolPageHeader";
+
+const LESSON_GRADIENT = "linear-gradient(135deg, #1B4F72, #2E86C1)";
 import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
 
@@ -213,25 +216,13 @@ export default function LessonSheetFromPlan() {
   // ── Rendu ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50" dir="rtl">
-      {/* En-tête */}
-      <div className="bg-gradient-to-r from-[#1B4F72] to-[#2E86C1] text-white py-6 px-6 shadow-lg">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <BackButton to="/teacher-tools" label="أدوات المدرس" className="text-white/80 hover:text-white hover:bg-white/10" />
-            <ChevronRight className="w-4 h-4 text-blue-300" />
-            <span className="text-sm">توليد جذاذة من المخطط السنوي</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">محرك بناء الجذاذات التربوية</h1>
-              <p className="text-blue-200 text-sm">Leader Lesson Architect — المقاربة بالكفايات المعتمدة في تونس</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ToolPageHeader
+        icon={BookOpen}
+        nameAr="محرك بناء الجذاذات التربوية"
+        descAr="Leader Lesson Architect — المقاربة بالكفايات المعتمدة في تونس"
+        gradient={LESSON_GRADIENT}
+        backTo="/teacher-tools"
+      />
 
       <div className="max-w-5xl mx-auto p-6 space-y-6">
 
