@@ -124,16 +124,16 @@
     @apply bg-background text-foreground;
     direction: rtl;
     text-align: right;
-    font-family: 'Cairo', 'Tajawal', sans-serif;
+    font-family: 'Cairo', 'Almarai', 'Tajawal', sans-serif;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cairo', 'Tajawal', sans-serif;
+    font-family: 'Cairo', 'Almarai', 'Tajawal', sans-serif;
     font-weight: 700;
   }
   
   input, textarea, select, button {
-    font-family: 'Cairo', 'Tajawal', sans-serif;
+    font-family: 'Cairo', 'Almarai', 'Tajawal', sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -194,11 +194,11 @@
 .prose {
   direction: rtl;
   text-align: right;
-  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-family: 'Cairo', 'Almarai', 'Tajawal', sans-serif;
   line-height: 1.9;
 }
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-family: 'Cairo', 'Almarai', 'Tajawal', sans-serif;
   font-weight: 700;
   margin-top: 1.2em;
   margin-bottom: 0.6em;
@@ -263,7 +263,7 @@
   flex-wrap: wrap;
 }
 .quick-actions-bar button {
-  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-family: 'Cairo', 'Almarai', 'Tajawal', sans-serif;
   font-weight: 600;
   font-size: 0.8rem;
   transition: all 0.2s ease;
@@ -406,4 +406,14 @@
   background: inherit;
   border-top: 1px solid var(--border);
   z-index: 1;
+}
+
+/* Hero floating badges animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
 }

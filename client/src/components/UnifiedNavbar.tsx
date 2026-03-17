@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -38,12 +38,12 @@ const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: strin
   { href: "/video-evaluator", labelAr: "مُقيِّم المعلم الرقمي", labelFr: "Évaluateur vidéo IA", labelEn: "AI Video Evaluator", icon: Film, descAr: "تقييم الفيديوهات التعليمية وتحسين هندسة الأوامر (Prompt Engineering)", descFr: "Évaluer les vidéos éducatives et améliorer le Prompt Engineering", descEn: "Evaluate educational videos and improve Prompt Engineering" },
 ];
 
-// ===== NAV LINKS =====
-const NAV_LINKS: { href: string; labelAr: string; labelFr: string; labelEn: string; adminOnly: boolean; authOnly: boolean; icon: LucideIcon }[] = [
-  { href: "/#programs", labelAr: "برامجنا التدريبية", labelFr: "Nos formations", labelEn: "Training Programs", adminOnly: false, authOnly: false, icon: Megaphone },
-  { href: "/about", labelAr: "عن الأكاديمية", labelFr: "À propos", labelEn: "About", adminOnly: false, authOnly: false, icon: Info },
-  { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false, authOnly: false, icon: DollarSign },
-  { href: "/contact", labelAr: "تواصل معنا", labelFr: "Contact", labelEn: "Contact", adminOnly: false, authOnly: false, icon: MessageSquare },
+// ===== SIMPLIFIED NAV LINKS (4 items for center menu) =====
+const CENTER_NAV: { href: string; labelAr: string; labelFr: string; labelEn: string; hasDropdown?: boolean }[] = [
+  { href: "/", labelAr: "الرئيسية", labelFr: "Accueil", labelEn: "Home" },
+  { href: "/teacher-tools", labelAr: "أدوات الذكاء الاصطناعي", labelFr: "Outils IA", labelEn: "AI Tools", hasDropdown: true },
+  { href: "/template-library", labelAr: "بنك الدروس", labelFr: "Banque de cours", labelEn: "Lesson Bank" },
+  { href: "/about", labelAr: "من نحن", labelFr: "À propos", labelEn: "About Us" },
 ];
 
 // ===== CERTIFICATE LINKS =====
@@ -82,297 +82,166 @@ function getDesc(item: { descAr: string; descFr: string; descEn: string }, langu
   return item.descAr;
 }
 
-// ===== ADMIN DESKTOP DROPDOWN =====
-function AdminDesktopDropdown({ language, t, location, isAdmin }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; location: string; isAdmin: boolean }) {
-  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000, enabled: isAdmin });
-  const pendingCount = isAdmin ? (pendingCountQuery.data?.count || 0) : 0;
-
-  const generalLinks = ADMIN_LINKS.filter(l => l.section === "general");
-  const adminLinks = ADMIN_LINKS.filter(l => l.section === "admin");
-
-  return (
-    <div className="relative group/admin">
-      <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-        ['/admin', '/admin/partners', '/managerial-dashboard', '/dashboard'].some(p => location === p || location.startsWith(p + '/')) ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
-      }`} style={{ background: "rgba(30,64,175,0.25)", border: "1px solid rgba(96,165,250,0.3)" }}>
-        <Settings className="w-4 h-4 text-blue-200" />
-        {t("الإدارة", "Administration", "Management")}
-        {pendingCount > 0 && (
-          <span className="relative flex h-5 w-5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-            <span className="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-bold">
-              {pendingCount > 9 ? "9+" : pendingCount}
-            </span>
-          </span>
-        )}
-        <ChevronDown className="w-3.5 h-3.5 text-blue-200 transition-transform group-hover/admin:rotate-180" />
-      </button>
-      <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
-        <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
-          <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-            <p className="text-white font-bold text-sm flex items-center gap-2">
-              <Settings className="w-4 h-4 text-orange-300" />
-              {t("لوحة الإدارة", "Panneau d'administration", "Admin Panel")}
-              {pendingCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-400 text-white">
-                  {pendingCount} {t("طلب معلق", "en attente", "pending")}
-                </span>
-              )}
-            </p>
-          </div>
-          {generalLinks.map((link) => {
-            const IconComp = link.icon;
-            return (
-              <Link key={link.href} href={link.href}>
-                <div className="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                    <IconComp className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-gray-900">{getLabel(link, language)}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{getDesc(link, language)}</p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-          {isAdmin && adminLinks.length > 0 && (
-            <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Shield className="w-3 h-3" />
-                {t("إدارة متقدمة", "Administration avancée", "Advanced Admin")}
-              </p>
-            </div>
-          )}
-          {isAdmin && adminLinks.map((link, idx, arr) => {
-            const IconComp = link.icon;
-            const isPartners = link.href === "/admin/partners";
-            return (
-              <Link key={link.href} href={link.href}>
-                <div className={`flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${idx < arr.length - 1 ? "border-b border-gray-50" : ""}`}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: isPartners ? "linear-gradient(135deg, #DC2626, #EF4444)" : "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                    <IconComp className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-sm text-gray-900">{getLabel(link, language)}</p>
-                      {isPartners && pendingCount > 0 && (
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-red-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{getDesc(link, language)}</p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ===== MAIN UNIFIED NAVBAR =====
 export default function UnifiedNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
   const [location] = useLocation();
 
-  return (
-    <header className="sticky top-0 z-50 shadow-lg" style={{ background: "#1A237E" }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-          {/* Logo */}
+  const isAdmin = user?.role === "admin";
+
+  return (
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100"
+          : "bg-white"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-[72px]">
+
+          {/* ===== RIGHT: Logo ===== */}
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
               <img
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png"
                 alt="Leader Academy"
-                className="h-10 w-auto"
+                className="h-11 w-auto"
               />
               <div className="hidden sm:block">
-                <p className="text-white font-bold text-lg leading-tight" style={{ fontFamily: "Cairo, sans-serif" }}>Leader Academy</p>
-                <p className="text-blue-200 text-xs">{t("نحو تعليم رقمي متميز", "Vers un enseignement numérique d'excellence", "Towards excellent digital education")}</p>
+                <p className="text-[#1A237E] font-extrabold text-lg leading-tight" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                  Leader Academy
+                </p>
+                <p className="text-gray-400 text-[11px] font-medium">
+                  {t("نحو تعليم رقمي متميز", "Vers un enseignement numérique d'excellence", "Towards excellent digital education")}
+                </p>
               </div>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* ===== CENTER: Navigation (Desktop) ===== */}
           <nav className="hidden lg:flex items-center gap-1">
-            {/* EDUGPT Dropdown */}
-            <div className="relative group">
-              <Link href="/teacher-tools">
-                <button className="flex items-center gap-1.5 text-white hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 whitespace-nowrap" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.4)" }}>
-                  <Sparkles className="w-4 h-4 text-orange-300" />
-                  {t("أدوات EDUGPT", "Outils EDUGPT", "EDUGPT Tools")}
-                  <ChevronDown className="w-3.5 h-3.5 text-orange-300 transition-transform group-hover:rotate-180" />
-                </button>
-              </Link>
-              <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
-                <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl" style={{ maxHeight: "calc(100vh - 60px)" }}>
-                  <div className="px-3 py-2 border-b border-gray-100 sticky top-0 z-10" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                    <p className="text-white font-bold text-xs flex items-center gap-2">
-                      <Sparkles className="w-3 h-3 text-orange-300" />
-                      {t("أدوات الذكاء الاصطناعي التربوي", "Outils IA éducatifs", "Educational AI Tools")}
-                    </p>
-                  </div>
-                  <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 100px)" }}>
-                    {AI_TOOLS.map((tool, idx) => {
-                      const IconComp = tool.icon;
-                      return (
-                        <Link key={tool.href} href={tool.href}>
-                          <div className={`flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 cursor-pointer transition-colors ${idx < AI_TOOLS.length - 1 ? "border-b border-gray-50" : ""}`}>
-                            <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                              <IconComp className="w-3.5 h-3.5 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-xs text-gray-900 leading-tight">{getLabel(tool, language)}</p>
-                              <p className="text-[10px] text-gray-500 leading-tight">{getDesc(tool, language)}</p>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {CENTER_NAV.map((item) => {
+              const isActive = item.href === "/"
+                ? location === "/"
+                : location === item.href || location.startsWith(item.href + "/");
 
-            {/* Other nav links */}
-            {NAV_LINKS.filter(link => {
-              if (link.adminOnly && user?.role !== "admin") return false;
-              if (link.authOnly && !user) return false;
-              return true;
-            }).map((link) => {
-              const isActive = location === link.href || (link.href !== "/" && !link.href.startsWith("/#") && location.startsWith(link.href));
-              const isAnchor = link.href.startsWith("/#");
-              const handleAnchorClick = (e: React.MouseEvent) => {
-                e.preventDefault();
-                const anchorId = link.href.replace("/#", "");
-                if (location === "/") {
-                  document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth" });
-                } else {
-                  window.location.href = link.href;
-                }
-              };
-              if (isAnchor) {
+              // AI Tools dropdown
+              if (item.hasDropdown) {
                 return (
-                  <a key={link.href} href={link.href} onClick={handleAnchorClick}>
-                    <button className="relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap text-blue-100 hover:text-white hover:bg-white/10">
-                      {getLabel(link, language)}
-                    </button>
-                  </a>
+                  <div key={item.href} className="relative group">
+                    <Link href={item.href}>
+                      <button
+                        className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                          isActive
+                            ? "text-[#FF6D00] bg-orange-50"
+                            : "text-gray-600 hover:text-[#1A237E] hover:bg-gray-50"
+                        }`}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        {getLabel(item, language)}
+                        <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover:rotate-180" />
+                      </button>
+                    </Link>
+                    {/* Mega dropdown */}
+                    <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50" style={{ minWidth: "360px" }}>
+                      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden" dir="rtl">
+                        <div className="px-4 py-3 border-b border-gray-50" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                          <p className="text-white font-bold text-sm flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-orange-300" />
+                            {t("أدوات الذكاء الاصطناعي التربوي", "Outils IA éducatifs", "Educational AI Tools")}
+                          </p>
+                        </div>
+                        <div className="overflow-y-auto py-1" style={{ maxHeight: "calc(100vh - 120px)" }}>
+                          {AI_TOOLS.map((tool, idx) => {
+                            const IconComp = tool.icon;
+                            return (
+                              <Link key={tool.href} href={tool.href}>
+                                <div className={`flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50/60 cursor-pointer transition-colors ${idx < AI_TOOLS.length - 1 ? "border-b border-gray-50" : ""}`}>
+                                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                                    <IconComp className="w-4 h-4 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-sm text-gray-800">{getLabel(tool, language)}</p>
+                                    <p className="text-xs text-gray-400 leading-tight">{getDesc(tool, language)}</p>
+                                  </div>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
+                          <Link href="/teacher-tools">
+                            <button className="w-full text-center text-sm font-bold text-[#FF6D00] hover:text-orange-700 transition-colors">
+                              {t("عرض جميع الأدوات →", "Voir tous les outils →", "View all tools →")}
+                            </button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 );
               }
+
               return (
-                <Link key={link.href} href={link.href}>
-                  <button className={`relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                    isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
-                  }`}>
-                    {getLabel(link, language)}
-                    {isActive && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-orange-400 rounded-full" />}
+                <Link key={item.href} href={item.href}>
+                  <button
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      isActive
+                        ? "text-[#1A237E] bg-blue-50"
+                        : "text-gray-600 hover:text-[#1A237E] hover:bg-gray-50"
+                    }`}
+                  >
+                    {getLabel(item, language)}
                   </button>
                 </Link>
               );
             })}
 
-            {/* Certificates Dropdown */}
-            <div className="relative group/cert">
-              <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                ['/my-certificates', '/verify'].includes(location) ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
-              }`}>
-                <Award className="w-4 h-4" />
-                {t("الشهادات", "Certificats", "Certificates")}
-                <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/cert:rotate-180" />
-                {['/my-certificates', '/verify'].includes(location) && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-0.5 bg-orange-400 rounded-full" />}
-              </button>
-              <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/cert:opacity-100 group-hover/cert:visible transition-all duration-200 z-50" style={{ minWidth: "280px" }}>
-                <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
-                  <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                    <p className="text-white font-bold text-sm flex items-center gap-2">
-                      <Award className="w-4 h-4 text-orange-300" />
-                      {t("الشهادات والتحقق", "Certificats & Vérification", "Certificates & Verification")}
-                    </p>
-                  </div>
-                  {CERT_LINKS.filter(cl => !cl.authOnly || user).map((cl, idx) => {
-                    const CIcon = cl.icon;
-                    return (
-                      <Link key={cl.href} href={cl.href}>
-                        <div className={`flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${idx < CERT_LINKS.filter(c => !c.authOnly || user).length - 1 ? "border-b border-gray-50" : ""}`}>
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                            <CIcon className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm text-gray-900">{getLabel(cl, language)}</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{getDesc(cl, language)}</p>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            {/* Career Hub Dropdown */}
+            {/* Logged-in user extras: Programs, Certificates, Career, Admin */}
             {user && (
-              <div className="relative group/career">
-                <button className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  ['/jobs', '/my-applications', '/showcase', '/my-portfolio', '/school-portal', '/career-messages', '/teacher-analytics', '/my-assignments'].includes(location) ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
-                }`}>
-                  <Briefcase className="w-4 h-4" />
-                  {t("المسار المهني", "Carrière", "Career")}
-                  <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/career:rotate-180" />
-                </button>
-                <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/career:opacity-100 group-hover/career:visible transition-all duration-200 z-50" style={{ minWidth: "300px" }}>
-                  <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
-                    <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                      <p className="text-white font-bold text-sm flex items-center gap-2">
-                        <Briefcase className="w-4 h-4 text-orange-300" />
-                        {t("المسار المهني وفرص العمل", "Carrière & Emploi", "Career & Jobs")}
-                      </p>
-                    </div>
-                    {CAREER_LINKS.map((cl, idx) => {
-                      const CIcon = cl.icon;
-                      return (
-                        <Link key={cl.href} href={cl.href}>
-                          <div className={`flex items-start gap-3 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${idx < CAREER_LINKS.length - 1 ? "border-b border-gray-50" : ""}`}>
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 bg-gradient-to-br from-blue-600 to-indigo-600">
-                              <CIcon className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-sm text-gray-900">{getLabel(cl, language)}</p>
-                              <p className="text-xs text-gray-500 mt-0.5">{getDesc(cl, language)}</p>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
+              <>
+                {/* Programs */}
+                <a
+                  href="/#programs"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (location === "/") {
+                      document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" });
+                    } else {
+                      window.location.href = "/#programs";
+                    }
+                  }}
+                >
+                  <button className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-all duration-200">
+                    {t("الدورات", "Formations", "Courses")}
+                  </button>
+                </a>
 
-            {/* Admin/Management Dropdown */}
-            {user && (
-              <AdminDesktopDropdown language={language} t={t} location={location} isAdmin={user.role === 'admin'} />
+                {/* More dropdown for logged-in users */}
+                <MoreDropdown language={language} t={t} user={user} location={location} isAdmin={isAdmin} />
+              </>
             )}
           </nav>
 
-          {/* Right actions */}
-          <div className="flex items-center gap-2">
+          {/* ===== LEFT: Action Buttons ===== */}
+          <div className="flex items-center gap-2.5">
             {/* Language switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-blue-100 hover:text-white hover:bg-white/10 h-8 px-2 gap-1">
-                  <Globe className="w-3.5 h-3.5" />
+                <button className="flex items-center gap-1 px-2 py-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all">
+                  <Globe className="w-4 h-4" />
                   <span className="text-xs">{LANGUAGES.find(l => l.code === language)?.flag}</span>
-                </Button>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-36">
                 {LANGUAGES.map((lang) => (
@@ -394,34 +263,52 @@ export default function UnifiedNavbar() {
               <div className="hidden sm:flex items-center gap-2">
                 {!user.registrationCompleted && (
                   <Link href="/complete-registration">
-                    <Button size="sm" className="h-8 px-3 text-xs" style={{ background: "#FF6D00" }}>
+                    <Button
+                      size="sm"
+                      className="h-9 px-4 text-xs font-bold rounded-xl text-white"
+                      style={{ background: "#FF6D00" }}
+                    >
                       <UserPlus className="w-3.5 h-3.5 ml-1" />
                       {t("إكمال التسجيل", "Inscription", "Complete")}
                     </Button>
                   </Link>
                 )}
                 <Link href="/my-courses">
-                  <Button size="sm" variant="outline" className="h-8 px-3 text-xs border-white/30 text-white hover:bg-white/10 bg-transparent">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-4 text-xs font-semibold rounded-xl border-gray-200 text-gray-600 hover:text-[#1A237E] hover:border-[#1A237E]/30 hover:bg-blue-50/50"
+                  >
                     {t("دوراتي", "Mes cours", "My Courses")}
-                  </Button>
-                </Link>
-                <Link href="/my-portfolio">
-                  <Button size="sm" variant="outline" className="h-8 px-3 text-xs border-white/30 text-white hover:bg-white/10 bg-transparent">
-                    {t("ملفي المهني", "Mon portfolio", "My Portfolio")}
                   </Button>
                 </Link>
               </div>
             ) : (
-              <a href={getLoginUrl()}>
-                <Button size="sm" className="h-8 px-4 text-sm font-semibold" style={{ background: "#FF6D00", color: "white" }}>
-                  {t("تسجيل الدخول", "Se connecter", "Sign In")}
-                </Button>
-              </a>
+              <div className="hidden sm:flex items-center gap-2.5">
+                <a href={getLoginUrl()}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-5 text-sm font-semibold rounded-xl border-gray-200 text-gray-600 hover:text-[#1A237E] hover:border-[#1A237E]/30"
+                  >
+                    {t("تسجيل الدخول", "Se connecter", "Sign In")}
+                  </Button>
+                </a>
+                <a href={getLoginUrl()}>
+                  <Button
+                    size="sm"
+                    className="h-9 px-5 text-sm font-bold rounded-xl text-white shadow-md hover:shadow-lg transition-all hover:scale-[1.02]"
+                    style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}
+                  >
+                    {t("ابدأ مجانًا", "Commencer gratuitement", "Start Free")}
+                  </Button>
+                </a>
+              </div>
             )}
 
             {/* Mobile menu toggle */}
             <button
-              className="lg:hidden text-white p-1"
+              className="lg:hidden p-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -431,184 +318,146 @@ export default function UnifiedNavbar() {
 
         {/* ===== MOBILE MENU ===== */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-white/20 py-3 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
-            {/* EDUGPT Section */}
-            <div className="px-4 py-2">
-              <p className="text-orange-300 font-bold text-sm flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4" />
-                {t("أدوات EDUGPT", "Outils EDUGPT", "EDUGPT Tools")}
-              </p>
-              <Link href="/teacher-tools">
-                <button
-                  className="flex items-center gap-3 w-full text-right text-white bg-orange-500/20 hover:bg-orange-500/30 px-3 py-2.5 rounded-lg text-sm font-bold mb-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Sparkles className="w-4 h-4 text-orange-300" />
-                  {t("عرض جميع الأدوات", "Voir tous les outils", "View all tools")}
-                </button>
-              </Link>
-              <div className="space-y-1 mr-4">
-                {AI_TOOLS.map((tool) => {
-                  const IconComp = tool.icon;
-                  return (
-                    <Link key={tool.href} href={tool.href}>
-                      <button
-                        className="flex items-center gap-3 w-full text-right text-blue-100 hover:text-white hover:bg-white/10 px-3 py-2.5 rounded-lg text-sm font-medium"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,109,0,0.2)" }}>
-                          <IconComp className="w-4 h-4 text-orange-300" />
-                        </div>
-                        <div>
-                          <span className="block">{getLabel(tool, language)}</span>
-                          <span className="block text-xs text-blue-300 mt-0.5">{getDesc(tool, language)}</span>
-                        </div>
-                      </button>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="border-t border-white/10 my-2" />
-
-            {/* Other Links */}
-            {NAV_LINKS.filter(link => {
-              if (link.adminOnly && user?.role !== "admin") return false;
-              if (link.authOnly && !user) return false;
-              return true;
-            }).map((link) => {
-              const NavIcon = link.icon;
-              const isAnchor = link.href.startsWith("/#");
-              const isActive = !isAnchor && (location === link.href || (link.href !== "/" && location.startsWith(link.href)));
-              const handleMobileAnchorClick = (e: React.MouseEvent) => {
-                e.preventDefault();
-                setMobileMenuOpen(false);
-                const anchorId = link.href.replace("/#", "");
-                if (location === "/") {
-                  setTimeout(() => document.getElementById(anchorId)?.scrollIntoView({ behavior: "smooth" }), 300);
-                } else {
-                  window.location.href = link.href;
-                }
-              };
-              if (isAnchor) {
-                return (
-                  <a key={link.href} href={link.href} onClick={handleMobileAnchorClick}>
-                    <button className="flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-blue-100 hover:text-white hover:bg-white/10">
-                      <NavIcon className="w-4 h-4 flex-shrink-0" />
-                      {getLabel(link, language)}
-                    </button>
-                  </a>
-                );
-              }
+          <div className="lg:hidden border-t border-gray-100 py-4 space-y-1 max-h-[calc(100vh-4.5rem)] overflow-y-auto bg-white">
+            {/* Main nav links */}
+            {CENTER_NAV.map((item) => {
+              const isActive = item.href === "/" ? location === "/" : location === item.href || location.startsWith(item.href + "/");
               return (
-                <Link key={link.href} href={link.href}>
+                <Link key={item.href} href={item.href}>
                   <button
-                    className={`flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+                    className={`flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                      isActive ? "text-[#1A237E] bg-blue-50" : "text-gray-600 hover:text-[#1A237E] hover:bg-gray-50"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <NavIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-orange-300" : ""}`} />
-                    {getLabel(link, language)}
+                    {item.hasDropdown && <Sparkles className="w-4 h-4 flex-shrink-0" />}
+                    {getLabel(item, language)}
                   </button>
                 </Link>
               );
             })}
 
-            {/* Certificates section */}
-            <div className="border-t border-white/10 my-2" />
-            <div className="px-4 py-2">
-              <p className="text-orange-300 font-bold text-xs flex items-center gap-2 mb-2">
+            {/* AI Tools section */}
+            <div className="border-t border-gray-100 my-2 pt-2">
+              <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                {t("أدوات EDUGPT", "Outils EDUGPT", "EDUGPT Tools")}
+              </p>
+              <div className="space-y-0.5 px-2">
+                {AI_TOOLS.slice(0, 6).map((tool) => {
+                  const IconComp = tool.icon;
+                  return (
+                    <Link key={tool.href} href={tool.href}>
+                      <button
+                        className="flex items-center gap-3 w-full text-right px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-blue-50/60 transition-colors"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                          <IconComp className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        {getLabel(tool, language)}
+                      </button>
+                    </Link>
+                  );
+                })}
+                <Link href="/teacher-tools">
+                  <button
+                    className="w-full text-center py-2 text-sm font-bold text-[#FF6D00] hover:text-orange-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t("عرض جميع الأدوات →", "Voir tous les outils →", "View all tools →")}
+                  </button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Programs link */}
+            <div className="border-t border-gray-100 my-2 pt-2">
+              <a
+                href="/#programs"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMobileMenuOpen(false);
+                  if (location === "/") {
+                    setTimeout(() => document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" }), 300);
+                  } else {
+                    window.location.href = "/#programs";
+                  }
+                }}
+              >
+                <button className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors">
+                  <GraduationCap className="w-4 h-4 flex-shrink-0" />
+                  {t("برامجنا التدريبية", "Nos formations", "Training Programs")}
+                </button>
+              </a>
+            </div>
+
+            {/* Certificates */}
+            <div className="border-t border-gray-100 my-2 pt-2">
+              <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Award className="w-3.5 h-3.5" />
                 {t("الشهادات", "Certificats", "Certificates")}
               </p>
-              <div className="space-y-1 mr-4">
-                {CERT_LINKS.filter(cl => !cl.authOnly || user).map((cl) => {
-                  const CIcon = cl.icon;
-                  const isActive = location === cl.href;
+              {CERT_LINKS.filter(cl => !cl.authOnly || user).map((cl) => {
+                const CIcon = cl.icon;
+                return (
+                  <Link key={cl.href} href={cl.href}>
+                    <button
+                      className="flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <CIcon className="w-4 h-4 flex-shrink-0" />
+                      {getLabel(cl, language)}
+                    </button>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Career Hub */}
+            {user && (
+              <div className="border-t border-gray-100 my-2 pt-2">
+                <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  {t("المسار المهني", "Carrière", "Career")}
+                </p>
+                {CAREER_LINKS.map((item) => {
+                  const CIcon = item.icon;
                   return (
-                    <Link key={cl.href} href={cl.href}>
+                    <Link key={item.href} href={item.href}>
                       <button
-                        className={`flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
-                        }`}
+                        className="flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors"
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <CIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-orange-300" : ""}`} />
-                        {getLabel(cl, language)}
+                        <CIcon className="w-4 h-4 flex-shrink-0" />
+                        {getLabel(item, language)}
                       </button>
                     </Link>
                   );
                 })}
               </div>
-            </div>
-
-            {/* Career Hub section */}
-            {user && (
-              <>
-                <div className="border-t border-white/10 my-2" />
-                <div className="px-4 py-2">
-                  <p className="text-orange-300 font-bold text-xs flex items-center gap-2 mb-2">
-                    <Briefcase className="w-3.5 h-3.5" />
-                    {t("المسار المهني", "Carrière", "Career")}
-                  </p>
-                  <div className="space-y-1 mr-4">
-                    {CAREER_LINKS.map((item) => {
-                      const CIcon = item.icon;
-                      const isActive = location === item.href;
-                      return (
-                        <Link key={item.href} href={item.href}>
-                          <button
-                            className={`flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
-                            }`}
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            <CIcon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-orange-300" : ""}`} />
-                            {getLabel(item, language)}
-                          </button>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
             )}
 
-            {/* Management section */}
+            {/* Admin */}
             {user && (
-              <>
-                <div className="border-t border-white/10 my-2" />
-                <div className="px-4 py-2">
-                  <p className="text-blue-200 font-bold text-xs flex items-center gap-2 mb-2">
-                    <Settings className="w-3.5 h-3.5" />
-                    {t("الإدارة", "Administration", "Management")}
-                  </p>
-                  <div className="space-y-1 mr-4">
-                    <AdminMobileLinks setMobileMenuOpen={setMobileMenuOpen} location={location} language={language} isAdmin={user?.role === 'admin'} />
-                  </div>
-                </div>
-              </>
+              <div className="border-t border-gray-100 my-2 pt-2">
+                <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Settings className="w-3.5 h-3.5" />
+                  {t("الإدارة", "Administration", "Management")}
+                </p>
+                <AdminMobileLinks setMobileMenuOpen={setMobileMenuOpen} location={location} language={language} isAdmin={isAdmin} />
+              </div>
             )}
 
-            {/* Mobile language switcher */}
-            <div className="border-t border-white/10 my-2" />
-            <div className="px-4 py-2">
-              <p className="text-blue-200 font-bold text-xs flex items-center gap-2 mb-2">
-                <Globe className="w-3.5 h-3.5" />
-                {t("اللغة", "Langue", "Language")}
-              </p>
-              <div className="flex gap-2 mr-4">
+            {/* Language */}
+            <div className="border-t border-gray-100 my-2 pt-2">
+              <div className="flex gap-2 px-4">
                 {LANGUAGES.map((lang) => (
                   <button
                     key={lang.code}
-                    onClick={() => {
-                      setLanguage(lang.code);
-                      // Don't close menu on language switch so user sees the change
-                    }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      language === lang.code ? "bg-white/20 text-white" : "text-blue-200 hover:bg-white/10 hover:text-white"
+                    onClick={() => setLanguage(lang.code)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      language === lang.code ? "bg-blue-50 text-[#1A237E]" : "text-gray-500 hover:bg-gray-50"
                     }`}
                   >
                     <span>{lang.flag}</span>
@@ -618,25 +467,163 @@ export default function UnifiedNavbar() {
               </div>
             </div>
 
-            {/* Quick actions */}
-            <div className="flex gap-2 px-4 pt-2">
-              <Link href="/assistant" className="flex-1">
-                <Button size="sm" className="w-full text-xs" style={{ background: "#FF6D00" }} onClick={() => setMobileMenuOpen(false)}>
-                  <MessageSquare className="w-3.5 h-3.5 ml-1" />
-                  EDUGPT
-                </Button>
-              </Link>
-              <Link href="/evaluate-fiche" className="flex-1">
-                <Button size="sm" variant="outline" className="w-full text-xs border-white/30 text-white bg-transparent" onClick={() => setMobileMenuOpen(false)}>
-                  <ClipboardCheck className="w-3.5 h-3.5 ml-1" />
-                  {t("تقييم", "Évaluer", "Assess")}
-                </Button>
-              </Link>
+            {/* CTA buttons */}
+            <div className="border-t border-gray-100 my-2 pt-3 px-4 space-y-2">
+              {user ? (
+                <Link href="/assistant" className="block">
+                  <Button
+                    className="w-full text-sm font-bold rounded-xl text-white"
+                    style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Brain className="w-4 h-4 ml-2" />
+                    {t("جرّب EDUGPT", "Essayer EDUGPT", "Try EDUGPT")}
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <a href={getLoginUrl()} className="block">
+                    <Button
+                      className="w-full text-sm font-bold rounded-xl text-white"
+                      style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}
+                    >
+                      {t("ابدأ مجانًا", "Commencer gratuitement", "Start Free")}
+                    </Button>
+                  </a>
+                  <a href={getLoginUrl()} className="block">
+                    <Button variant="outline" className="w-full text-sm font-semibold rounded-xl border-gray-200 text-gray-600">
+                      {t("تسجيل الدخول", "Se connecter", "Sign In")}
+                    </Button>
+                  </a>
+                </>
+              )}
             </div>
           </div>
         )}
       </div>
     </header>
+  );
+}
+
+// ===== MORE DROPDOWN (for logged-in users on desktop) =====
+function MoreDropdown({ language, t, user, location, isAdmin }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; user: any; location: string; isAdmin: boolean }) {
+  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000, enabled: isAdmin });
+  const pendingCount = isAdmin ? (pendingCountQuery.data?.count || 0) : 0;
+
+  return (
+    <div className="relative group/more">
+      <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-all duration-200">
+        {t("المزيد", "Plus", "More")}
+        {pendingCount > 0 && (
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
+            {pendingCount > 9 ? "9+" : pendingCount}
+          </span>
+        )}
+        <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/more:rotate-180" />
+      </button>
+      <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover/more:opacity-100 group-hover/more:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden" dir="rtl">
+          {/* Certificates section */}
+          <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Award className="w-3 h-3" />
+              {t("الشهادات", "Certificats", "Certificates")}
+            </p>
+          </div>
+          {CERT_LINKS.filter(cl => !cl.authOnly || user).map((cl) => {
+            const CIcon = cl.icon;
+            return (
+              <Link key={cl.href} href={cl.href}>
+                <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50/60 cursor-pointer transition-colors border-b border-gray-50">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                    <CIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-gray-800">{getLabel(cl, language)}</p>
+                    <p className="text-xs text-gray-400">{getDesc(cl, language)}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Career section */}
+          <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Briefcase className="w-3 h-3" />
+              {t("المسار المهني", "Carrière", "Career")}
+            </p>
+          </div>
+          {CAREER_LINKS.map((cl) => {
+            const CIcon = cl.icon;
+            return (
+              <Link key={cl.href} href={cl.href}>
+                <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50/60 cursor-pointer transition-colors border-b border-gray-50">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-blue-600 to-indigo-600">
+                    <CIcon className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-gray-800">{getLabel(cl, language)}</p>
+                    <p className="text-xs text-gray-400">{getDesc(cl, language)}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Admin section */}
+          <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Settings className="w-3 h-3" />
+              {t("الإدارة", "Administration", "Management")}
+              {pendingCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-red-500 text-white">
+                  {pendingCount}
+                </span>
+              )}
+            </p>
+          </div>
+          {ADMIN_LINKS.filter(l => !l.adminOnly || isAdmin).map((link) => {
+            const IconComp = link.icon;
+            const isPartners = link.href === "/admin/partners";
+            return (
+              <Link key={link.href} href={link.href}>
+                <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50/60 cursor-pointer transition-colors border-b border-gray-50">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: isPartners ? "linear-gradient(135deg, #DC2626, #EF4444)" : "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                    <IconComp className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm text-gray-800">{getLabel(link, language)}</p>
+                      {isPartners && pendingCount > 0 && (
+                        <span className="flex h-2 w-2 rounded-full bg-red-500" />
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400">{getDesc(link, language)}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+
+          {/* Pricing & Contact */}
+          <div className="border-t border-gray-100 flex">
+            <Link href="/pricing" className="flex-1">
+              <div className="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors text-sm font-semibold text-gray-600 border-l border-gray-100">
+                <DollarSign className="w-4 h-4" />
+                {t("الأسعار", "Tarifs", "Pricing")}
+              </div>
+            </Link>
+            <Link href="/contact" className="flex-1">
+              <div className="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors text-sm font-semibold text-gray-600">
+                <MessageSquare className="w-4 h-4" />
+                {t("تواصل معنا", "Contact", "Contact")}
+              </div>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -656,19 +643,16 @@ function AdminMobileLinks({ setMobileMenuOpen, location, language, isAdmin }: { 
         return (
           <Link key={link.href} href={link.href}>
             <button
-              className={`flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
+              className={`flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                isActive ? "text-[#1A237E] bg-blue-50" : "text-gray-600 hover:text-[#1A237E] hover:bg-gray-50"
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
-              <IconComp className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-red-300" : ""}`} />
+              <IconComp className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{getLabel(link, language)}</span>
               {isPartners && pendingCount > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center">
-                  <span className="animate-ping absolute inline-flex h-4 w-4 rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-bold">
-                    {pendingCount > 9 ? "9+" : pendingCount}
-                  </span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                  {pendingCount > 9 ? "9+" : pendingCount}
                 </span>
               )}
             </button>

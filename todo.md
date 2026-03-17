@@ -2592,4 +2592,15 @@
 - [x] Removed 16 PDF files from git tracking and added *.pdf to .gitignore
 - [x] Uploaded fonts/logo to S3 CDN and added CDN fallback in all code references
 - [x] Verified build succeeds locally (31s build time)
-- [ ] Save checkpoint and redeploy
+- [x] Save checkpoint and redeploy (version: 05189d8a)
+
+## Homepage Redesign Phase 1: Header + Hero Section
+- [x] Update global fonts to Cairo/Almarai from Google Fonts
+- [x] Update CSS variables for white background + clean design system
+- [x] Redesign Navigation Bar: Logo right, 4-item center menu, login/start buttons left
+- [x] Redesign Hero Section: Two-column layout (text right, visual left)
+- [x] Hero H1 + sub-headline + CTAs (Try Smart Tools + Watch Demo Video)
+- [x] Hero visual: Professional AI/tablet mockup with floating badges (animated)
+- [x] Border-radius 12px on all buttons and containers
+- [x] White background (#FFFFFF) with generous padding
+- [x] Update i18n-navbar tests to match new design (21/21 passing)

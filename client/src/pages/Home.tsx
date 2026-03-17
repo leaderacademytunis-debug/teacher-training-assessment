@@ -625,181 +625,204 @@ export default function Home() {
 
 
       {/* ===== HERO SECTION ===== */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A237E 0%, #1565C0 40%, #0D47A1 100%)", minHeight: "90vh" }}>
-        {/* Decorative background elements */}
+      <section className="relative overflow-hidden bg-white" style={{ minHeight: "85vh" }}>
+        {/* Subtle decorative background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-10" style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "60px 60px"
+          {/* Soft gradient blobs */}
+          <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.04]" style={{ background: "#1A237E", filter: "blur(100px)" }} />
+          <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full opacity-[0.03]" style={{ background: "#FF6D00", filter: "blur(80px)" }} />
+          {/* Dot pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: "radial-gradient(#1A237E 1px, transparent 1px)",
+            backgroundSize: "32px 32px"
           }} />
-          {/* Glowing orbs */}
-          <div className="absolute top-20 left-10 w-96 h-96 rounded-full opacity-10" style={{ background: "#FF6D00", filter: "blur(80px)" }} />
-          <div className="absolute bottom-10 right-20 w-80 h-80 rounded-full opacity-10" style={{ background: "#42A5F5", filter: "blur(60px)" }} />
-          {/* Floating particles */}
-          <div className="absolute top-1/4 right-1/4 w-2 h-2 rounded-full bg-orange-400 opacity-60 animate-pulse" />
-          <div className="absolute top-1/3 left-1/3 w-1.5 h-1.5 rounded-full bg-blue-300 opacity-60 animate-pulse" style={{ animationDelay: "1s" }} />
-          <div className="absolute bottom-1/3 right-1/3 w-2.5 h-2.5 rounded-full bg-white opacity-30 animate-pulse" style={{ animationDelay: "2s" }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 lg:pt-24 lg:pb-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-            {/* Text content */}
-            <div className="text-white space-y-8">
+            {/* ===== RIGHT SIDE: Text Content ===== */}
+            <div className="space-y-7">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.4)", color: "#FFB74D" }}>
-                <Sparkles className="w-4 h-4" />
-                <span>منصة الذكاء الاصطناعي التربوي #1 في تونس</span>
+              <div className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" style={{ background: "rgba(26,35,126,0.06)", color: "#1A237E" }}>
+                <Sparkles className="w-4 h-4" style={{ color: "#FF6D00" }} />
+                <span>{t("منصة الذكاء الاصطناعي التربوي #1 في تونس", "Plateforme IA éducative #1 en Tunisie", "#1 Educational AI Platform in Tunisia")}</span>
               </div>
 
-              {/* Main headline */}
-              <div>
-                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-black leading-tight mb-4" style={{ fontFamily: "Cairo, sans-serif" }}>
-                  <span className="text-white">Leader Academy:</span>
-                  <br />
-                  <span style={{ color: "#FF6D00" }}>نقود ثورة</span>
-                  <br />
-                  <span className="text-blue-200">الذكاء الاصطناعي</span>
-                  <br />
-                  <span className="text-white text-3xl lg:text-4xl">في التعليم بتونس</span>
-                </h1>
-                <p className="text-blue-100 text-lg lg:text-xl leading-relaxed max-w-xl">
+              {/* Main headline (H1) */}
+              <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-[3.5rem] font-extrabold leading-[1.15] tracking-tight" style={{ fontFamily: "'Cairo', 'Almarai', sans-serif", color: "#1A237E" }}>
+                {t(
+                  "مستقبل التعليم بين يديك:",
+                  "L'avenir de l'enseignement entre vos mains :",
+                  "The Future of Education in Your Hands:"
+                )}
+                <br />
+                <span style={{ color: "#FF6D00" }}>
                   {t(
-                    "منصتك الشاملة لتصميم الدروس الذكية، تقييم المكتسبات، وتطوير مهارات المستقبل.",
-                    "Votre plateforme complète pour concevoir des cours intelligents, évaluer les acquis et développer les compétences de demain.",
-                    "Your comprehensive platform for designing smart lessons, assessing learning outcomes, and developing future skills."
+                    "حضّر دروسك في ثوانٍ بذكاء",
+                    "Préparez vos cours en secondes avec l'IA",
+                    "Prepare Lessons in Seconds with AI"
                   )}
-                </p>
-              </div>
+                </span>
+              </h1>
+
+              {/* Sub-headline */}
+              <p className="text-gray-500 text-lg lg:text-xl leading-relaxed max-w-xl" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+                {t(
+                  "اختصر ساعات التحضير المرهقة إلى دقائق معدودة باستخدام أقوى أدوات الذكاء الاصطناعي المصممة للمنهج التربوي.",
+                  "Réduisez des heures de préparation épuisantes à quelques minutes grâce aux outils IA les plus puissants conçus pour le programme éducatif.",
+                  "Cut exhausting hours of preparation down to minutes using the most powerful AI tools designed for the educational curriculum."
+                )}
+              </p>
 
               {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-4">
-                <Link href="/assistant">
+              <div className="flex flex-wrap gap-4 pt-2">
+                <Link href="/teacher-tools">
                   <Button
                     size="lg"
-                    className="text-white font-bold px-8 py-4 text-base rounded-xl shadow-2xl hover:scale-105 transition-transform"
-                    style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 8px 32px rgba(255,109,0,0.4)" }}
+                    className="text-white font-bold px-8 h-13 text-base rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-200"
+                    style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 6px 24px rgba(255,109,0,0.3)" }}
                   >
-                    <Brain className="w-5 h-5 ml-2" />
-                    {t("جرّب EDUGPT الآن", "Essayer EDUGPT", "Try EDUGPT Now")}
+                    <Sparkles className="w-5 h-5 ml-2" />
+                    {t("جرب الأدوات الذكية", "Essayer les outils IA", "Try Smart Tools")}
                   </Button>
                 </Link>
                 <button
-                  onClick={() => document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" })}
-                  className="flex items-center gap-2 text-white font-semibold px-8 py-4 text-base rounded-xl border-2 border-white/30 hover:bg-white/10 transition-all"
+                  onClick={() => {
+                    // Placeholder for video - scroll to features for now
+                    document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="flex items-center gap-2.5 font-semibold px-6 h-13 text-base rounded-xl border-2 border-gray-200 text-gray-600 hover:border-[#1A237E]/30 hover:text-[#1A237E] hover:bg-blue-50/30 transition-all duration-200"
                 >
-                  <span>{t("اكتشف دوراتنا", "Découvrir nos formations", "Discover Our Programs")}</span>
-                  <ArrowLeft className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(26,35,126,0.08)" }}>
+                    <Play className="w-4 h-4 fill-current" style={{ color: "#1A237E" }} />
+                  </div>
+                  <span>{t("شاهد فيديو توضيحي", "Voir la vidéo", "Watch Demo Video")}</span>
                 </button>
               </div>
 
               {/* Trust indicators */}
-              <div className="flex items-center gap-6 pt-4">
+              <div className="flex items-center gap-6 pt-3">
                 <div className="flex -space-x-2 rtl:space-x-reverse">
-                  {["🧑‍🏫", "👩‍🏫", "🧑‍💻", "👩‍💻"].map((emoji, i) => (
-                    <div key={i} className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-base" style={{ background: "#1565C0" }}>
-                      {emoji}
+                  {["#1A237E", "#FF6D00", "#1565C0", "#0D47A1"].map((color, i) => (
+                    <div key={i} className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-sm" style={{ background: color }}>
+                      {["م", "أ", "س", "ن"][i]}
                     </div>
                   ))}
                 </div>
                 <div>
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />)}
                   </div>
-                  <p className="text-blue-200 text-sm">{t("+500 مدرّس يثق بنا", "+500 enseignants nous font confiance", "+500 teachers trust us")}</p>
+                  <p className="text-gray-400 text-sm">{t("+500 مدرّس يثق بنا", "+500 enseignants nous font confiance", "+500 teachers trust us")}</p>
                 </div>
               </div>
             </div>
 
-            {/* Visual Panel */}
+            {/* ===== LEFT SIDE: Visual Panel ===== */}
             <div className="hidden lg:block">
               <div className="relative">
-                {/* Main card */}
-                <div className="rounded-2xl p-6 shadow-2xl" style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.15)" }}>
-                  {/* Header bar */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                    <div className="w-3 h-3 rounded-full bg-green-400" />
-                    <div className="flex-1 h-6 rounded-md mx-2" style={{ background: "rgba(255,255,255,0.1)" }} />
-                  </div>
-                  {/* Chat simulation */}
-                  <div className="space-y-3 mb-4">
-                    <div className="flex gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#FF6D00" }}>
-                        <span className="text-white text-xs font-bold">م</span>
-                      </div>
-                      <div className="rounded-xl rounded-tr-sm px-3 py-2 text-sm text-white max-w-xs" style={{ background: "rgba(255,255,255,0.1)" }}>
-                        أعدّ لي جذاذة درس الكسور للسنة الخامسة ابتدائي
+                {/* Main app mockup card */}
+                <div className="rounded-2xl p-1 shadow-2xl" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)", boxShadow: "0 25px 60px rgba(26,35,126,0.25)" }}>
+                  <div className="bg-white rounded-xl p-5">
+                    {/* Browser header bar */}
+                    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                      <div className="w-3 h-3 rounded-full bg-red-400" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                      <div className="flex-1 h-7 rounded-lg mx-3 flex items-center px-3" style={{ background: "#F8F9FF" }}>
+                        <span className="text-[11px] text-gray-400" dir="ltr">leaderacademy.school/assistant</span>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-row-reverse">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1565C0, #0D47A1)" }}>
-                        <Brain className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="rounded-xl rounded-tl-sm px-3 py-2 text-sm text-white max-w-xs" style={{ background: "rgba(255,109,0,0.2)", border: "1px solid rgba(255,109,0,0.3)" }}>
-                        <p className="font-semibold mb-1">✅ جذاذة الكسور — السنة 5</p>
-                        <p className="text-blue-200 text-xs">الكفاءة: يُعبّر عن كسر بسيط...</p>
-                        <p className="text-blue-200 text-xs">المدة: 45 دقيقة</p>
-                        <div className="mt-2 flex gap-1">
-                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: "rgba(255,255,255,0.15)" }}>📄 PDF</span>
-                          <span className="px-2 py-0.5 rounded text-xs" style={{ background: "rgba(255,255,255,0.15)" }}>📝 Word</span>
+                    {/* Chat simulation */}
+                    <div className="space-y-3">
+                      {/* User message */}
+                      <div className="flex gap-2.5">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style={{ background: "#FF6D00" }}>
+                          م
+                        </div>
+                        <div className="rounded-2xl rounded-tr-md px-4 py-2.5 text-sm text-gray-700 max-w-[280px]" style={{ background: "#F8F9FF" }}>
+                          {t(
+                            "أعدّ لي جذاذة درس الكسور للسنة الخامسة ابتدائي",
+                            "Prépare-moi une fiche de cours sur les fractions pour la 5e année primaire",
+                            "Prepare a lesson plan on fractions for 5th grade"
+                          )}
                         </div>
                       </div>
-                    </div>
-                    {/* Typing indicator */}
-                    <div className="flex gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.1)" }}>
-                        <span className="text-white text-xs">🇹🇳</span>
+                      {/* AI response */}
+                      <div className="flex gap-2.5 flex-row-reverse">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                          <Brain className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="rounded-2xl rounded-tl-md px-4 py-3 text-sm max-w-[300px] border" style={{ background: "white", borderColor: "#E8EAF6" }}>
+                          <p className="font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" style={{ background: "#4CAF50" }}>✓</span>
+                            {t("جذاذة الكسور — السنة 5", "Fiche Fractions — 5e année", "Fractions Plan — Grade 5")}
+                          </p>
+                          <div className="space-y-1 text-gray-500 text-xs">
+                            <p>{t("الكفاءة: يُعبّر عن كسر بسيط ويقارن بين كسرين", "Compétence: Exprimer une fraction simple", "Competency: Express a simple fraction")}</p>
+                            <p>{t("المدة: 45 دقيقة | المستوى: السنة 5", "Durée: 45 min | Niveau: 5e année", "Duration: 45 min | Level: Grade 5")}</p>
+                          </div>
+                          <div className="mt-3 flex gap-2">
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1" style={{ background: "#FFF3E0", color: "#E65100" }}>📄 PDF</span>
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1" style={{ background: "#E8EAF6", color: "#1A237E" }}>📝 Word</span>
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1" style={{ background: "#E8F5E9", color: "#2E7D32" }}>🖨 Print</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="rounded-xl px-3 py-2 flex items-center gap-1" style={{ background: "rgba(255,255,255,0.08)" }}>
-                        <span className="w-2 h-2 rounded-full bg-blue-300 animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <span className="w-2 h-2 rounded-full bg-blue-300 animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <span className="w-2 h-2 rounded-full bg-blue-300 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      {/* Typing indicator */}
+                      <div className="flex gap-2.5">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#F8F9FF" }}>
+                          <span className="text-sm">🇹🇳</span>
+                        </div>
+                        <div className="rounded-2xl px-4 py-2.5 flex items-center gap-1.5" style={{ background: "#F8F9FF" }}>
+                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "#1A237E", animationDelay: "0ms" }} />
+                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "#1565C0", animationDelay: "150ms" }} />
+                          <span className="w-2 h-2 rounded-full animate-bounce" style={{ background: "#FF6D00", animationDelay: "300ms" }} />
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  {/* Input bar */}
-                  <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: "rgba(255,255,255,0.1)" }}>
-                    <span className="text-blue-200 text-sm flex-1">اكتب طلبك هنا...</span>
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#FF6D00" }}>
-                      <ChevronLeft className="w-4 h-4 text-white" />
                     </div>
                   </div>
                 </div>
 
-                {/* Floating badges */}
-                <div className="absolute -top-4 -right-4 rounded-xl px-3 py-2 shadow-lg" style={{ background: "white" }}>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#E8F5E9" }}>
-                      <span className="text-green-600 text-sm">✓</span>
+                {/* Floating badge: top-right */}
+                <div className="absolute -top-5 -right-5 rounded-xl px-4 py-2.5 shadow-lg bg-white border border-gray-100" style={{ animation: "float 6s ease-in-out infinite" }}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#E8F5E9" }}>
+                      <span className="text-green-600 text-base font-bold">✓</span>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-800">متوافق مع</p>
-                      <p className="text-xs text-gray-500">البرامج 2026</p>
+                      <p className="text-xs font-bold text-gray-800">{t("متوافق مع", "Conforme aux", "Compatible with")}</p>
+                      <p className="text-xs text-gray-500">{t("البرامج الرسمية 2026", "Programmes 2026", "Official Programs 2026")}</p>
                     </div>
                   </div>
                 </div>
-                <div className="absolute -bottom-4 -left-4 rounded-xl px-3 py-2 shadow-lg" style={{ background: "white" }}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🇹🇳</span>
+
+                {/* Floating badge: bottom-left */}
+                <div className="absolute -bottom-5 -left-5 rounded-xl px-4 py-2.5 shadow-lg bg-white border border-gray-100" style={{ animation: "float 6s ease-in-out infinite 3s" }}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#FFF3E0" }}>
+                      <Zap className="w-5 h-5" style={{ color: "#FF6D00" }} />
+                    </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-800">صُمِّم لتونس</p>
-                      <p className="text-xs text-gray-500">المنهج الرسمي</p>
+                      <p className="text-xs font-bold text-gray-800">{t("11 أداة ذكية", "11 outils IA", "11 AI Tools")}</p>
+                      <p className="text-xs text-gray-500">{t("جاهزة للاستخدام", "Prêts à l'emploi", "Ready to use")}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating badge: top-left */}
+                <div className="absolute top-8 -left-8 rounded-xl px-3 py-2 shadow-lg bg-white border border-gray-100" style={{ animation: "float 5s ease-in-out infinite 1.5s" }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🇹🇳</span>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-800">{t("صُمِّم لتونس", "Conçu pour la Tunisie", "Made for Tunisia")}</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Wave divider */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-16">
-            <path d="M0 80L1440 80L1440 20C1200 70 960 0 720 30C480 60 240 10 0 40L0 80Z" fill="white" />
-          </svg>
         </div>
       </section>
 

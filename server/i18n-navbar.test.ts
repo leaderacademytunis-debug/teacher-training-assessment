@@ -99,16 +99,16 @@ describe("UnifiedNavbar Component", () => {
   });
 
   it("should have mobile language switcher section", () => {
-    // Mobile menu should have language options
-    expect(navbar).toContain('"اللغة"');
-    expect(navbar).toContain('"Langue"');
-    expect(navbar).toContain('"Language"');
+    // Mobile menu should have language options (rendered via LANGUAGES array)
+    expect(navbar).toContain('label: "العربية"');
+    expect(navbar).toContain('label: "Français"');
+    expect(navbar).toContain('label: "English"');
   });
 
   it("should have About link with translated labels", () => {
-    expect(navbar).toContain('"عن الأكاديمية"');
+    expect(navbar).toContain('"من نحن"');
     expect(navbar).toContain('"À propos"');
-    expect(navbar).toContain('"About"');
+    expect(navbar).toContain('"About Us"');
   });
 
   it("should have Pricing link with translated labels", () => {
@@ -136,14 +136,14 @@ describe("Home.tsx - UnifiedNavbar Integration", () => {
   });
 
   it("should have translated hero subtitle", () => {
-    expect(home).toContain("Votre plateforme complète pour concevoir des cours intelligents");
-    expect(home).toContain("Your comprehensive platform for designing smart lessons");
+    expect(home).toContain("Réduisez des heures de préparation épuisantes");
+    expect(home).toContain("Cut exhausting hours of preparation down to minutes");
   });
 
   it("should have translated CTA buttons", () => {
-    expect(home).toContain('"Essayer EDUGPT"');
-    expect(home).toContain('"Try EDUGPT Now"');
-    expect(home).toContain('"Découvrir nos formations"');
-    expect(home).toContain('"Discover Our Programs"');
+    expect(home).toContain('"Essayer les outils IA"');
+    expect(home).toContain('"Try Smart Tools"');
+    expect(home).toContain('"Voir la vidéo"');
+    expect(home).toContain('"Watch Demo Video"');
   });
 });
