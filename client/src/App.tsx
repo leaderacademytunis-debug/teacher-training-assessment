@@ -13,6 +13,7 @@ import NotFound from "@/pages/NotFound";
 
 // Lazy-loaded pages (code-split into separate chunks)
 const MyCourses = lazy(() => import("./pages/MyCourses"));
+const Courses = lazy(() => import("./pages/Courses"));
 const CourseDetail = lazy(() => import("./pages/CourseDetail"));
 const ExamPage = lazy(() => import("./pages/ExamPage"));
 const ExamResults = lazy(() => import("./pages/ExamResults"));
@@ -85,6 +86,7 @@ function Router() {
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path="/my-courses" component={MyCourses} />
+        <Route path="/courses" component={Courses} />
         <Route path="/courses/:id" component={CourseDetail} />
         <Route path="/exams/:id" component={ExamPage} />
         <Route path="/exam-results/:id" component={ExamResults} />
