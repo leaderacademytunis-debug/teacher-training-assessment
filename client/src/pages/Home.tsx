@@ -490,7 +490,7 @@ function NewsletterSection() {
           {t("الذكاء الاصطناعي في الفصل الدراسي التونسي 2026", "L'IA dans la classe tunisienne 2026", "AI in the Tunisian Classroom 2026")}
         </p>
         <p className="text-blue-200 text-lg mb-8">
-          {t("انضم إلى أكثر من 500 مدرس تونسي يطوّرون مهاراتهم معنا", "Rejoignez plus de 500 enseignants tunisiens", "Join 500+ Tunisian teachers")}
+          {t("انضم إلى أكثر من 5000 مدرس تونسي يطوّرون مهاراتهم معنا", "Rejoignez plus de 5000 enseignants tunisiens", "Join 5000+ Tunisian teachers")}
         </p>
 
         {submitted ? (
@@ -1270,19 +1270,20 @@ export default function Home() {
       {/* ===== FEATURED CONTENT OF THE WEEK ===== */}
       <FeaturedContentSection t={t} />
 
-      {/* ===== TESTIMONIALS SECTION ===== */}
-      <section className="py-24 lg:py-28 relative overflow-hidden" style={{ background: "#FFFFFF" }} dir="rtl">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #1A237E 1px, transparent 0)", backgroundSize: "40px 40px" }} />
+      {/* ===== TESTIMONIALS SECTION - TRUST WALL ===== */}
+      <section className="py-24 lg:py-32 relative overflow-hidden" style={{ background: "#FFFFFF" }} dir={language === "ar" ? "rtl" : "ltr"}>
+        {/* Subtle decorative elements */}
+        <div className="absolute top-0 left-0 w-72 h-72 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #1A237E, transparent 70%)", transform: "translate(-30%, -30%)" }} />
+        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full opacity-[0.02]" style={{ background: "radial-gradient(circle, #FF6D00, transparent 70%)", transform: "translate(30%, 30%)" }} />
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold mb-5" style={{ background: "rgba(255,109,0,0.08)", color: "#FF6D00" }}>
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2.5 rounded-full px-6 py-2.5 text-sm font-bold mb-6" style={{ background: "linear-gradient(135deg, rgba(255,109,0,0.08), rgba(255,143,0,0.05))", color: "#FF6D00", border: "1px solid rgba(255,109,0,0.12)" }}>
               <Heart className="w-4 h-4" />
-              <span>{t("آراء المدرسين", "Avis des enseignants", "Teacher Reviews")}</span>
+              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("جدار الثقة", "Mur de confiance", "Trust Wall")}</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold mb-5 leading-tight" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-extrabold mb-6 leading-tight" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
               {t("ماذا يقول المربّون عنّا؟", "Témoignages de nos enseignants", "What Teachers Say About Us")}
             </h2>
             <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
@@ -1294,104 +1295,155 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Dynamic Reviews from Database OR Static Fallback */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* 3-Column Trust Wall Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
             {(featuredReviews && featuredReviews.length > 0 ? featuredReviews : [
-              // Static fallback data when no reviews exist yet
               {
                 review: { id: -1, rating: 5, comment: t(
-                  "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية!",
-                  "Je passais deux heures à préparer une seule fiche. Avec EDUGPT, je fais le même travail en 5 minutes avec une qualité supérieure.",
-                  "I used to spend two hours preparing a single lesson plan. With EDUGPT, I do the same work in 5 minutes."
+                  "كنت أقضي ساعتين في تحضير الجذاذة الواحدة. بعد EDUGPT، أنجز نفس العمل في 5 دقائق بجودة تفوق ما كنت أفعله يدوياً. هذه ثورة حقيقية في عالم التعليم!",
+                  "Je passais deux heures à préparer une seule fiche. Avec EDUGPT, je fais le même travail en 5 minutes avec une qualité supérieure. C'est une vraie révolution!",
+                  "I used to spend two hours preparing a single lesson plan. With EDUGPT, I do the same work in 5 minutes with superior quality. A true revolution!"
                 ), createdAt: new Date() },
                 user: { id: -1, name: t("الأستاذ محمد البوعزيزي", "Mohamed Bouazizi", "Mohamed Bouazizi"), arabicName: "الأستاذ محمد البوعزيزي" },
                 course: { id: -1, titleAr: "EDUGPT" },
+                _jobTitle: t("أستاذ تعليم ابتدائي", "Enseignant du primaire", "Primary School Teacher"),
+                _avatarBg: "linear-gradient(135deg, #1A237E 0%, #283593 100%)",
               },
               {
                 review: { id: -2, rating: 5, comment: t(
-                  "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له.",
-                  "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision.",
-                  "Instant assessment changed how I track my students. I can now know each student's level precisely."
+                  "التقييم الفوري غيّر طريقتي في متابعة تلاميذي. أستطيع الآن معرفة مستوى كل تلميذ بدقة وتقديم دعم مخصص له. أنصح كل زملائي بتجربة هذه الأدوات.",
+                  "L'évaluation instantanée a changé ma façon de suivre mes élèves. Je peux maintenant connaître le niveau de chaque élève avec précision et offrir un soutien personnalisé.",
+                  "Instant assessment changed how I track my students. I can now know each student's level precisely and offer personalized support."
                 ), createdAt: new Date() },
                 user: { id: -2, name: t("الأستاذة مريم العامري", "Mariem Amri", "Mariem Amri"), arabicName: "الأستاذة مريم العامري" },
                 course: { id: -2, titleAr: t("التصحيح الأعمى", "Correction aveugle", "Blind Grading") },
+                _jobTitle: t("خبيرة تربوية", "Experte pédagogique", "Educational Expert"),
+                _avatarBg: "linear-gradient(135deg, #FF6D00 0%, #FF8F00 100%)",
               },
               {
                 review: { id: -3, rating: 5, comment: t(
-                  "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية.",
-                  "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique.",
-                  "The AI integration in teaching course was a real turning point. The content is practical."
+                  "دورة توظيف الذكاء الاصطناعي في التدريس كانت نقطة تحوّل حقيقية. المحتوى عملي، المدربون خبراء، والأدوات ثورية. أفضل استثمار في مسيرتي المهنية.",
+                  "La formation sur l'intégration de l'IA dans l'enseignement a été un vrai tournant. Le contenu est pratique, les formateurs sont experts. Le meilleur investissement de ma carrière.",
+                  "The AI integration in teaching course was a real turning point. Practical content, expert trainers. The best investment in my career."
                 ), createdAt: new Date() },
                 user: { id: -3, name: t("الأستاذ أحمد الطرابلسي", "Ahmed Trabelsi", "Ahmed Trabelsi"), arabicName: "الأستاذ أحمد الطرابلسي" },
                 course: { id: -3, titleAr: t("الدورات التدريبية", "Formations", "Training Courses") },
+                _jobTitle: t("أستاذ تعليم ثانوي", "Enseignant du secondaire", "Secondary School Teacher"),
+                _avatarBg: "linear-gradient(135deg, #1565C0 0%, #1E88E5 100%)",
               },
             ] as any[]).map((item: any, i: number) => {
               const accentColors = ["#1A237E", "#FF6D00", "#1565C0"];
               const accentColor = accentColors[i % 3];
-              const accentLight = i === 0 ? "rgba(26,35,126,0.06)" : i === 1 ? "rgba(255,109,0,0.06)" : "rgba(21,101,192,0.06)";
+              const avatarGradients = [
+                "linear-gradient(135deg, #1A237E 0%, #283593 100%)",
+                "linear-gradient(135deg, #FF6D00 0%, #FF8F00 100%)",
+                "linear-gradient(135deg, #1565C0 0%, #1E88E5 100%)",
+              ];
               const displayName = item.user?.arabicName || item.user?.name || t("مشارك", "Participant", "Participant");
               const initial = displayName.charAt(0);
               const courseName = item.course?.titleAr || "";
+              const jobTitle = item._jobTitle || t("مشارك في الدورة", "Participant au cours", "Course participant");
               
               return (
                 <div
                   key={item.review.id}
-                  className="group relative bg-white rounded-2xl p-8 transition-all duration-500 hover:-translate-y-2 border border-gray-100"
+                  className="group relative bg-white p-8 lg:p-9 transition-all duration-500 ease-out hover:-translate-y-3 cursor-default"
                   style={{
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
+                    borderRadius: "20px",
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.02)",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.08), 0 0 0 1px ${accentColor}15`;
-                    e.currentTarget.style.borderColor = `${accentColor}30`;
+                    e.currentTarget.style.boxShadow = `0 12px 40px rgba(0,0,0,0.08), 0 20px 60px rgba(0,0,0,0.04), 0 0 0 2px ${accentColor}20`;
+                    e.currentTarget.style.borderColor = `${accentColor}35`;
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)";
-                    e.currentTarget.style.borderColor = "rgb(243,244,246)";
+                    e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.02)";
+                    e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)";
                   }}
                 >
-                  {/* Decorative top accent line */}
-                  <div className="absolute top-0 right-8 left-8 h-1 rounded-b-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}60)` }} />
+                  {/* Decorative accent line on top */}
+                  <div 
+                    className="absolute top-0 rounded-t-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{ 
+                      left: 0, right: 0, height: "3px",
+                      background: `linear-gradient(90deg, ${accentColor}, ${accentColor}80, ${accentColor}40)`,
+                    }} 
+                  />
 
-                  {/* Quote icon */}
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-5" style={{ background: accentLight }}>
-                    <Quote className="w-5 h-5" style={{ color: accentColor }} />
+                  {/* Quote icon - elegant corner placement */}
+                  <div className="absolute top-6 left-6" style={{ transform: language === "ar" ? "none" : "scaleX(-1)" }}>
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accentColor}08, ${accentColor}04)` }}>
+                      <Quote className="w-6 h-6 opacity-40" style={{ color: accentColor }} />
+                    </div>
                   </div>
 
-                  {/* Stars */}
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: item.review.rating }).map((_: any, s: number) => (
-                      <Star key={s} className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />
+                  {/* 5 Golden Stars */}
+                  <div className="flex gap-1 mb-6 mt-2">
+                    {Array.from({ length: 5 }).map((_: any, s: number) => (
+                      <Star 
+                        key={s} 
+                        className="w-[18px] h-[18px] fill-current transition-transform duration-300" 
+                        style={{ 
+                          color: s < (item.review.rating || 5) ? "#F59E0B" : "#E5E7EB",
+                          transitionDelay: `${s * 50}ms`,
+                        }} 
+                      />
                     ))}
                   </div>
 
-                  {/* Review Text */}
-                  <p className="text-gray-600 leading-[1.8] mb-6 text-[15px]" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
-                    "{item.review.comment}"
+                  {/* Review Text - Almarai 16px */}
+                  <p 
+                    className="text-gray-600 leading-[1.9] mb-7" 
+                    style={{ 
+                      fontFamily: "'Almarai', 'Cairo', sans-serif", 
+                      fontSize: "16px",
+                      lineHeight: "1.9",
+                    }}
+                  >
+                    <span className="text-xl font-bold opacity-30" style={{ color: accentColor }}>"</span>
+                    {item.review.comment}
+                    <span className="text-xl font-bold opacity-30" style={{ color: accentColor }}>"</span>
                   </p>
 
                   {/* Course badge */}
                   {courseName && (
-                    <div className="mb-5">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: accentLight, color: accentColor }}>
-                        <Sparkles className="w-3 h-3" />
+                    <div className="mb-7">
+                      <span 
+                        className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide"
+                        style={{ 
+                          background: `${accentColor}08`, 
+                          color: accentColor,
+                          border: `1px solid ${accentColor}15`,
+                        }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
                         {courseName}
                       </span>
                     </div>
                   )}
 
-                  {/* Divider */}
-                  <div className="border-t border-gray-100 pt-5">
-                    <div className="flex items-center gap-3">
-                      {/* Avatar */}
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}BB)` }}>
+                  {/* Divider + Teacher Profile */}
+                  <div className="border-t border-gray-100/80 pt-6">
+                    <div className="flex items-center gap-4">
+                      {/* Circular Avatar - 60px */}
+                      <div 
+                        className="w-[60px] h-[60px] rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0 shadow-lg transition-transform duration-300 group-hover:scale-110"
+                        style={{ 
+                          background: item._avatarBg || avatarGradients[i % 3],
+                          boxShadow: `0 4px 14px ${accentColor}30`,
+                        }}
+                      >
                         {initial}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 text-sm truncate" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                        {/* Bold Name */}
+                        <p className="font-extrabold text-gray-900 text-[15px] truncate" style={{ fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
                           {displayName}
                         </p>
-                        <p className="text-gray-400 text-xs truncate">
-                          {t("مشارك في الدورة", "Participant au cours", "Course participant")}
+                        {/* Gray Job Title */}
+                        <p className="text-gray-400 text-[13px] mt-0.5 truncate" style={{ fontFamily: "'Almarai', sans-serif" }}>
+                          {jobTitle}
                         </p>
                       </div>
                     </div>
@@ -1401,27 +1453,55 @@ export default function Home() {
             })}
           </div>
 
-          {/* Trust bar */}
-          <div className="mt-14 flex flex-wrap justify-center items-center gap-8 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(26,35,126,0.06)" }}>
-                <Users className="w-4 h-4" style={{ color: "#1A237E" }} />
+          {/* Trust Metrics Bar */}
+          <div className="mt-20 py-8 px-6 rounded-2xl" style={{ background: "linear-gradient(135deg, rgba(26,35,126,0.03), rgba(21,101,192,0.02))" }}>
+            <div className="flex flex-wrap justify-center items-center gap-10 lg:gap-16">
+              {/* Metric 1 */}
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1A237E10, #1A237E05)" }}>
+                  <Users className="w-5 h-5" style={{ color: "#1A237E" }} />
+                </div>
+                <div>
+                  <p className="font-extrabold text-lg" style={{ color: "#1A237E", fontFamily: "'Cairo', sans-serif" }}>+5000</p>
+                  <p className="text-gray-400 text-xs" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("مدرّس تونسي", "enseignants tunisiens", "Tunisian teachers")}</p>
+                </div>
               </div>
-              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("+5000 مدرّس تونسي", "+5000 enseignants tunisiens", "+5000 Tunisian teachers")}</span>
-            </div>
-            <div className="hidden sm:block w-px h-6 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,109,0,0.06)" }}>
-                <Star className="w-4 h-4 fill-current" style={{ color: "#FF6D00" }} />
+              {/* Divider */}
+              <div className="hidden md:block w-px h-12 bg-gray-200/60" />
+              {/* Metric 2 */}
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FF6D0010, #FF6D0005)" }}>
+                  <Star className="w-5 h-5 fill-current" style={{ color: "#F59E0B" }} />
+                </div>
+                <div>
+                  <p className="font-extrabold text-lg" style={{ color: "#FF6D00", fontFamily: "'Cairo', sans-serif" }}>4.9/5</p>
+                  <p className="text-gray-400 text-xs" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("تقييم المشاركين", "Note des participants", "Participant rating")}</p>
+                </div>
               </div>
-              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("تقييم 4.9/5 من المشاركين", "Note 4.9/5 des participants", "4.9/5 participant rating")}</span>
-            </div>
-            <div className="hidden sm:block w-px h-6 bg-gray-200" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(21,101,192,0.06)" }}>
-                <Shield className="w-4 h-4" style={{ color: "#1565C0" }} />
+              {/* Divider */}
+              <div className="hidden md:block w-px h-12 bg-gray-200/60" />
+              {/* Metric 3 */}
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #1565C010, #1565C005)" }}>
+                  <Shield className="w-5 h-5" style={{ color: "#1565C0" }} />
+                </div>
+                <div>
+                  <p className="font-extrabold text-lg" style={{ color: "#1565C0", fontFamily: "'Cairo', sans-serif" }}>98%</p>
+                  <p className="text-gray-400 text-xs" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("نسبة الرضا", "Taux de satisfaction", "Satisfaction rate")}</p>
+                </div>
               </div>
-              <span style={{ fontFamily: "'Almarai', sans-serif" }}>{t("98% نسبة الرضا", "98% taux de satisfaction", "98% satisfaction rate")}</span>
+              {/* Divider */}
+              <div className="hidden md:block w-px h-12 bg-gray-200/60" />
+              {/* Metric 4 */}
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4CAF5010, #4CAF5005)" }}>
+                  <Award className="w-5 h-5" style={{ color: "#4CAF50" }} />
+                </div>
+                <div>
+                  <p className="font-extrabold text-lg" style={{ color: "#4CAF50", fontFamily: "'Cairo', sans-serif" }}>12</p>
+                  <p className="text-gray-400 text-xs" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("برنامج تدريبي معتمد", "Programmes certifiés", "Certified programs")}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
