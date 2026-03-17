@@ -775,6 +775,23 @@ export default function EduGPTAssistantEnhanced() {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
+  // Detect text direction: returns 'rtl' for Arabic/Hebrew, 'ltr' for Latin
+  const detectDirection = (text: string): 'rtl' | 'ltr' => {
+    // Check first meaningful character (skip spaces, numbers, punctuation)
+    const stripped = text.replace(/[\s\d.,;:!?'"()\[\]{}\-\/\\@#$%^&*_+=<>~`|]/g, '');
+    if (!stripped) return 'rtl'; // default to RTL for empty
+    const firstChar = stripped.codePointAt(0) || 0;
+    // Arabic: 0600-06FF, 0750-077F, 08A0-08FF, FB50-FDFF, FE70-FEFF
+    // Hebrew: 0590-05FF
+    const isRTL = (firstChar >= 0x0600 && firstChar <= 0x06FF) ||
+                  (firstChar >= 0x0750 && firstChar <= 0x077F) ||
+                  (firstChar >= 0x08A0 && firstChar <= 0x08FF) ||
+                  (firstChar >= 0xFB50 && firstChar <= 0xFDFF) ||
+                  (firstChar >= 0xFE70 && firstChar <= 0xFEFF) ||
+                  (firstChar >= 0x0590 && firstChar <= 0x05FF);
+    return isRTL ? 'rtl' : 'ltr';
+  };
+
   const formatDate = (dateString: string | Date): string => {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
     const now = new Date();
@@ -1289,37 +1306,55 @@ export default function EduGPTAssistantEnhanced() {
           )}
         
 
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === "user" ? "justify-start" : "justify-end"}`}
-            >
-              <Card className={`max-w-3xl p-4 ${
-                message.role === "user" 
-                  ? "bg-white border-gray-200" 
-                  : "bg-blue-600 text-white border-blue-600"
-              }`}>
-                {message.attachments && message.attachments.length > 0 && (
-                  <div className="mb-3 space-y-2">
-                    {message.attachments.map((file, fileIndex) => (
-                      <div key={fileIndex} className="flex items-center gap-2 text-sm">
-                        {getFileIcon(file.type)}
-                        <span className="font-medium">{file.name}</span>
-                        <span className="text-xs opacity-70">({formatFileSize(file.size)})</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="prose prose-sm max-w-none" dir="rtl">
-                  <Streamdown>{message.content}</Streamdown>
+          {messages.map((message, index) => {
+            const msgDir = detectDirection(message.content);
+            const isUser = message.role === "user";
+            const isRTL = msgDir === 'rtl';
+            return (
+              <div
+                key={index}
+                className={`flex items-end gap-2 ${isUser ? (isRTL ? 'justify-start flex-row' : 'justify-start flex-row-reverse') : (isRTL ? 'justify-end flex-row-reverse' : 'justify-end flex-row')}`}
+              >
+                {/* Avatar */}
+                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                  isUser ? 'bg-gray-200 text-gray-600' : 'bg-blue-100 text-blue-600'
+                }`}>
+                  {isUser ? '👤' : '🤖'}
                 </div>
-              </Card>
-            </div>
-          ))}
+                <Card className={`max-w-3xl p-4 chat-bubble ${
+                  isUser 
+                    ? "bg-white border-gray-200" 
+                    : "bg-blue-600 text-white border-blue-600"
+                }`} dir="auto">
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="mb-3 space-y-2">
+                      {message.attachments.map((file, fileIndex) => (
+                        <div key={fileIndex} className="flex items-center gap-2 text-sm" dir="auto">
+                          {getFileIcon(file.type)}
+                          <span className="font-medium">{file.name}</span>
+                          <span className="text-xs opacity-70">({formatFileSize(file.size)})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="prose prose-sm max-w-none" dir="auto" style={{ textAlign: 'start' }}>
+                    <Streamdown>{message.content}</Streamdown>
+                  </div>
+                  {/* Timestamp */}
+                  <div className={`text-xs mt-2 opacity-50 ${isUser ? '' : 'text-blue-100'}`} dir="ltr" style={{ textAlign: isRTL ? 'left' : 'right' }}>
+                    {new Date(message.timestamp).toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </Card>
+              </div>
+            );
+          })}
 
           {isLoading && (
-            <div className="flex justify-end">
-              <Card className="max-w-3xl p-4 bg-blue-600 text-white border-blue-600">
+            <div className="flex items-end gap-2 justify-end flex-row-reverse">
+              <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-blue-100 text-blue-600">
+                🤖
+              </div>
+              <Card className="max-w-3xl p-4 bg-blue-600 text-white border-blue-600 chat-bubble" dir="auto">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>جاري الكتابة...</span>
@@ -1397,7 +1432,7 @@ export default function EduGPTAssistantEnhanced() {
             </div>
           )}
 
-          <div className="flex gap-2 items-end">
+          <div className={`flex gap-2 items-end ${detectDirection(input) === 'ltr' ? 'flex-row' : 'flex-row-reverse'}`} dir="auto">
             <input
               ref={fileInputRef}
               type="file"
@@ -1408,24 +1443,6 @@ export default function EduGPTAssistantEnhanced() {
             />
             <Button
               size="icon"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              className="shrink-0 h-10 w-10"
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t.placeholder}
-              className="flex-1 min-h-[44px] max-h-[160px] resize-none text-sm"
-              disabled={isLoading}
-            />
-            <Button
-              size="icon"
               onClick={handleSend}
               disabled={(!input.trim() && attachedFiles.length === 0) || isLoading}
               className="bg-blue-600 hover:bg-blue-700 shrink-0 h-10 w-10"
@@ -1433,8 +1450,28 @@ export default function EduGPTAssistantEnhanced() {
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Send className="h-4 w-4" />
+                <Send className={`h-4 w-4 ${detectDirection(input) === 'ltr' ? '' : 'rotate-180'}`} />
               )}
+            </Button>
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t.placeholder}
+              dir="auto"
+              className="flex-1 min-h-[44px] max-h-[160px] resize-none text-sm chat-input-bidi"
+              style={{ textAlign: 'start' }}
+              disabled={isLoading}
+            />
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading}
+              className="shrink-0 h-10 w-10"
+            >
+              <Paperclip className="h-4 w-4" />
             </Button>
           </div>
         </div>

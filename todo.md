@@ -2777,3 +2777,10 @@
 - [x] Tool 11: مُقيِّم الفيديو التعليمي (Video Evaluator) — ToolPageHeader
 - [x] Created reusable ToolPageHeader component for complex multi-view tools
 - [x] EduGPT Assistant kept with original chat UI (not applicable for tool layout)
+
+## Fix: Bidirectional Text (BiDi) in Chat Interface
+- [x] Add dir='auto' to chat bubbles and input field
+- [x] Replace text-align:right with text-align:start
+- [x] Dynamic bubble tail and avatar positioning based on text direction
+- [x] Input field: send/attachment icons adapt to text direction
+- [x] Typography fallback: Inter font for English text alongside Almarai
