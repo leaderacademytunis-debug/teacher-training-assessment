@@ -62,42 +62,156 @@ const NAV_LINKS: { href: string; labelAr: string; labelFr: string; labelEn: stri
   { href: "/pricing", labelAr: "الأسعار", labelFr: "Tarifs", labelEn: "Pricing", adminOnly: false, authOnly: false, icon: DollarSign },
 ];
 
-const FEATURES = [
+// Smart Grid: 11 AI Tool Cards for Features Section
+const SMART_TOOLS: {
+  href: string;
+  icon: LucideIcon;
+  titleAr: string; titleFr: string; titleEn: string;
+  descAr: string; descFr: string; descEn: string;
+  gradient: string;
+  iconBg: string;
+  badge?: { ar: string; fr: string; en: string; color: string };
+  featured?: boolean;
+}[] = [
   {
+    href: "/assistant",
+    icon: Bot,
+    titleAr: "تحضير الدروس الفوري",
+    titleFr: "Préparation instantanée",
+    titleEn: "Instant Lesson Prep",
+    descAr: "أنشئ خطة درس كاملة وفق المنهج التونسي في ثوانٍ مع جذاذات جاهزة للطباعة",
+    descFr: "Créez un plan de cours complet selon le programme tunisien en secondes",
+    descEn: "Create a complete lesson plan following the Tunisian curriculum in seconds",
+    gradient: "from-blue-600 to-indigo-700",
+    iconBg: "rgba(26,35,126,0.08)",
+    badge: { ar: "الأكثر استخداماً", fr: "Le plus utilisé", en: "Most Popular", color: "#FF6D00" },
+    featured: true,
+  },
+  {
+    href: "/exam-builder",
+    icon: FileEdit,
+    titleAr: "بنك التقييمات الذكي",
+    titleFr: "Banque d'évaluations IA",
+    titleEn: "Smart Assessment Bank",
+    descAr: "توليد اختبارات وتمارين بيداغوجية دقيقة بمختلف المستويات مع جدول التقييم",
+    descFr: "Générez des examens et exercices pédagogiques précis avec barème",
+    descEn: "Generate precise pedagogical exams and exercises with grading rubric",
+    gradient: "from-orange-500 to-red-500",
+    iconBg: "rgba(255,109,0,0.08)",
+    badge: { ar: "AI Powered", fr: "AI Powered", en: "AI Powered", color: "#1A237E" },
+    featured: true,
+  },
+  {
+    href: "/inspector",
+    icon: Search,
+    titleAr: "المتفقد الذكي",
+    titleFr: "Inspecteur IA",
+    titleEn: "AI Inspector",
+    descAr: "تحليل وتقييم الوثائق التربوية وفق المعايير الرسمية التونسية بدقة متناهية",
+    descFr: "Analysez et évaluez les documents pédagogiques selon les normes officielles",
+    descEn: "Analyze and evaluate pedagogical documents per official Tunisian standards",
+    gradient: "from-emerald-500 to-teal-600",
+    iconBg: "rgba(16,185,129,0.08)",
+  },
+  {
+    href: "/visual-studio",
+    icon: Palette,
+    titleAr: "استوديو الصور التعليمية",
+    titleFr: "Studio visuel IA",
+    titleEn: "Visual Studio",
+    descAr: "توليد صور تعليمية وإنفوغرافيك احترافي بالذكاء الاصطناعي لإثراء دروسك",
+    descFr: "Générez des images éducatives et infographies professionnelles avec l'IA",
+    descEn: "Generate professional educational images and infographics with AI",
+    gradient: "from-purple-500 to-pink-500",
+    iconBg: "rgba(168,85,247,0.08)",
+    badge: { ar: "جديد", fr: "Nouveau", en: "New", color: "#9333EA" },
+  },
+  {
+    href: "/blind-grading",
+    icon: FileCheck,
+    titleAr: "مساعد التصحيح الأعمى",
+    titleFr: "Correction aveugle IA",
+    titleEn: "Blind Grading Assistant",
+    descAr: "تصحيح ذكي لأوراق التلاميذ حسب المعايير التونسية مع تقارير مفصلة",
+    descFr: "Correction intelligente des copies selon les critères tunisiens",
+    descEn: "AI-powered student paper grading with Tunisian criteria",
+    gradient: "from-cyan-500 to-blue-500",
+    iconBg: "rgba(6,182,212,0.08)",
+    badge: { ar: "حصري", fr: "Exclusif", en: "Exclusive", color: "#0891B2" },
+  },
+  {
+    href: "/curriculum-map",
+    icon: Navigation,
+    titleAr: "خريطة المنهج الذكية",
+    titleFr: "GPS du programme",
+    titleEn: "Curriculum GPS",
+    descAr: "تتبع تقدمك في تغطية المنهج الدراسي بذكاء مع تحليلات مفصلة",
+    descFr: "Suivez votre progression dans le programme scolaire intelligemment",
+    descEn: "Track your curriculum coverage progress intelligently",
+    gradient: "from-sky-500 to-blue-600",
+    iconBg: "rgba(14,165,233,0.08)",
+  },
+  {
+    href: "/legacy-digitizer",
+    icon: ScanLine,
+    titleAr: "رقمنة الوثائق التعليمية",
+    titleFr: "Numérisation IA",
+    titleEn: "Legacy Digitizer",
+    descAr: "مسح ورقمنة الوثائق التعليمية القديمة وتحويلها لصيغ رقمية قابلة للتعديل",
+    descFr: "Numérisez les anciens documents pédagogiques en formats éditables",
+    descEn: "Scan and digitize old educational documents into editable formats",
+    gradient: "from-amber-500 to-orange-500",
+    iconBg: "rgba(245,158,11,0.08)",
+  },
+  {
+    href: "/drama-engine",
+    icon: Theater,
+    titleAr: "محرك الدراما التعليمية",
+    titleFr: "Moteur de théâtre éducatif",
+    titleEn: "Drama Engine",
+    descAr: "حوّل دروسك إلى مسرحيات تفاعلية مع توزيع الأدوار والحوارات والوسائل",
+    descFr: "Transformez vos leçons en pièces de théâtre interactives",
+    descEn: "Transform lessons into interactive classroom plays",
+    gradient: "from-rose-500 to-red-500",
+    iconBg: "rgba(244,63,94,0.08)",
+    badge: { ar: "جديد", fr: "Nouveau", en: "New", color: "#E11D48" },
+  },
+  {
+    href: "/handwriting-analyzer",
     icon: Brain,
-    color: "from-blue-500 to-indigo-600",
-    bg: "bg-blue-50",
-    titleAr: "ذكاء اصطناعي تربوي",
-    titleFr: "IA pédagogique",
-    descAr: "مساعد ذكي يُعدّ الجذاذات والمخططات وفق البرامج الرسمية التونسية 2026",
-    descFr: "Assistant IA qui prépare fiches et plannings selon les programmes officiels tunisiens 2026",
+    titleAr: "محلل خط اليد الذكي",
+    titleFr: "Analyseur d'écriture IA",
+    titleEn: "Handwriting Analyzer",
+    descAr: "تحليل خط يد التلميذ للكشف المبكر عن صعوبات واضطرابات التعلم",
+    descFr: "Analysez l'écriture pour détecter les troubles d'apprentissage",
+    descEn: "Analyze handwriting to detect learning difficulties",
+    gradient: "from-violet-500 to-purple-600",
+    iconBg: "rgba(139,92,246,0.08)",
   },
   {
-    icon: ClipboardCheck,
-    color: "from-orange-500 to-red-500",
-    bg: "bg-orange-50",
-    titleAr: "تقييم فوري للمكتسبات",
-    titleFr: "Évaluation instantanée",
-    descAr: "اختبارات تفاعلية ذكية مع تقارير مفصلة وشهادات معتمدة",
-    descFr: "Tests interactifs intelligents avec rapports détaillés et certificats accrédités",
+    href: "/marketplace",
+    icon: Store,
+    titleAr: "سوق المحتوى الذهبي",
+    titleFr: "Marché du contenu",
+    titleEn: "Content Marketplace",
+    descAr: "سوق مجتمعي لمشاركة وتحميل أفضل المحتويات التعليمية من معلمين تونسيين",
+    descFr: "Marché communautaire pour partager le meilleur contenu éducatif",
+    descEn: "Community marketplace for sharing best educational content",
+    gradient: "from-yellow-500 to-amber-500",
+    iconBg: "rgba(234,179,8,0.08)",
   },
   {
-    icon: Zap,
-    color: "from-purple-500 to-pink-500",
-    bg: "bg-purple-50",
-    titleAr: "توليد المحتوى التعليمي",
-    titleFr: "Génération de contenu",
-    descAr: "إنشاء مذكرات الدروس، التوزيعات السنوية، وورقات التقييم في ثوانٍ",
-    descFr: "Créez fiches de cours, plannings annuels et feuilles d'évaluation en secondes",
-  },
-  {
-    icon: Shield,
-    color: "from-green-500 to-teal-500",
-    bg: "bg-green-50",
-    titleAr: "مصادقة رسمية",
-    titleFr: "Certification officielle",
-    descAr: "شهادات معتمدة من Leader Academy تُثبت كفاءتك في توظيف الذكاء الاصطناعي",
-    descFr: "Certificats accrédités par Leader Academy prouvant votre maîtrise de l'IA",
+    href: "/video-evaluator",
+    icon: Film,
+    titleAr: "مُقيِّم الفيديو التعليمي",
+    titleFr: "Évaluateur vidéo IA",
+    titleEn: "Video Evaluator",
+    descAr: "تقييم الفيديوهات التعليمية وتحسين هندسة الأوامر (Prompt Engineering)",
+    descFr: "Évaluez les vidéos éducatives et améliorez le Prompt Engineering",
+    descEn: "Evaluate educational videos and improve Prompt Engineering",
+    gradient: "from-indigo-500 to-blue-600",
+    iconBg: "rgba(99,102,241,0.08)",
+    badge: { ar: "جديد", fr: "Nouveau", en: "New", color: "#6366F1" },
   },
 ];
 
@@ -840,38 +954,89 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== FEATURES SECTION ===== */}
-      <section className="py-20" style={{ background: "#F8F9FF" }}>
+      {/* ===== SMART TOOLS GRID SECTION ===== */}
+      <section className="py-20 lg:py-24" style={{ background: "#F9FAFB" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
           <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium mb-4" style={{ background: "rgba(26,35,126,0.08)", color: "#1A237E" }}>
-              <Sparkles className="w-4 h-4" />
-              <span>لماذا Leader Academy؟</span>
+            <div className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold mb-5" style={{ background: "rgba(26,35,126,0.06)", color: "#1A237E" }}>
+              <Sparkles className="w-4 h-4" style={{ color: "#FF6D00" }} />
+              <span>{t("لماذا Leader Academy؟", "Pourquoi Leader Academy ?", "Why Leader Academy?")}</span>
             </div>
-            <h2 className="text-4xl font-black mb-4" style={{ color: "#1A237E", fontFamily: "Cairo, sans-serif" }}>
-              أدوات الذكاء الاصطناعي للمدرّس التونسي
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold mb-5 leading-tight" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+              {t(
+                "11 أداة ذكاء اصطناعي للمدرّس التونسي",
+                "11 outils IA pour l'enseignant tunisien",
+                "11 AI Tools for the Tunisian Teacher"
+              )}
             </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              كل ما تحتاجه لتحويل تجربتك التدريسية في مكان واحد — مصمّم خصيصاً للمنظومة التربوية التونسية
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+              {t(
+                "كل ما تحتاجه لتحويل تجربتك التدريسية في مكان واحد — مصمّم خصيصاً للمنظومة التربوية التونسية",
+                "Tout ce dont vous avez besoin pour transformer votre expérience d'enseignement — conçu pour le système éducatif tunisien",
+                "Everything you need to transform your teaching experience — designed for the Tunisian educational system"
+              )}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map((feat, i) => {
-              const Icon = feat.icon;
+
+          {/* Smart Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {SMART_TOOLS.map((tool, i) => {
+              const Icon = tool.icon;
               return (
-                <div key={i} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 bg-gradient-to-br ${feat.color}`}>
-                    <Icon className="w-7 h-7 text-white" />
+                <Link key={i} href={tool.href}>
+                  <div className={`group relative bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer h-full ${
+                    tool.featured ? "ring-1 ring-gray-200 hover:ring-[#1A237E]/20" : ""
+                  }`} style={{ borderRadius: "16px" }}>
+                    {/* Badge */}
+                    {tool.badge && (
+                      <div className="absolute -top-3 left-5 rtl:left-auto rtl:right-5">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-md" style={{ background: tool.badge.color }}>
+                          <Sparkles className="w-3 h-3" />
+                          {t(tool.badge.ar, tool.badge.fr, tool.badge.en)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Icon */}
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg`} style={{ background: tool.iconBg }}>
+                      <Icon className={`w-7 h-7 transition-colors duration-300`} style={{ color: tool.gradient.includes("blue") ? "#1A237E" : tool.gradient.includes("orange") ? "#FF6D00" : tool.gradient.includes("emerald") ? "#059669" : tool.gradient.includes("purple") ? "#9333EA" : tool.gradient.includes("cyan") ? "#0891B2" : tool.gradient.includes("sky") ? "#0284C7" : tool.gradient.includes("amber") ? "#D97706" : tool.gradient.includes("rose") ? "#E11D48" : tool.gradient.includes("violet") ? "#7C3AED" : tool.gradient.includes("yellow") ? "#CA8A04" : tool.gradient.includes("indigo") ? "#4F46E5" : "#1A237E" }} />
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-lg font-bold mb-2.5 transition-colors duration-200 group-hover:text-[#FF6D00]" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+                      {t(tool.titleAr, tool.titleFr, tool.titleEn)}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-gray-500 text-sm leading-relaxed mb-4" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+                      {t(tool.descAr, tool.descFr, tool.descEn)}
+                    </p>
+
+                    {/* Arrow link */}
+                    <div className="flex items-center gap-1.5 text-sm font-semibold transition-all duration-200 opacity-0 group-hover:opacity-100 translate-x-2 rtl:-translate-x-2 group-hover:translate-x-0 rtl:group-hover:translate-x-0" style={{ color: "#FF6D00" }}>
+                      <span>{t("افتح الأداة", "Ouvrir l'outil", "Open Tool")}</span>
+                      <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold mb-2" style={{ color: "#1A237E", fontFamily: "Cairo, sans-serif" }}>
-                    {language === "fr" ? feat.titleFr : feat.titleAr}
-                  </h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {language === "fr" ? feat.descFr : feat.descAr}
-                  </p>
-                </div>
+                </Link>
               );
             })}
+          </div>
+
+          {/* View All CTA */}
+          <div className="text-center mt-12">
+            <Link href="/teacher-tools">
+              <Button
+                size="lg"
+                variant="outline"
+                className="font-bold text-base px-8 h-12 rounded-xl border-2 hover:scale-[1.03] transition-all duration-200"
+                style={{ borderColor: "#1A237E", color: "#1A237E" }}
+              >
+                <Sparkles className="w-5 h-5 ml-2" style={{ color: "#FF6D00" }} />
+                {t("استكشف جميع الأدوات", "Explorer tous les outils", "Explore All Tools")}
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

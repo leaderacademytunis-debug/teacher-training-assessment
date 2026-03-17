@@ -2604,3 +2604,14 @@
 - [x] Border-radius 12px on all buttons and containers
 - [x] White background (#FFFFFF) with generous padding
 - [x] Update i18n-navbar tests to match new design (21/21 passing)
+
+## Homepage Redesign Phase 2: Features Section (Smart Grid)
+- [x] Redesign Features Section with 3-column grid (1-col mobile)
+- [x] Light gray background (#F9FAFB) for visual depth
+- [x] White card design with 16px border-radius and soft shadow
+- [x] Hover effect: card lifts up with increased shadow and icon color change
+- [x] 11 AI tool cards with SVG icons in brand color
+- [x] "AI Powered", "جديد", "حصري", "الأكثر استخداماً" badges on tools
+- [x] Equal margins and padding for visual balance
+- [x] Trilingual support (AR/FR/EN) for all card content
+- [x] All 21 i18n-navbar tests passing
