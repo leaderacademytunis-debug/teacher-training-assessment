@@ -46,6 +46,88 @@ const UI = {
       { label: "توزيع سنوي/فصلي", prompt: "أحتاج توزيعاً سنوياً/فصلياً (Répartition) للبرنامج" },
       { label: "تقييم بيداغوجي على 20", prompt: "قيّم هذه المذكرة على 20 وفق معايير وزارة التربية" },
     ],
+    // Tags
+    tagAll: "الكل",
+    tagNote: "📝 مذكرة",
+    tagEval: "✅ تقييم",
+    tagAnnual: "📅 توزيع سنوي",
+    tagExercises: "✏️ تمارين",
+    tagReview: "🔄 مراجعة",
+    tagReport: "📊 تقرير",
+    tagOther: "💡 أخرى",
+    // Quick actions
+    quickLessonPlan: "تحضير جذاذة",
+    quickLessonPlanPrompt: "أعدّ لي جذاذة درس مفصّلة وفق المعايير التونسية الرسمية",
+    quickExam: "إنشاء اختبار",
+    quickExamPrompt: "أنشئ اختباراً رسمياً بالسندات والتعليمات ومعايير التملك (مع1-مع4) وجدول التنقيط",
+    quickDrama: "سيناريو دراما",
+    quickDramaPrompt: "أنشئ سيناريو مسرحي تعليمي (دراما تربوية) لمدة 10 دقائق مع توزيع الأدوار",
+    // Export
+    exportBtn: "تصدير",
+    exportPdfFull: "PDF (محادثة كاملة)",
+    exportWordFull: "Word (محادثة كاملة)",
+    exportPdfClean: "PDF ✨ (مذكرة نظيفة)",
+    exportWordClean: "Word ✨ (مذكرة نظيفة)",
+    exportPrintPreview: "📄 معاينة الطباعة A4",
+    // Toasts
+    toastExportSuccess: "تم تصدير المحادثة بنجاح",
+    toastExportError: "خطأ في تصدير المحادثة",
+    toastCleanSuccess: "تم تصدير المذكرة النظيفة بنجاح ✔️",
+    toastCleanPdfError: "خطأ في تصدير PDF",
+    toastCleanWordError: "خطأ في تصدير Word",
+    toastExporting: "جاري تصدير المحادثة...",
+    toastCreatingClean: "جاري إنشاء المذكرة النظيفة...",
+    toastTemplateLoaded: "تم تحميل القالب",
+    toastConnectionError: "خطأ في الاتصال بالمساعد الذكي",
+    toastSaved: "تم حفظ المحادثة",
+    toastDeleted: "تم حذف المحادثة",
+    toastPinError: "خطأ في تثبيت المحادثة",
+    toastTagError: "خطأ في تحديث الوسوم",
+    toastFileTooLarge: "كبير جداً. الحد الأقصى 10 ميجابايت",
+    toastFileAnalyzeError: "تعذر تحليل الملف",
+    toastUploadError: "خطأ في رفع الملفات",
+    // Misc
+    typing: "جاري الكتابة...",
+    deleteConfirm: "هل أنت متأكد من حذف هذه المحادثة؟",
+    pinTitle: "تثبيت في الأعلى",
+    unpinTitle: "إلغاء التثبيت",
+    deleteTitle: "حذف",
+    loadingText: "جارٍ التحميل...",
+    renameTitle: "إعادة التسمية",
+    dateToday: "اليوم",
+    dateYesterday: "أمس",
+    dateDaysAgo: (d: number) => `منذ ${d} أيام`,
+    datePinned: "المثبتة",
+    dateOlder: "أقدم",
+    templateLoadPrompt: (name: string) => `أريد إعداد مذكرة بيداغوجية رسمية بناءً على القالب: "${name}"`,
+    fileContentLabel: (name: string) => `[محتوى الملف ${name}]:`,
+    // Welcome message
+    welcomeMessage: `مرحباً بك في **Leader Academy**! أنا **Leader Assistant**، مستشارك التعليمي الرقمي. أنا هنا لمساعدتك في إعداد الجذاذات، المخططات السنوية، ورقاق التقييم وفق البرامج الرسمية التونسية 2026.
+لأبدأ بمساعدتك بشكل أفضل، أخبرني:
+- **ما هي المادة التي تدرّسها؟** (مثال: الإيقاظ العلمي، الرياضيات، اللغة العربية...)
+- **ما هو المستوى الدراسي؟** (مثال: السنة الثالثة ابتدائي)
+أو أخبرني مباشرة بما تحتاجه وسأكون في خدمتك! 😊`,
+    // Subjects
+    subjects: [
+      "اللغة العربية", "اللغة الفرنسية", "اللغة الإنجليزية / English",
+      "الرياضيات", "العلوم", "التربية الإسلامية", "التربية المدنية",
+      "التاريخ", "الجغرافيا", "الفلسفة", "الفيزياء", "الكيمياء",
+      "الأحياء", "التكنولوجيا", "الفنون", "التربية البدنية", "أخرى",
+    ],
+    // Levels
+    levels: [
+      "السنة الأولى ابتدائي", "السنة الثانية ابتدائي", "السنة الثالثة ابتدائي",
+      "السنة الرابعة ابتدائي", "السنة الخامسة ابتدائي", "السنة السادسة ابتدائي",
+      "السنة السابعة إعدادي", "السنة الثامنة إعدادي", "السنة التاسعة إعدادي",
+      "السنة الأولى ثانوي", "السنة الثانية ثانوي", "السنة الثالثة ثانوي", "السنة الرابعة ثانوي",
+    ],
+    // Teaching language options
+    teachLangAr: "🇹🇳 عربية",
+    teachLangArDesc: "المواد بالعربية",
+    teachLangFr: "🇫🇷 Français",
+    teachLangFrDesc: "Matières en français",
+    teachLangEn: "🇬🇧 English",
+    teachLangEnDesc: "English subjects",
   },
   fr: {
     sidebarTitle: "Conversations",
@@ -76,6 +158,79 @@ const UI = {
       { label: "Répartition annuelle/trimestrielle", prompt: "J'ai besoin d'une répartition annuelle/trimestrielle du programme" },
       { label: "Évaluation pédagogique sur 20", prompt: "Évalue cette fiche sur 20 selon les critères du ministère de l'éducation" },
     ],
+    tagAll: "Tous",
+    tagNote: "📝 Fiche",
+    tagEval: "✅ Évaluation",
+    tagAnnual: "📅 Répartition",
+    tagExercises: "✏️ Exercices",
+    tagReview: "🔄 Révision",
+    tagReport: "📊 Rapport",
+    tagOther: "💡 Autre",
+    quickLessonPlan: "Préparer une fiche",
+    quickLessonPlanPrompt: "Prépare-moi une fiche de leçon détaillée selon les normes officielles tunisiennes",
+    quickExam: "Créer un examen",
+    quickExamPrompt: "Crée un examen officiel avec contextes, consignes, critères de maîtrise (C1-C4) et barème",
+    quickDrama: "Scénario dramatique",
+    quickDramaPrompt: "Crée un scénario de théâtre éducatif (drame pédagogique) de 10 minutes avec distribution des rôles",
+    exportBtn: "Exporter",
+    exportPdfFull: "PDF (conversation complète)",
+    exportWordFull: "Word (conversation complète)",
+    exportPdfClean: "PDF ✨ (fiche propre)",
+    exportWordClean: "Word ✨ (fiche propre)",
+    exportPrintPreview: "📄 Aperçu impression A4",
+    toastExportSuccess: "Conversation exportée avec succès",
+    toastExportError: "Erreur lors de l'exportation",
+    toastCleanSuccess: "Fiche propre exportée avec succès ✔️",
+    toastCleanPdfError: "Erreur d'exportation PDF",
+    toastCleanWordError: "Erreur d'exportation Word",
+    toastExporting: "Exportation en cours...",
+    toastCreatingClean: "Création de la fiche propre...",
+    toastTemplateLoaded: "Modèle chargé",
+    toastConnectionError: "Erreur de connexion à l'assistant",
+    toastSaved: "Conversation sauvegardée",
+    toastDeleted: "Conversation supprimée",
+    toastPinError: "Erreur d'épinglage",
+    toastTagError: "Erreur de mise à jour des tags",
+    toastFileTooLarge: "trop volumineux. Maximum 10 Mo",
+    toastFileAnalyzeError: "Impossible d'analyser le fichier",
+    toastUploadError: "Erreur de téléchargement",
+    typing: "En train d'écrire...",
+    deleteConfirm: "Êtes-vous sûr de vouloir supprimer cette conversation ?",
+    pinTitle: "Épingler en haut",
+    unpinTitle: "Désépingler",
+    deleteTitle: "Supprimer",
+    loadingText: "Chargement...",
+    renameTitle: "Renommer",
+    dateToday: "Aujourd'hui",
+    dateYesterday: "Hier",
+    dateDaysAgo: (d: number) => `Il y a ${d} jours`,
+    datePinned: "Épinglées",
+    dateOlder: "Plus anciennes",
+    templateLoadPrompt: (name: string) => `Je veux préparer une fiche pédagogique officielle basée sur le modèle : "${name}"`,
+    fileContentLabel: (name: string) => `[Contenu du fichier ${name}]:`,
+    welcomeMessage: `Bienvenue sur **Leader Academy** ! Je suis **Leader Assistant**, votre conseiller pédagogique numérique. Je suis là pour vous aider à préparer vos fiches, répartitions annuelles et évaluations selon les programmes officiels tunisiens 2026.
+Pour mieux vous aider, dites-moi :
+- **Quelle matière enseignez-vous ?** (ex : Éveil scientifique, Mathématiques, Arabe...)
+- **Quel niveau scolaire ?** (ex : 3ème année primaire)
+Ou dites-moi directement ce dont vous avez besoin ! 😊`,
+    subjects: [
+      "Arabe", "Français", "Anglais / English",
+      "Mathématiques", "Sciences", "Éducation islamique", "Éducation civique",
+      "Histoire", "Géographie", "Philosophie", "Physique", "Chimie",
+      "Biologie", "Technologie", "Arts", "Éducation physique", "Autre",
+    ],
+    levels: [
+      "1ère année primaire", "2ème année primaire", "3ème année primaire",
+      "4ème année primaire", "5ème année primaire", "6ème année primaire",
+      "7ème année (collège)", "8ème année (collège)", "9ème année (collège)",
+      "1ère année secondaire", "2ème année secondaire", "3ème année secondaire", "4ème année secondaire",
+    ],
+    teachLangAr: "🇹🇳 Arabe",
+    teachLangArDesc: "Matières en arabe",
+    teachLangFr: "🇫🇷 Français",
+    teachLangFrDesc: "Matières en français",
+    teachLangEn: "🇬🇧 English",
+    teachLangEnDesc: "English subjects",
   },
   en: {
     sidebarTitle: "Conversations",
@@ -106,6 +261,79 @@ const UI = {
       { label: "Annual/Term Distribution", prompt: "I need an annual/term distribution of the program" },
       { label: "Pedagogical Evaluation /20", prompt: "Evaluate this lesson plan out of 20 according to Ministry of Education criteria" },
     ],
+    tagAll: "All",
+    tagNote: "📝 Lesson Plan",
+    tagEval: "✅ Evaluation",
+    tagAnnual: "📅 Annual Plan",
+    tagExercises: "✏️ Exercises",
+    tagReview: "🔄 Review",
+    tagReport: "📊 Report",
+    tagOther: "💡 Other",
+    quickLessonPlan: "Prepare Lesson Plan",
+    quickLessonPlanPrompt: "Prepare a detailed lesson plan according to official Tunisian standards",
+    quickExam: "Create Exam",
+    quickExamPrompt: "Create an official exam with contexts, instructions, mastery criteria (C1-C4) and grading table",
+    quickDrama: "Drama Scenario",
+    quickDramaPrompt: "Create a 10-minute educational theatre scenario (pedagogical drama) with role distribution",
+    exportBtn: "Export",
+    exportPdfFull: "PDF (full conversation)",
+    exportWordFull: "Word (full conversation)",
+    exportPdfClean: "PDF ✨ (clean lesson plan)",
+    exportWordClean: "Word ✨ (clean lesson plan)",
+    exportPrintPreview: "📄 Print Preview A4",
+    toastExportSuccess: "Conversation exported successfully",
+    toastExportError: "Error exporting conversation",
+    toastCleanSuccess: "Clean lesson plan exported successfully ✔️",
+    toastCleanPdfError: "PDF export error",
+    toastCleanWordError: "Word export error",
+    toastExporting: "Exporting conversation...",
+    toastCreatingClean: "Creating clean lesson plan...",
+    toastTemplateLoaded: "Template loaded",
+    toastConnectionError: "Connection error with AI assistant",
+    toastSaved: "Conversation saved",
+    toastDeleted: "Conversation deleted",
+    toastPinError: "Error pinning conversation",
+    toastTagError: "Error updating tags",
+    toastFileTooLarge: "too large. Maximum 10 MB",
+    toastFileAnalyzeError: "Unable to analyze file",
+    toastUploadError: "File upload error",
+    typing: "Typing...",
+    deleteConfirm: "Are you sure you want to delete this conversation?",
+    pinTitle: "Pin to top",
+    unpinTitle: "Unpin",
+    deleteTitle: "Delete",
+    loadingText: "Loading...",
+    renameTitle: "Rename",
+    dateToday: "Today",
+    dateYesterday: "Yesterday",
+    dateDaysAgo: (d: number) => `${d} days ago`,
+    datePinned: "Pinned",
+    dateOlder: "Older",
+    templateLoadPrompt: (name: string) => `I want to prepare an official lesson plan based on the template: "${name}"`,
+    fileContentLabel: (name: string) => `[File content ${name}]:`,
+    welcomeMessage: `Welcome to **Leader Academy**! I'm **Leader Assistant**, your digital educational consultant. I'm here to help you prepare lesson plans, annual distributions, and assessments according to official Tunisian programs 2026.
+To better assist you, tell me:
+- **What subject do you teach?** (e.g., Science, Mathematics, Arabic...)
+- **What grade level?** (e.g., 3rd year primary)
+Or tell me directly what you need! 😊`,
+    subjects: [
+      "Arabic", "French", "English",
+      "Mathematics", "Science", "Islamic Education", "Civic Education",
+      "History", "Geography", "Philosophy", "Physics", "Chemistry",
+      "Biology", "Technology", "Arts", "Physical Education", "Other",
+    ],
+    levels: [
+      "1st Year Primary", "2nd Year Primary", "3rd Year Primary",
+      "4th Year Primary", "5th Year Primary", "6th Year Primary",
+      "7th Year (Middle)", "8th Year (Middle)", "9th Year (Middle)",
+      "1st Year Secondary", "2nd Year Secondary", "3rd Year Secondary", "4th Year Secondary",
+    ],
+    teachLangAr: "🇹🇳 Arabic",
+    teachLangArDesc: "Arabic subjects",
+    teachLangFr: "🇫🇷 French",
+    teachLangFrDesc: "French subjects",
+    teachLangEn: "🇬🇧 English",
+    teachLangEnDesc: "English subjects",
   },
 } as const;
 // ===== END TRANSLATIONS =====
@@ -140,62 +368,26 @@ interface Conversation {
   lastMessageAt: Date | string;
 }
 
-const SUBJECTS = [
-  "اللغة العربية",
-  "اللغة الفرنسية",
-  "اللغة الإنجليزية / English",
-  "الرياضيات",
-  "العلوم",
-  "التربية الإسلامية",
-  "التربية المدنية",
-  "التاريخ",
-  "الجغرافيا",
-  "الفلسفة",
-  "الفيزياء",
-  "الكيمياء",
-  "الأحياء",
-  "التكنولوجيا",
-  "الفنون",
-  "التربية البدنية",
-  "أخرى",
-];
+// SUBJECTS and LEVELS are now dynamic from t.subjects and t.levels
 
-// Map subjects to their teaching language for auto-detection
-const SUBJECT_LANGUAGE_MAP: Record<string, "arabic" | "french" | "english"> = {
-  "اللغة العربية": "arabic",
-  "اللغة الفرنسية": "french",
-  "اللغة الإنجليزية / English": "english",
-};
+// Map subject index to their teaching language for auto-detection
+const LANGUAGE_SUBJECT_INDICES = [0, 1, 2]; // Arabic, French, English are always first 3
+const LANGUAGE_MAP: ("arabic" | "french" | "english")[] = ["arabic", "french", "english"];
 
-const LEVELS = [
-  // ابتدائي (1ة إلى 6ة)
-  "السنة الأولى ابتدائي",
-  "السنة الثانية ابتدائي",
-  "السنة الثالثة ابتدائي",
-  "السنة الرابعة ابتدائي",
-  "السنة الخامسة ابتدائي",
-  "السنة السادسة ابتدائي",
-  // إعدادي (7ة إلى 9ة)
-  "السنة السابعة إعدادي",
-  "السنة الثامنة إعدادي",
-  "السنة التاسعة إعدادي",
-  // ثانوي (1ة إلى 4ة)
-  "السنة الأولى ثانوي",
-  "السنة الثانية ثانوي",
-  "السنة الثالثة ثانوي",
-  "السنة الرابعة ثانوي",
-];
+// LEVELS moved to t.levels
 
 // ===== PREDEFINED TAGS =====
-const PREDEFINED_TAGS = [
-  { label: "📝 مذكرة", value: "مذكرة", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  { label: "✅ تقييم", value: "تقييم", color: "bg-green-100 text-green-700 border-green-200" },
-  { label: "📅 توزيع سنوي", value: "توزيع سنوي", color: "bg-purple-100 text-purple-700 border-purple-200" },
-  { label: "✏️ تمارين", value: "تمارين", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  { label: "🔄 مراجعة", value: "مراجعة", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  { label: "📊 تقرير", value: "تقرير", color: "bg-pink-100 text-pink-700 border-pink-200" },
-  { label: "💡 أخرى", value: "أخرى", color: "bg-gray-100 text-gray-700 border-gray-200" },
+// PREDEFINED_TAGS are now dynamic from t.tagNote, t.tagEval, etc.
+const TAG_COLORS = [
+  "bg-blue-100 text-blue-700 border-blue-200",
+  "bg-green-100 text-green-700 border-green-200",
+  "bg-purple-100 text-purple-700 border-purple-200",
+  "bg-orange-100 text-orange-700 border-orange-200",
+  "bg-yellow-100 text-yellow-700 border-yellow-200",
+  "bg-pink-100 text-pink-700 border-pink-200",
+  "bg-gray-100 text-gray-700 border-gray-200",
 ];
+const TAG_VALUES = ["مذكرة", "تقييم", "توزيع سنوي", "تمارين", "مراجعة", "تقرير", "أخرى"];
 
 export default function EduGPTAssistantEnhanced() {
   const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
@@ -207,15 +399,34 @@ export default function EduGPTAssistantEnhanced() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
-  const [conversationTitle, setConversationTitle] = useState("محادثة جديدة");
+  const { language: globalLanguage, setLanguage } = useLanguage();
+  const t = UI[globalLanguage as keyof typeof UI] ?? UI.ar;
+  const [conversationTitle, setConversationTitle] = useState<string>(t.newConversation);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(() => {
     try { return localStorage.getItem('assistant_subject') || null; } catch { return null; }
   });
   const [selectedLevel, setSelectedLevel] = useState<string | null>(() => {
     try { return localStorage.getItem('assistant_level') || null; } catch { return null; }
   });
-  const { language: globalLanguage, setLanguage } = useLanguage();
-  const t = UI[globalLanguage as keyof typeof UI] ?? UI.ar;
+
+  // Dynamic translated arrays
+  const SUBJECTS = t.subjects as unknown as string[];
+  const LEVELS = t.levels as unknown as string[];
+  const PREDEFINED_TAGS = [
+    { label: t.tagNote, value: TAG_VALUES[0], color: TAG_COLORS[0] },
+    { label: t.tagEval, value: TAG_VALUES[1], color: TAG_COLORS[1] },
+    { label: t.tagAnnual, value: TAG_VALUES[2], color: TAG_COLORS[2] },
+    { label: t.tagExercises, value: TAG_VALUES[3], color: TAG_COLORS[3] },
+    { label: t.tagReview, value: TAG_VALUES[4], color: TAG_COLORS[4] },
+    { label: t.tagReport, value: TAG_VALUES[5], color: TAG_COLORS[5] },
+    { label: t.tagOther, value: TAG_VALUES[6], color: TAG_COLORS[6] },
+  ];
+
+  // Dynamic subject language map
+  const SUBJECT_LANGUAGE_MAP: Record<string, "arabic" | "french" | "english"> = {};
+  LANGUAGE_SUBJECT_INDICES.forEach((idx, i) => {
+    if (SUBJECTS[idx]) SUBJECT_LANGUAGE_MAP[SUBJECTS[idx]] = LANGUAGE_MAP[i];
+  });
   const [teachingLanguage, setTeachingLanguage] = useState<"arabic" | "french" | "english" | null>(() => {
     try {
       const saved = localStorage.getItem('assistant_teaching_language') as "arabic" | "french" | "english" | null;
@@ -264,20 +475,28 @@ export default function EduGPTAssistantEnhanced() {
     else setTeachingLanguage("arabic");
     // Build prompt from template fields
     const parts: string[] = [
-      `أريد إعداد مذكرة بيداغوجية رسمية بناءً على القالب: "${templateData.templateName}"`,
+      t.templateLoadPrompt(templateData.templateName),
     ];
-    if (templateData.subject) parts.push(`المادة: ${templateData.subject}`);
-    if (templateData.grade) parts.push(`المستوى: ${templateData.grade}`);
-    if (templateData.duration) parts.push(`المدة: ${templateData.duration} دقيقة`);
-    if (templateData.lessonObjectives) parts.push(`الأهداف التعلمية: ${templateData.lessonObjectives}`);
-    if (templateData.introduction) parts.push(`التمهيد: ${templateData.introduction}`);
-    if (templateData.evaluation) parts.push(`التقييم: ${templateData.evaluation}`);
+    // Template fields use teaching language context for LLM prompt
+    const subjectLabel = globalLanguage === 'fr' ? 'Matière' : globalLanguage === 'en' ? 'Subject' : 'المادة';
+    const gradeLabel = globalLanguage === 'fr' ? 'Niveau' : globalLanguage === 'en' ? 'Level' : 'المستوى';
+    const durationLabel = globalLanguage === 'fr' ? 'Durée' : globalLanguage === 'en' ? 'Duration' : 'المدة';
+    const durationUnit = globalLanguage === 'fr' ? 'minutes' : globalLanguage === 'en' ? 'minutes' : 'دقيقة';
+    const objectivesLabel = globalLanguage === 'fr' ? 'Objectifs' : globalLanguage === 'en' ? 'Objectives' : 'الأهداف التعلمية';
+    const introLabel = globalLanguage === 'fr' ? 'Introduction' : globalLanguage === 'en' ? 'Introduction' : 'التمهيد';
+    const evalLabel = globalLanguage === 'fr' ? 'Évaluation' : globalLanguage === 'en' ? 'Evaluation' : 'التقييم';
+    if (templateData.subject) parts.push(`${subjectLabel}: ${templateData.subject}`);
+    if (templateData.grade) parts.push(`${gradeLabel}: ${templateData.grade}`);
+    if (templateData.duration) parts.push(`${durationLabel}: ${templateData.duration} ${durationUnit}`);
+    if (templateData.lessonObjectives) parts.push(`${objectivesLabel}: ${templateData.lessonObjectives}`);
+    if (templateData.introduction) parts.push(`${introLabel}: ${templateData.introduction}`);
+    if (templateData.evaluation) parts.push(`${evalLabel}: ${templateData.evaluation}`);
     setInput(parts.join("\n"));
     // Remove templateId from URL without reload
     const url = new URL(window.location.href);
     url.searchParams.delete("templateId");
     window.history.replaceState({}, "", url.toString());
-    toast.success(`تم تحميل القالب: ${templateData.templateName}`);
+    toast.success(`${t.toastTemplateLoaded}: ${templateData.templateName}`);
   }, [templateData, templateLoaded]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -309,7 +528,7 @@ export default function EduGPTAssistantEnhanced() {
       }
     },
     onError: (error: any) => {
-      toast.error("خطأ في الاتصال بالمساعد الذكي");
+      toast.error(t.toastConnectionError);
       console.error(error);
       setIsLoading(false);
     },
@@ -319,7 +538,7 @@ export default function EduGPTAssistantEnhanced() {
     onSuccess: (data) => {
       setCurrentConversationId(data.id);
       refetchConversations();
-      toast.success("تم حفظ المحادثة");
+      toast.success(t.toastSaved);
     },
   });
 
@@ -332,7 +551,7 @@ export default function EduGPTAssistantEnhanced() {
   const deleteConversationMutation = trpc.assistant.deleteConversation.useMutation({
     onSuccess: () => {
       refetchConversations();
-      toast.success("تم حذف المحادثة");
+      toast.success(t.toastDeleted);
     },
   });
 
@@ -341,12 +560,12 @@ export default function EduGPTAssistantEnhanced() {
 
   const togglePinMutation = trpc.assistant.togglePinConversation.useMutation({
     onSuccess: () => refetchConversations(),
-    onError: () => toast.error("خطأ في تثبيت المحادثة"),
+    onError: () => toast.error(t.toastPinError),
   });
 
   const updateTagsMutation = trpc.assistant.updateConversationTags.useMutation({
     onSuccess: () => { refetchConversations(); setTagMenuConvId(null); },
-    onError: () => toast.error("خطأ في تحديث الوسوم"),
+    onError: () => toast.error(t.toastTagError),
   });
 
   // Lead notification mutation
@@ -407,7 +626,7 @@ export default function EduGPTAssistantEnhanced() {
   const saveCurrentConversation = async (msgs: Message[]) => {
     if (msgs.length === 0) return;
 
-    const title = conversationTitle === "محادثة جديدة" 
+    const title = (conversationTitle === t.newConversation || conversationTitle === "محادثة جديدة" || conversationTitle === "Nouvelle conversation" || conversationTitle === "New Conversation") 
       ? generateTitle(msgs[0].content)
       : conversationTitle;
 
@@ -481,20 +700,14 @@ export default function EduGPTAssistantEnhanced() {
   const buildWelcomeMessage = (): Message => ({
     role: "assistant",
     timestamp: Date.now(),
-    content: `مرحباً بك في **Leader Academy**! أنا **Leader Assistant**، مستشارك التعليمي الرقمي. أنا هنا لمساعدتك في إعداد الجذاذات، المخططات السنوية، ورقاق التقييم وفق البرامج الرسمية التونسية 2026.
-
-لأبدأ بمساعدتك بشكل أفضل، أخبرني:
-- **ما هي المادة التي تدرّسها؟** (مثال: الإيقاظ العلمي، الرياضيات، اللغة العربية...)
-- **ما هو المستوى الدراسي؟** (مثال: السنة الثالثة ابتدائي)
-
-أو أخبرني مباشرة بما تحتاجه وسأكون في خدمتك! 😊`,
+    content: t.welcomeMessage,
   });
 
   // Start new conversation
   const startNewConversation = () => {
     setMessages([buildWelcomeMessage()]);
     setCurrentConversationId(null);
-    setConversationTitle("محادثة جديدة");
+    setConversationTitle(t.newConversation);
     setAttachedFiles([]);
     setInput("");
     setSelectedSubject(null);
@@ -504,7 +717,7 @@ export default function EduGPTAssistantEnhanced() {
 
   // Delete conversation
   const deleteConversation = async (id: number) => {
-    if (confirm("هل أنت متأكد من حذف هذه المحادثة؟")) {
+    if (confirm(t.deleteConfirm)) {
       await deleteConversationMutation.mutateAsync({ id });
       if (currentConversationId === id) {
         startNewConversation();
@@ -524,7 +737,7 @@ export default function EduGPTAssistantEnhanced() {
       const file = files[i];
       
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`الملف ${file.name} كبير جداً. الحد الأقصى 10 ميجابايت`);
+        toast.error(`${file.name} ${t.toastFileTooLarge}`);
         continue;
       }
 
@@ -609,10 +822,10 @@ export default function EduGPTAssistantEnhanced() {
               fileUrl: uploadResult.url,
               mimeType: attachedFile.type,
             });
-            analyzedText += `\n\n[محتوى الملف ${attachedFile.name}]:\n${analysis.text}\n`;
+            analyzedText += `\n\n${t.fileContentLabel(attachedFile.name)}\n${analysis.text}\n`;
           } catch (error) {
             console.error("Error analyzing file:", error);
-            toast.error(`تعذر تحليل الملف ${attachedFile.name}`);
+            toast.error(`${t.toastFileAnalyzeError}: ${attachedFile.name}`);
           }
         }
       }
@@ -648,7 +861,7 @@ export default function EduGPTAssistantEnhanced() {
       });
     } catch (error) {
       console.error("Error uploading files:", error);
-      toast.error("خطأ في رفع الملفات");
+      toast.error(t.toastUploadError);
       setIsLoading(false);
     }
   };
@@ -664,10 +877,10 @@ export default function EduGPTAssistantEnhanced() {
     onSuccess: (data) => {
       // Download the file
       window.open(data.url, "_blank");
-      toast.success("تم تصدير المحادثة بنجاح");
+      toast.success(t.toastExportSuccess);
     },
     onError: () => {
-      toast.error("خطأ في تصدير المحادثة");
+      toast.error(t.toastExportError);
     },
   });
 
@@ -675,31 +888,31 @@ export default function EduGPTAssistantEnhanced() {
     onSuccess: (data) => {
       // Download the file
       window.open(data.url, "_blank");
-      toast.success("تم تصدير المحادثة بنجاح");
+      toast.success(t.toastExportSuccess);
     },
     onError: () => {
-      toast.error("خطأ في تصدير المحادثة");
+      toast.error(t.toastExportError);
     },
   });
 
   const exportCleanPDFMutation = trpc.assistant.exportCleanNotePDF.useMutation({
     onSuccess: (data) => {
       window.open(data.url, "_blank");
-      toast.success("تم تصدير المذكرة النظيفة بنجاح ✔️");
+      toast.success(t.toastCleanSuccess);
     },
     onError: (err) => {
       console.error("PDF export error:", err);
-      toast.error("خطأ في تصدير PDF: " + (err?.message || "خطأ غير معروف"));
+      toast.error(t.toastCleanPdfError + ": " + (err?.message || ""));
     },
   });
   const exportCleanWordMutation = trpc.assistant.exportCleanNoteWord.useMutation({
     onSuccess: (data) => {
       window.open(data.url, "_blank");
-      toast.success("تم تصدير المذكرة النظيفة بنجاح ✔️");
+      toast.success(t.toastCleanSuccess);
     },
     onError: (err) => {
       console.error("Word export error:", err);
-      toast.error("خطأ في تصدير Word: " + (err?.message || "خطأ غير معروف"));
+      toast.error(t.toastCleanWordError + ": " + (err?.message || ""));
     },
   });
 
@@ -718,7 +931,7 @@ export default function EduGPTAssistantEnhanced() {
   };
 
   const handleExportConfirm = async (meta: ExportMetadata) => {
-    toast.info("جاري إنشاء المذكرة النظيفة...");
+    toast.info(t.toastCreatingClean);
     const payload = {
       title: conversationTitle,
       messages,
@@ -743,7 +956,7 @@ export default function EduGPTAssistantEnhanced() {
   const exportAsPDF = async () => {
     if (messages.length === 0) return;
     
-    toast.info("جاري تصدير المحادثة...");
+    toast.info(t.toastExporting);
     await exportPDFMutation.mutateAsync({
       title: conversationTitle,
       messages,
@@ -755,7 +968,7 @@ export default function EduGPTAssistantEnhanced() {
   const exportAsWord = async () => {
     if (messages.length === 0) return;
     
-    toast.info("جاري تصدير المحادثة...");
+    toast.info(t.toastExporting);
     await exportWordMutation.mutateAsync({
       title: conversationTitle,
       messages,
@@ -798,10 +1011,11 @@ export default function EduGPTAssistantEnhanced() {
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     
-    if (days === 0) return "اليوم";
-    if (days === 1) return "أمس";
-    if (days < 7) return `منذ ${days} أيام`;
-    return date.toLocaleDateString("ar-TN");
+    if (days === 0) return t.dateToday;
+    if (days === 1) return t.dateYesterday;
+    if (days < 7) return t.dateDaysAgo(days);
+    const localeMap: Record<string, string> = { ar: 'ar-TN', fr: 'fr-TN', en: 'en-US' };
+    return date.toLocaleDateString(localeMap[globalLanguage] || 'ar-TN');
   };
 
   // Show loading spinner while permissions are loading
@@ -810,7 +1024,7 @@ export default function EduGPTAssistantEnhanced() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">جارٍ التحميل...</p>
+          <p className="text-gray-500 text-sm">{t.loadingText}</p>
         </div>
       </div>
     );
@@ -820,7 +1034,7 @@ export default function EduGPTAssistantEnhanced() {
   if (!hasEdugpt && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-        <LockedFeature requiredService="accessEdugpt" featureName="EDUGPT - المساعد التربوي الذكي">
+        <LockedFeature requiredService="accessEdugpt" featureName={t.welcomeTitle}>
           <div />
         </LockedFeature>
       </div>
@@ -873,7 +1087,7 @@ export default function EduGPTAssistantEnhanced() {
                   : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
               }`}
             >
-              الكل
+              {t.tagAll}
             </button>
             {PREDEFINED_TAGS.map((tag) => (
               <button
@@ -900,11 +1114,11 @@ export default function EduGPTAssistantEnhanced() {
               </div>
             )}
             {([
-              { label: "📌 مثبتة", items: groupedConversations.pinned, isPinnedGroup: true },
-              { label: "اليوم", items: groupedConversations.today, isPinnedGroup: false },
-              { label: "أمس", items: groupedConversations.yesterday, isPinnedGroup: false },
-              { label: "هذا الأسبوع", items: groupedConversations.thisWeek, isPinnedGroup: false },
-              { label: "أقدم", items: groupedConversations.older, isPinnedGroup: false },
+              { label: `📌 ${t.datePinned}`, items: groupedConversations.pinned, isPinnedGroup: true },
+              { label: t.dateToday, items: groupedConversations.today, isPinnedGroup: false },
+              { label: t.dateYesterday, items: groupedConversations.yesterday, isPinnedGroup: false },
+              { label: t.dateDaysAgo(7), items: groupedConversations.thisWeek, isPinnedGroup: false },
+              { label: t.dateOlder, items: groupedConversations.older, isPinnedGroup: false },
             ] as { label: string; items: typeof conversations; isPinnedGroup: boolean }[]).map(({ label, items, isPinnedGroup }) =>
               items.length > 0 ? (
                 <div key={label}>
@@ -1005,16 +1219,16 @@ export default function EduGPTAssistantEnhanced() {
                           <Button
                             size="sm" variant="ghost" className="h-7 w-7 p-0"
                             onClick={(e) => { e.stopPropagation(); togglePinMutation.mutate({ id: conv.id, isPinned: !conv.isPinned }); }}
-                            title={conv.isPinned ? "إلغاء التثبيت" : "تثبيت في الأعلى"}
+                            title={conv.isPinned ? t.unpinTitle : t.pinTitle}
                           >
                             {conv.isPinned
                               ? <PinOff className="h-3.5 w-3.5 text-amber-500" />
                               : <Pin className="h-3.5 w-3.5 text-gray-500" />}
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => startRenaming(conv, e)} title="إعادة التسمية">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => startRenaming(conv, e)} title={t.renameTitle}>
                             <Pencil className="h-3.5 w-3.5 text-gray-500" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }} title="حذف">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }} title={t.deleteTitle}>
                             <Trash2 className="h-3.5 w-3.5 text-red-500" />
                           </Button>
                         </div>
@@ -1094,33 +1308,33 @@ export default function EduGPTAssistantEnhanced() {
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" variant="outline" className="h-8 px-2 gap-1" disabled={messages.length === 0}>
                     <Download className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline text-xs">تصدير</span>
+                    <span className="hidden sm:inline text-xs">{t.exportBtn}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={exportAsPDF} disabled={messages.length === 0}>
                     <Download className="h-4 w-4 ml-2" />
-                    PDF (محادثة كاملة)
+                    {t.exportPdfFull}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={exportAsWord} disabled={messages.length === 0}>
                     <Download className="h-4 w-4 ml-2" />
-                    Word (محادثة كاملة)
+                    {t.exportWordFull}
                   </DropdownMenuItem>
                   {hasAssistantMessage && (
                     <>
                       <div className="border-t my-1" />
                       <DropdownMenuItem onClick={exportCleanAsPDF} disabled={exportCleanPDFMutation.isPending}>
                         {exportCleanPDFMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
-                        PDF ✨ (مذكرة نظيفة)
+                        {t.exportPdfClean}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={exportCleanAsWord} disabled={exportCleanWordMutation.isPending}>
                         {exportCleanWordMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
-                        Word ✨ (مذكرة نظيفة)
+                        {t.exportWordClean}
                       </DropdownMenuItem>
                       <div className="border-t my-1" />
                       <DropdownMenuItem onClick={() => setShowPrintPreview(true)}>
                         <FileText className="h-4 w-4 ml-2" />
-                        📄 معاينة الطباعة A4
+                        {t.exportPrintPreview}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -1257,7 +1471,7 @@ export default function EduGPTAssistantEnhanced() {
                   onClick={() => setShowContextSelector(false)}
                 >
                   {selectedSubject && selectedLevel
-                    ? t.confirmBtn(selectedSubject, selectedLevel, teachingLanguage === "french" ? "Français" : teachingLanguage === "english" ? "English" : teachingLanguage === "arabic" ? "عربية" : null)
+                    ? t.confirmBtn(selectedSubject, selectedLevel, teachingLanguage === "french" ? t.teachLangFr : teachingLanguage === "english" ? t.teachLangEn : teachingLanguage === "arabic" ? t.teachLangAr : null)
                     : t.selectFirst}
                 </Button>
               </div>
@@ -1342,7 +1556,7 @@ export default function EduGPTAssistantEnhanced() {
                   </div>
                   {/* Timestamp */}
                   <div className={`text-xs mt-2 opacity-50 ${isUser ? '' : 'text-blue-100'}`} dir="ltr" style={{ textAlign: isRTL ? 'left' : 'right' }}>
-                    {new Date(message.timestamp).toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(message.timestamp).toLocaleTimeString(globalLanguage === 'fr' ? 'fr-TN' : globalLanguage === 'en' ? 'en-US' : 'ar-TN', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </Card>
               </div>
@@ -1357,7 +1571,7 @@ export default function EduGPTAssistantEnhanced() {
               <Card className="max-w-3xl p-4 bg-blue-600 text-white border-blue-600 chat-bubble" dir="auto">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>جاري الكتابة...</span>
+                  <span>{t.typing}</span>
                 </div>
               </Card>
             </div>
@@ -1371,31 +1585,31 @@ export default function EduGPTAssistantEnhanced() {
               size="sm"
               variant="outline"
               className="gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-400 rounded-full px-4 h-8 text-xs font-semibold"
-              onClick={() => { setInput("أعدّ لي جذاذة درس مفصّلة وفق المعايير التونسية الرسمية"); }}
+              onClick={() => { setInput(t.quickLessonPlanPrompt); }}
               disabled={isLoading}
             >
               <BookOpen className="h-3.5 w-3.5" />
-              تحضير جذاذة
+              {t.quickLessonPlan}
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="gap-1.5 border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-400 rounded-full px-4 h-8 text-xs font-semibold"
-              onClick={() => { setInput("أنشئ اختباراً رسمياً بالسندات والتعليمات ومعايير التملك (مع1-مع4) وجدول التنقيط"); }}
+              onClick={() => { setInput(t.quickExamPrompt); }}
               disabled={isLoading}
             >
               <ClipboardCheck className="h-3.5 w-3.5" />
-              إنشاء اختبار
+              {t.quickExam}
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-100 hover:border-purple-400 rounded-full px-4 h-8 text-xs font-semibold"
-              onClick={() => { setInput("أنشئ سيناريو مسرحي تعليمي (دراما تربوية) لمدة 10 دقائق مع توزيع الأدوار"); }}
+              onClick={() => { setInput(t.quickDramaPrompt); }}
               disabled={isLoading}
             >
               <Sparkles className="h-3.5 w-3.5" />
-              سيناريو دراما
+              {t.quickDrama}
             </Button>
           </div>
         </div>

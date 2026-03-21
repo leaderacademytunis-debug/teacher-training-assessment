@@ -14729,6 +14729,74 @@ ${contextInfo ? "\n# معلومات مقدمة\n" + contextInfo : ""}
         return { success: true };
       }),
   }),
+
+  // ===== PROMPT LAB (مختبر هندسة الأوامر) - PUBLIC =====
+  promptLab: router({
+    optimize: publicProcedure
+      .input(z.object({
+        prompt: z.string().min(3).max(2000),
+        language: z.enum(["ar", "fr", "en"]).default("ar"),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+
+        const langInstructions: Record<string, string> = {
+          ar: "أجب بالعربية فقط. أنت خبير في هندسة الأوامر (Prompt Engineering) متخصص في التعليم التونسي.",
+          fr: "Répondez uniquement en français. Vous êtes un expert en Prompt Engineering spécialisé dans l'éducation tunisienne.",
+          en: "Respond only in English. You are a Prompt Engineering expert specialized in Tunisian education.",
+        };
+
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `${langInstructions[input.language]}
+
+Your task is to take a simple, basic prompt from a teacher and transform it into a professional, detailed prompt that will produce much better results from any AI tool.
+
+Rules:
+1. Keep the same intent but add structure, context, and specificity
+2. Add role assignment ("You are an expert in...")
+3. Add numbered steps for what is expected
+4. Add format specifications
+5. Add Tunisian educational context where relevant
+6. Keep it practical and usable
+
+Respond in valid JSON with exactly these fields:
+{"optimized": "the improved prompt text", "explanation": "brief explanation of what was improved and why (3-5 bullet points)"}`,
+            },
+            {
+              role: "user",
+              content: `Original prompt to optimize:\n\n${input.prompt}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "prompt_optimization",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  optimized: { type: "string", description: "The optimized prompt" },
+                  explanation: { type: "string", description: "Explanation of improvements" },
+                },
+                required: ["optimized", "explanation"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices[0].message.content;
+        try {
+          const parsed = JSON.parse(typeof content === "string" ? content : "");
+          return { optimized: parsed.optimized || "", explanation: parsed.explanation || "" };
+        } catch {
+          return { optimized: input.prompt, explanation: "Could not optimize. Please try again." };
+        }
+      }),
+  }),
 });
 
 // Helper: Calculate match score between teacher and job

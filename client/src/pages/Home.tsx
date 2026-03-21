@@ -49,6 +49,7 @@ const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: strin
   { href: "/drama-engine", labelAr: "محرك الدراما التعليمية", labelFr: "Moteur de théâtre éducatif", labelEn: "Drama Engine", icon: Theater, descAr: "حوّل دروسك إلى مسرحيات تفاعلية مع توزيع الأدوار والوسائل", descFr: "Transformez vos leçons en pièces de théâtre interactives", descEn: "Transform lessons into interactive classroom plays" },
   { href: "/handwriting-analyzer", labelAr: "محلل خط اليد الذكي", labelFr: "Analyseur d'écriture IA", labelEn: "AI Handwriting Analyzer", icon: Brain, descAr: "تحليل خط يد التلميذ للكشف المبكر عن صعوبات واضطرابات التعلم", descFr: "Analyser l'écriture pour détecter les troubles d'apprentissage", descEn: "Analyze handwriting to detect learning difficulties" },
   { href: "/video-evaluator", labelAr: "مُقيِّم المعلم الرقمي", labelFr: "Évaluateur vidéo IA", labelEn: "AI Video Evaluator", icon: Film, descAr: "تقييم الفيديوهات التعليمية وتحسين هندسة الأوامر (Prompt Engineering)", descFr: "Évaluer les vidéos éducatives et améliorer le Prompt Engineering", descEn: "Evaluate educational videos and improve Prompt Engineering" },
+  { href: "/prompt-lab", labelAr: "مختبر هندسة الأوامر", labelFr: "Labo Prompt Engineering", labelEn: "Prompt Engineering Lab", icon: Sparkles, descAr: "مكتبة أوامر ذهبية ومحسّن ذكي وقوالب تفاعلية — مجاني للجميع", descFr: "Bibliothèque de prompts, optimiseur IA et modèles — gratuit pour tous", descEn: "Prompt library, AI optimizer and templates — free for everyone" },
 ];
 
 // Certificate links grouped in a dropdown
@@ -213,6 +214,19 @@ const SMART_TOOLS: {
     gradient: "from-indigo-500 to-blue-600",
     iconBg: "rgba(99,102,241,0.08)",
     badge: { ar: "جديد", fr: "Nouveau", en: "New", color: "#6366F1" },
+  },
+  {
+    href: "/prompt-lab",
+    icon: Sparkles,
+    titleAr: "مختبر هندسة الأوامر",
+    titleFr: "Labo Prompt Engineering",
+    titleEn: "Prompt Engineering Lab",
+    descAr: "أتقن فن كتابة الأوامر للذكاء الاصطناعي مع مكتبة أوامر ذهبية ومحسّن ذكي وقوالب تفاعلية",
+    descFr: "Maîtrisez l'art du Prompt Engineering avec une bibliothèque, un optimiseur IA et des modèles interactifs",
+    descEn: "Master Prompt Engineering with a golden library, AI optimizer, and interactive templates",
+    gradient: "from-fuchsia-500 to-purple-600",
+    iconBg: "rgba(192,38,211,0.08)",
+    badge: { ar: "مجاني", fr: "Gratuit", en: "Free", color: "#C026D3" },
   },
 ];
 

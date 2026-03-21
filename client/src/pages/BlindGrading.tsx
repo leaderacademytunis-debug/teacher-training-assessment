@@ -11,24 +11,44 @@ import {
   FileDown, Target, Award, Percent, Navigation, MessageCircle, AlertTriangle
 } from "lucide-react";
 import ToolPageHeader from "@/components/ToolPageHeader";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getToolTranslations } from "@/lib/toolTranslations";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const BLIND_GRADING_GRADIENT = "linear-gradient(135deg, #4338ca, #7c3aed, #1d4ed8)";
 
-// Tunisian mastery level colors
-const masteryColors: Record<string, { bg: string; text: string; label: string }> = {
-  "+++": { bg: "bg-emerald-100", text: "text-emerald-700", label: "تملك ممتاز" },
-  "++": { bg: "bg-green-100", text: "text-green-700", label: "تملك جيد" },
-  "+": { bg: "bg-yellow-100", text: "text-yellow-700", label: "تملك مقبول" },
-  "-": { bg: "bg-orange-100", text: "text-orange-700", label: "غير كاف" },
-  "--": { bg: "bg-red-100", text: "text-red-700", label: "غير كاف جدا" },
-  "---": { bg: "bg-red-200", text: "text-red-800", label: "غير متملك" },
+const masteryLevelsData = {
+  "+++": { ar: "تملك ممتاز", fr: "Excellente maîtrise", en: "Excellent Mastery" },
+  "++": { ar: "تملك جيد", fr: "Bonne maîtrise", en: "Good Mastery" },
+  "+": { ar: "تملك مقبول", fr: "Maîtrise acceptable", en: "Acceptable Mastery" },
+  "-": { ar: "غير كاف", fr: "Insuffisant", en: "Insufficient" },
+  "--": { ar: "غير كاف جدا", fr: "Très insuffisant", en: "Very Insufficient" },
+  "---": { ar: "غير متملك", fr: "Non maîtrisé", en: "Not Mastered" },
 };
 
-function getMasteryStyle(level: string) {
-  return masteryColors[level] || { bg: "bg-gray-100", text: "text-gray-600", label: level };
+const masteryColors: Record<string, { bg: string; text: string }> = {
+    "+++": { bg: "bg-emerald-100", text: "text-emerald-700" },
+    "++": { bg: "bg-green-100", text: "text-green-700" },
+    "+": { bg: "bg-yellow-100", text: "text-yellow-700" },
+    "-": { bg: "bg-orange-100", text: "text-orange-700" },
+    "--": { bg: "bg-red-100", text: "text-red-700" },
+    "---": { bg: "bg-red-200", text: "text-red-800" },
+  };
+
+function getMasteryDisplay(level: string, t: (ar: string, fr: string, en: string) => string) {
+  const style = masteryColors[level] || { bg: "bg-gray-100", text: "text-gray-600" };
+  const label = masteryLevelsData[level] ? t(masteryLevelsData[level].ar, masteryLevelsData[level].fr, masteryLevelsData[level].en) : level;
+  return { ...style, label };
 }
 
 export default function BlindGrading() {
+  const { language, t } = useLanguage();
+  const tt = getToolTranslations(language);
+  const isRTL = language === "ar";
+
   const { user, loading } = useAuth();
   const [activeView, setActiveView] = useState<"sessions" | "session-detail" | "submission-detail" | "statistics">("sessions");
   const [, navigate] = useLocation();
@@ -79,7 +99,11 @@ export default function BlindGrading() {
       setShowCreateForm(false);
       setNewTitle(""); setNewSubject(""); setNewGrade("");
       setFromExamContent("");
+      toast.success(t("تم إنشاء الجلسة بنجاح!", "Session créée avec succès !", "Session created successfully!"));
     },
+    onError: () => {
+        toast.error(t("فشل إنشاء الجلسة.", "Échec de la création de la session.", "Failed to create session."));
+    }
   });
 
   const deleteSessionMutation = trpc.grading.deleteSession.useMutation({
@@ -87,7 +111,11 @@ export default function BlindGrading() {
       utils.grading.getSessions.invalidate();
       setActiveView("sessions");
       setSelectedSessionId(null);
+      toast.success(t("تم حذف الجلسة بنجاح!", "Session supprimée avec succès !", "Session deleted successfully!"));
     },
+    onError: () => {
+        toast.error(t("فشل حذف الجلسة.", "Échec de la suppression de la session.", "Failed to delete session."));
+    }
   });
 
   const uploadMutation = trpc.grading.uploadAndOCR.useMutation({
@@ -95,8 +123,12 @@ export default function BlindGrading() {
       utils.grading.getSession.invalidate({ sessionId: selectedSessionId! });
       setUploadStudentName("");
       setUploading(false);
+      toast.success(t("تم رفع الملف ومعالجته بنجاح!", "Fichier téléversé et traité avec succès !", "File uploaded and processed successfully!"));
     },
-    onError: () => setUploading(false),
+    onError: () => {
+        setUploading(false);
+        toast.error(t("فشل رفع الملف.", "Échec du téléversement du fichier.", "File upload failed."));
+    }
   });
 
   const aiGradeMutation = trpc.grading.aiGrade.useMutation({
@@ -105,7 +137,11 @@ export default function BlindGrading() {
       if (selectedSubmissionId) {
         utils.grading.getSubmission.invalidate({ submissionId: selectedSubmissionId });
       }
+      toast.success(t("تم التصحيح بالذكاء الاصطناعي بنجاح!", "Correction par IA terminée avec succès !", "AI grading completed successfully!"));
     },
+    onError: () => {
+        toast.error(t("فشل التصحيح بالذكاء الاصطناعي.", "Échec de la correction par IA.", "AI grading failed."));
+    }
   });
 
   const finalizeSubmissionMutation = trpc.grading.finalizeSubmission.useMutation({
@@ -114,7 +150,12 @@ export default function BlindGrading() {
       if (selectedSubmissionId) {
         utils.grading.getSubmission.invalidate({ submissionId: selectedSubmissionId });
       }
+      toast.success(t("تم تثبيت التقييم بنجاح!", "Évaluation finalisée avec succès !", "Submission finalized successfully!"));
     },
+    onError: () => {
+        toast.error(t("فشل تثبيت التقييم.", "Échec de la finalisation de l\
+'''évaluation.", "Failed to finalize submission."));
+    }
   });
 
   const deleteSubmissionMutation = trpc.grading.deleteSubmission.useMutation({
@@ -122,50 +163,63 @@ export default function BlindGrading() {
       utils.grading.getSession.invalidate({ sessionId: selectedSessionId! });
       setActiveView("session-detail");
       setSelectedSubmissionId(null);
+      toast.success(t("تم حذف الورقة بنجاح!", "Copie supprimée avec succès !", "Submission deleted successfully!"));
     },
+    onError: () => {
+        toast.error(t("فشل حذف الورقة.", "Échec de la suppression de la copie.", "Failed to delete submission."));
+    }
   });
 
   const updateSessionMutation = trpc.grading.updateSession.useMutation({
     onSuccess: () => {
       utils.grading.getSession.invalidate({ sessionId: selectedSessionId! });
+      toast.success(t("تم تحديث الجلسة بنجاح!", "Session mise à jour avec succès !", "Session updated successfully!"));
     },
+    onError: () => {
+        toast.error(t("فشل تحديث الجلسة.", "Échec de la mise à jour de la session.", "Failed to update session."));
+    }
   });
 
-  // GPS Context query - auto-detect current lesson
   const gpsQuery = trpc.grading.getGPSContext.useQuery(
     { subject: newSubject || undefined, grade: newGrade || undefined },
     { enabled: !!user && showCreateForm && !!newSubject && !!newGrade }
   );
 
-  // Statistics query
   const statsQuery = trpc.grading.classStatistics.useQuery(
     { sessionId: selectedSessionId! },
     { enabled: !!selectedSessionId && activeView === "statistics" }
   );
 
-  // PDF export mutation
   const exportPdfMutation = trpc.grading.exportPDF.useMutation({
     onSuccess: (data) => {
       setExportingPdf(false);
       window.open(data.url, "_blank");
+      toast.success(t("تم تصدير التقرير بنجاح!", "Rapport exporté avec succès !", "Report exported successfully!"));
     },
-    onError: () => setExportingPdf(false),
+    onError: () => {
+        setExportingPdf(false);
+        toast.error(t("فشل تصدير التقرير.", "Échec de l'exportation du rapport.", "Failed to export report."));
+    }
   });
 
-  // Inspector report mutation
   const [exportingInspector, setExportingInspector] = useState(false);
   const inspectorReportMutation = trpc.grading.inspectorReport.useMutation({
     onSuccess: (data) => {
       setExportingInspector(false);
       window.open(data.url, "_blank");
+      toast.success(t("تم إنشاء تقرير المتفقد بنجاح!", "Rapport d'inspecteur généré avec succès !", "Inspector report generated successfully!"));
     },
-    onError: () => setExportingInspector(false),
+    onError: () => {
+        setExportingInspector(false);
+        toast.error(t("فشل إنشاء تقرير المتفقد.", "Échec de la génération du rapport d'inspecteur.", "Failed to generate inspector report."));
+    }
   });
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || !selectedSessionId) return;
     setUploading(true);
+    toast.info(t("جاري رفع الملفات...", "Téléversement des fichiers...", "Uploading files..."));
     for (const file of Array.from(files)) {
       const reader = new FileReader();
       reader.onload = async () => {
@@ -181,11 +235,11 @@ export default function BlindGrading() {
       reader.readAsDataURL(file);
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, [selectedSessionId, uploadStudentName, uploadMutation]);
+  }, [selectedSessionId, uploadStudentName, uploadMutation, t]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center" dir={isRTL ? "rtl" : "ltr"}>
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
@@ -193,13 +247,13 @@ export default function BlindGrading() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center" dir={isRTL ? "rtl" : "ltr"}>
         <div className="text-center space-y-4 p-8 bg-white rounded-2xl shadow-lg max-w-md">
           <Shield className="w-16 h-16 text-blue-600 mx-auto" />
-          <h2 className="text-2xl font-bold text-gray-800">مساعد التصحيح الأعمى</h2>
-          <p className="text-gray-600">يجب تسجيل الدخول للوصول إلى هذه الأداة</p>
+          <h2 className="text-2xl font-bold text-gray-800">{t("مساعد التصحيح الأعمى", "Assistant de Correction Anonyme", "Blind Grading Assistant")}</h2>
+          <p className="text-gray-600">{t("يجب تسجيل الدخول للوصول إلى هذه الأداة", "Vous devez être connecté pour accéder à cet outil", "You must be logged in to access this tool")}</p>
           <a href={getLoginUrl()} className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
-            تسجيل الدخول
+            {t("تسجيل الدخول", "Se connecter", "Log In")}
           </a>
         </div>
       </div>
@@ -209,11 +263,15 @@ export default function BlindGrading() {
   // ==================== SESSIONS LIST ====================
   if (activeView === "sessions") {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRTL ? "rtl" : "ltr"}>
         <ToolPageHeader
           icon={FileCheck}
           nameAr="مساعد التصحيح الأعمى"
+          nameFr="Assistant de Correction Anonyme"
+          nameEn="Blind Grading Assistant"
           descAr="تصحيح ذكي بالذكاء الاصطناعي حسب المعايير التونسية"
+          descFr="Correction intelligente par l'IA selon les critères tunisiens"
+          descEn="AI-powered grading according to Tunisian criteria"
           gradient={BLIND_GRADING_GRADIENT}
           backTo="/"
         />
@@ -226,7 +284,7 @@ export default function BlindGrading() {
                 <FileText className="w-6 h-6 text-indigo-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">جلسات التصحيح</p>
+                <p className="text-sm text-gray-500">{t("جلسات التصحيح", "Sessions de correction", "Grading Sessions")}</p>
                 <p className="text-2xl font-bold text-gray-800">{sessionsQuery.data?.length || 0}</p>
               </div>
             </div>
@@ -235,7 +293,7 @@ export default function BlindGrading() {
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">مكتملة</p>
+                <p className="text-sm text-gray-500">{t("مكتملة", "Terminées", "Completed")}</p>
                 <p className="text-2xl font-bold text-gray-800">
                   {sessionsQuery.data?.filter(s => s.status === "completed").length || 0}
                 </p>
@@ -246,164 +304,111 @@ export default function BlindGrading() {
                 <Users className="w-6 h-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-500">إجمالي التلاميذ</p>
+                <p className="text-sm text-gray-500">{t("إجمالي التلاميذ", "Total élèves", "Total Students")}</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {sessionsQuery.data?.reduce((sum, s) => sum + (s.totalStudents || 0), 0) || 0}
+                  {sessionsQuery.data?.reduce((sum, s) => sum + (s._count?.submissions || 0), 0) || 0}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Create New Session */}
-          {showCreateForm ? (
-            <div className="bg-white rounded-2xl shadow-lg border p-6 mb-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">جلسة تصحيح جديدة</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Create/List Toggle */}
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">{t("قائمة الجلسات", "Liste des sessions", "Sessions List")}</h2>
+            <Button onClick={() => setShowCreateForm(!showCreateForm)}>
+              <Plus className="w-4 h-4 ltr:mr-2 rtl:ml-2" />
+              {showCreateForm ? t("إلغاء", "Annuler", "Cancel") : t("جلسة جديدة", "Nouvelle session", "New Session")}
+            </Button>
+          </div>
+
+          {/* Create Session Form */}
+          {showCreateForm && (
+            <div className="bg-white rounded-2xl shadow-lg border p-8 mb-8 space-y-6 animate-in fade-in-50 duration-300">
+              <h3 className="text-xl font-bold text-gray-800">{t("إنشاء جلسة تصحيح جديدة", "Créer une nouvelle session de correction", "Create a New Grading Session")}</h3>
+              
+              {fromExamContent && (
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                      <p className="text-sm text-blue-800">{t("تم استيراد بيانات التقييم بنجاح. يمكنك تعديلها أدناه.", "Les données de l'évaluation ont été importées. Vous pouvez les modifier ci-dessous.", "Exam data has been imported. You can modify it below.")}</p>
+                  </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">عنوان الجلسة</label>
-                  <input type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)}
-                    placeholder="مثال: اختبار الرياضيات - الثلاثي 2"
-                    className="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                  <label className="text-sm font-medium text-gray-600 block mb-2">{tt.title}</label>
+                  <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder={t("مثال: فرض مراقبة عدد 1", "Ex: Devoir de contrôle N°1", "e.g., Control Test #1")} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">المادة</label>
-                  <select value={newSubject} onChange={e => setNewSubject(e.target.value)}
-                    className="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500">
-                    <option value="">اختر المادة</option>
-                    <option value="الرياضيات">الرياضيات</option>
-                    <option value="الإيقاظ العلمي">الإيقاظ العلمي</option>
-                    <option value="العربية">العربية</option>
-                    <option value="الفرنسية">الفرنسية</option>
-                    <option value="التربية الإسلامية">التربية الإسلامية</option>
-                    <option value="التاريخ والجغرافيا">التاريخ والجغرافيا</option>
-                  </select>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">{tt.subject}</label>
+                  <Input value={newSubject} onChange={e => setNewSubject(e.target.value)} placeholder={t("مثال: رياضيات", "Ex: Mathématiques", "e.g., Mathematics")} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">المستوى</label>
-                  <select value={newGrade} onChange={e => setNewGrade(e.target.value)}
-                    className="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500">
-                    <option value="">اختر المستوى</option>
-                    <option value="السنة الأولى">السنة الأولى</option>
-                    <option value="السنة الثانية">السنة الثانية</option>
-                    <option value="السنة الثالثة">السنة الثالثة</option>
-                    <option value="السنة الرابعة">السنة الرابعة</option>
-                    <option value="السنة الخامسة">السنة الخامسة</option>
-                    <option value="السنة السادسة">السنة السادسة</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">نوع الاختبار</label>
-                  <select value={newExamType} onChange={e => setNewExamType(e.target.value as any)}
-                    className="w-full border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500">
-                    <option value="summative">تقييم ختامي</option>
-                    <option value="formative">تقييم تكويني</option>
-                    <option value="diagnostic">تقييم تشخيصي</option>
-                  </select>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">{tt.level}</label>
+                  <Input value={newGrade} onChange={e => setNewGrade(e.target.value)} placeholder={t("مثال: سادسة ابتدائي", "Ex: 6ème année primaire", "e.g., 6th Year Primary")} />
                 </div>
               </div>
-              {fromExamContent && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-green-700 text-sm font-medium">
-                    <CheckCircle2 className="w-4 h-4" />
-                    تم نقل مفتاح الإصلاح تلقائياً من بناء الاختبار
-                  </div>
+
+              {gpsQuery.data?.currentLesson && (
+                <div className="bg-gray-50 p-3 rounded-lg text-center">
+                    <p className="text-sm text-gray-700">{t("الدرس الحالي حسب التدرج:", "Leçon actuelle selon la progression :", "Current lesson based on progression:")} <span className="font-semibold text-indigo-600">{gpsQuery.data.currentLesson}</span></p>
                 </div>
               )}
-              {/* GPS Context - Auto-detect current lesson */}
-              {gpsQuery.data?.currentTopic && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <div className="flex items-center gap-2 text-blue-700 text-sm font-bold mb-2">
-                    <Navigation className="w-4 h-4" />
-                    بوصلة المنهج — الدرس الحالي
-                  </div>
-                  <div className="bg-white rounded-lg p-3 border border-blue-100">
-                    <p className="font-semibold text-gray-800">{gpsQuery.data.currentTopic.title}</p>
-                    {gpsQuery.data.currentTopic.competency && (
-                      <p className="text-xs text-gray-500 mt-1">الكفاية: {gpsQuery.data.currentTopic.competency}</p>
-                    )}
-                    {gpsQuery.data.period && (
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{gpsQuery.data.period}</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">سيتم ربط هذه الجلسة تلقائياً بالدرس الحالي في المنهج</p>
-                </div>
-              )}
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => {
-                  if (newTitle && newSubject && newGrade) {
-                    createSessionMutation.mutate({
-                      sessionTitle: newTitle, subject: newSubject, grade: newGrade, examType: newExamType,
-                      ...(fromExamContent ? { correctionKey: fromExamContent } : {})
-                    } as any);
-                  }
-                }}
-                  disabled={!newTitle || !newSubject || !newGrade || createSessionMutation.isPending}
-                  className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2">
-                  {createSessionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  إنشاء الجلسة
-                </button>
-                <button onClick={() => setShowCreateForm(false)}
-                  className="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">
-                  إلغاء
-                </button>
+
+              <div>
+                <label className="text-sm font-medium text-gray-600 block mb-2">{t("نوع التقييم", "Type d'évaluation", "Assessment Type")}</label>
+                <Select value={newExamType} onValueChange={(v: any) => setNewExamType(v)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder={t("اختر نوع التقييم...", "Sélectionnez le type...", "Select type...")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="summative">{t("تقييم جزائي", "Évaluation sommative", "Summative Assessment")}</SelectItem>
+                        <SelectItem value="formative">{t("تقييم تكويني", "Évaluation formative", "Formative Assessment")}</SelectItem>
+                        <SelectItem value="diagnostic">{t("تقييم تشخيصي", "Évaluation diagnostique", "Diagnostic Assessment")}</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <Button variant="ghost" onClick={() => setShowCreateForm(false)}>{tt.cancel}</Button>
+                <Button onClick={() => createSessionMutation.mutate({ title: newTitle, subject: newSubject, grade: newGrade, examType: newExamType, examContent: fromExamContent || undefined })} disabled={createSessionMutation.isLoading || !newTitle || !newSubject || !newGrade}>
+                  {createSessionMutation.isLoading && <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                  {tt.save}
+                </Button>
               </div>
             </div>
-          ) : (
-            <button onClick={() => setShowCreateForm(true)}
-              className="w-full bg-white rounded-2xl shadow-sm border-2 border-dashed border-indigo-300 p-6 mb-8 flex items-center justify-center gap-3 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-400 transition-all">
-              <Plus className="w-6 h-6" />
-              <span className="text-lg font-semibold">جلسة تصحيح جديدة</span>
-            </button>
           )}
 
           {/* Sessions List */}
           <div className="space-y-4">
-            {sessionsQuery.data?.map(session => (
-              <div key={session.id}
-                className="bg-white rounded-xl shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => { setSelectedSessionId(session.id); setActiveView("session-detail"); }}>
-                <div className="p-5">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-800">{session.sessionTitle}</h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          session.status === "completed" ? "bg-green-100 text-green-700" :
-                          session.status === "in_progress" ? "bg-blue-100 text-blue-700" :
-                          "bg-gray-100 text-gray-600"
-                        }`}>
-                          {session.status === "completed" ? "مكتمل" : session.status === "in_progress" ? "قيد التصحيح" : "مسودة"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{session.subject}</span>
-                        <span>{session.grade}</span>
-                        <span>{session.examType === "summative" ? "ختامي" : session.examType === "formative" ? "تكويني" : "تشخيصي"}</span>
-                      </div>
-                    </div>
-                    <div className="text-left">
-                      <div className="text-2xl font-bold text-indigo-600">{session.gradedStudents}/{session.totalStudents}</div>
-                      <div className="text-xs text-gray-500">مصحح</div>
-                    </div>
-                  </div>
-                  {session.totalStudents > 0 && (
-                    <div className="mt-3">
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div className="bg-indigo-600 h-2 rounded-full transition-all"
-                          style={{ width: `${session.totalStudents > 0 ? (session.gradedStudents / session.totalStudents) * 100 : 0}%` }} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            {(!sessionsQuery.data || sessionsQuery.data.length === 0) && !sessionsQuery.isLoading && (
-              <div className="text-center py-16 text-gray-400">
-                <FileCheck className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">لا توجد جلسات تصحيح بعد</p>
-                <p className="text-sm mt-1">أنشئ جلسة جديدة لبدء التصحيح الذكي</p>
+            {sessionsQuery.isLoading && <p className="text-center text-gray-500 py-8">{tt.loading}</p>}
+            {sessionsQuery.data?.length === 0 && !showCreateForm && (
+              <div className="text-center py-16 px-8 bg-white rounded-2xl shadow-sm border">
+                <FileCheck className="w-16 h-16 text-gray-300 mx-auto" />
+                <h3 className="mt-4 text-xl font-semibold text-gray-700">{t("لا توجد جلسات تصحيح بعد", "Aucune session de correction", "No Grading Sessions Yet")}</h3>
+                <p className="mt-2 text-sm text-gray-500">{t("ابدأ بإنشاء جلسة جديدة لرفع أوراق التلاميذ وتصحيحها.", "Créez une nouvelle session pour commencer à téléverser et corriger les copies.", "Create a new session to start uploading and grading papers.")}</p>
+                <Button onClick={() => setShowCreateForm(true)} className="mt-6">
+                  <Plus className="w-4 h-4 ltr:mr-2 rtl:ml-2" />
+                  {t("إنشاء أول جلسة", "Créer la première session", "Create First Session")}
+                </Button>
               </div>
             )}
+            {sessionsQuery.data?.map(session => (
+              <div key={session.id} className="bg-white rounded-2xl shadow-sm border hover:border-indigo-300 transition-all duration-200 p-5 flex items-center justify-between">
+                <div className={isRTL ? "text-right" : "text-left"}>
+                  <p className="font-bold text-lg text-gray-800">{session.title}</p>
+                  <p className="text-sm text-gray-500">{session.subject} • {session.grade}</p>
+                  <div className="flex items-center gap-4 mt-2 text-xs">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${session.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {session.status === 'completed' ? t('مكتملة', 'Terminée', 'Completed') : t('قيد الإنجاز', 'En cours', 'In Progress')}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-gray-500"><Users className="w-3.5 h-3.5" /> {session._count.submissions} {t("تلميذ", "élèves", "students")}</span>
+                    <span className="flex items-center gap-1.5 text-gray-500"><Clock className="w-3.5 h-3.5" /> {new Date(session.createdAt).toLocaleDateString(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-FR' : 'en-US')}</span>
+                  </div>
+                </div>
+                <Button onClick={() => { setSelectedSessionId(session.id); setActiveView("session-detail"); }}>
+                  {t("فتح الجلسة", "Ouvrir", "Open Session")} <ArrowRight className="w-4 h-4 ltr:ml-2 rtl:mr-2" />
+                </Button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -412,202 +417,136 @@ export default function BlindGrading() {
 
   // ==================== SESSION DETAIL ====================
   if (activeView === "session-detail" && selectedSessionId) {
-    const session = sessionDetailQuery.data?.session;
-    const submissions = sessionDetailQuery.data?.submissions || [];
-    const stats = sessionDetailQuery.data?.stats;
+    const session = sessionDetailQuery.data;
+
+    const handleTriggerUpload = () => {
+        if (!uploadStudentName) {
+            toast.warning(t("الرجاء إدخال اسم التلميذ أولاً.", "Veuillez d'abord saisir le nom de l'élève.", "Please enter the student's name first."));
+            return;
+        }
+        fileInputRef.current?.click();
+    }
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
-        {/* Header */}
-        <ToolPageHeader
-          icon={FileCheck}
-          nameAr={session?.sessionTitle || "..."}
-          gradient={BLIND_GRADING_GRADIENT}
-          onBack={() => { setActiveView("sessions"); setSelectedSessionId(null); }}
-          subtitle={session ? `${session.subject} | ${session.grade}` : undefined}
-        />
+      <div className="min-h-screen bg-gray-50" dir={isRTL ? "rtl" : "ltr"}>
+        {session && (
+            <ToolPageHeader
+                icon={FileCheck}
+                nameAr={session.title}
+                nameFr={session.title}
+                nameEn={session.title}
+                descAr={`${session.subject} • ${session.grade}`}
+                descFr={`${session.subject} • ${session.grade}`}
+                descEn={`${session.subject} • ${session.grade}`}
+                gradient={BLIND_GRADING_GRADIENT}
+                backTo={() => setActiveView("sessions")}
+            />
+        )}
 
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+            {sessionDetailQuery.isLoading ? (
+                <p>{tt.loading}</p>
+            ) : session ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column: Submissions List */}
+                    <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">{t("أوراق التلاميذ", "Copies des élèves", "Student Submissions")}</h3>
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm text-gray-600">{t("إخفاء الأسماء", "Cacher les noms", "Hide Names")}</span>
+                                <button onClick={() => setHideNames(!hideNames)} className={`p-1.5 rounded-full ${hideNames ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                                    {hideNames ? <EyeOff className="w-5 h-5"/> : <Eye className="w-5 h-5"/>}
+                                </button>
+                            </div>
+                        </div>
 
-        <div className="container mx-auto px-4 py-6 max-w-6xl">
-          {/* Privacy Toggle & Actions */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-4">
-              {/* Privacy Shield Toggle */}
-              <button
-                onClick={() => {
-                  setHideNames(!hideNames);
-                  if (selectedSessionId) {
-                    updateSessionMutation.mutate({ sessionId: selectedSessionId, hideStudentNames: !hideNames });
-                  }
-                }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
-                  hideNames
-                    ? "bg-purple-100 text-purple-700 border-2 border-purple-300"
-                    : "bg-gray-100 text-gray-600 border-2 border-gray-200"
-                }`}>
-                {hideNames ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                <Shield className="w-4 h-4" />
-                {hideNames ? "وضع التصحيح الأعمى" : "إظهار الأسماء"}
-              </button>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* PDF Export */}
-              <button
-                onClick={() => {
-                  setExportingPdf(true);
-                  exportPdfMutation.mutate({ sessionId: selectedSessionId });
-                }}
-                disabled={exportingPdf}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium bg-red-50 text-red-700 border-2 border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
-                title="تصدير PDF">
-                {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                تصدير PDF
-              </button>
-              {/* Inspector Report */}
-              <button
-                onClick={() => {
-                  setExportingInspector(true);
-                  inspectorReportMutation.mutate({ sessionId: selectedSessionId });
-                }}
-                disabled={exportingInspector}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium bg-indigo-50 text-indigo-700 border-2 border-indigo-200 hover:bg-indigo-100 transition-all disabled:opacity-50"
-                title="تقرير التفقد الرسمي">
-                {exportingInspector ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                تقرير التفقد
-              </button>
-              {/* Statistics */}
-              <button
-                onClick={() => setActiveView("statistics")}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium bg-blue-50 text-blue-700 border-2 border-blue-200 hover:bg-blue-100 transition-all"
-                title="إحصائيات الفصل">
-                <PieChart className="w-4 h-4" />
-                إحصائيات
-              </button>
-              <button onClick={() => deleteSessionMutation.mutate({ sessionId: selectedSessionId })}
-                className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
-                title="حذف الجلسة">
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+                        {/* Upload Area */}
+                        <div className="bg-gray-50 border-2 border-dashed rounded-xl p-4 mb-6 flex flex-col md:flex-row items-center gap-4">
+                            <Input 
+                                value={uploadStudentName} 
+                                onChange={e => setUploadStudentName(e.target.value)} 
+                                placeholder={t("أدخل اسم التلميذ هنا...", "Entrez le nom de l'élève ici...", "Enter student name here...")} 
+                                className="flex-grow"
+                            />
+                            <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple className="hidden" accept="image/*,application/pdf" />
+                            <Button onClick={handleTriggerUpload} disabled={uploading} className="w-full md:w-auto">
+                                {uploading ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Upload className="w-4 h-4 ltr:mr-2 rtl:ml-2" />}
+                                {uploading ? t("جاري الرفع...", "Téléversement...", "Uploading...") : t("رفع ورقة تلميذ", "Téléverser une copie", "Upload Paper")}
+                            </Button>
+                        </div>
 
-          {/* Stats */}
-          {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              <div className="bg-white rounded-xl shadow-sm border p-4 text-center">
-                <p className="text-2xl font-bold text-indigo-600">{stats.total}</p>
-                <p className="text-xs text-gray-500">إجمالي الأوراق</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm border p-4 text-center">
-                <p className="text-2xl font-bold text-amber-600">{stats.graded}</p>
-                <p className="text-xs text-gray-500">مصحح بالذكاء</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm border p-4 text-center">
-                <p className="text-2xl font-bold text-green-600">{stats.reviewed}</p>
-                <p className="text-xs text-gray-500">مراجع</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm border p-4 text-center">
-                <p className="text-2xl font-bold text-emerald-600">{stats.finalized}</p>
-                <p className="text-xs text-gray-500">نهائي</p>
-              </div>
-            </div>
-          )}
+                        {/* Submissions Table */}
+                        <div className="space-y-3">
+                            {session.submissions.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-500">{t("لم يتم رفع أي ورقة بعد.", "Aucune copie n'a été téléversée pour le moment.", "No submissions have been uploaded yet.")}</p>
+                                </div>
+                            ) : (
+                                session.submissions.map((sub, index) => (
+                                    <div 
+                                        key={sub.id} 
+                                        onClick={() => { setSelectedSubmissionId(sub.id); setActiveView("submission-detail"); }}
+                                        className="p-4 rounded-xl border bg-white hover:bg-gray-50 cursor-pointer grid grid-cols-12 gap-4 items-center"
+                                    >
+                                        <div className="col-span-4 font-semibold text-gray-800">
+                                            {hideNames ? `${t("تلميذ", "Élève", "Student")} ${index + 1}` : sub.studentName}
+                                        </div>
+                                        <div className="col-span-3">
+                                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${ sub.status === 'graded' ? 'bg-green-100 text-green-700' : sub.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {sub.status === 'graded' ? t('تم التصحيح', 'Corrigée', 'Graded') : sub.status === 'pending' ? t('في الانتظار', 'En attente', 'Pending') : t('قيد المعالجة', 'En cours', 'Processing')}
+                                            </span>
+                                        </div>
+                                        <div className="col-span-3 text-sm font-bold text-gray-700">
+                                            {sub.finalScore !== null ? `${sub.finalScore} / ${sub.totalScore}` : '-- / --'}
+                                        </div>
+                                        <div className="col-span-2 text-end">
+                                            <ArrowRight className="w-5 h-5 text-gray-400" />
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
 
-          {/* Upload Area */}
-          <div className="bg-white rounded-2xl shadow-sm border p-6 mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Upload className="w-5 h-5 text-indigo-600" />
-              رفع أوراق التلاميذ
-            </h3>
-            <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex-1 min-w-[200px]">
-                <label className="block text-sm text-gray-600 mb-1">اسم التلميذ (اختياري)</label>
-                <input type="text" value={uploadStudentName} onChange={e => setUploadStudentName(e.target.value)}
-                  placeholder="يمكن تركه فارغاً للتصحيح الأعمى"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileUpload}
-                  className="hidden" id="upload-sheets" />
-                <label htmlFor="upload-sheets"
-                  className={`inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold cursor-pointer transition-colors ${
-                    uploading ? "bg-gray-300 text-gray-500" : "bg-indigo-600 text-white hover:bg-indigo-700"
-                  }`}>
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  {uploading ? "جاري الرفع..." : "رفع صور الأوراق"}
-                </label>
-              </div>
-            </div>
-          </div>
+                    {/* Right Column: Session Actions */}
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-2xl shadow-sm border p-6">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">{t("إحصائيات سريعة", "Statistiques rapides", "Quick Stats")}</h3>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between"><span>{t("عدد التلاميذ", "Nombre d'élèves", "Number of Students")}</span><span className="font-bold">{session.submissions.length}</span></div>
+                                <div className="flex justify-between"><span>{t("الأوراق المصححة", "Copies corrigées", "Graded Papers")}</span><span className="font-bold">{session.submissions.filter(s => s.status === 'graded').length}</span></div>
+                                <div className="flex justify-between"><span>{t("معدل القسم", "Moyenne de la classe", "Class Average")}</span><span className="font-bold">{session.classAverage?.toFixed(2) || 'N/A'}</span></div>
+                            </div>
+                            <Button onClick={() => setActiveView("statistics")} className="w-full mt-5">
+                                <BarChart3 className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> {t("عرض الإحصائيات الكاملة", "Voir les statistiques complètes", "View Full Statistics")}
+                            </Button>
+                        </div>
 
-          {/* Submissions Table */}
-          <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-            <div className="p-4 border-b bg-gray-50">
-              <h3 className="font-bold text-gray-800">أوراق التلاميذ ({submissions.length})</h3>
-            </div>
-            {submissions.length === 0 ? (
-              <div className="p-12 text-center text-gray-400">
-                <Upload className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>لم يتم رفع أي أوراق بعد</p>
-              </div>
+                        <div className="bg-white rounded-2xl shadow-sm border p-6">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">{t("إجراءات", "Actions", "Actions")}</h3>
+                            <div className="space-y-3">
+                                <Button variant="outline" className="w-full justify-start" onClick={() => updateSessionMutation.mutate({ sessionId: session.id, status: session.status === 'completed' ? 'in-progress' : 'completed' })}>
+                                    {session.status === 'completed' ? <Clock className="w-4 h-4 ltr:mr-2 rtl:ml-2"/> : <CheckCircle2 className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                    {session.status === 'completed' ? t("إعادة فتح الجلسة", "Rouvrir la session", "Re-open Session") : t("إنهاء وغلق الجلسة", "Terminer et fermer la session", "Finalize Session")}
+                                </Button>
+                                <Button variant="outline" className="w-full justify-start" onClick={() => { setExportingInspector(true); inspectorReportMutation.mutate({ sessionId: session.id }); }} disabled={exportingInspector}>
+                                    {exportingInspector ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <FileDown className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                    {t("تصدير تقرير المتفقد", "Exporter rapport d'inspecteur", "Export Inspector Report")}
+                                </Button>
+                                <Button variant="destructive_outline" className="w-full justify-start" onClick={() => {
+                                    if (confirm(t("هل أنت متأكد من حذف هذه الجلسة وكل ما يتعلق بها؟", "Êtes-vous sûr de vouloir supprimer cette session et toutes ses données ?", "Are you sure you want to delete this session and all its data?"))) {
+                                        deleteSessionMutation.mutate({ sessionId: session.id });
+                                    }
+                                }}>
+                                    <Trash2 className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> {t("حذف الجلسة", "Supprimer la session", "Delete Session")}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             ) : (
-              <div className="divide-y">
-                {submissions.map((sub: any) => (
-                  <div key={sub.id}
-                    className="p-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4"
-                    onClick={() => { setSelectedSubmissionId(sub.id); setActiveView("submission-detail"); }}>
-                    {/* Thumbnail */}
-                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border">
-                      <img src={sub.imageUrl} alt="" className="w-full h-full object-cover" />
-                    </div>
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-800">
-                          {hideNames ? `تلميذ ${sub.studentNumber}` : (sub.studentName || `تلميذ ${sub.studentNumber}`)}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          sub.status === "finalized" ? "bg-emerald-100 text-emerald-700" :
-                          sub.status === "teacher_reviewed" ? "bg-green-100 text-green-700" :
-                          sub.status === "ai_graded" ? "bg-blue-100 text-blue-700" :
-                          sub.status === "ocr_done" ? "bg-yellow-100 text-yellow-700" :
-                          "bg-gray-100 text-gray-600"
-                        }`}>
-                          {sub.status === "finalized" ? "نهائي" :
-                           sub.status === "teacher_reviewed" ? "مراجع" :
-                           sub.status === "ai_graded" ? "مصحح" :
-                           sub.status === "ocr_done" ? "جاهز للتصحيح" : "مرفوع"}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500 flex items-center gap-3 mt-1">
-                        <span>OCR: {sub.ocrConfidence === "high" ? "عالي" : sub.ocrConfidence === "medium" ? "متوسط" : "ضعيف"}</span>
-                        {sub.totalFinalScore != null && (
-                          <span className="font-semibold text-indigo-600">{sub.totalFinalScore}/20</span>
-                        )}
-                      </div>
-                    </div>
-                    {/* Mastery Badge */}
-                    {sub.overallMasteryLevel && (
-                      <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${getMasteryStyle(sub.overallMasteryLevel).bg} ${getMasteryStyle(sub.overallMasteryLevel).text}`}>
-                        {sub.overallMasteryLevel}
-                      </div>
-                    )}
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      {(sub.status === "ocr_done" || sub.status === "uploaded") && (
-                        <button onClick={(e) => { e.stopPropagation(); aiGradeMutation.mutate({ submissionId: sub.id }); }}
-                          disabled={aiGradeMutation.isPending}
-                          className="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1">
-                          {aiGradeMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                          تصحيح ذكي
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                <p>{t("لم يتم العثور على الجلسة.", "Session non trouvée.", "Session not found.")}</p>
             )}
-          </div>
         </div>
       </div>
     );
@@ -615,476 +554,249 @@ export default function BlindGrading() {
 
   // ==================== SUBMISSION DETAIL ====================
   if (activeView === "submission-detail" && selectedSubmissionId) {
-    const subData = submissionDetailQuery.data;
-    const sub = subData?.submission;
-    const session = subData?.session;
-    const criteriaScores = (sub?.criteriaScores as any[]) || [];
+    const submission = submissionDetailQuery.data;
+    const session = sessionDetailQuery.data?.session;
+
+    const handleGradeUpdate = (criterionId: number, score: number | null, mastery: string | null) => {
+        if (!submission) return;
+        const newGrades = submission.grades.map(g => 
+            g.id === criterionId ? { ...g, score, masteryLevel: mastery } : g
+        );
+        // This is a local update for UI responsiveness, the actual update is sent on finalize.
+    }
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
-        <ToolPageHeader
-          icon={FileCheck}
-          nameAr={hideNames ? `تلميذ ${sub?.studentNumber}` : (sub?.studentName || `تلميذ ${sub?.studentNumber}`)}
-          gradient={BLIND_GRADING_GRADIENT}
-          onBack={() => { setActiveView("session-detail"); setSelectedSubmissionId(null); }}
-          subtitle={sub?.overallMasteryLevel ? `${sub.overallMasteryLevel} - ${getMasteryStyle(sub.overallMasteryLevel).label}` : undefined}
-        />
+        <div className="min-h-screen bg-gray-50" dir={isRTL ? "rtl" : "ltr"}>
+            {submission && session && (
+                <ToolPageHeader
+                    icon={FileCheck}
+                    nameAr={hideNames ? `${t("ورقة التلميذ", "Copie de l'élève", "Student Paper")} #${submission.id}` : submission.studentName || ""}
+                    nameFr={hideNames ? `Copie de l'élève #${submission.id}` : submission.studentName || ""}
+                    nameEn={hideNames ? `Student Paper #${submission.id}` : submission.studentName || ""}
+                    descAr={session.title}
+                    descFr={session.title}
+                    descEn={session.title}
+                    gradient={BLIND_GRADING_GRADIENT}
+                    backTo={() => setActiveView("session-detail")}
+                />
+            )}
 
-        <div className="container mx-auto px-4 py-6 max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Original Image */}
-            <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-              <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-                <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-600" />
-                  الورقة الأصلية
-                </h3>
-                {sub?.imageUrl && (
-                  <a href={sub.imageUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-indigo-600 hover:text-indigo-800 text-sm flex items-center gap-1">
-                    <Download className="w-4 h-4" /> تحميل
-                  </a>
-                )}
-              </div>
-              <div className="p-4">
-                {sub?.imageUrl && (
-                  <img src={sub.imageUrl} alt="ورقة التلميذ" className="w-full rounded-lg border" />
-                )}
-              </div>
-              {/* OCR Text */}
-              {sub?.extractedText && (
-                <div className="p-4 border-t">
-                  <h4 className="text-sm font-semibold text-gray-600 mb-2">النص المستخرج (OCR)</h4>
-                  <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed">
-                    {sub.extractedText}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right: Grading Results */}
-            <div className="space-y-6">
-              {/* Score Summary */}
-              {sub?.totalFinalScore != null && (
-                <div className="bg-white rounded-2xl shadow-sm border p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-indigo-600" />
-                      النتيجة الإجمالية
-                    </h3>
-                    <div className="text-3xl font-bold text-indigo-600">
-                      {sub.totalFinalScore}<span className="text-lg text-gray-400">/20</span>
-                    </div>
-                  </div>
-                  {sub.overallMasteryLevel && (
-                    <div className={`text-center py-3 rounded-xl ${getMasteryStyle(sub.overallMasteryLevel).bg}`}>
-                      <span className={`text-lg font-bold ${getMasteryStyle(sub.overallMasteryLevel).text}`}>
-                        {sub.overallMasteryLevel} — {getMasteryStyle(sub.overallMasteryLevel).label}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Criteria Scores */}
-              {criteriaScores.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                  <div className="p-4 border-b bg-gray-50">
-                    <h3 className="font-bold text-gray-800">جدول إسناد الأعداد</h3>
-                  </div>
-                  <div className="divide-y">
-                    {criteriaScores.map((cs: any, idx: number) => (
-                      <div key={idx} className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-sm font-bold">
-                              {cs.criterionCode}
-                            </span>
-                            <span className="font-medium text-gray-800">{cs.criterionLabel}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg font-bold text-indigo-600">
-                              {cs.finalScore}<span className="text-sm text-gray-400">/{cs.maxScore}</span>
-                            </span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${getMasteryStyle(cs.masteryLevel).bg} ${getMasteryStyle(cs.masteryLevel).text}`}>
-                              {cs.masteryLevel}
-                            </span>
-                          </div>
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                {submissionDetailQuery.isLoading ? (
+                    <p>{tt.loading}</p>
+                ) : submission ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        {/* Left Column: Image Preview */}
+                        <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border p-4 flex flex-col">
+                            <div className="flex-grow rounded-lg bg-gray-100 overflow-auto p-2">
+                                {submission.imageUrl ? (
+                                    <img src={submission.imageUrl} alt={t("ورقة التلميذ", "Copie de l'élève", "Student Paper")} className="w-full h-auto" />
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-gray-500">{t("لا توجد صورة لعرضها", "Aucune image à afficher", "No image to display")}</div>
+                                )}
+                            </div>
                         </div>
-                        {/* Score bar */}
-                        <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                          <div className="bg-indigo-500 h-2 rounded-full transition-all"
-                            style={{ width: `${cs.maxScore > 0 ? (cs.finalScore / cs.maxScore) * 100 : 0}%` }} />
+
+                        {/* Right Column: Grading Interface */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <div className="bg-white rounded-2xl shadow-sm border p-6">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4">{t("التصحيح والتقييم", "Correction et Évaluation", "Grading and Assessment")}</h3>
+                                
+                                {submission.status === 'pending' && session?.examContent && (
+                                    <Button className="w-full mb-4" onClick={() => aiGradeMutation.mutate({ submissionId: submission.id })} disabled={aiGradeMutation.isLoading}>
+                                        {aiGradeMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <Sparkles className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                        {t("بدء التصحيح بالذكاء الاصطناعي", "Lancer la correction IA", "Start AI Grading")}
+                                    </Button>
+                                )}
+
+                                <div className="space-y-4">
+                                    {submission.grades.map(grade => {
+                                        const mastery = getMasteryDisplay(grade.masteryLevel || "", t);
+                                        return (
+                                            <div key={grade.id} className="border-b pb-4 last:border-b-0">
+                                                <p className="font-semibold text-gray-700">{grade.criterion}</p>
+                                                {grade.feedback && <p className="text-xs text-gray-500 mt-1">{grade.feedback}</p>}
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <Input 
+                                                        type="number"
+                                                        value={grade.score === null ? '' : grade.score}
+                                                        onChange={e => handleGradeUpdate(grade.id, e.target.value === '' ? null : parseFloat(e.target.value), grade.masteryLevel)}
+                                                        className="w-24"
+                                                        placeholder={tt.score}
+                                                    />
+                                                    <Select 
+                                                        value={grade.masteryLevel || ''}
+                                                        onValueChange={m => handleGradeUpdate(grade.id, grade.score, m)}
+                                                    >
+                                                        <SelectTrigger className={`flex-grow ${mastery.bg} ${mastery.text}`}>
+                                                            <SelectValue placeholder={t("اختر مستوى التملك", "Choisir maîtrise", "Select Mastery")} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {Object.entries(masteryLevelsData).map(([level, labels]) => (
+                                                                <SelectItem key={level} value={level}>{t(labels.ar, labels.fr, labels.en)}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                <div className="mt-6 border-t pt-4 space-y-3">
+                                    <div className="flex justify-between font-bold text-lg">
+                                        <span>{tt.total}</span>
+                                        <span>{submission.finalScore} / {submission.totalScore}</span>
+                                    </div>
+                                    <Button className="w-full" onClick={() => finalizeSubmissionMutation.mutate({ submissionId: submission.id, grades: submission.grades.map(g => ({ criterionId: g.id, score: g.score, masteryLevel: g.masteryLevel }))})} disabled={finalizeSubmissionMutation.isLoading}>
+                                        {finalizeSubmissionMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <CheckCircle2 className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                        {t("تثبيت التقييم النهائي", "Finaliser l'évaluation", "Finalize Assessment")}
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-2xl shadow-sm border p-6">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4">{t("إجراءات الورقة", "Actions sur la copie", "Submission Actions")}</h3>
+                                <div className="space-y-3">
+                                    <Button variant="outline" className="w-full justify-start" onClick={() => { setExportingPdf(true); exportPdfMutation.mutate({ submissionId: submission.id }); }} disabled={exportingPdf}>
+                                        {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <Download className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                        {t("تصدير تقرير التلميذ (PDF)", "Exporter rapport élève (PDF)", "Export Student Report (PDF)")}
+                                    </Button>
+                                    <Button variant="destructive_outline" className="w-full justify-start" onClick={() => {
+                                        if (confirm(t("هل أنت متأكد من حذف هذه الورقة؟", "Êtes-vous sûr de vouloir supprimer cette copie ?", "Are you sure you want to delete this submission?"))) {
+                                            deleteSubmissionMutation.mutate({ submissionId: submission.id });
+                                        }
+                                    }}>
+                                        <Trash2 className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> {t("حذف الورقة", "Supprimer la copie", "Delete Submission")}
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
-                        {cs.justification && (
-                          <p className="text-xs text-gray-500 mt-1">{cs.justification}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Encouragement Note */}
-              {(sub as any)?.encouragementNote && (
-                <div className="bg-gradient-to-l from-purple-50 to-indigo-50 rounded-2xl shadow-sm border border-purple-200 p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <MessageCircle className="w-5 h-5 text-purple-600" />
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-purple-600 mb-0.5">ملاحظة تشجيعية للتلميذ</p>
-                      <p className="text-base font-bold text-purple-800 leading-relaxed">{(sub as any).encouragementNote}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Pedagogical Feedback */}
-              {(sub?.feedbackStrengths || sub?.feedbackImprovements) && (
-                <div className="bg-white rounded-2xl shadow-sm border p-6">
-                  <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <Star className="w-5 h-5 text-amber-500" />
-                    الملاحظات البيداغوجية
-                  </h3>
-                  {sub.feedbackStrengths && (
-                    <div className="bg-green-50 rounded-xl p-4 mb-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <TrendingUp className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-semibold text-green-700">نقاط القوة</span>
-                      </div>
-                      <p className="text-sm text-green-800 leading-relaxed">{sub.feedbackStrengths}</p>
-                    </div>
-                  )}
-                  {sub.feedbackImprovements && (
-                    <div className="bg-amber-50 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <TrendingDown className="w-4 h-4 text-amber-600" />
-                        <span className="text-sm font-semibold text-amber-700">مجالات التحسين</span>
-                      </div>
-                      <p className="text-sm text-amber-800 leading-relaxed">{sub.feedbackImprovements}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex flex-wrap gap-3">
-                {(sub?.status === "ocr_done" || sub?.status === "uploaded") && (
-                  <button onClick={() => aiGradeMutation.mutate({ submissionId: selectedSubmissionId })}
-                    disabled={aiGradeMutation.isPending}
-                    className="bg-purple-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2">
-                    {aiGradeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    تصحيح ذكي بالذكاء الاصطناعي
-                  </button>
+                ) : (
+                    <p>{t("لم يتم العثور على الورقة.", "Copie non trouvée.", "Submission not found.")}</p>
                 )}
-                {sub?.status === "ai_graded" && (
-                  <button onClick={() => finalizeSubmissionMutation.mutate({ submissionId: selectedSubmissionId })}
-                    disabled={finalizeSubmissionMutation.isPending}
-                    className="bg-green-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center gap-2">
-                    {finalizeSubmissionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    تأكيد النتيجة
-                  </button>
-                )}
-                <button onClick={() => deleteSubmissionMutation.mutate({ submissionId: selectedSubmissionId })}
-                  disabled={deleteSubmissionMutation.isPending}
-                  className="border border-red-300 text-red-600 px-5 py-2.5 rounded-xl font-semibold hover:bg-red-50 disabled:opacity-50 flex items-center gap-2">
-                  <Trash2 className="w-4 h-4" />
-                  حذف
-                </button>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
     );
   }
 
   // ==================== STATISTICS VIEW ====================
   if (activeView === "statistics" && selectedSessionId) {
     const stats = statsQuery.data;
-    const isLoading = statsQuery.isLoading;
+    const session = sessionDetailQuery.data; // Already fetched
 
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
-        {/* Header */}
-        <ToolPageHeader
-          icon={PieChart}
-          nameAr="تحليل إحصائي للفصل"
-          gradient={BLIND_GRADING_GRADIENT}
-          onBack={() => setActiveView("session-detail")}
-          subtitle={stats ? `${stats.session.title} | ${stats.session.subject} | ${stats.session.grade}` : undefined}
-        />
-
-        <div className="container mx-auto px-4 py-6 max-w-6xl">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-            </div>
-          ) : stats ? (
-            <div className="space-y-6">
-              {/* Overview Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                    <Users className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-indigo-600">{stats.overview.gradedStudents}</p>
-                  <p className="text-xs text-gray-500">تلميذ مصحح</p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                    <Target className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-blue-600">{stats.overview.average}<span className="text-sm text-gray-400">/{stats.session.totalPoints}</span></p>
-                  <p className="text-xs text-gray-500">المعدل العام</p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                    <Award className="w-6 h-6 text-green-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-green-600">{stats.overview.passRate}%</p>
-                  <p className="text-xs text-gray-500">نسبة النجاح</p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
-                  <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                    <Star className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-amber-600">{stats.overview.excellenceRate}%</p>
-                  <p className="text-xs text-gray-500">نسبة التميز</p>
-                </div>
-              </div>
-
-              {/* Score Distribution Chart */}
-              <div className="bg-white rounded-2xl shadow-sm border p-6">
-                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-indigo-600" />
-                  توزيع الدرجات
-                </h3>
-                <div className="grid grid-cols-4 gap-3">
-                  {stats.scoreBuckets.map((bucket: any) => {
-                    const maxCount = Math.max(...stats.scoreBuckets.map((b: any) => b.count), 1);
-                    const pct = (bucket.count / maxCount) * 100;
-                    const colors = bucket.label === "15-20" ? "bg-emerald-500" : bucket.label === "10-14" ? "bg-blue-500" : bucket.label === "5-9" ? "bg-amber-500" : "bg-red-500";
-                    return (
-                      <div key={bucket.label} className="text-center">
-                        <div className="h-40 flex items-end justify-center mb-2">
-                          <div className={`w-full max-w-[60px] ${colors} rounded-t-lg transition-all`}
-                            style={{ height: `${Math.max(pct, 5)}%` }}>
-                            <span className="text-white text-sm font-bold block pt-2">{bucket.count}</span>
-                          </div>
+        <div className="min-h-screen bg-gray-50" dir={isRTL ? "rtl" : "ltr"}>
+            {session && (
+                <ToolPageHeader
+                    icon={BarChart3}
+                    nameAr={`${t("إحصائيات", "Statistiques", "Statistics")}: ${session.title}`}
+                    nameFr={`Statistiques: ${session.title}`}
+                    nameEn={`Statistics: ${session.title}`}
+                    descAr={t("تحليل مفصل لنتائج القسم", "Analyse détaillée des résultats de la classe", "Detailed analysis of class results")}
+                    descFr={t("تحليل مفصل لنتائج القسم", "Analyse détaillée des résultats de la classe", "Detailed analysis of class results")}
+                    descEn={t("تحليل مفصل لنتائج القسم", "Analyse détaillée des résultats de la classe", "Detailed analysis of class results")}
+                    gradient={BLIND_GRADING_GRADIENT}
+                    backTo={() => setActiveView("session-detail")}
+                />
+            )}
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                {statsQuery.isLoading ? (
+                    <p>{tt.loading}</p>
+                ) : stats ? (
+                    <div className="space-y-8">
+                        {/* Top-level stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <StatCard icon={Award} label={t("أعلى معدل", "Meilleure moyenne", "Top Score")} value={stats.highestScore?.toFixed(2) || 'N/A'} />
+                            <StatCard icon={TrendingDown} label={t("أدنى معدل", "Moins bonne moyenne", "Lowest Score")} value={stats.lowestScore?.toFixed(2) || 'N/A'} />
+                            <StatCard icon={PieChart} label={t("معدل القسم", "Moyenne de classe", "Class Average")} value={stats.averageScore?.toFixed(2) || 'N/A'} />
+                            <StatCard icon={Percent} label={t("نسبة النجاح", "Taux de réussite", "Success Rate")} value={`${stats.successRate?.toFixed(1) || 'N/A'}%`} />
                         </div>
-                        <span className="text-sm font-medium text-gray-600">{bucket.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex justify-between mt-3 text-xs text-gray-400">
-                  <span>أدنى: {stats.overview.min}</span>
-                  <span>الوسيط: {stats.overview.median}</span>
-                  <span>أعلى: {stats.overview.max}</span>
-                </div>
-              </div>
 
-              {/* Mastery Levels Distribution */}
-              <div className="bg-white rounded-2xl shadow-sm border p-6">
-                <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-purple-600" />
-                  توزيع مستويات التملك
-                </h3>
-                <div className="space-y-3">
-                  {stats.masteryLevels.map((level: any) => {
-                    const pct = stats.overview.gradedStudents > 0 ? Math.round((level.count / stats.overview.gradedStudents) * 100) : 0;
-                    const style = getMasteryStyle(level.symbol);
-                    return (
-                      <div key={level.symbol} className="flex items-center gap-3">
-                        <div className={`w-16 text-center py-1 rounded-lg font-bold text-sm ${style.bg} ${style.text}`}>
-                          {level.symbol}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm text-gray-700">{level.label}</span>
-                            <span className="text-sm font-semibold text-gray-600">{level.count} ({pct}%)</span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-3">
-                            <div className="h-3 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: level.color }} />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Criteria Weakness Alert */}
-              {stats.criteriaAnalysis.length > 0 && (() => {
-                const weakCriteria = stats.criteriaAnalysis.filter((c: any) => c.successRate < 50);
-                return weakCriteria.length > 0 ? (
-                  <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <AlertTriangle className="w-5 h-5 text-red-600" />
-                      <h3 className="font-bold text-red-800">تنبيه: معايير تحتاج معالجة</h3>
-                    </div>
-                    <p className="text-sm text-red-700 mb-3">الفصل يعاني من ضعف في المعايير التالية (نسبة نجاح أقل من 50%):</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {weakCriteria.map((c: any) => (
-                        <div key={c.code} className="bg-white rounded-xl p-3 border border-red-100">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-sm font-bold">{c.code}</span>
-                              <span className="text-sm font-medium text-gray-800">{c.label}</span>
+                        {/* Mastery Distribution */}
+                        <div className="bg-white rounded-2xl shadow-sm border p-6">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">{t("توزيع مستويات التملك", "Distribution des niveaux de maîtrise", "Mastery Level Distribution")}</h3>
+                            <div className="space-y-4">
+                                {Object.entries(stats.masteryDistribution).map(([level, count]) => {
+                                    const mastery = getMasteryDisplay(level, t);
+                                    const percentage = (count / stats.totalSubmissions) * 100;
+                                    return (
+                                        <div key={level} className="flex items-center gap-4">
+                                            <div className={`w-28 text-sm font-semibold ${mastery.text}`}>{mastery.label}</div>
+                                            <div className="flex-grow bg-gray-200 rounded-full h-4">
+                                                <div className={`${mastery.bg} h-4 rounded-full`} style={{ width: `${percentage}%` }}></div>
+                                            </div>
+                                            <div className="w-20 text-sm font-bold text-gray-600 text-end">{count} ({percentage.toFixed(0)}%)</div>
+                                        </div>
+                                    )
+                                })}
                             </div>
-                            <span className="text-red-600 font-bold text-sm">{c.successRate}%</span>
-                          </div>
-                          <div className="w-full bg-red-100 rounded-full h-2 mt-1">
-                            <div className="bg-red-500 h-2 rounded-full" style={{ width: `${c.successRate}%` }} />
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">المعدل: {c.average}/{c.maxScore} | أدنى: {c.min} | أعلى: {c.max}</p>
                         </div>
-                      ))}
+
+                        {/* Criteria Analysis */}
+                        <div className="bg-white rounded-2xl shadow-sm border p-6">
+                            <h3 className="text-xl font-bold text-gray-800 mb-4">{t("تحليل حسب المعيار", "Analyse par critère", "Criteria Analysis")}</h3>
+                            <div className="space-y-5">
+                                {stats.criteriaAnalysis.map(criterion => (
+                                    <div key={criterion.criterionId}>
+                                        <div className="flex justify-between items-baseline">
+                                            <p className="font-semibold text-gray-700">{criterion.criterionName}</p>
+                                            <p className="text-sm font-bold">{t("المعدل:", "Moyenne:", "Avg:")} {criterion.averageScore.toFixed(2)}</p>
+                                        </div>
+                                        <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                            <div className="bg-emerald-50 p-2 rounded-lg text-center"><p className="font-bold text-emerald-700">{criterion.masteryCounts['+++'] || 0}</p><p className="text-emerald-600">{t("ممتاز", "Excellent", "Excellent")}</p></div>
+                                            <div className="bg-green-50 p-2 rounded-lg text-center"><p className="font-bold text-green-700">{criterion.masteryCounts['++'] || 0}</p><p className="text-green-600">{t("جيد", "Bon", "Good")}</p></div>
+                                            <div className="bg-yellow-50 p-2 rounded-lg text-center"><p className="font-bold text-yellow-700">{criterion.masteryCounts['+'] || 0}</p><p className="text-yellow-600">{t("مقبول", "Acceptable", "Acceptable")}</p></div>
+                                            <div className="bg-red-50 p-2 rounded-lg text-center"><p className="font-bold text-red-700">{Object.entries(criterion.masteryCounts).filter(([k]) => ['-', '--', '---'].includes(k)).reduce((s, [, c]) => s + c, 0)}</p><p className="text-red-600">{t("ضعيف", "Faible", "Weak")}</p></div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Outliers */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="bg-white rounded-2xl shadow-sm border p-6">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><TrendingUp className="text-green-500"/> {t("أفضل 3 تلاميذ", "Top 3 élèves", "Top 3 Students")}</h3>
+                                <ul className="space-y-2">
+                                    {stats.topStudents.map(s => <StudentListItem key={s.id} name={s.studentName} score={s.finalScore} total={s.totalScore} hideName={hideNames} t={t} />)}
+                                </ul>
+                            </div>
+                            <div className="bg-white rounded-2xl shadow-sm border p-6">
+                                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><TrendingDown className="text-red-500"/> {t("أقل 3 تلاميذ", "3 derniers élèves", "Bottom 3 Students")}</h3>
+                                <ul className="space-y-2">
+                                    {stats.bottomStudents.map(s => <StudentListItem key={s.id} name={s.studentName} score={s.finalScore} total={s.totalScore} hideName={hideNames} t={t} />)}
+                                </ul>
+                            </div>
+                        </div>
+
                     </div>
-                    <p className="text-xs text-red-600 mt-3 font-medium">مقترح: خصص حصة علاجية لهذه المعايير قبل الانتقال للدرس الموالي</p>
-                  </div>
-                ) : null;
-              })()}
-
-              {/* Per-Criteria Analysis */}
-              {stats.criteriaAnalysis.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                  <div className="p-4 border-b bg-gray-50">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <Target className="w-5 h-5 text-blue-600" />
-                      تحليل المعايير
-                    </h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gray-50 text-sm">
-                          <th className="text-right p-3 font-semibold text-gray-600">المعيار</th>
-                          <th className="text-center p-3 font-semibold text-gray-600">المعدل</th>
-                          <th className="text-center p-3 font-semibold text-gray-600">أعلى</th>
-                          <th className="text-center p-3 font-semibold text-gray-600">أدنى</th>
-                          <th className="text-center p-3 font-semibold text-gray-600">نسبة النجاح</th>
-                          <th className="p-3 font-semibold text-gray-600 w-40">المستوى</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {stats.criteriaAnalysis.map((c: any) => {
-                          const pct = c.maxScore > 0 ? Math.round((c.average / c.maxScore) * 100) : 0;
-                          return (
-                            <tr key={c.code} className="hover:bg-gray-50">
-                              <td className="p-3">
-                                <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-sm font-bold ml-2">{c.code}</span>
-                                <span className="text-sm text-gray-700">{c.label}</span>
-                              </td>
-                              <td className="p-3 text-center font-semibold text-indigo-600">{c.average}/{c.maxScore}</td>
-                              <td className="p-3 text-center text-green-600">{c.max}</td>
-                              <td className="p-3 text-center text-red-600">{c.min}</td>
-                              <td className="p-3 text-center">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                  c.successRate >= 75 ? "bg-green-100 text-green-700" :
-                                  c.successRate >= 50 ? "bg-yellow-100 text-yellow-700" :
-                                  "bg-red-100 text-red-700"
-                                }`}>{c.successRate}%</span>
-                              </td>
-                              <td className="p-3">
-                                <div className="w-full bg-gray-100 rounded-full h-2.5">
-                                  <div className="bg-indigo-500 h-2.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Student Results Table */}
-              {stats.studentResults.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                  <div className="p-4 border-b bg-gray-50">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-indigo-600" />
-                      نتائج التلاميذ
-                    </h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gray-50 text-sm">
-                          <th className="text-right p-3 font-semibold text-gray-600">#</th>
-                          <th className="text-right p-3 font-semibold text-gray-600">التلميذ</th>
-                          {stats.criteriaAnalysis.map((c: any) => (
-                            <th key={c.code} className="text-center p-3 font-semibold text-gray-600">{c.code}</th>
-                          ))}
-                          <th className="text-center p-3 font-semibold text-gray-600">المجموع</th>
-                          <th className="text-center p-3 font-semibold text-gray-600">المستوى</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {stats.studentResults.map((s: any, i: number) => {
-                          const cs = (s.criteriaScores as any[]) || [];
-                          return (
-                            <tr key={s.studentNumber} className="hover:bg-gray-50">
-                              <td className="p-3 text-sm text-gray-500">{i + 1}</td>
-                              <td className="p-3 text-sm font-medium text-gray-800">{s.studentName}</td>
-                              {stats.criteriaAnalysis.map((c: any) => {
-                                const score = cs.find((x: any) => x.criterionCode === c.code);
-                                return (
-                                  <td key={c.code} className="p-3 text-center text-sm">
-                                    {score ? `${score.finalScore ?? score.suggestedScore}/${c.maxScore}` : "-"}
-                                  </td>
-                                );
-                              })}
-                              <td className="p-3 text-center font-bold text-indigo-600">{s.totalScore}/{stats.session.totalPoints}</td>
-                              <td className="p-3 text-center">
-                                {s.masteryLevel && (
-                                  <span className={`px-2 py-0.5 rounded-lg text-xs font-bold ${getMasteryStyle(s.masteryLevel).bg} ${getMasteryStyle(s.masteryLevel).text}`}>
-                                    {s.masteryLevel}
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => {
-                    setExportingPdf(true);
-                    exportPdfMutation.mutate({ sessionId: selectedSessionId });
-                  }}
-                  disabled={exportingPdf}
-                  className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2">
-                  {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                  تصدير التقرير PDF
-                </button>
-                <button onClick={() => setActiveView("session-detail")}
-                  className="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 flex items-center gap-2">
-                  <ArrowRight className="w-4 h-4" />
-                  العودة للجلسة
-                </button>
-              </div>
+                ) : (
+                    <p>{t("لا توجد إحصائيات لعرضها.", "Aucune statistique à afficher.", "No statistics to display.")}</p>
+                )}
             </div>
-          ) : (
-            <div className="text-center py-20 text-gray-400">
-              <PieChart className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>لا توجد بيانات كافية للتحليل</p>
-            </div>
-          )}
         </div>
-      </div>
     );
   }
 
   return null;
 }
+
+const StatCard = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | number }) => (
+    <div className="bg-white rounded-xl shadow-sm border p-5 flex items-center gap-4">
+        <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
+            <Icon className="w-6 h-6 text-indigo-600" />
+        </div>
+        <div>
+            <p className="text-sm text-gray-500">{label}</p>
+            <p className="text-2xl font-bold text-gray-800">{value}</p>
+        </div>
+    </div>
+);
+
+const StudentListItem = ({ name, score, total, hideName, t }: { name: string | null, score: number | null, total: number | null, hideName: boolean, t: any }) => (
+    <li className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50">
+        <span className="font-semibold text-gray-700">{hideName ? t("تلميذ", "Élève", "Student") : name}</span>
+        <span className="font-bold text-indigo-600">{score?.toFixed(2)} / {total}</span>
+    </li>
+);

@@ -495,7 +495,11 @@ export default function LegacyDigitizer() {
       <ToolPageHeader
         icon={ScanLine}
         nameAr="Legacy Digitizer"
+        nameFr="Legacy Digitizer"
+        nameEn="Legacy Digitizer"
         descAr="رقمنة الوثائق التعليمية القديمة"
+        descFr="Numérisation des documents éducatifs anciens"
+        descEn="Digitize legacy educational documents"
         gradient={DIGITIZER_GRADIENT}
         backTo="/"
         actions={

@@ -281,7 +281,11 @@ export default function HandwritingAnalyzer() {
       <ToolPageHeader
         icon={Brain}
         nameAr="محلل خط اليد الذكي"
+        nameFr="Analyseur d'Écriture Intelligent"
+        nameEn="Smart Handwriting Analyzer"
         descAr="تحليل ذكي لخط اليد بالذكاء الاصطناعي"
+        descFr="Analyse intelligente de l'écriture manuscrite par l'IA"
+        descEn="AI-powered handwriting analysis"
         gradient="linear-gradient(135deg, #1e40af, #4338ca)"
         backTo="/"
       />

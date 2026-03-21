@@ -2784,3 +2784,44 @@
 - [x] Dynamic bubble tail and avatar positioning based on text direction
 - [x] Input field: send/attachment icons adapt to text direction
 - [x] Typography fallback: Inter font for English text alongside Almarai
+
+## Fix: Strict Language Consistency Across All Pages
+- [ ] Analyze current i18n/language system and identify all hardcoded strings
+- [ ] Ensure ALL UI elements follow the selected language (no mixing AR/FR/EN)
+- [ ] Fix EduGPT sidebar labels (Conversations, Nouveau, Rechercher, tags)
+- [ ] Fix EduGPT quick action buttons (تحضير جذاذة, إنشاء اختبار, سيناريو دراما)
+- [ ] Fix EduGPT welcome screen text and description
+- [ ] Fix EduGPT input placeholder
+- [ ] Fix navigation bar labels
+- [ ] Fix tool page headers and descriptions
+- [ ] Fix footer text and links
+- [ ] Fix all other hardcoded Arabic strings in FR/EN mode
+
+## Full Multilingual Translation: All 11 Tool Pages (Internal Content)
+- [x] Create centralized toolTranslations.ts with common + tool-specific strings (DONE - 684 lines)
+- [x] Translate ExamBuilder.tsx (labels, buttons, toasts, dropdowns, placeholders)
+- [ ] Translate Inspector.tsx
+- [ ] Translate AnnualPlanGenerator.tsx
+- [ ] Translate CurriculumMap.tsx
+- [ ] Translate LessonSheetFromPlan.tsx
+- [ ] Translate BlindGrading.tsx
+- [ ] Translate LeaderVisualStudio.tsx
+- [ ] Translate DramaEngine.tsx
+- [ ] Translate VideoEvaluator.tsx
+- [ ] Translate HandwritingAnalyzer.tsx
+- [ ] Translate LegacyDigitizer.tsx
+- [ ] Translate UnifiedToolLayout loader messages (multilingual)
+- [ ] Translate shared components (LockedFeature, PrintPreview, etc.)
+- [ ] Verify build and run tests
+- [ ] Save checkpoint
+
+## Prompt Engineering Lab (أداة هندسة الأوامر) - مجانية
+- [x] Create PromptLab.tsx page with 4 tabs (Library, Optimizer, Templates, Tips)
+- [x] Build prompt library with categories (video, exams, lessons, drama, analysis, general)
+- [x] Build smart prompt optimizer (LLM-powered) backend procedure
+- [x] Build interactive templates with fill-in-the-blanks
+- [x] Build tips & golden rules section
+- [x] Register route in App.tsx (public - no login required)
+- [x] Add navigation entry on Home page
+- [x] Add full multilingual translations (AR/FR/EN)
+- [x] Make it fully accessible without login (publicProcedure)

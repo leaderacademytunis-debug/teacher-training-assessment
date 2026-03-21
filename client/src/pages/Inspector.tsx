@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import { LockedFeature, usePermissions } from "@/components/LockedFeature";
@@ -30,6 +31,8 @@ import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import { Download, FileDown, Stethoscope, ShieldCheck, XCircle, CheckCircle2 } from "lucide-react";
 import UnifiedToolLayout, { type ToolConfig } from "@/components/UnifiedToolLayout";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getToolTranslations } from "@/lib/toolTranslations";
 
 // ─── Tool Config ─────────────────────────────────────────────────────────────
 
@@ -52,6 +55,22 @@ const INSPECTOR_CONFIG: ToolConfig = {
     "صياغة التوصيات والملاحظات...",
     "إعداد التقرير النهائي...",
   ],
+  loaderMessagesFr: [
+    "Analyse de la structure générale du document...",
+    "Examen des compétences et des objectifs pédagogiques...",
+    "Évaluation des activités et des supports didactiques...",
+    "Vérification des normes du ministère de l'Éducation tunisien...",
+    "Rédaction des recommandations et des observations...",
+    "Préparation du rapport final...",
+  ],
+  loaderMessagesEn: [
+    "Analyzing the general structure of the document...",
+    "Reviewing pedagogical competencies and objectives...",
+    "Evaluating learning activities and teaching aids...",
+    "Checking against Tunisian Ministry of Education standards...",
+    "Formulating recommendations and feedback...",
+    "Preparing the final report...",
+  ],
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -64,12 +83,13 @@ interface Tab {
   icon: typeof BookOpen;
   labelAr: string;
   labelFr: string;
+  labelEn: string;
   color: string;
   bgColor: string;
   borderColor: string;
-  description: string;
-  placeholder: string;
-  hint: string;
+  description: (t: (ar: string, fr: string, en: string) => string) => string;
+  placeholder: (t: (ar: string, fr: string, en: string) => string) => string;
+  hint: (t: (ar: string, fr: string, en: string) => string) => string;
 }
 
 const TABS: Tab[] = [
@@ -78,58 +98,90 @@ const TABS: Tab[] = [
     icon: BookOpen,
     labelAr: "مذكرة درس",
     labelFr: "Fiche de cours",
+    labelEn: "Lesson Plan",
     color: "text-blue-700",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
-    description: "تقييم مذكرة درس أو جذاذة حصة وفق المعايير البيداغوجية الرسمية",
-    placeholder: "الصق هنا نص مذكرة الدرس أو الجذاذة...",
-    hint: "يُفضّل لصق النص كاملاً مع العناوين والأنشطة",
+    description: (t) => t("تقييم مذكرة درس أو جذاذة حصة وفق المعايير البيداغوجية الرسمية", "Évaluer une fiche de cours ou de séance selon les normes pédagogiques officielles", "Evaluate a lesson plan or session sheet according to official pedagogical standards"),
+    placeholder: (t) => t("الصق هنا نص مذكرة الدرس أو الجذاذة...", "Collez ici le texte de la fiche de cours ou de la séance...", "Paste the text of the lesson plan or session sheet here..."),
+    hint: (t) => t("يُفضّل لصق النص كاملاً مع العناوين والأنشطة", "Il est préférable de coller le texte intégral avec les titres et les activités", "It is best to paste the full text including titles and activities"),
   },
   {
     id: "exam",
     icon: ClipboardCheck,
     labelAr: "اختبار",
     labelFr: "Examen",
+    labelEn: "Exam",
     color: "text-green-700",
     bgColor: "bg-green-50",
     borderColor: "border-green-200",
-    description: "تقييم اختبار أو فرض وفق معايير التقييم الرسمية (سند، تعليمة، مع1-4)",
-    placeholder: "الصق هنا نص الاختبار أو الفرض...",
-    hint: "تأكد من تضمين السند والتعليمات وجدول التنقيط",
+    description: (t) => t("تقييم اختبار أو فرض وفق معايير التقييم الرسمية (سند، تعليمة، مع1-4)", "Évaluer un examen ou un devoir selon les critères d'évaluation officiels (support, consigne, C1-4)", "Evaluate an exam or test according to official assessment criteria (support, instruction, C1-4)"),
+    placeholder: (t) => t("الصق هنا نص الاختبار أو الفرض...", "Collez ici le texte de l'examen ou du devoir...", "Paste the text of the exam or test here..."),
+    hint: (t) => t("تأكد من تضمين السند والتعليمات وجدول التنقيط", "Assurez-vous d'inclure le support, les consignes et le barème de notation", "Make sure to include the support, instructions, and scoring table"),
   },
   {
     id: "planning",
     icon: CalendarDays,
     labelAr: "تخطيط سنوي",
     labelFr: "Planification",
+    labelEn: "Planning",
     color: "text-purple-700",
     bgColor: "bg-purple-50",
     borderColor: "border-purple-200",
-    description: "تقييم التخطيط السنوي أو التوزيع الزمني وفق البرنامج الرسمي",
-    placeholder: "الصق هنا نص التخطيط السنوي أو التوزيع الزمني...",
-    hint: "يُفضّل تضمين جميع الوحدات والحصص",
+    description: (t) => t("تقييم التخطيط السنوي أو التوزيع الزمني وفق البرنامج الرسمي", "Évaluer la planification annuelle ou la répartition temporelle selon le programme officiel", "Evaluate the annual planning or timeline according to the official curriculum"),
+    placeholder: (t) => t("الصق هنا نص التخطيط السنوي أو التوزيع الزمني...", "Collez ici le texte de la planification annuelle ou de la répartition temporelle...", "Paste the text of the annual planning or timeline here..."),
+    hint: (t) => t("يُفضّل تضمين جميع الوحدات والحصص", "Il est préférable d'inclure toutes les unités et séances", "It is best to include all units and sessions"),
   },
   {
     id: "other",
     icon: FileText,
     labelAr: "وثيقة أخرى",
     labelFr: "Autre document",
+    labelEn: "Other Document",
     color: "text-orange-700",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
-    description: "تقييم أي وثيقة تربوية أخرى (مشروع، تقرير، خطة علاجية...)",
-    placeholder: "الصق هنا نص الوثيقة التربوية...",
-    hint: "حدد نوع الوثيقة بوضوح في بداية النص",
+    description: (t) => t("تقييم أي وثيقة تربوية أخرى (مشروع، تقرير، خطة علاجية...)", "Évaluer tout autre document pédagogique (projet, rapport, plan de remédiation...)", "Evaluate any other educational document (project, report, remedial plan...)"),
+    placeholder: (t) => t("الصق هنا نص الوثيقة التربوية...", "Collez ici le texte du document pédagogique...", "Paste the text of the educational document here..."),
+    hint: (t) => t("حدد نوع الوثيقة بوضوح في بداية النص", "Précisez clairement le type de document au début du texte", "Clearly specify the type of document at the beginning of the text"),
   },
 ];
 
 // ─── Evaluation criteria chips ────────────────────────────────────────────────
 
-const CRITERIA_BY_TAB: Record<TabId, string[]> = {
-  lesson: ["الكفايات والأهداف", "مراحل الدرس (5E)", "أنشطة التعلم", "التقييم التكويني", "التمييز البيداغوجي", "الوسائل والأدوات"],
-  exam: ["صياغة الأسئلة", "التدرج في الصعوبة", "التغطية البرامجية", "التنقيط والمعامل", "الوضوح والدقة", "ملاءمة المستوى"],
-  planning: ["التوافق مع البرنامج", "توزيع الحصص", "التسلسل المنطقي", "الوحدات والمحاور", "التقييمات الدورية", "الاحتياطي الزمني"],
-  other: ["الوضوح والتنظيم", "الملاءمة التربوية", "الجدوى والتطبيق", "الأهداف المحددة", "المرجعية القانونية", "القيمة المضافة"],
+const CRITERIA_BY_TAB: Record<TabId, { ar: string, fr: string, en: string }[]> = {
+  lesson: [
+    { ar: "الكفايات والأهداف", fr: "Compétences et objectifs", en: "Competencies and Objectives" },
+    { ar: "مراحل الدرس (5E)", fr: "Phases de la leçon (5E)", en: "Lesson Stages (5E)" },
+    { ar: "أنشطة التعلم", fr: "Activités d'apprentissage", en: "Learning Activities" },
+    { ar: "التقييم التكويني", fr: "Évaluation formative", en: "Formative Assessment" },
+    { ar: "التمييز البيداغوجي", fr: "Différenciation pédagogique", en: "Pedagogical Differentiation" },
+    { ar: "الوسائل والأدوات", fr: "Supports et outils", en: "Materials and Tools" },
+  ],
+  exam: [
+    { ar: "صياغة الأسئلة", fr: "Formulation des questions", en: "Question Formulation" },
+    { ar: "التدرج في الصعوبة", fr: "Progression de la difficulté", en: "Difficulty Progression" },
+    { ar: "التغطية البرامجية", fr: "Couverture du programme", en: "Curriculum Coverage" },
+    { ar: "التنقيط والمعامل", fr: "Notation et coefficient", en: "Scoring and Weighting" },
+    { ar: "الوضوح والدقة", fr: "Clarté et précision", en: "Clarity and Precision" },
+    { ar: "ملاءمة المستوى", fr: "Adéquation au niveau", en: "Level Appropriateness" },
+  ],
+  planning: [
+    { ar: "التوافق مع البرنامج", fr: "Conformité au programme", en: "Curriculum Alignment" },
+    { ar: "توزيع الحصص", fr: "Répartition des séances", en: "Session Distribution" },
+    { ar: "التسلسل المنطقي", fr: "Séquençage logique", en: "Logical Sequencing" },
+    { ar: "الوحدات والمحاور", fr: "Unités et axes", en: "Units and Themes" },
+    { ar: "التقييمات الدورية", fr: "Évaluations périodiques", en: "Periodic Assessments" },
+    { ar: "الاحتياطي الزمني", fr: "Marge de temps", en: "Time Buffer" },
+  ],
+  other: [
+    { ar: "الوضوح والتنظيم", fr: "Clarté et organisation", en: "Clarity and Organization" },
+    { ar: "الملاءمة التربوية", fr: "Pertinence pédagogique", en: "Educational Relevance" },
+    { ar: "الجدوى والتطبيق", fr: "Faisabilité et application", en: "Feasibility and Application" },
+    { ar: "الأهداف المحددة", fr: "Objectifs spécifiques", en: "Specific Objectives" },
+    { ar: "المرجعية القانونية", fr: "Référence légale", en: "Legal Reference" },
+    { ar: "القيمة المضافة", fr: "Valeur ajoutée", en: "Added Value" },
+  ],
 };
 
 // ─── Accepted file types ──────────────────────────────────────────────────────
@@ -161,6 +213,10 @@ function formatFileSize(bytes: number): string {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SmartInspector() {
+  const { language, t } = useLanguage();
+  const tt = getToolTranslations(language);
+  const isRTL = language === "ar";
+
   const { hasEdugpt, isAdmin, isLoading: permLoading } = usePermissions();
   const [activeTab, setActiveTab] = useState<TabId>("lesson");
   const [inputMode, setInputMode] = useState<InputMode>("text");
@@ -194,13 +250,13 @@ export default function SmartInspector() {
     if (pctMatch) score = parseInt(pctMatch[1]);
 
     const criteriaChecks = [
-      { name: "السند (الوضعية)", patterns: ["سند", "وضعية", "sened"] },
-      { name: "التعليمة", patterns: ["تعليمة", "ta'lima", "تعليمات"] },
-      { name: "معايير التملك (مع1)", patterns: ["مع1", "مع 1", "M1", "معيار 1"] },
-      { name: "معايير التملك (مع2)", patterns: ["مع2", "مع 2", "M2", "معيار 2"] },
-      { name: "معايير التملك (مع3)", patterns: ["مع3", "مع 3", "M3", "معيار 3"] },
-      { name: "معايير التملك (مع4)", patterns: ["مع4", "مع 4", "M4", "معيار 4"] },
-      { name: "جدول التنقيط", patterns: ["جدول", "تنقيط", "إسناد الأعداد"] },
+      { name: t("السند (الوضعية)", "Support (Situation)", "Support (Situation)"), patterns: ["سند", "وضعية", "sened"] },
+      { name: t("التعليمة", "Instruction", "Instruction"), patterns: ["تعليمة", "ta'lima", "تعليمات"] },
+      { name: t("معايير التملك (مع1)", "Critères de maîtrise (C1)", "Mastery Criteria (C1)"), patterns: ["مع1", "مع 1", "M1", "معيار 1"] },
+      { name: t("معايير التملك (مع2)", "Critères de maîtrise (C2)", "Mastery Criteria (C2)"), patterns: ["مع2", "مع 2", "M2", "معيار 2"] },
+      { name: t("معايير التملك (مع3)", "Critères de maîtrise (C3)", "Mastery Criteria (C3)"), patterns: ["مع3", "مع 3", "M3", "معيار 3"] },
+      { name: t("معايير التملك (مع4)", "Critères de maîtrise (C4)", "Mastery Criteria (C4)"), patterns: ["مع4", "مع 4", "M4", "معيار 4"] },
+      { name: t("جدول التنقيط", "Barème de notation", "Scoring Table"), patterns: ["جدول", "تنقيط", "إسناد الأعداد"] },
     ];
     const docLower = report.toLowerCase();
     const missing: string[] = [];
@@ -227,7 +283,7 @@ export default function SmartInspector() {
       }
     },
     onError: (err) => {
-      setError(err.message || "حدث خطأ أثناء التحليل. حاول مرة أخرى.");
+      setError(err.message || t("حدث خطأ أثناء التحليل. حاول مرة أخرى.", "Une erreur est survenue lors de l'analyse. Veuillez réessayer.", "An error occurred during analysis. Please try again."));
       setIsLoading(false);
     },
   });
@@ -239,7 +295,7 @@ export default function SmartInspector() {
       setError(null);
     },
     onError: (err) => {
-      setError(err.message || "فشل استخراج النص من الملف.");
+      setError(err.message || t("فشل استخراج النص من الملف.", "Échec de l'extraction du texte du fichier.", "Failed to extract text from the file."));
       setIsExtracting(false);
     },
   });
@@ -260,7 +316,7 @@ export default function SmartInspector() {
     },
     onError: () => {
       setIsGeneratingRemediation(false);
-      toast.error("تعذّر توليد الخطة العلاجية");
+      toast.error(t("تعذّر توليد الخطة العلاجية", "Impossible de générer le plan de remédiation", "Failed to generate remedial plan"));
     },
   });
 
@@ -268,11 +324,11 @@ export default function SmartInspector() {
     onSuccess: (data) => {
       window.open(data.url, "_blank");
       setIsGeneratingPdf(false);
-      toast.success("تم تصدير التقرير بنجاح");
+      toast.success(t("تم تصدير التقرير بنجاح", "Le rapport a été exporté avec succès", "Report exported successfully"));
     },
     onError: () => {
       setIsGeneratingPdf(false);
-      toast.error("تعذّر تصدير التقرير");
+      toast.error(t("تعذّر تصدير التقرير", "Impossible d'exporter le rapport", "Failed to export report"));
     },
   });
 
@@ -290,97 +346,48 @@ export default function SmartInspector() {
     exportPdfMutation.mutate({
       report: result,
       documentType: activeTab,
-      fileName: uploadedFile?.name || "وثيقة تربوية",
+      fileName: uploadedFile?.name || t("وثيقة تربوية", "Document Pédagogique", "Educational Document"),
       score: inspectionScore || 0,
       missingCriteria,
       presentCriteria,
-      remediationPlan: remediationPlan || undefined,
+      remediationPlan: remediationPlan || "",
+      lang: language,
     });
   }
 
-  function handleInspect() {
-    if (!documentText.trim()) return;
-    setIsLoading(true);
-    setResult(null);
-    setError(null);
-    setInspectionScore(null);
-    setMissingCriteria([]);
-    setPresentCriteria([]);
-    setRemediationPlan(null);
-    inspectMutation.mutate({
-      documentType: activeTab,
-      documentText: documentText.trim(),
-      focusCriteria: selectedCriteria.length > 0 ? selectedCriteria : undefined,
-    });
-  }
+  const handleFileChange = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const file = files[0];
 
-  function handleCopy() {
-    if (!result) return;
-    navigator.clipboard.writeText(result);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  function handleTabChange(id: TabId) {
-    setActiveTab(id);
-    setResult(null);
-    setDocumentText("");
-    setSelectedCriteria([]);
-    setError(null);
-    setUploadedFile(null);
-  }
-
-  // ── File handling ────────────────────────────────────────────────────────
-
-  function processFile(file: File) {
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      setError(`حجم الملف كبير جداً. الحد الأقصى ${MAX_FILE_SIZE_MB} MB.`);
+      toast.error(
+        `${t("حجم الملف كبير جداً", "Fichier trop volumineux", "File is too large")} (${formatFileSize(file.size)}). ${t("الحد الأقصى", "Max", "Max")}: ${MAX_FILE_SIZE_MB}MB`
+      );
       return;
     }
-    const isValidType =
-      ACCEPTED_TYPES.includes(file.type) ||
-      file.name.toLowerCase().endsWith(".docx") ||
-      file.name.toLowerCase().endsWith(".doc");
-    if (!isValidType) {
-      setError("نوع الملف غير مدعوم. يُرجى رفع ملف PDF أو Word (.docx) أو صورة (PNG/JPG/WEBP).");
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      toast.error(
+        `${t("نوع الملف غير مدعوم", "Type de fichier non supporté", "Unsupported file type")}: ${file.type}. ${t("الأنواع المدعومة", "Types supportés", "Supported types")}: PDF, Word, PNG, JPG`
+      );
       return;
     }
 
     setUploadedFile(file);
-    setDocumentText("");
-    setResult(null);
-    setError(null);
+    setInputMode("file");
     setIsExtracting(true);
+    setError(null);
+    setResult(null);
+    setInspectionScore(null);
+    setRemediationPlan(null);
 
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = (reader.result as string).split(",")[1];
-      extractMutation.mutate({
-        base64Data: base64,
-        mimeType: file.type || "application/octet-stream",
-        fileName: file.name,
-      });
-    };
-    reader.onerror = () => {
-      setError("فشل قراءة الملف. حاول مرة أخرى.");
-      setIsExtracting(false);
+    reader.onload = (e) => {
+      const base64 = (e.target?.result as string).split(",")[1];
+      extractMutation.mutate({ fileContentBase64: base64, fileType: file.type });
     };
     reader.readAsDataURL(file);
-  }
-
-  function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-    e.target.value = "";
-  }
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [extractMutation, t]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -392,405 +399,321 @@ export default function SmartInspector() {
     setIsDragging(false);
   }, []);
 
-  function clearFile() {
-    setUploadedFile(null);
-    setDocumentText("");
-    setError(null);
-  }
-
-  // Show loading spinner while permissions are loading
-  if (permLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">جارٍ التحميل...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show locked state for non-subscribers
-  if (!hasEdugpt && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4">
-        <LockedFeature requiredService="accessEdugpt" featureName="المتفقد الذكي">
-          <div />
-        </LockedFeature>
-      </div>
-    );
-  }
-
-  // ─── Input Panel ─────────────────────────────────────────────────────────
-
-  const inputPanel = (
-    <div className="space-y-4" dir="rtl" style={{ fontFamily: "'Almarai', sans-serif" }}>
-      {/* Document type tabs */}
-      <div className="space-y-2">
-        <p className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-          <ClipboardCheck className="w-3.5 h-3.5 text-indigo-600" />
-          نوع الوثيقة
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition-all ${
-                  isActive
-                    ? `${tab.bgColor} ${tab.borderColor} ${tab.color} shadow-sm`
-                    : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {tab.labelAr}
-              </button>
-            );
-          })}
-        </div>
-        <p className="text-xs text-gray-400 mt-1">{currentTab.description}</p>
-      </div>
-
-      {/* Input mode toggle */}
-      <div className="bg-gray-50 rounded-xl p-1 flex gap-1">
-        <button
-          onClick={() => setInputMode("text")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
-            inputMode === "text"
-              ? "bg-white text-indigo-700 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Type className="w-3.5 h-3.5" />
-          لصق النص
-        </button>
-        <button
-          onClick={() => setInputMode("file")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${
-            inputMode === "file"
-              ? "bg-white text-indigo-700 shadow-sm"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          <Upload className="w-3.5 h-3.5" />
-          رفع ملف
-        </button>
-      </div>
-
-      {/* Text input */}
-      {inputMode === "text" && (
-        <div className="space-y-2">
-          <Textarea
-            value={documentText}
-            onChange={(e) => setDocumentText(e.target.value)}
-            placeholder={currentTab.placeholder}
-            className="min-h-[180px] text-sm leading-relaxed resize-none border-gray-200 focus:border-indigo-400 rounded-xl"
-            dir="rtl"
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">{documentText.length} حرف</span>
-            {documentText.length > 0 && (
-              <button onClick={() => setDocumentText("")} className="text-xs text-red-400 hover:text-red-600 transition-colors">
-                مسح النص
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* File upload */}
-      {inputMode === "file" && (
-        <div className="space-y-3">
-          {uploadedFile && !isExtracting && (
-            <div className="p-3 rounded-xl border border-gray-200 bg-gray-50 flex items-center gap-3">
-              {getFileIcon(uploadedFile.type)}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">{uploadedFile.name}</p>
-                <p className="text-xs text-gray-400">{formatFileSize(uploadedFile.size)}</p>
-              </div>
-              <button
-                onClick={clearFile}
-                className="w-7 h-7 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors flex-shrink-0"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {isExtracting && (
-            <div className="p-3 rounded-xl border border-blue-200 bg-blue-50 flex items-center gap-3">
-              <Loader2 className="w-5 h-5 text-blue-600 animate-spin flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-blue-800">جارٍ استخراج النص...</p>
-                <p className="text-xs text-blue-500 mt-0.5">قد يستغرق بضع ثوانٍ</p>
-              </div>
-            </div>
-          )}
-
-          {!uploadedFile && !isExtracting && (
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                isDragging
-                  ? "border-indigo-400 bg-indigo-50 scale-[1.01]"
-                  : "border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50"
-              }`}
-            >
-              <Upload className="w-8 h-8 mx-auto mb-2 text-indigo-400" />
-              <p className="font-medium text-gray-700 text-sm mb-1">اسحب الملف هنا أو اضغط للاختيار</p>
-              <p className="text-gray-400 text-xs">PDF، Word، صورة (PNG/JPG/WEBP)</p>
-              <p className="text-gray-300 text-xs mt-1">الحد الأقصى: {MAX_FILE_SIZE_MB} MB</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
-                onChange={handleFileInput}
-                className="hidden"
-              />
-            </div>
-          )}
-
-          {documentText && uploadedFile && !isExtracting && (
-            <div className="p-2 rounded-lg border border-green-200 bg-green-50">
-              <p className="text-xs font-medium text-green-700 flex items-center gap-1 mb-1">
-                <CheckCheck className="w-3.5 h-3.5" />
-                تم استخراج النص ({documentText.length} حرف)
-              </p>
-              <div className="max-h-24 overflow-y-auto text-xs text-gray-600 leading-relaxed">
-                {documentText.slice(0, 300)}{documentText.length > 300 ? "..." : ""}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Criteria chips */}
-      <div className="space-y-2">
-        <p className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-          <Star className="w-3.5 h-3.5 text-orange-500" />
-          معايير التركيز (اختياري)
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {criteria.map((c) => (
-            <button
-              key={c}
-              onClick={() => toggleCriterion(c)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                selectedCriteria.includes(c)
-                  ? `${currentTab.bgColor} ${currentTab.borderColor} ${currentTab.color}`
-                  : "bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300"
-              }`}
-            >
-              {selectedCriteria.includes(c) ? "✓ " : ""}{c}
-            </button>
-          ))}
-        </div>
-        {selectedCriteria.length > 0 && (
-          <button onClick={() => setSelectedCriteria([])} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-            إلغاء التحديد
-          </button>
-        )}
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-xs flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Inspect button */}
-      <Button
-        onClick={handleInspect}
-        disabled={isLoading || isExtracting || !documentText.trim()}
-        className="w-full py-3 text-white font-bold text-sm rounded-xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:scale-100 gap-2"
-        style={{
-          background: (isLoading || isExtracting || !documentText.trim())
-            ? "#9E9E9E"
-            : "linear-gradient(135deg, #1A237E, #1565C0)",
-          boxShadow: (isLoading || isExtracting || !documentText.trim())
-            ? "none"
-            : "0 6px 20px rgba(26,35,126,0.35)",
-        }}
-      >
-        {isLoading ? (
-          <><Loader2 className="w-4 h-4 animate-spin" />جارٍ التحليل...</>
-        ) : isExtracting ? (
-          <><Loader2 className="w-4 h-4 animate-spin" />جارٍ الاستخراج...</>
-        ) : (
-          <><Search className="w-4 h-4" />ابدأ التفقد الذكي</>
-        )}
-      </Button>
-    </div>
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      handleFileChange(e.dataTransfer.files);
+    },
+    [handleFileChange]
   );
 
-  // ─── Custom Result Renderer ──────────────────────────────────────────────
+  function handleAnalyze() {
+    if (!documentText.trim()) {
+      toast.error(t("الرجاء إدخال نص المذكرة أولاً", "Veuillez d'abord saisir le texte du document", "Please enter the document text first"));
+      return;
+    }
+    setIsLoading(true);
+    setResult(null);
+    setInspectionScore(null);
+    setRemediationPlan(null);
+    inspectMutation.mutate({
+      documentText,
+      documentType: activeTab,
+      selectedCriteria,
+      lang: language,
+    });
+  }
 
-  const customResultRenderer = result ? (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" dir="rtl">
-      {/* Report header */}
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #E8EAF6, #C5CAE9)" }}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#1A237E" }}>
-            <ClipboardCheck className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <p className="font-bold text-gray-800 text-sm">تقرير التفقد</p>
-            <p className="text-xs text-gray-500">
-              {currentTab.labelAr}{uploadedFile ? ` — ${uploadedFile.name}` : ""}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
-          >
-            {copied ? <CheckCheck className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5 text-gray-500" />}
-            {copied ? "تم النسخ" : "نسخ"}
-          </button>
-          <button
-            onClick={() => setShowFullReport(!showFullReport)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
-          >
-            {showFullReport ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            {showFullReport ? "طيّ" : "توسيع"}
-          </button>
-        </div>
-      </div>
+  function handleCopy() {
+    if (!result) return;
+    navigator.clipboard.writeText(result);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
-      {/* Report body */}
-      {showFullReport && (
-        <div className="p-5 max-h-[600px] overflow-y-auto">
-          <div className="prose prose-sm max-w-none text-gray-700 leading-relaxed" dir="rtl">
-            <Streamdown>{result}</Streamdown>
-          </div>
-        </div>
-      )}
+  function resetState() {
+    setDocumentText("");
+    setResult(null);
+    setError(null);
+    setUploadedFile(null);
+    setInputMode("text");
+    setInspectionScore(null);
+    setMissingCriteria([]);
+    setPresentCriteria([]);
+    setRemediationPlan(null);
+  }
 
-      {/* Criteria Analysis Panel */}
-      {(missingCriteria.length > 0 || presentCriteria.length > 0) && (
-        <div className="p-4 border-t border-gray-100">
-          <h4 className="font-bold text-sm text-gray-800 mb-3 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
-            تحليل المعايير الرسمية
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {presentCriteria.map((c, i) => (
-              <div key={`p-${i}`} className="flex items-center gap-2 text-xs">
-                <CheckCircle2 className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
-                {c}
-              </div>
-            ))}
-            {missingCriteria.map((c, i) => (
-              <div key={`m-${i}`} className="flex items-center gap-2 text-xs">
-                <XCircle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
-                <span>غائب: {c}</span>
-              </div>
-            ))}
-          </div>
-          {inspectionScore !== null && inspectionScore > 0 && (
-            <div className="mt-3 flex items-center gap-3">
-              <span className="text-xs text-gray-500">التقييم العام:</span>
-              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${inspectionScore >= 70 ? "bg-green-500" : inspectionScore >= 50 ? "bg-yellow-500" : "bg-red-500"}`}
-                  style={{ width: `${inspectionScore}%` }}
-                />
-              </div>
-              <span className={`text-xs font-bold ${inspectionScore >= 70 ? "text-green-600" : inspectionScore >= 50 ? "text-yellow-600" : "text-red-600"}`}>
-                {inspectionScore}%
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Remediation Plan */}
-      {remediationPlan && (
-        <div className="p-4 border-t border-gray-100">
-          <h3 className="text-base font-bold mb-3 flex items-center gap-2">
-            <Stethoscope className="w-5 h-5" />
-            خطة علاجية مقترحة
-          </h3>
-          <div className="prose prose-sm max-w-none text-gray-700">
-            <Streamdown>{remediationPlan}</Streamdown>
-          </div>
-        </div>
-      )}
-      {isGeneratingRemediation && (
-        <div className="p-4 border-t border-gray-100">
-          <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-            <Loader2 className="w-5 h-5 text-amber-600 animate-spin flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">جارٍ توليد الخطة العلاجية...</p>
-              <p className="text-xs text-amber-500 mt-0.5">التقييم أقل من 70%</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Footer actions */}
-      <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-3">
-        <button
-          onClick={() => { setResult(null); setDocumentText(""); setUploadedFile(null); setInspectionScore(null); setMissingCriteria([]); setPresentCriteria([]); setRemediationPlan(null); }}
-          className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5"
-        >
-          <FileText className="w-4 h-4" />
-          تقييم وثيقة جديدة
-        </button>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs gap-1.5 border-green-200 text-green-700 hover:bg-green-50"
-            onClick={handleExportPdf}
-            disabled={isGeneratingPdf}
-          >
-            {isGeneratingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-            تصدير PDF رسمي
-          </Button>
-          {inspectionScore !== null && inspectionScore < 70 && !remediationPlan && !isGeneratingRemediation && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs gap-1.5 border-amber-200 text-amber-700 hover:bg-amber-50"
-              onClick={() => handleGenerateRemediation(result!)}
-            >
-              <Stethoscope className="w-3.5 h-3.5" />
-              خطة علاجية
-            </Button>
-          )}
-          <Link href="/assistant">
-            <Button variant="outline" size="sm" className="text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50">
-              <BookOpen className="w-3.5 h-3.5" />
-              إنشاء مذكرة
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </div>
-  ) : null;
-
-  // ─── Render ──────────────────────────────────────────────────────────────
+  const canAnalyze = hasEdugpt && !permLoading;
 
   return (
-    <UnifiedToolLayout
-      config={INSPECTOR_CONFIG}
-      inputPanel={inputPanel}
-      resultContent={result}
-      isGenerating={isLoading}
-      onRegenerate={handleInspect}
-      onDownloadPDF={handleExportPdf}
-      customResultRenderer={customResultRenderer}
-      editable={false}
-    />
+    <UnifiedToolLayout config={INSPECTOR_CONFIG}>
+      <div className="w-full max-w-6xl mx-auto p-4 md:p-6" dir={isRTL ? "rtl" : "ltr"}>
+        {!result ? (
+          // ─── Input View ───────────────────────────────────────────────────
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left side: Input form */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {t("1. اختر نوع الوثيقة", "1. Choisissez le type de document", "1. Choose Document Type")}
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all duration-200 ${activeTab === tab.id
+                        ? `${tab.bgColor} ${tab.borderColor} ${tab.color}`
+                        : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100 hover:border-gray-300"
+                      }`}>
+                    <tab.icon className="w-6 h-6 mb-1" />
+                    <span className="text-xs font-medium">{t(tab.labelAr, tab.labelFr, tab.labelEn)}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className={`text-sm text-gray-500 mb-4 p-3 rounded-lg ${currentTab.bgColor} border ${currentTab.borderColor}`}>
+                {currentTab.description(t)}
+              </p>
+
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {t("2. أدخل محتوى الوثيقة", "2. Saisissez le contenu du document", "2. Enter Document Content")}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={inputMode === "text" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setInputMode("text")}
+                    className="h-8 px-3 text-xs">
+                    <Type className="w-4 h-4 me-2" />
+                    {t("نص", "Texte", "Text")}
+                  </Button>
+                  <Button
+                    variant={inputMode === "file" ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-8 px-3 text-xs">
+                    <Upload className="w-4 h-4 me-2" />
+                    {t("ملف", "Fichier", "File")}
+                  </Button>
+                </div>
+              </div>
+
+              {inputMode === "text" ? (
+                <Textarea
+                  value={documentText}
+                  onChange={(e) => setDocumentText(e.target.value)}
+                  placeholder={currentTab.placeholder(t)}
+                  className="w-full h-48 lg:h-64 resize-none mb-2"
+                  disabled={!canAnalyze}
+                />
+              ) : (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative flex flex-col items-center justify-center w-full h-48 lg:h-64 rounded-lg border-2 border-dashed cursor-pointer transition-colors ${
+                    isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                    }`}>
+                  {uploadedFile && !isExtracting ? (
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {getFileIcon(uploadedFile.type)}
+                        <span className="font-semibold text-gray-700">{uploadedFile.name}</span>
+                        <span className="text-sm text-gray-500">({formatFileSize(uploadedFile.size)})</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 text-red-500 hover:text-red-600 h-7 px-2 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          resetState();
+                        }}>
+                        <X className="w-3 h-3 me-1" />
+                        {t("إزالة الملف", "Retirer le fichier", "Remove file")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-500">
+                      {isExtracting ? (
+                        <>
+                          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
+                          <p className="font-semibold text-blue-600">{t("جارٍ استخراج النص...", "Extraction du texte en cours...", "Extracting text...")}</p>
+                          <p className="text-xs">{t("قد يستغرق هذا بعض الوقت للملفات الكبيرة", "Cela peut prendre un certain temps pour les fichiers volumineux", "This may take a while for large files")}</p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 mb-2" />
+                          <p className="font-semibold">{t("انقر للرفع أو اسحب وأفلت", "Cliquez pour téléverser ou glissez-déposez", "Click to upload or drag and drop")}</p>
+                          <p className="text-xs">{t("PDF، Word، أو صورة (حتى 10 ميجا)", "PDF, Word, ou Image (max 10MB)", "PDF, Word, or Image (up to 10MB)")}</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => handleFileChange(e.target.files)}
+                className="hidden"
+                accept={ACCEPTED_TYPES.join(",")}
+              />
+              <p className="text-xs text-gray-400 mt-2 text-center">{currentTab.hint(t)}</p>
+            </div>
+
+            {/* Right side: Criteria selection */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                {t("3. حدد معايير التقييم (اختياري)", "3. Sélectionnez les critères d'évaluation (facultatif)", "3. Select Evaluation Criteria (Optional)")}
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                {t("يمكنك توجيه المتفقد للتركيز على جوانب محددة. سيتم تقييم كل الجوانب إن لم تختر شيئاً.", "Vous pouvez guider l'inspecteur pour qu'il se concentre sur des aspects spécifiques. Tous les aspects seront évalués si vous ne sélectionnez rien.", "You can guide the inspector to focus on specific aspects. All aspects will be evaluated if you select nothing.")}
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {criteria.map((c) => (
+                  <button
+                    key={c.ar}
+                    onClick={() => toggleCriterion(c.ar)}
+                    className={`p-2.5 text-center text-xs font-medium rounded-lg border transition-colors ${
+                      selectedCriteria.includes(c.ar)
+                        ? `${currentTab.bgColor} ${currentTab.borderColor} ${currentTab.color}`
+                        : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                      }`}>
+                    {t(c.ar, c.fr, c.en)}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <LockedFeature
+                  isLocked={!canAnalyze}
+                  lockMessage={permLoading ? tt.loading : tt.loginRequired}
+                  featureName={tt.premiumFeature}>
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={isLoading || isExtracting || !documentText.trim()}
+                    className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700">
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin me-2" />
+                        {tt.generating}
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-5 h-5 me-2" />
+                        {t("ابدأ التفقد الآن", "Lancer l'inspection", "Start Inspection Now")}
+                      </>
+                    )}
+                  </Button>
+                </LockedFeature>
+                {error && <p className="text-sm text-red-500 mt-2 text-center">{error}</p>}
+              </div>
+            </div>
+          </div>
+        ) : (
+          // ─── Result View ────────────────────────────────────────────────────
+          <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-start justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-1">
+                  {t("تقرير التفقد الذكي", "Rapport d'Inspection Intelligent", "Smart Inspection Report")}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {t("تحليل للوثيقة:", "Analyse du document :", "Analysis for document:")} <span className="font-medium text-gray-700">{uploadedFile?.name || t("نص مدخل", "Texte saisi", "Input Text")}</span>
+                </p>
+              </div>
+              <div className="flex gap-2 mt-4 md:mt-0">
+                <Button onClick={resetState} variant="outline" className="h-9">
+                  <ArrowRight className="w-4 h-4 me-2" />
+                  {t("تقييم جديد", "Nouvelle évaluation", "New Evaluation")}
+                </Button>
+                <Button onClick={handleCopy} variant="outline" className="h-9">
+                  {copied ? (
+                    <CheckCheck className="w-4 h-4 me-2 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4 me-2" />
+                  )}
+                  {copied ? tt.copied : tt.copy}
+                </Button>
+                <Button onClick={handleExportPdf} disabled={isGeneratingPdf} className="h-9">
+                  {isGeneratingPdf ? (
+                    <Loader2 className="w-4 h-4 animate-spin me-2" />
+                  ) : (
+                    <FileDown className="w-4 h-4 me-2" />
+                  )}
+                  {tt.downloadPDF}
+                </Button>
+              </div>
+            </div>
+
+            {/* ─── Metrics Dashboard ─────────────────────────────────── */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                <Award className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-500">{t("النتيجة الإجمالية", "Score Global", "Overall Score")}</p>
+                <p className="text-3xl font-bold text-gray-800">{inspectionScore?.toFixed(0) ?? "--"}%</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <CheckCircle2 className="w-6 h-6 text-green-500" />
+                  <p className="text-sm font-medium text-gray-500">{t("المعايير المتوفرة", "Critères Présents", "Present Criteria")}</p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {presentCriteria.map(c => <span key={c} className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">{c}</span>)}
+                </div>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <XCircle className="w-6 h-6 text-red-500" />
+                  <p className="text-sm font-medium text-gray-500">{t("المعايير الناقصة", "Critères Manquants", "Missing Criteria")}</p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {missingCriteria.map(c => <span key={c} className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">{c}</span>)}
+                </div>
+              </div>
+            </div>
+
+            {/* ─── Remediation Plan ─────────────────────────────────── */}
+            {remediationPlan && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Stethoscope className="w-7 h-7 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-blue-800">{t("خطة علاجية مقترحة", "Plan de remédiation proposé", "Proposed Remedial Plan")}</h3>
+                </div>
+                <div className="prose prose-sm max-w-none text-gray-700">
+                  <Streamdown>{remediationPlan}</Streamdown>
+                </div>
+              </div>
+            )}
+            {isGeneratingRemediation && (
+              <div className="flex items-center justify-center gap-2 bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-blue-700">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <p className="font-medium text-sm">{t("جارٍ إعداد الخطة العلاجية...", "Préparation du plan de remédiation en cours...", "Preparing remedial plan...")}</p>
+              </div>
+            )}
+
+            {/* ─── Full Report ──────────────────────────────────────── */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setShowFullReport(!showFullReport)}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 hover:bg-gray-100">
+                <h3 className="text-base font-semibold text-gray-700">{t("التقرير المفصل", "Rapport Détaillé", "Detailed Report")}</h3>
+                {showFullReport ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
+              {showFullReport && (
+                <div className="p-4 prose prose-sm max-w-none text-gray-800 leading-relaxed">
+                  <Streamdown>{result}</Streamdown>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </UnifiedToolLayout>
   );
 }

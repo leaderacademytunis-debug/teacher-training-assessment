@@ -31,8 +31,10 @@ export interface ToolConfig {
   accentColor: string;
   /** Gradient for header/accents */
   gradient: string;
-  /** Smart loader messages in Arabic */
+  /** Smart loader messages — can be a flat array (Arabic only) or per-language */
   loaderMessages: string[];
+  loaderMessagesFr?: string[];
+  loaderMessagesEn?: string[];
 }
 
 export interface UnifiedToolLayoutProps {
@@ -310,12 +312,14 @@ function PaperResult({
   isEditing,
   onContentChange,
   accentColor,
+  lang = "ar",
 }: {
   content: string;
   editable: boolean;
   isEditing: boolean;
   onContentChange: (newContent: string) => void;
   accentColor: string;
+  lang?: AppLanguage;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -373,7 +377,7 @@ function PaperResult({
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span style={{ fontFamily: "'Almarai', sans-serif" }}>
-                وضع التعديل المباشر — انقر على النص لتعديله
+                {lang === "fr" ? "Mode édition directe — cliquez sur le texte pour le modifier" : lang === "en" ? "Inline edit mode — click on text to edit" : "وضع التعديل المباشر — انقر على النص لتعديله"}
               </span>
             </div>
           )}
@@ -394,7 +398,7 @@ function PaperResult({
               fontSize: "15px",
               lineHeight: "1.9",
               color: "#1F2937",
-              direction: "rtl",
+              direction: lang === "ar" ? "rtl" : "ltr",
               ...(isEditing ? { ringColor: `${accentColor}40` } : {}),
             }}
             dangerouslySetInnerHTML={{ __html: processedContent }}
@@ -690,7 +694,11 @@ export default function UnifiedToolLayout({
                   /* Smart Loader */
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <SmartLoader
-                      messages={config.loaderMessages}
+                      messages={
+                        language === "fr" && config.loaderMessagesFr ? config.loaderMessagesFr :
+                        language === "en" && config.loaderMessagesEn ? config.loaderMessagesEn :
+                        config.loaderMessages
+                      }
                       accentColor={config.accentColor}
                       gradient={config.gradient}
                     />
@@ -706,6 +714,7 @@ export default function UnifiedToolLayout({
                           isEditing={isEditing}
                           onContentChange={handleContentEdit}
                           accentColor={config.accentColor}
+                          lang={language}
                         />
                       )}
                     </div>

@@ -71,6 +71,7 @@ const BatchComparison = lazy(() => import("@/pages/BatchComparison"));
 const HandwritingAnalyzer = lazy(() => import("@/pages/HandwritingAnalyzer"));
 const VideoEvaluator = lazy(() => import("@/pages/VideoEvaluator"));
 const About = lazy(() => import("@/pages/About"));
+const PromptLab = lazy(() => import("@/pages/PromptLab"));
 
 function PageLoader() {
   return (
@@ -144,6 +145,7 @@ function Router() {
         <Route path="/handwriting-analyzer" component={HandwritingAnalyzer} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path="/about" component={About} />
+        <Route path="/prompt-lab" component={PromptLab} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>

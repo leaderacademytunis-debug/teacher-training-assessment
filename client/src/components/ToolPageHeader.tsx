@@ -1,16 +1,12 @@
 import { Link } from "wouter";
 import { ArrowRight, ChevronLeft, type LucideIcon } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /**
  * ToolPageHeader — A unified header for complex multi-view tool pages
  * that cannot use the full UnifiedToolLayout (split-screen) pattern.
  * 
- * Provides consistent branding across all 11 tools with:
- * - Gradient background matching the tool's accent color
- * - Back navigation (to home or custom)
- * - Tool icon, name, and description
- * - Optional breadcrumb for sub-views
- * - Optional right-side actions
+ * Now supports 3 languages (AR/FR/EN) via useLanguage context.
  */
 
 export interface ToolPageHeaderProps {
@@ -18,8 +14,16 @@ export interface ToolPageHeaderProps {
   icon: LucideIcon;
   /** Tool name in Arabic */
   nameAr: string;
+  /** Tool name in French */
+  nameFr?: string;
+  /** Tool name in English */
+  nameEn?: string;
   /** Short description in Arabic */
   descAr?: string;
+  /** Short description in French */
+  descFr?: string;
+  /** Short description in English */
+  descEn?: string;
   /** Gradient CSS for the header background */
   gradient: string;
   /** Back navigation target (default: "/") */
@@ -30,14 +34,18 @@ export interface ToolPageHeaderProps {
   breadcrumb?: string;
   /** Optional right-side actions */
   actions?: React.ReactNode;
-  /** Optional subtitle (overrides descAr) */
+  /** Optional subtitle (overrides desc) */
   subtitle?: string;
 }
 
 export default function ToolPageHeader({
   icon: Icon,
   nameAr,
+  nameFr,
+  nameEn,
   descAr,
+  descFr,
+  descEn,
   gradient,
   backTo = "/",
   onBack,
@@ -45,6 +53,10 @@ export default function ToolPageHeader({
   actions,
   subtitle,
 }: ToolPageHeaderProps) {
+  const { t } = useLanguage();
+  const displayName = t(nameAr, nameFr || nameAr, nameEn || nameAr);
+  const displayDesc = subtitle || t(descAr || "", descFr || descAr || "", descEn || descAr || "");
+
   return (
     <div className="text-white relative overflow-hidden" style={{ background: gradient }}>
       {/* Decorative elements */}
@@ -76,7 +88,7 @@ export default function ToolPageHeader({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl md:text-2xl font-bold" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                  {nameAr}
+                  {displayName}
                 </h1>
                 {breadcrumb && (
                   <>
@@ -85,8 +97,8 @@ export default function ToolPageHeader({
                   </>
                 )}
               </div>
-              {(subtitle || descAr) && (
-                <p className="text-white/70 text-sm mt-0.5">{subtitle || descAr}</p>
+              {displayDesc && (
+                <p className="text-white/70 text-sm mt-0.5">{displayDesc}</p>
               )}
             </div>
           </div>
