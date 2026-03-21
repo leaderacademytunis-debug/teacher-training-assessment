@@ -400,7 +400,7 @@ export default function BlindGrading() {
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${session.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                       {session.status === 'completed' ? t('مكتملة', 'Terminée', 'Completed') : t('قيد الإنجاز', 'En cours', 'In Progress')}
                     </span>
-                    <span className="flex items-center gap-1.5 text-gray-500"><Users className="w-3.5 h-3.5" /> {session._count.submissions} {t("تلميذ", "élèves", "students")}</span>
+                    <span className="flex items-center gap-1.5 text-gray-500"><Users className="w-3.5 h-3.5" /> {session._count?.submissions || 0} {t("تلميذ", "élèves", "students")}</span>
                     <span className="flex items-center gap-1.5 text-gray-500"><Clock className="w-3.5 h-3.5" /> {new Date(session.createdAt).toLocaleDateString(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-FR' : 'en-US')}</span>
                   </div>
                 </div>
@@ -477,12 +477,12 @@ export default function BlindGrading() {
 
                         {/* Submissions Table */}
                         <div className="space-y-3">
-                            {session.submissions.length === 0 ? (
+                            {(!session.submissions || session.submissions.length === 0) ? (
                                 <div className="text-center py-12">
                                     <p className="text-gray-500">{t("لم يتم رفع أي ورقة بعد.", "Aucune copie n'a été téléversée pour le moment.", "No submissions have been uploaded yet.")}</p>
                                 </div>
                             ) : (
-                                session.submissions.map((sub, index) => (
+                                (session.submissions || []).map((sub, index) => (
                                     <div 
                                         key={sub.id} 
                                         onClick={() => { setSelectedSubmissionId(sub.id); setActiveView("submission-detail"); }}
@@ -513,8 +513,8 @@ export default function BlindGrading() {
                         <div className="bg-white rounded-2xl shadow-sm border p-6">
                             <h3 className="text-xl font-bold text-gray-800 mb-4">{t("إحصائيات سريعة", "Statistiques rapides", "Quick Stats")}</h3>
                             <div className="space-y-3 text-sm">
-                                <div className="flex justify-between"><span>{t("عدد التلاميذ", "Nombre d'élèves", "Number of Students")}</span><span className="font-bold">{session.submissions.length}</span></div>
-                                <div className="flex justify-between"><span>{t("الأوراق المصححة", "Copies corrigées", "Graded Papers")}</span><span className="font-bold">{session.submissions.filter(s => s.status === 'graded').length}</span></div>
+                                <div className="flex justify-between"><span>{t("عدد التلاميذ", "Nombre d'élèves", "Number of Students")}</span><span className="font-bold">{(session.submissions || []).length}</span></div>
+                                <div className="flex justify-between"><span>{t("الأوراق المصححة", "Copies corrigées", "Graded Papers")}</span><span className="font-bold">{(session.submissions || []).filter(s => s.status === 'graded').length}</span></div>
                                 <div className="flex justify-between"><span>{t("معدل القسم", "Moyenne de la classe", "Class Average")}</span><span className="font-bold">{session.classAverage?.toFixed(2) || 'N/A'}</span></div>
                             </div>
                             <Button onClick={() => setActiveView("statistics")} className="w-full mt-5">

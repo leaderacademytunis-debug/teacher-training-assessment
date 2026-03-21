@@ -63,6 +63,12 @@ export interface UnifiedToolLayoutProps {
   extraActions?: ReactNode;
   /** Optional: children for custom full-page layout (bypasses split panel) */
   children?: ReactNode;
+  /** Alias: resultPanel maps to customResultRenderer */
+  resultPanel?: ReactNode;
+  /** Alias: isLoading maps to isGenerating */
+  isLoading?: boolean;
+  /** Alias: loadingMessage (unused but accepted for compat) */
+  loadingMessage?: string;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -479,15 +485,18 @@ export default function UnifiedToolLayout({
   config,
   inputPanel,
   resultContent,
-  isGenerating = false,
+  isGenerating: isGeneratingProp = false,
+  isLoading = false,
   onRegenerate = () => {},
   onDownloadPDF,
   onDownloadWord,
   customResultRenderer,
+  resultPanel,
   editable = true,
   onContentEdit,
   extraActions,
   children,
+  loadingMessage,
 }: UnifiedToolLayoutProps) {
   const { language } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
@@ -496,12 +505,16 @@ export default function UnifiedToolLayout({
   const resultRef = useRef<HTMLDivElement>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Resolve aliases
+  const isGenerating = isGeneratingProp || isLoading;
+  const effectiveCustomRenderer = customResultRenderer || resultPanel;
+
   const t = (ar: string, fr: string, en: string) =>
     language === "ar" ? ar : language === "fr" ? fr : en;
 
   const Icon = config.icon;
   const isRTL = language === "ar";
-  const hasResult = resultContent !== null || customResultRenderer !== null;
+  const hasResult = (resultContent !== null && resultContent !== undefined) || (effectiveCustomRenderer !== null && effectiveCustomRenderer !== undefined);
 
   // Auto-switch to result view on mobile when generation completes
   useEffect(() => {
@@ -713,7 +726,7 @@ export default function UnifiedToolLayout({
                   /* Paper Result */
                   <div>
                     <div ref={printRef}>
-                      {customResultRenderer || (
+                      {effectiveCustomRenderer || (
                         <PaperResult
                           content={editedContent || resultContent}
                           editable={editable}

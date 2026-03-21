@@ -273,7 +273,7 @@ const VideoEvaluator = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: history, refetch: refetchHistory } = trpc.tool.videoEvaluator.getHistory.useQuery(undefined, {
+  const { data: history, refetch: refetchHistory } = trpc.tool.videoEvaluator.getMyEvaluations.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
   });
 

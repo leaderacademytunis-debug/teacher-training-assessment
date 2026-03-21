@@ -502,7 +502,7 @@ export default function AnnualPlanGenerator() {
 
   return (
     <UnifiedToolLayout
-      toolConfig={TOOL_CONFIG}
+      config={TOOL_CONFIG}
       inputPanel={inputPanel}
       resultPanel={resultPanel}
       isLoading={generateMutation.isLoading}

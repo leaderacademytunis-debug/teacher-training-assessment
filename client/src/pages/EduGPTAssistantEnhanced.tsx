@@ -55,6 +55,8 @@ const UI = {
     tagReview: "🔄 مراجعة",
     tagReport: "📊 تقرير",
     tagOther: "💡 أخرى",
+    tagAdd: "إضافة وسم",
+    tagChoose: "اختر وسماً",
     // Quick actions
     quickLessonPlan: "تحضير جذاذة",
     quickLessonPlanPrompt: "أعدّ لي جذاذة درس مفصّلة وفق المعايير التونسية الرسمية",
@@ -166,6 +168,8 @@ const UI = {
     tagReview: "🔄 Révision",
     tagReport: "📊 Rapport",
     tagOther: "💡 Autre",
+    tagAdd: "Ajouter un tag",
+    tagChoose: "Choisir un tag",
     quickLessonPlan: "Préparer une fiche",
     quickLessonPlanPrompt: "Prépare-moi une fiche de leçon détaillée selon les normes officielles tunisiennes",
     quickExam: "Créer un examen",
@@ -269,6 +273,8 @@ Ou dites-moi directement ce dont vous avez besoin ! 😊`,
     tagReview: "🔄 Review",
     tagReport: "📊 Report",
     tagOther: "💡 Other",
+    tagAdd: "Add tag",
+    tagChoose: "Choose a tag",
     quickLessonPlan: "Prepare Lesson Plan",
     quickLessonPlanPrompt: "Prepare a detailed lesson plan according to official Tunisian standards",
     quickExam: "Create Exam",
@@ -1165,7 +1171,7 @@ export default function EduGPTAssistantEnhanced() {
                           {Array.isArray(conv.tags) && conv.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {(conv.tags as string[]).map((tag) => {
-                                const tagDef = PREDEFINED_TAGS.find((t) => t.value === tag);
+                                const tagDef = PREDEFINED_TAGS.find((td) => td.value === tag);
                                 return (
                                   <span key={tag} className={`text-xs px-1.5 py-0.5 rounded-full border ${tagDef?.color ?? "bg-gray-100 text-gray-600 border-gray-200"}`}>
                                     {tag}
@@ -1182,7 +1188,7 @@ export default function EduGPTAssistantEnhanced() {
                             <Button
                               size="sm" variant="ghost" className="h-7 w-7 p-0"
                               onClick={(e) => { e.stopPropagation(); setTagMenuConvId(tagMenuConvId === conv.id ? null : conv.id); }}
-                              title="إضافة وسم"
+                              title={t.tagAdd || "إضافة وسم"}
                             >
                               <span className="text-xs font-bold text-gray-500">#</span>
                             </Button>
@@ -1191,7 +1197,7 @@ export default function EduGPTAssistantEnhanced() {
                                 className="absolute left-0 top-8 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-40"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <p className="text-xs font-semibold text-gray-500 mb-1.5 px-1">اختر وسماً</p>
+                                <p className="text-xs font-semibold text-gray-500 mb-1.5 px-1">{t.tagChoose || "اختر وسماً"}</p>
                                 {PREDEFINED_TAGS.map((tag) => {
                                   const currentTags: string[] = Array.isArray(conv.tags) ? (conv.tags as string[]) : [];
                                   const isSelected = currentTags.includes(tag.value);
@@ -1203,7 +1209,7 @@ export default function EduGPTAssistantEnhanced() {
                                       }`}
                                       onClick={() => {
                                         const newTags = isSelected
-                                          ? currentTags.filter((t) => t !== tag.value)
+                                          ? currentTags.filter((tg) => tg !== tag.value)
                                           : [...currentTags, tag.value];
                                         updateTagsMutation.mutate({ id: conv.id, tags: newTags });
                                       }}

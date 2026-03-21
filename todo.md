@@ -2834,3 +2834,24 @@
 
 ## Bug Fix: Inspector file upload - invalid_type errors
 - [x] Fix base64Data, mimeType, fileName undefined when uploading PDF in Inspector (frontend sent wrong field names)
+
+## Comprehensive Technical Audit - All Pages
+- [x] Audit Home page (/) - OK
+- [x] Audit EduGPT page (/edugpt) - OK
+- [x] Audit ExamBuilder (/exam-builder) - OK
+- [x] Audit Inspector (/inspector) - Fixed file upload + children support
+- [x] Audit AnnualPlanGenerator (/annual-plan) - Fixed toolConfig→config
+- [x] Audit CurriculumMap (/curriculum-map) - Fixed Label import + nested button
+- [x] Audit LessonSheetFromPlan (/lesson-sheet) - OK
+- [x] Audit BlindGrading (/blind-grading) - Fixed optional chaining _count
+- [x] Audit LeaderVisualStudio (/visual-studio) - OK (requires auth)
+- [x] Audit DramaEngine (/drama-engine) - OK (DRAMA_GRADIENT fixed)
+- [x] Audit VideoEvaluator (/video-evaluator) - Fixed getHistory→getMyEvaluations
+- [x] Audit HandwritingAnalyzer (/handwriting) - OK (requires auth)
+- [x] Audit LegacyDigitizer (/legacy-digitizer) - OK (requires auth)
+- [x] Audit PromptLab (/prompt-lab) - OK
+- [x] Audit Assistant (/assistant) - Fixed 't' variable shadowing + tag translations
+- [x] Audit LessonBank (/lesson-bank) - OK
+- [x] Audit Courses (/courses) - OK
+- [x] Audit About (/about) - OK
+- [x] Fix all discovered errors (9 bugs fixed across 7 files)

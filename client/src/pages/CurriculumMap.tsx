@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -397,10 +398,10 @@ export default function CurriculumMap() {
             <div className="space-y-1">
               {plansQuery.isLoading && <div className="p-4 text-center text-sm text-muted-foreground">{tt.loading}</div>}
               {plans.map(plan => (
-                <button
+                <div
                   key={plan.id}
                   onClick={() => setSelectedPlanId(plan.id)}
-                  className={`w-full flex items-center justify-between text-sm p-2 rounded-md transition-colors ${selectedPlanId === plan.id ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"}`}>
+                  className={`w-full flex items-center justify-between text-sm p-2 rounded-md transition-colors cursor-pointer ${selectedPlanId === plan.id ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"}`}>
                   <div className={isRTL ? "text-right" : "text-left"}>
                     <p className="font-medium">{plan.planTitle}</p>
                     <p className={`text-xs ${selectedPlanId === plan.id ? "text-blue-600" : "text-muted-foreground"}`}>
@@ -413,7 +414,7 @@ export default function CurriculumMap() {
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                </button>
+                </div>
               ))}
               {plans.length === 0 && !plansQuery.isLoading && (
                 <div className="p-4 text-center text-sm text-muted-foreground">{t("لا توجد مخططات. قم بإنشاء واحد.", "Aucun plan. Créez-en un.", "No plans. Create one.")}</div>
