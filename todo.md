@@ -2825,3 +2825,6 @@
 - [x] Add navigation entry on Home page
 - [x] Add full multilingual translations (AR/FR/EN)
 - [x] Make it fully accessible without login (publicProcedure)
+
+## Bug Fix: DramaEngine DRAMA_GRADIENT not defined
+- [x] Fix ReferenceError: DRAMA_GRADIENT is not defined in DramaEngine.tsx

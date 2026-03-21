@@ -16,6 +16,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { getToolTranslations } from "@/lib/toolTranslations";
 import { toast } from "sonner";
 
+const DRAMA_GRADIENT = "from-purple-600 via-fuchsia-500 to-pink-500";
+
 type DramaScript = {
   title: string;
   synopsis: string;
