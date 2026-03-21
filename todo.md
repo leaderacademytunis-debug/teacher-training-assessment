@@ -2855,3 +2855,8 @@
 - [x] Audit Courses (/courses) - OK
 - [x] Audit About (/about) - OK
 - [x] Fix all discovered errors (9 bugs fixed across 7 files)
+
+## Bug Fix: Inspector PDF text extraction says "unreadable" for clear PDFs
+- [x] Diagnose why PDF text extraction returns garbled/encoded text (Arabic fonts cause garbled pdftotext)
+- [x] Fix the extractTextFromFile procedure - now uses LLM file_url instead of pdf-parse
+- [x] Test with vitest (3/3 passed)

@@ -4876,16 +4876,31 @@ ${input.planText}` },
 
         // ── PDF ──────────────────────────────────────────────────────────
         if (input.mimeType === "application/pdf") {
-          const { PDFParse } = await import("pdf-parse");
-          const pdf = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
-          try {
-            await pdf.load();
-            const textResult = await pdf.getText();
-            // getText() returns { text, total, pages } in pdf-parse v2
-            extractedText = textResult?.text || "";
-          } finally {
-            await pdf.destroy().catch(() => {});
-          }
+          // Arabic PDFs often have embedded fonts that make text extraction garbled.
+          // Use LLM Vision with file_url to read PDF content accurately.
+          const { storagePut } = await import("./storage");
+          const key = `inspector-uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;
+          const { url } = await storagePut(key, buffer, "application/pdf");
+
+          const { invokeLLM } = await import("./_core/llm");
+          const visionResponse = await invokeLLM({
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "file_url" as any,
+                    file_url: { url, mime_type: "application/pdf" as any },
+                  },
+                  {
+                    type: "text",
+                    text: "استخرج كل النص الموجود في هذا الملف بدقة تامة. أعد النص كما هو مكتوب بالضبط دون أي تعليق أو إضافة أو تفسير. حافظ على التنسيق الأصلي قدر الإمكان (العناوين، الأسئلة، الجداول). إذا كان الملف يحتوي على عدة صفحات، استخرج النص من جميع الصفحات.",
+                  },
+                ],
+              },
+            ],
+          });
+          extractedText = (visionResponse.choices?.[0]?.message?.content as string) ?? "";
 
         // ── Word (docx) ───────────────────────────────────────────────────
         } else if (
