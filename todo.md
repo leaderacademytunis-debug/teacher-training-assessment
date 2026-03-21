@@ -2828,3 +2828,6 @@
 
 ## Bug Fix: DramaEngine DRAMA_GRADIENT not defined
 - [x] Fix ReferenceError: DRAMA_GRADIENT is not defined in DramaEngine.tsx
+
+## Bug Fix: Inspector page input panel empty
+- [x] Fix Inspector.tsx - input panel shows no tabs/fields/buttons (UnifiedToolLayout children support added)

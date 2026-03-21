@@ -40,13 +40,13 @@ export interface ToolConfig {
 export interface UnifiedToolLayoutProps {
   config: ToolConfig;
   /** The input form rendered on the right side */
-  inputPanel: ReactNode;
+  inputPanel?: ReactNode;
   /** The result content (markdown/HTML string or ReactNode) */
-  resultContent: string | null;
+  resultContent?: string | null;
   /** Whether generation is in progress */
-  isGenerating: boolean;
+  isGenerating?: boolean;
   /** Callback to regenerate */
-  onRegenerate: () => void;
+  onRegenerate?: () => void;
   /** Optional: callback for PDF download */
   onDownloadPDF?: () => void;
   /** Optional: callback for Word download */
@@ -61,6 +61,8 @@ export interface UnifiedToolLayoutProps {
   onContentEdit?: (newContent: string) => void;
   /** Optional: extra action buttons for the action bar */
   extraActions?: ReactNode;
+  /** Optional: children for custom full-page layout (bypasses split panel) */
+  children?: ReactNode;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -477,14 +479,15 @@ export default function UnifiedToolLayout({
   config,
   inputPanel,
   resultContent,
-  isGenerating,
-  onRegenerate,
+  isGenerating = false,
+  onRegenerate = () => {},
   onDownloadPDF,
   onDownloadWord,
   customResultRenderer,
   editable = true,
   onContentEdit,
   extraActions,
+  children,
 }: UnifiedToolLayoutProps) {
   const { language } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
@@ -637,7 +640,10 @@ export default function UnifiedToolLayout({
         </div>
       </div>
 
-      {/* ─── Main Split Layout ─── */}
+      {/* ─── Children bypass or Main Split Layout ─── */}
+      {children ? (
+        <div className="max-w-[1600px] mx-auto">{children}</div>
+      ) : (
       <div className="max-w-[1600px] mx-auto">
         <div className="flex flex-col lg:flex-row min-h-[calc(100vh-57px)]">
           {/* ═══ RIGHT PANEL: Input Form ═══ */}
@@ -747,6 +753,7 @@ export default function UnifiedToolLayout({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
