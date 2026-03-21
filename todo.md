@@ -2831,3 +2831,6 @@
 
 ## Bug Fix: Inspector page input panel empty
 - [x] Fix Inspector.tsx - input panel shows no tabs/fields/buttons (UnifiedToolLayout children support added)
+
+## Bug Fix: Inspector file upload - invalid_type errors
+- [x] Fix base64Data, mimeType, fileName undefined when uploading PDF in Inspector (frontend sent wrong field names)

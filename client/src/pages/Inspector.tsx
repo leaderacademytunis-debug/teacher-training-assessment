@@ -384,7 +384,7 @@ export default function SmartInspector() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const base64 = (e.target?.result as string).split(",")[1];
-      extractMutation.mutate({ fileContentBase64: base64, fileType: file.type });
+      extractMutation.mutate({ base64Data: base64, mimeType: file.type, fileName: file.name });
     };
     reader.readAsDataURL(file);
   }, [extractMutation, t]);
