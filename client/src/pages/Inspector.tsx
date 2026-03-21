@@ -508,7 +508,7 @@ export default function SmartInspector() {
                   onChange={(e) => setDocumentText(e.target.value)}
                   placeholder={currentTab.placeholder(t)}
                   className="w-full h-48 lg:h-64 resize-none mb-2"
-                  disabled={!canAnalyze}
+                  // disabled removed - users should be able to type text; only the generate button is locked
                 />
               ) : (
                 <div

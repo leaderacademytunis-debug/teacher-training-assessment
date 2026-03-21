@@ -2860,3 +2860,6 @@
 - [x] Diagnose why PDF text extraction returns garbled/encoded text (Arabic fonts cause garbled pdftotext)
 - [x] Fix the extractTextFromFile procedure - now uses LLM file_url instead of pdf-parse
 - [x] Test with vitest (3/3 passed)
+
+## Bug Fix: Inspector text input not editable
+- [x] Fix textarea not accepting input when 'نص' tab is selected (removed disabled={!canAnalyze})
