@@ -1,0 +1,40 @@
+CREATE TABLE `student_support_profiles` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`student_code` varchar(50) NOT NULL,
+	`student_age` int,
+	`student_grade` varchar(50),
+	`student_gender` enum('male','female') DEFAULT 'male',
+	`primary_difficulty` enum('dyslexia','dysgraphia','dyscalculia','dysphasia','dyspraxia','adhd','autism_spectrum','slow_learner','other') NOT NULL,
+	`secondary_difficulties` json,
+	`teacher_observations` text,
+	`behavioral_notes` text,
+	`academic_strengths` text,
+	`academic_weaknesses` text,
+	`previous_interventions` text,
+	`family_context` text,
+	`is_active` boolean NOT NULL DEFAULT true,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `student_support_profiles_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `support_plans` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`student_profile_id` int NOT NULL,
+	`plan_title` varchar(255) NOT NULL,
+	`plan_duration` varchar(50),
+	`target_subject` varchar(100),
+	`diagnostic_summary` text,
+	`weekly_plan` json,
+	`teaching_strategies` json,
+	`classroom_adaptations` json,
+	`parent_guidelines` json,
+	`progress_indicators` json,
+	`full_plan_content` text,
+	`status` enum('draft','active','completed','archived') NOT NULL DEFAULT 'draft',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `support_plans_id` PRIMARY KEY(`id`)
+);

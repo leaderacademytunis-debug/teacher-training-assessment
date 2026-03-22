@@ -59,6 +59,7 @@ const DEFAULT_TOOLS = [
   { toolKey: "legacy_digitizer", nameAr: "رقمنة الوثائق", nameFr: "Numérisation", nameEn: "Legacy Digitizer", icon: "ScanLine", category: "content", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
   { toolKey: "prompt_lab", nameAr: "مختبر الأوامر", nameFr: "Labo de prompts", nameEn: "Prompt Lab", icon: "Lightbulb", category: "ai_tools", freeAccess: true, freeLimitPerMonth: 0, proLimitPerMonth: 0, premiumLimitPerMonth: 0 },
   { toolKey: "edugpt", nameAr: "المساعد الذكي", nameFr: "Assistant IA", nameEn: "EduGPT Assistant", icon: "MessageSquare", category: "ai_tools", freeAccess: false, freeLimitPerMonth: 5, proLimitPerMonth: 100, premiumLimitPerMonth: 0 },
+  { toolKey: "pedagogical_companion", nameAr: "المرافق البيداغوجي", nameFr: "Accompagnateur pédagogique", nameEn: "Pedagogical Companion", icon: "HeartHandshake", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
 ];
 
 export const adminControlRouter = router({

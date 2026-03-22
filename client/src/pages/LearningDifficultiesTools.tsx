@@ -69,7 +69,7 @@ const LD_TOOLS: LDTool[] = [
   },
   {
     id: "learning-companion",
-    href: "#",
+    href: "/pedagogical-companion",
     icon: HeartHandshake,
     nameAr: "المرافق البيداغوجي الخاص",
     nameFr: "Accompagnateur pédagogique spécialisé",
@@ -77,7 +77,7 @@ const LD_TOOLS: LDTool[] = [
     descAr: "مساعد ذكي يولّد خطط مرافقة فردية لكل تلميذ حسب نوع الصعوبة مع أنشطة علاجية وتمارين مكيّفة",
     descFr: "Assistant IA qui génère des plans d'accompagnement individuels selon le type de difficulté avec des activités thérapeutiques adaptées",
     descEn: "AI assistant generating individual support plans per difficulty type with adapted therapeutic activities",
-    status: "coming_soon",
+    status: "available",
     gradient: "linear-gradient(135deg, #4A148C 0%, #7B1FA2 100%)",
     iconBg: "#F3E5F5",
     stepsAr: ["تحديد نوع الصعوبة أو الاضطراب", "توليد خطة مرافقة فردية", "اقتراح أنشطة علاجية مكيّفة", "متابعة التقدم وتعديل الخطة"],

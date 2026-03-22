@@ -2215,3 +2215,92 @@ export const pageConfigurations = mysqlTable("page_configurations", {
 });
 export type PageConfiguration = typeof pageConfigurations.$inferSelect;
 export type InsertPageConfiguration = typeof pageConfigurations.$inferInsert;
+
+
+// ===== STUDENT SUPPORT PROFILES (ملفات التلاميذ ذوي صعوبات التعلم) =====
+export const studentSupportProfiles = mysqlTable("student_support_profiles", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(), // Teacher who created this profile
+  
+  // Student info (anonymized - no real names required)
+  studentCode: varchar("student_code", { length: 50 }).notNull(), // e.g., "T1-2026" teacher-assigned code
+  studentAge: int("student_age"),
+  studentGrade: varchar("student_grade", { length: 50 }), // e.g., "السنة 3", "5ème année"
+  studentGender: mysqlEnum("student_gender", ["male", "female"]).default("male"),
+  
+  // Difficulty assessment
+  primaryDifficulty: mysqlEnum("primary_difficulty", [
+    "dyslexia",        // عسر القراءة
+    "dysgraphia",      // عسر الكتابة
+    "dyscalculia",     // عسر الحساب
+    "dysphasia",       // عسر النطق
+    "dyspraxia",       // عسر التنسيق الحركي
+    "adhd",            // فرط النشاط ونقص الانتباه
+    "autism_spectrum",  // طيف التوحد
+    "slow_learner",    // بطء التعلم
+    "other"
+  ]).notNull(),
+  secondaryDifficulties: json("secondary_difficulties").$type<string[]>(), // Additional difficulties
+  
+  // Observations
+  teacherObservations: text("teacher_observations"), // What the teacher noticed
+  behavioralNotes: text("behavioral_notes"), // Behavioral patterns
+  academicStrengths: text("academic_strengths"), // What the student is good at
+  academicWeaknesses: text("academic_weaknesses"), // Areas of struggle
+  
+  // Context
+  previousInterventions: text("previous_interventions"), // What was tried before
+  familyContext: text("family_context"), // Family support level
+  
+  // Status
+  isActive: boolean("is_active").default(true).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StudentSupportProfile = typeof studentSupportProfiles.$inferSelect;
+export type InsertStudentSupportProfile = typeof studentSupportProfiles.$inferInsert;
+
+// ===== SUPPORT PLANS (خطط المرافقة الفردية) =====
+export const supportPlans = mysqlTable("support_plans", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(), // Teacher who generated this plan
+  studentProfileId: int("student_profile_id").notNull(), // Link to student profile
+  
+  // Plan metadata
+  planTitle: varchar("plan_title", { length: 255 }).notNull(),
+  planDuration: varchar("plan_duration", { length: 50 }), // e.g., "4 weeks", "1 trimester"
+  targetSubject: varchar("target_subject", { length: 100 }), // e.g., "القراءة", "الرياضيات"
+  
+  // AI-generated content
+  diagnosticSummary: text("diagnostic_summary"), // AI analysis of the difficulty
+  weeklyPlan: json("weekly_plan").$type<Array<{
+    week: number;
+    objectives: string[];
+    activities: Array<{
+      title: string;
+      description: string;
+      duration: string;
+      materials: string[];
+      adaptations: string[];
+    }>;
+    assessmentCriteria: string[];
+  }>>(),
+  
+  // Recommendations
+  teachingStrategies: json("teaching_strategies").$type<string[]>(),
+  classroomAdaptations: json("classroom_adaptations").$type<string[]>(),
+  parentGuidelines: json("parent_guidelines").$type<string[]>(),
+  progressIndicators: json("progress_indicators").$type<string[]>(),
+  
+  // Full plan content (rich text / HTML)
+  fullPlanContent: text("full_plan_content"),
+  
+  // Status
+  status: mysqlEnum("status", ["draft", "active", "completed", "archived"]).default("draft").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type SupportPlan = typeof supportPlans.$inferSelect;
+export type InsertSupportPlan = typeof supportPlans.$inferInsert;
