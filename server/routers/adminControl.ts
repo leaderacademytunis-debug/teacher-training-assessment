@@ -22,6 +22,7 @@ import {
   platformMessages,
   imageUsageTracking,
   notifications,
+  pageConfigurations,
 } from "../../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, gte, lte, between } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -50,7 +51,7 @@ const DEFAULT_TOOLS = [
   { toolKey: "curriculum_map", nameAr: "خريطة المنهج", nameFr: "Carte du programme", nameEn: "Curriculum Map", icon: "Map", category: "ai_tools", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
   { toolKey: "annual_plan", nameAr: "المخطط السنوي", nameFr: "Plan annuel", nameEn: "Annual Plan", icon: "Calendar", category: "ai_tools", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
   { toolKey: "lesson_sheet", nameAr: "الجذاذة من المخطط", nameFr: "Fiche de leçon", nameEn: "Lesson Sheet", icon: "BookOpen", category: "ai_tools", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 50, premiumLimitPerMonth: 0 },
-  { toolKey: "blind_grading", nameAr: "التصحيح الأعمى", nameFr: "Correction aveugle", nameEn: "Blind Grading", icon: "Eye", category: "assessment", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
+  { toolKey: "blind_grading", nameAr: "التصحيح الذكي", nameFr: "Correction intelligente", nameEn: "Smart Grading", icon: "Eye", category: "assessment", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
   { toolKey: "visual_studio", nameAr: "الاستوديو البصري", nameFr: "Studio visuel", nameEn: "Visual Studio", icon: "Image", category: "ai_tools", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 20, premiumLimitPerMonth: 0, freeImageLimit: 0, proImageLimit: 50, premiumImageLimit: 0 },
   { toolKey: "drama_engine", nameAr: "محرك المسرح", nameFr: "Moteur de théâtre", nameEn: "Drama Engine", icon: "Theater", category: "ai_tools", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
   { toolKey: "video_evaluator", nameAr: "مقيّم الفيديو", nameFr: "Évaluateur vidéo", nameEn: "Video Evaluator", icon: "Video", category: "assessment", freeAccess: false, freeLimitPerMonth: 0, proLimitPerMonth: 15, premiumLimitPerMonth: 0 },
@@ -872,5 +873,221 @@ export const adminControlRouter = router({
         });
       }
       return { success: true, count: allUsers.length };
+    }),
+
+  // ============================================
+  // 6. PAGE MANAGEMENT
+  // ============================================
+
+  // Get all page configurations
+  getPageConfigs: adminOnlyProcedure.query(async () => {
+    const database = (await getDb())!;
+    const pages = await database.select().from(pageConfigurations).orderBy(asc(pageConfigurations.sortOrder));
+    return pages;
+  }),
+
+  // Seed default page configurations from existing routes
+  seedPageConfigs: adminOnlyProcedure.mutation(async () => {
+    const database = (await getDb())!;
+    const existing = await database.select().from(pageConfigurations);
+    if (existing.length > 0) {
+      return { message: "Pages already seeded", count: existing.length };
+    }
+    const defaultPages = [
+      { pageKey: "home", titleAr: "الرئيسية", titleFr: "Accueil", titleEn: "Home", path: "/", icon: "Home", category: "main", sortOrder: 0, pageType: "built_in" as const },
+      { pageKey: "teacher-tools", titleAr: "أدوات الذكاء الاصطناعي", titleFr: "Outils IA", titleEn: "AI Tools", path: "/teacher-tools", icon: "Sparkles", category: "main", sortOrder: 1, pageType: "built_in" as const },
+      { pageKey: "lesson-bank", titleAr: "بنك الدروس", titleFr: "Banque de leçons", titleEn: "Lesson Bank", path: "/lesson-bank", icon: "BookOpen", category: "main", sortOrder: 2, pageType: "built_in" as const },
+      { pageKey: "about", titleAr: "من نحن", titleFr: "À propos", titleEn: "About Us", path: "/about", icon: "Info", category: "main", sortOrder: 3, pageType: "built_in" as const },
+      { pageKey: "courses", titleAr: "الدورات", titleFr: "Cours", titleEn: "Courses", path: "/courses", icon: "GraduationCap", category: "main", sortOrder: 4, pageType: "built_in" as const },
+      { pageKey: "pricing", titleAr: "الأسعار", titleFr: "Tarifs", titleEn: "Pricing", path: "/pricing", icon: "CreditCard", category: "main", sortOrder: 5, pageType: "built_in" as const },
+      { pageKey: "contact", titleAr: "تواصل معنا", titleFr: "Contactez-nous", titleEn: "Contact Us", path: "/contact", icon: "Mail", category: "main", sortOrder: 6, pageType: "built_in" as const },
+      // AI Tools
+      { pageKey: "edugpt", titleAr: "المساعد الذكي EDUGPT", titleFr: "Assistant EDUGPT", titleEn: "EDUGPT Assistant", path: "/edugpt", icon: "MessageSquare", category: "ai_tools", sortOrder: 10, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "lesson-planner", titleAr: "تحضير الدروس الفوري", titleFr: "Préparation de leçons", titleEn: "Lesson Planner", path: "/lesson-planner", icon: "FileText", category: "ai_tools", sortOrder: 11, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "exam-builder", titleAr: "بنك التقييمات الذكي", titleFr: "Banque d'évaluations", titleEn: "Exam Builder", path: "/exam-builder", icon: "FileEdit", category: "ai_tools", sortOrder: 12, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "inspector", titleAr: "المتفقد الذكي", titleFr: "Inspecteur intelligent", titleEn: "Smart Inspector", path: "/inspector", icon: "Search", category: "ai_tools", sortOrder: 13, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "visual-studio", titleAr: "استوديو الصور التعليمية", titleFr: "Studio visuel", titleEn: "Visual Studio", path: "/visual-studio", icon: "Palette", category: "ai_tools", sortOrder: 14, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "blind-grading", titleAr: "مساعد التصحيح الذكي", titleFr: "Correction intelligente", titleEn: "Smart Grading", path: "/blind-grading", icon: "FileCheck", category: "ai_tools", sortOrder: 15, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "curriculum-map", titleAr: "خريطة المنهج الذكية", titleFr: "Carte du programme", titleEn: "Curriculum Map", path: "/curriculum-map", icon: "BarChart3", category: "ai_tools", sortOrder: 16, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "drama-engine", titleAr: "محرك الدراما التعليمية", titleFr: "Moteur de théâtre", titleEn: "Drama Engine", path: "/drama-engine", icon: "Theater", category: "ai_tools", sortOrder: 17, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "handwriting-analyzer", titleAr: "محلل خط اليد الذكي", titleFr: "Analyseur d'écriture", titleEn: "Handwriting Analyzer", path: "/handwriting-analyzer", icon: "Brain", category: "ai_tools", sortOrder: 18, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "video-evaluator", titleAr: "مُقيِّم المعلم الرقمي", titleFr: "Évaluateur vidéo", titleEn: "Video Evaluator", path: "/video-evaluator", icon: "Film", category: "ai_tools", sortOrder: 19, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "legacy-digitizer", titleAr: "رقمنة الوثائق التعليمية", titleFr: "Numérisation", titleEn: "Legacy Digitizer", path: "/legacy-digitizer", icon: "ScanLine", category: "ai_tools", sortOrder: 20, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "prompt-lab", titleAr: "مختبر هندسة الأوامر", titleFr: "Labo Prompt", titleEn: "Prompt Lab", path: "/prompt-lab", icon: "Sparkles", category: "ai_tools", sortOrder: 21, pageType: "built_in" as const },
+      { pageKey: "marketplace", titleAr: "سوق المحتوى الذهبي", titleFr: "Marché du contenu", titleEn: "Content Marketplace", path: "/marketplace", icon: "Store", category: "ai_tools", sortOrder: 22, pageType: "built_in" as const },
+      // Profile & Certificates
+      { pageKey: "my-certificates", titleAr: "شهاداتي", titleFr: "Mes certificats", titleEn: "My Certificates", path: "/my-certificates", icon: "Award", category: "profile", sortOrder: 30, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "verify-certificate", titleAr: "التحقق من شهادة", titleFr: "Vérifier un certificat", titleEn: "Verify Certificate", path: "/verify-certificate", icon: "CheckCircle", category: "profile", sortOrder: 31, pageType: "built_in" as const },
+      { pageKey: "my-portfolio", titleAr: "ملفي المهني", titleFr: "Mon portfolio", titleEn: "My Portfolio", path: "/my-portfolio", icon: "Star", category: "profile", sortOrder: 32, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "my-assignments", titleAr: "واجباتي", titleFr: "Mes devoirs", titleEn: "My Assignments", path: "/my-assignments", icon: "ClipboardList", category: "profile", sortOrder: 33, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "job-board", titleAr: "فرص العمل", titleFr: "Offres d'emploi", titleEn: "Job Board", path: "/job-board", icon: "Briefcase", category: "profile", sortOrder: 34, pageType: "built_in" as const },
+      { pageKey: "my-applications", titleAr: "طلباتي", titleFr: "Mes candidatures", titleEn: "My Applications", path: "/my-applications", icon: "FileText", category: "profile", sortOrder: 35, pageType: "built_in" as const, requiresAuth: true },
+      { pageKey: "skills-directory", titleAr: "دليل الكفاءات", titleFr: "Répertoire des compétences", titleEn: "Skills Directory", path: "/skills-directory", icon: "Users", category: "profile", sortOrder: 36, pageType: "built_in" as const },
+    ];
+    for (const page of defaultPages) {
+      await database.insert(pageConfigurations).values({
+        pageKey: page.pageKey,
+        titleAr: page.titleAr,
+        titleFr: page.titleFr || null,
+        titleEn: page.titleEn || null,
+        path: page.path,
+        icon: page.icon || null,
+        category: page.category || null,
+        sortOrder: page.sortOrder,
+        pageType: page.pageType,
+        isVisible: true,
+        isEnabled: true,
+        requiresAuth: page.requiresAuth || false,
+      });
+    }
+    return { message: "Pages seeded successfully", count: defaultPages.length };
+  }),
+
+  // Update a page configuration
+  updatePageConfig: adminOnlyProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        titleAr: z.string().optional(),
+        titleFr: z.string().optional(),
+        titleEn: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        descriptionFr: z.string().optional(),
+        descriptionEn: z.string().optional(),
+        isVisible: z.boolean().optional(),
+        isEnabled: z.boolean().optional(),
+        requiresAuth: z.boolean().optional(),
+        requiredTier: z.enum(["free", "pro", "premium"]).optional(),
+        sortOrder: z.number().optional(),
+        badgeText: z.string().nullable().optional(),
+        badgeColor: z.string().nullable().optional(),
+        icon: z.string().optional(),
+        externalUrl: z.string().nullable().optional(),
+        customContent: z.string().nullable().optional(),
+        metaTitle: z.string().nullable().optional(),
+        metaDescription: z.string().nullable().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const { id, ...data } = input;
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined)
+      );
+      await database.update(pageConfigurations).set(cleanData).where(eq(pageConfigurations.id, id));
+      return { success: true };
+    }),
+
+  // Add a new custom page
+  addCustomPage: adminOnlyProcedure
+    .input(
+      z.object({
+        pageKey: z.string().min(2).max(100),
+        titleAr: z.string().min(1),
+        titleFr: z.string().optional(),
+        titleEn: z.string().optional(),
+        descriptionAr: z.string().optional(),
+        path: z.string().min(1),
+        icon: z.string().optional(),
+        category: z.string().optional(),
+        pageType: z.enum(["custom", "external_link"]),
+        externalUrl: z.string().optional(),
+        customContent: z.string().optional(),
+        requiresAuth: z.boolean().default(false),
+        requiredTier: z.enum(["free", "pro", "premium"]).default("free"),
+        isVisible: z.boolean().default(true),
+        badgeText: z.string().optional(),
+        badgeColor: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      // Get max sort order
+      const maxSort = await database
+        .select({ maxOrder: sql<number>`MAX(${pageConfigurations.sortOrder})` })
+        .from(pageConfigurations);
+      const nextOrder = (maxSort[0]?.maxOrder ?? 0) + 1;
+
+      await database.insert(pageConfigurations).values({
+        pageKey: input.pageKey,
+        titleAr: input.titleAr,
+        titleFr: input.titleFr || null,
+        titleEn: input.titleEn || null,
+        descriptionAr: input.descriptionAr || null,
+        path: input.path,
+        icon: input.icon || null,
+        category: input.category || null,
+        pageType: input.pageType,
+        externalUrl: input.externalUrl || null,
+        customContent: input.customContent || null,
+        requiresAuth: input.requiresAuth,
+        requiredTier: input.requiredTier as any,
+        isVisible: input.isVisible,
+        isEnabled: true,
+        sortOrder: nextOrder,
+        badgeText: input.badgeText || null,
+        badgeColor: input.badgeColor || null,
+      });
+      return { success: true };
+    }),
+
+  // Delete a custom page (only custom/external pages can be deleted)
+  deleteCustomPage: adminOnlyProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      const page = await database.select().from(pageConfigurations).where(eq(pageConfigurations.id, input.id));
+      if (!page[0]) throw new TRPCError({ code: "NOT_FOUND", message: "Page not found" });
+      if (page[0].pageType === "built_in") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot delete built-in pages. You can hide them instead." });
+      }
+      await database.delete(pageConfigurations).where(eq(pageConfigurations.id, input.id));
+      return { success: true };
+    }),
+
+  // Bulk update page visibility (toggle multiple pages at once)
+  bulkUpdatePageVisibility: adminOnlyProcedure
+    .input(
+      z.object({
+        updates: z.array(
+          z.object({
+            id: z.number(),
+            isVisible: z.boolean(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      for (const update of input.updates) {
+        await database
+          .update(pageConfigurations)
+          .set({ isVisible: update.isVisible })
+          .where(eq(pageConfigurations.id, update.id));
+      }
+      return { success: true, count: input.updates.length };
+    }),
+
+  // Reorder pages
+  reorderPages: adminOnlyProcedure
+    .input(
+      z.object({
+        orders: z.array(
+          z.object({
+            id: z.number(),
+            sortOrder: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const database = (await getDb())!;
+      for (const order of input.orders) {
+        await database
+          .update(pageConfigurations)
+          .set({ sortOrder: order.sortOrder })
+          .where(eq(pageConfigurations.id, order.id));
+      }
+      return { success: true };
     }),
 });

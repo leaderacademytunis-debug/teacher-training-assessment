@@ -32,7 +32,7 @@ import {
 } from "recharts";
 
 // ===== TYPES =====
-type Section = "overview" | "limits" | "users" | "subscriptions" | "content";
+type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages";
 
 const TOOL_ICONS: Record<string, React.ReactNode> = {
   FileText: <FileText className="h-4 w-4" />,
@@ -97,6 +97,7 @@ export default function AdminDashboardV2() {
     { id: "users", label: "إدارة المستخدمين", icon: <Users className="h-5 w-5" /> },
     { id: "subscriptions", label: "الاشتراكات", icon: <CreditCard className="h-5 w-5" /> },
     { id: "content", label: "المحتوى والرسائل", icon: <MessageSquare className="h-5 w-5" /> },
+    { id: "pages", label: "إدارة الصفحات", icon: <FileText className="h-5 w-5" /> },
   ];
 
   return (
@@ -199,6 +200,7 @@ export default function AdminDashboardV2() {
           {activeSection === "users" && <UserManagementSection />}
           {activeSection === "subscriptions" && <SubscriptionSection />}
           {activeSection === "content" && <ContentManagementSection />}
+          {activeSection === "pages" && <PageManagementSection />}
         </div>
       </main>
     </div>
@@ -1628,6 +1630,690 @@ function ContentManagementSection() {
           </DialogContent>
         </Dialog>
       )}
+    </div>
+  );
+}
+
+// ===== SECTION 6: PAGE MANAGEMENT =====
+function PageManagementSection() {
+  const pages = trpc.adminControl.getPageConfigs.useQuery();
+  const seedPages = trpc.adminControl.seedPageConfigs.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      pages.refetch();
+    },
+  });
+  const updatePage = trpc.adminControl.updatePageConfig.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث الصفحة بنجاح");
+      pages.refetch();
+    },
+  });
+  const addCustomPage = trpc.adminControl.addCustomPage.useMutation({
+    onSuccess: () => {
+      toast.success("تم إضافة الصفحة بنجاح");
+      pages.refetch();
+      setShowAddDialog(false);
+      resetNewPage();
+    },
+  });
+  const deletePage = trpc.adminControl.deleteCustomPage.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف الصفحة بنجاح");
+      pages.refetch();
+    },
+  });
+  const bulkUpdate = trpc.adminControl.bulkUpdatePageVisibility.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث الإعدادات بنجاح");
+      pages.refetch();
+    },
+  });
+
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingPage, setEditingPage] = useState<any>(null);
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [newPage, setNewPage] = useState({
+    pageKey: "",
+    titleAr: "",
+    titleFr: "",
+    titleEn: "",
+    descriptionAr: "",
+    path: "",
+    icon: "",
+    category: "custom",
+    pageType: "custom" as "custom" | "external_link",
+    externalUrl: "",
+    customContent: "",
+    requiresAuth: false,
+    requiredTier: "free" as "free" | "pro" | "premium",
+    isVisible: true,
+    badgeText: "",
+    badgeColor: "",
+  });
+
+  const resetNewPage = () => {
+    setNewPage({
+      pageKey: "", titleAr: "", titleFr: "", titleEn: "", descriptionAr: "",
+      path: "", icon: "", category: "custom", pageType: "custom",
+      externalUrl: "", customContent: "", requiresAuth: false,
+      requiredTier: "free", isVisible: true, badgeText: "", badgeColor: "",
+    });
+  };
+
+  const CATEGORIES: Record<string, string> = {
+    all: "الكل",
+    main: "الصفحات الرئيسية",
+    ai_tools: "أدوات الذكاء الاصطناعي",
+    profile: "الملف الشخصي",
+    custom: "صفحات مخصصة",
+  };
+
+  const filteredPages = useMemo(() => {
+    if (!pages.data) return [];
+    let result = [...pages.data];
+    if (filterCategory !== "all") {
+      result = result.filter((p) => p.category === filterCategory);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.titleAr.toLowerCase().includes(q) ||
+          (p.titleFr && p.titleFr.toLowerCase().includes(q)) ||
+          (p.titleEn && p.titleEn.toLowerCase().includes(q)) ||
+          p.pageKey.toLowerCase().includes(q) ||
+          p.path.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [pages.data, filterCategory, searchQuery]);
+
+  const categoryStats = useMemo(() => {
+    if (!pages.data) return {};
+    const stats: Record<string, { total: number; visible: number; hidden: number }> = {};
+    pages.data.forEach((p) => {
+      const cat = p.category || "other";
+      if (!stats[cat]) stats[cat] = { total: 0, visible: 0, hidden: 0 };
+      stats[cat].total++;
+      if (p.isVisible) stats[cat].visible++;
+      else stats[cat].hidden++;
+    });
+    return stats;
+  }, [pages.data]);
+
+  // Seed if no pages exist
+  if (pages.data && pages.data.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-slate-900 border-slate-800">
+          <CardContent className="p-8 text-center">
+            <FileText className="h-16 w-16 mx-auto text-blue-400 mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">إعداد إدارة الصفحات</h3>
+            <p className="text-slate-400 mb-6">
+              لم يتم إعداد الصفحات بعد. اضغط لتحميل جميع صفحات الموقع الحالية.
+            </p>
+            <Button
+              onClick={() => seedPages.mutate()}
+              disabled={seedPages.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {seedPages.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Plus className="h-4 w-4 ml-2" />
+              )}
+              تحميل الصفحات الافتراضية
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Object.entries(categoryStats).map(([cat, stats]) => (
+          <Card key={cat} className="bg-slate-900 border-slate-800">
+            <CardContent className="p-4">
+              <p className="text-xs text-slate-400 mb-1">{CATEGORIES[cat] || cat}</p>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-white">{stats.total}</span>
+                <div className="flex gap-2 text-xs">
+                  <span className="text-green-400 flex items-center gap-1">
+                    <Eye className="h-3 w-3" /> {stats.visible}
+                  </span>
+                  <span className="text-red-400 flex items-center gap-1">
+                    <EyeOff className="h-3 w-3" /> {stats.hidden}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div className="flex gap-3 flex-1 w-full md:w-auto">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="بحث عن صفحة..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10 bg-slate-800 border-slate-700 text-white"
+                />
+              </div>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="w-[180px] bg-slate-800 border-slate-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CATEGORIES).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => setShowAddDialog(true)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="h-4 w-4 ml-2" />
+              إضافة صفحة جديدة
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pages Table */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 text-sm">
+                  <th className="p-3 text-right">الصفحة</th>
+                  <th className="p-3 text-center">المسار</th>
+                  <th className="p-3 text-center">النوع</th>
+                  <th className="p-3 text-center">الفئة</th>
+                  <th className="p-3 text-center">مرئية</th>
+                  <th className="p-3 text-center">مفعّلة</th>
+                  <th className="p-3 text-center">تسجيل دخول</th>
+                  <th className="p-3 text-center">المستوى</th>
+                  <th className="p-3 text-center">شارة</th>
+                  <th className="p-3 text-center">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPages.map((page) => (
+                  <tr key={page.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-blue-400">
+                          <FileText className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium text-sm">{page.titleAr}</p>
+                          <p className="text-slate-500 text-xs">{page.titleFr || page.pageKey}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3 text-center">
+                      <code className="text-xs bg-slate-800 px-2 py-1 rounded text-blue-300">{page.path}</code>
+                    </td>
+                    <td className="p-3 text-center">
+                      <Badge variant="outline" className={
+                        page.pageType === "built_in" ? "border-blue-500/30 text-blue-400" :
+                        page.pageType === "custom" ? "border-green-500/30 text-green-400" :
+                        "border-orange-500/30 text-orange-400"
+                      }>
+                        {page.pageType === "built_in" ? "مدمجة" : page.pageType === "custom" ? "مخصصة" : "رابط خارجي"}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-center">
+                      <span className="text-xs text-slate-400">{CATEGORIES[page.category || ""] || page.category}</span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <Switch
+                        checked={page.isVisible}
+                        onCheckedChange={(checked) => {
+                          updatePage.mutate({ id: page.id, isVisible: checked });
+                        }}
+                      />
+                    </td>
+                    <td className="p-3 text-center">
+                      <Switch
+                        checked={page.isEnabled}
+                        onCheckedChange={(checked) => {
+                          updatePage.mutate({ id: page.id, isEnabled: checked });
+                        }}
+                      />
+                    </td>
+                    <td className="p-3 text-center">
+                      <Switch
+                        checked={page.requiresAuth}
+                        onCheckedChange={(checked) => {
+                          updatePage.mutate({ id: page.id, requiresAuth: checked });
+                        }}
+                      />
+                    </td>
+                    <td className="p-3 text-center">
+                      <Select
+                        value={page.requiredTier || "free"}
+                        onValueChange={(val) => {
+                          updatePage.mutate({ id: page.id, requiredTier: val as any });
+                        }}
+                      >
+                        <SelectTrigger className="w-[90px] h-7 text-xs bg-slate-800 border-slate-700 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="free">مجاني</SelectItem>
+                          <SelectItem value="pro">Pro</SelectItem>
+                          <SelectItem value="premium">Premium</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="p-3 text-center">
+                      {page.badgeText ? (
+                        <Badge style={{ backgroundColor: page.badgeColor || "#3B82F6" }} className="text-white text-xs">
+                          {page.badgeText}
+                        </Badge>
+                      ) : (
+                        <span className="text-slate-600 text-xs">—</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="flex gap-1 justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-blue-400 hover:text-blue-300"
+                          onClick={() => setEditingPage({ ...page })}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        {page.pageType !== "built_in" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-red-400 hover:text-red-300"
+                            onClick={() => {
+                              if (confirm("هل أنت متأكد من حذف هذه الصفحة؟")) {
+                                deletePage.mutate({ id: page.id });
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filteredPages.length === 0 && (
+            <div className="p-8 text-center text-slate-500">
+              <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>لا توجد صفحات مطابقة للبحث</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Page Dialog */}
+      {editingPage && (
+        <Dialog open={!!editingPage} onOpenChange={() => setEditingPage(null)}>
+          <DialogContent className="max-w-2xl bg-slate-900 border-slate-700 text-white max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>تعديل الصفحة: {editingPage.titleAr}</DialogTitle>
+              <DialogDescription className="text-slate-400">
+                تعديل إعدادات ومحتوى الصفحة
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+              <div className="space-y-2">
+                <Label>العنوان بالعربية</Label>
+                <Input
+                  value={editingPage.titleAr}
+                  onChange={(e) => setEditingPage({ ...editingPage, titleAr: e.target.value })}
+                  className="bg-slate-800 border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>العنوان بالفرنسية</Label>
+                <Input
+                  value={editingPage.titleFr || ""}
+                  onChange={(e) => setEditingPage({ ...editingPage, titleFr: e.target.value })}
+                  className="bg-slate-800 border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>العنوان بالإنجليزية</Label>
+                <Input
+                  value={editingPage.titleEn || ""}
+                  onChange={(e) => setEditingPage({ ...editingPage, titleEn: e.target.value })}
+                  className="bg-slate-800 border-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الأيقونة (Lucide)</Label>
+                <Input
+                  value={editingPage.icon || ""}
+                  onChange={(e) => setEditingPage({ ...editingPage, icon: e.target.value })}
+                  className="bg-slate-800 border-slate-700"
+                  placeholder="FileText, Home, Sparkles..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>نص الشارة</Label>
+                <Input
+                  value={editingPage.badgeText || ""}
+                  onChange={(e) => setEditingPage({ ...editingPage, badgeText: e.target.value || null })}
+                  className="bg-slate-800 border-slate-700"
+                  placeholder="جديد، حصري..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>لون الشارة</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={editingPage.badgeColor || ""}
+                    onChange={(e) => setEditingPage({ ...editingPage, badgeColor: e.target.value || null })}
+                    className="bg-slate-800 border-slate-700 flex-1"
+                    placeholder="#FF6B00"
+                  />
+                  <input
+                    type="color"
+                    value={editingPage.badgeColor || "#3B82F6"}
+                    onChange={(e) => setEditingPage({ ...editingPage, badgeColor: e.target.value })}
+                    className="w-10 h-10 rounded cursor-pointer bg-transparent"
+                  />
+                </div>
+              </div>
+              {editingPage.pageType === "external_link" && (
+                <div className="space-y-2 col-span-2">
+                  <Label>الرابط الخارجي</Label>
+                  <Input
+                    value={editingPage.externalUrl || ""}
+                    onChange={(e) => setEditingPage({ ...editingPage, externalUrl: e.target.value })}
+                    className="bg-slate-800 border-slate-700"
+                    dir="ltr"
+                  />
+                </div>
+              )}
+              <div className="space-y-2 col-span-2">
+                <Label>الوصف بالعربية</Label>
+                <Textarea
+                  value={editingPage.descriptionAr || ""}
+                  onChange={(e) => setEditingPage({ ...editingPage, descriptionAr: e.target.value })}
+                  className="bg-slate-800 border-slate-700"
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>عنوان SEO</Label>
+                <Input
+                  value={editingPage.metaTitle || ""}
+                  onChange={(e) => setEditingPage({ ...editingPage, metaTitle: e.target.value || null })}
+                  className="bg-slate-800 border-slate-700"
+                />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>وصف SEO</Label>
+                <Textarea
+                  value={editingPage.metaDescription || ""}
+                  onChange={(e) => setEditingPage({ ...editingPage, metaDescription: e.target.value || null })}
+                  className="bg-slate-800 border-slate-700"
+                  rows={2}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingPage(null)} className="border-slate-600">
+                إلغاء
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => {
+                  updatePage.mutate({
+                    id: editingPage.id,
+                    titleAr: editingPage.titleAr,
+                    titleFr: editingPage.titleFr || undefined,
+                    titleEn: editingPage.titleEn || undefined,
+                    descriptionAr: editingPage.descriptionAr || undefined,
+                    icon: editingPage.icon || undefined,
+                    badgeText: editingPage.badgeText,
+                    badgeColor: editingPage.badgeColor,
+                    externalUrl: editingPage.externalUrl,
+                    metaTitle: editingPage.metaTitle,
+                    metaDescription: editingPage.metaDescription,
+                  });
+                  setEditingPage(null);
+                }}
+              >
+                <Save className="h-4 w-4 ml-2" />
+                حفظ التعديلات
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Add New Page Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-2xl bg-slate-900 border-slate-700 text-white max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>إضافة صفحة جديدة</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              أضف صفحة مخصصة أو رابط خارجي إلى الموقع
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label>نوع الصفحة *</Label>
+              <Select
+                value={newPage.pageType}
+                onValueChange={(val) => setNewPage({ ...newPage, pageType: val as any })}
+              >
+                <SelectTrigger className="bg-slate-800 border-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">صفحة مخصصة</SelectItem>
+                  <SelectItem value="external_link">رابط خارجي</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>معرّف الصفحة (بالإنجليزية) *</Label>
+              <Input
+                value={newPage.pageKey}
+                onChange={(e) => setNewPage({ ...newPage, pageKey: e.target.value.toLowerCase().replace(/\s+/g, "-") })}
+                className="bg-slate-800 border-slate-700"
+                dir="ltr"
+                placeholder="my-custom-page"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>العنوان بالعربية *</Label>
+              <Input
+                value={newPage.titleAr}
+                onChange={(e) => setNewPage({ ...newPage, titleAr: e.target.value })}
+                className="bg-slate-800 border-slate-700"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>العنوان بالفرنسية</Label>
+              <Input
+                value={newPage.titleFr}
+                onChange={(e) => setNewPage({ ...newPage, titleFr: e.target.value })}
+                className="bg-slate-800 border-slate-700"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>العنوان بالإنجليزية</Label>
+              <Input
+                value={newPage.titleEn}
+                onChange={(e) => setNewPage({ ...newPage, titleEn: e.target.value })}
+                className="bg-slate-800 border-slate-700"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>المسار *</Label>
+              <Input
+                value={newPage.path}
+                onChange={(e) => setNewPage({ ...newPage, path: e.target.value })}
+                className="bg-slate-800 border-slate-700"
+                dir="ltr"
+                placeholder="/my-page"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>الأيقونة (Lucide)</Label>
+              <Input
+                value={newPage.icon}
+                onChange={(e) => setNewPage({ ...newPage, icon: e.target.value })}
+                className="bg-slate-800 border-slate-700"
+                placeholder="FileText"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>الفئة</Label>
+              <Select
+                value={newPage.category}
+                onValueChange={(val) => setNewPage({ ...newPage, category: val })}
+              >
+                <SelectTrigger className="bg-slate-800 border-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="main">رئيسية</SelectItem>
+                  <SelectItem value="ai_tools">أدوات ذكاء اصطناعي</SelectItem>
+                  <SelectItem value="profile">ملف شخصي</SelectItem>
+                  <SelectItem value="custom">مخصصة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>المستوى المطلوب</Label>
+              <Select
+                value={newPage.requiredTier}
+                onValueChange={(val) => setNewPage({ ...newPage, requiredTier: val as any })}
+              >
+                <SelectTrigger className="bg-slate-800 border-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">مجاني</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-3 pt-6">
+              <Switch
+                checked={newPage.requiresAuth}
+                onCheckedChange={(checked) => setNewPage({ ...newPage, requiresAuth: checked })}
+              />
+              <Label>يتطلب تسجيل دخول</Label>
+            </div>
+            {newPage.pageType === "external_link" && (
+              <div className="space-y-2 col-span-2">
+                <Label>الرابط الخارجي *</Label>
+                <Input
+                  value={newPage.externalUrl}
+                  onChange={(e) => setNewPage({ ...newPage, externalUrl: e.target.value })}
+                  className="bg-slate-800 border-slate-700"
+                  dir="ltr"
+                  placeholder="https://example.com"
+                />
+              </div>
+            )}
+            <div className="space-y-2 col-span-2">
+              <Label>الوصف بالعربية</Label>
+              <Textarea
+                value={newPage.descriptionAr}
+                onChange={(e) => setNewPage({ ...newPage, descriptionAr: e.target.value })}
+                className="bg-slate-800 border-slate-700"
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>نص الشارة</Label>
+              <Input
+                value={newPage.badgeText}
+                onChange={(e) => setNewPage({ ...newPage, badgeText: e.target.value })}
+                className="bg-slate-800 border-slate-700"
+                placeholder="جديد"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>لون الشارة</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newPage.badgeColor}
+                  onChange={(e) => setNewPage({ ...newPage, badgeColor: e.target.value })}
+                  className="bg-slate-800 border-slate-700 flex-1"
+                  placeholder="#FF6B00"
+                />
+                <input
+                  type="color"
+                  value={newPage.badgeColor || "#3B82F6"}
+                  onChange={(e) => setNewPage({ ...newPage, badgeColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer bg-transparent"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowAddDialog(false); resetNewPage(); }} className="border-slate-600">
+              إلغاء
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              disabled={!newPage.pageKey || !newPage.titleAr || !newPage.path || addCustomPage.isPending}
+              onClick={() => {
+                addCustomPage.mutate({
+                  pageKey: newPage.pageKey,
+                  titleAr: newPage.titleAr,
+                  titleFr: newPage.titleFr || undefined,
+                  titleEn: newPage.titleEn || undefined,
+                  descriptionAr: newPage.descriptionAr || undefined,
+                  path: newPage.path,
+                  icon: newPage.icon || undefined,
+                  category: newPage.category || undefined,
+                  pageType: newPage.pageType,
+                  externalUrl: newPage.externalUrl || undefined,
+                  customContent: newPage.customContent || undefined,
+                  requiresAuth: newPage.requiresAuth,
+                  requiredTier: newPage.requiredTier,
+                  isVisible: newPage.isVisible,
+                  badgeText: newPage.badgeText || undefined,
+                  badgeColor: newPage.badgeColor || undefined,
+                });
+              }}
+            >
+              {addCustomPage.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Plus className="h-4 w-4 ml-2" />
+              )}
+              إضافة الصفحة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

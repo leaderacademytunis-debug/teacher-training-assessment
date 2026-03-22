@@ -2165,3 +2165,53 @@ export const platformMessages = mysqlTable("platform_messages", {
 });
 export type PlatformMessage = typeof platformMessages.$inferSelect;
 export type InsertPlatformMessage = typeof platformMessages.$inferInsert;
+
+// ===== PAGE CONFIGURATIONS (إدارة الصفحات) =====
+/**
+ * Manage site pages: visibility, order, custom content, and metadata.
+ * Allows admin to show/hide pages, reorder navigation, and add custom pages.
+ */
+export const pageConfigurations = mysqlTable("page_configurations", {
+  id: int("id").primaryKey().autoincrement(),
+  pageKey: varchar("page_key", { length: 100 }).notNull().unique(), // e.g., "home", "exam-builder", "blind-grading"
+  
+  // Page info in 3 languages
+  titleAr: varchar("title_ar", { length: 255 }).notNull(),
+  titleFr: varchar("title_fr", { length: 255 }),
+  titleEn: varchar("title_en", { length: 255 }),
+  descriptionAr: text("description_ar"),
+  descriptionFr: text("description_fr"),
+  descriptionEn: text("description_en"),
+  
+  // Route & Navigation
+  path: varchar("path", { length: 255 }).notNull(), // e.g., "/exam-builder"
+  icon: varchar("icon", { length: 50 }), // Lucide icon name
+  parentPage: varchar("parent_page", { length: 100 }), // For grouping under nav sections
+  
+  // Visibility & Access
+  isVisible: boolean("is_visible").default(true).notNull(), // Show/hide in navigation
+  isEnabled: boolean("is_enabled").default(true).notNull(), // Enable/disable access
+  requiresAuth: boolean("requires_auth").default(false).notNull(),
+  requiredRole: mysqlEnum("required_role", ["user", "admin"]).default("user"),
+  requiredTier: mysqlEnum("required_tier", ["free", "pro", "premium"]).default("free"),
+  
+  // Display settings
+  sortOrder: int("sort_order").default(0).notNull(),
+  category: varchar("category", { length: 50 }), // "ai_tools", "management", "content", "profile"
+  badgeText: varchar("badge_text", { length: 50 }), // e.g., "جديد", "حصري"
+  badgeColor: varchar("badge_color", { length: 20 }), // e.g., "#FF6B00"
+  
+  // Page type
+  pageType: mysqlEnum("page_type", ["built_in", "custom", "external_link"]).default("built_in").notNull(),
+  externalUrl: varchar("external_url", { length: 500 }), // For external links
+  customContent: text("custom_content"), // HTML/Markdown for custom pages
+  
+  // SEO
+  metaTitle: varchar("meta_title", { length: 255 }),
+  metaDescription: text("meta_description"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PageConfiguration = typeof pageConfigurations.$inferSelect;
+export type InsertPageConfiguration = typeof pageConfigurations.$inferInsert;

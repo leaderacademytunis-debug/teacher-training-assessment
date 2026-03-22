@@ -250,7 +250,7 @@ export default function BlindGrading() {
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center" dir={isRTL ? "rtl" : "ltr"}>
         <div className="text-center space-y-4 p-8 bg-white rounded-2xl shadow-lg max-w-md">
           <Shield className="w-16 h-16 text-blue-600 mx-auto" />
-          <h2 className="text-2xl font-bold text-gray-800">{t("مساعد التصحيح الأعمى", "Assistant de Correction Anonyme", "Blind Grading Assistant")}</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{t("مساعد التصحيح الذكي", "Assistant de Correction Intelligente", "Smart Grading Assistant")}</h2>
           <p className="text-gray-600">{t("يجب تسجيل الدخول للوصول إلى هذه الأداة", "Vous devez être connecté pour accéder à cet outil", "You must be logged in to access this tool")}</p>
           <a href={getLoginUrl()} className="inline-block bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
             {t("تسجيل الدخول", "Se connecter", "Log In")}
@@ -266,9 +266,9 @@ export default function BlindGrading() {
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir={isRTL ? "rtl" : "ltr"}>
         <ToolPageHeader
           icon={FileCheck}
-          nameAr="مساعد التصحيح الأعمى"
-          nameFr="Assistant de Correction Anonyme"
-          nameEn="Blind Grading Assistant"
+          nameAr="مساعد التصحيح الذكي"
+          nameFr="Assistant de Correction Intelligente"
+          nameEn="Smart Grading Assistant"
           descAr="تصحيح ذكي بالذكاء الاصطناعي حسب المعايير التونسية"
           descFr="Correction intelligente par l'IA selon les critères tunisiens"
           descEn="AI-powered grading according to Tunisian criteria"

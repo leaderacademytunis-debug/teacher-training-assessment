@@ -368,7 +368,7 @@ const toolSpecific = {
     curriculumResources: "الموارد",
 
     // BlindGrading
-    blindGradingName: "مساعد التصحيح الأعمى",
+    blindGradingName: "مساعد التصحيح الذكي",
     blindGradingDesc: "تصحيح ذكي بالذكاء الاصطناعي حسب المعايير التونسية",
     blindGradingNewSession: "جلسة تصحيح جديدة",
     blindGradingMySessions: "جلساتي",
@@ -484,7 +484,7 @@ const toolSpecific = {
     curriculumResources: "Ressources",
 
     // BlindGrading
-    blindGradingName: "Assistant de Correction Anonyme",
+    blindGradingName: "Assistant de Correction Intelligente",
     blindGradingDesc: "Correction intelligente par l'IA selon les critères tunisiens",
     blindGradingNewSession: "Nouvelle session de correction",
     blindGradingMySessions: "Mes sessions",
@@ -600,7 +600,7 @@ const toolSpecific = {
     curriculumResources: "Resources",
 
     // BlindGrading
-    blindGradingName: "Blind Grading Assistant",
+    blindGradingName: "Smart Grading Assistant",
     blindGradingDesc: "AI-powered grading according to Tunisian criteria",
     blindGradingNewSession: "New Grading Session",
     blindGradingMySessions: "My Sessions",
