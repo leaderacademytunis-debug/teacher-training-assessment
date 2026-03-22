@@ -9,7 +9,7 @@ import {
   Calendar, BookOpen, Sparkles, ArrowLeft,
   Zap, ClipboardCheck, Lightbulb, type LucideIcon,
   Play, CheckCircle2, Clock, Users, Star,
-  FileText, Image as ImageIcon, Mic, PenTool,
+  FileText, Image as ImageIcon, Mic, PenTool, HeartHandshake,
 } from "lucide-react";
 
 /* ───────── Tool definition ───────── */
@@ -262,21 +262,21 @@ const CATEGORIES: CategoryDef[] = [
 /* ───────── Bonus tools (not in main categories) ───────── */
 const BONUS_TOOLS: ToolDef[] = [
   {
-    id: "handwriting",
-    href: "/handwriting-analyzer",
-    icon: Brain,
-    nameAr: "محلل خط اليد الذكي",
-    nameFr: "Analyseur d'écriture IA",
-    nameEn: "AI Handwriting Analyzer",
-    descAr: "تحليل خط يد التلميذ للكشف المبكر عن صعوبات واضطرابات التعلم",
-    descFr: "Analyser l'écriture pour détecter les troubles d'apprentissage",
-    descEn: "Analyze handwriting to detect learning difficulties early",
+    id: "learning-support",
+    href: "/learning-support",
+    icon: HeartHandshake,
+    nameAr: "أدوات ذوي صعوبات التعلم",
+    nameFr: "Outils troubles d'apprentissage",
+    nameEn: "Learning Difficulties Tools",
+    descAr: "أدوات ذكاء اصطناعي متخصصة لمرافقة التلاميذ ذوي صعوبات واضطرابات التعلم",
+    descFr: "Outils IA spécialisés pour accompagner les élèves en difficulté d'apprentissage",
+    descEn: "Specialized AI tools to support students with learning difficulties",
     gradient: "linear-gradient(135deg, #00695C, #26A69A)",
     iconBg: "#E0F2F1",
-    previewAr: ["تصوير عيّنة خط اليد", "تحليل ذكي للحروف", "كشف صعوبات التعلم", "تقرير مفصّل للمرافق"],
-    previewFr: ["Photographier l'écriture", "Analyse IA des lettres", "Détection troubles", "Rapport détaillé"],
-    previewEn: ["Photograph handwriting", "AI letter analysis", "Detect difficulties", "Detailed report"],
-    previewIcon: PenTool,
+    previewAr: ["محلل خط اليد الذكي", "المرافق البيداغوجي", "مكيّف المحتوى", "مولّد التمارين العلاجية"],
+    previewFr: ["Analyseur d'écriture", "Accompagnateur pédagogique", "Adaptateur de contenu", "Générateur d'exercices"],
+    previewEn: ["Handwriting Analyzer", "Pedagogical Companion", "Content Adapter", "Exercise Generator"],
+    previewIcon: HeartHandshake,
     demoSteps: 4,
   },
   {

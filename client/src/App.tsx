@@ -73,6 +73,7 @@ const HandwritingAnalyzer = lazy(() => import("@/pages/HandwritingAnalyzer"));
 const VideoEvaluator = lazy(() => import("@/pages/VideoEvaluator"));
 const About = lazy(() => import("@/pages/About"));
 const PromptLab = lazy(() => import("@/pages/PromptLab"));
+const LearningDifficultiesTools = lazy(() => import("@/pages/LearningDifficultiesTools"));
 
 function PageLoader() {
   return (
@@ -145,6 +146,7 @@ function Router() {
         <Route path="/join/:code" component={JoinBatch} />
         <Route path="/admin/batch-comparison" component={BatchComparison} />
         <Route path="/handwriting-analyzer" component={HandwritingAnalyzer} />
+        <Route path="/learning-support" component={LearningDifficultiesTools} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path="/about" component={About} />
         <Route path="/prompt-lab" component={PromptLab} />

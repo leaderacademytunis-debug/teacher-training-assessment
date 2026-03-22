@@ -10,7 +10,7 @@ import {
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
   Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2, Briefcase, FileText, Film,
-  Quote, Heart, Phone, Mail, ExternalLink, ChevronRight, Send,
+  Quote, Heart, Phone, Mail, ExternalLink, ChevronRight, Send, HeartHandshake,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
@@ -47,7 +47,7 @@ const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: strin
   { href: "/curriculum-map", labelAr: "Curriculum GPS — خريطة المنهج", labelFr: "Curriculum GPS — Carte du programme", labelEn: "Curriculum GPS — Curriculum Map", icon: BarChart3, descAr: "تتبع تقدمك في تغطية المنهج الدراسي بذكاء", descFr: "Suivre votre progression dans le programme scolaire", descEn: "Track your curriculum coverage progress intelligently" },
   { href: "/blind-grading", labelAr: "مساعد التصحيح الذكي", labelFr: "Correction intelligente IA", labelEn: "Smart Grading Assistant", icon: FileCheck, descAr: "تصحيح ذكي لأوراق التلاميذ حسب المعايير التونسية", descFr: "Correction intelligente des copies selon les critères tunisiens", descEn: "AI-powered student paper grading with Tunisian criteria" },  { href: "/marketplace", labelAr: "سوق المحتوى الذهبي", labelFr: "Marché du contenu", labelEn: "Content Marketplace", icon: Store, descAr: "سوق مجتمعي لمشاركة وتحميل أفضل المحتويات التعليمية", descFr: "Marché communautaire pour partager le meilleur contenu éducatif", descEn: "Community marketplace for sharing best educational content" },
   { href: "/drama-engine", labelAr: "محرك الدراما التعليمية", labelFr: "Moteur de théâtre éducatif", labelEn: "Drama Engine", icon: Theater, descAr: "حوّل دروسك إلى مسرحيات تفاعلية مع توزيع الأدوار والوسائل", descFr: "Transformez vos leçons en pièces de théâtre interactives", descEn: "Transform lessons into interactive classroom plays" },
-  { href: "/handwriting-analyzer", labelAr: "محلل خط اليد الذكي", labelFr: "Analyseur d'écriture IA", labelEn: "AI Handwriting Analyzer", icon: Brain, descAr: "تحليل خط يد التلميذ للكشف المبكر عن صعوبات واضطرابات التعلم", descFr: "Analyser l'écriture pour détecter les troubles d'apprentissage", descEn: "Analyze handwriting to detect learning difficulties" },
+  { href: "/learning-support", labelAr: "أدوات ذوي صعوبات التعلم", labelFr: "Outils troubles d'apprentissage", labelEn: "Learning Difficulties Tools", icon: HeartHandshake, descAr: "أدوات ذكاء اصطناعي متخصصة لمرافقة التلاميذ ذوي صعوبات واضطرابات التعلم", descFr: "Outils IA spécialisés pour accompagner les élèves en difficulté d'apprentissage", descEn: "Specialized AI tools to support students with learning difficulties" },
   { href: "/video-evaluator", labelAr: "مُقيِّم المعلم الرقمي", labelFr: "Évaluateur vidéo IA", labelEn: "AI Video Evaluator", icon: Film, descAr: "تقييم الفيديوهات التعليمية وتحسين هندسة الأوامر (Prompt Engineering)", descFr: "Évaluer les vidéos éducatives et améliorer le Prompt Engineering", descEn: "Evaluate educational videos and improve Prompt Engineering" },
   { href: "/prompt-lab", labelAr: "مختبر هندسة الأوامر", labelFr: "Labo Prompt Engineering", labelEn: "Prompt Engineering Lab", icon: Sparkles, descAr: "مكتبة أوامر ذهبية ومحسّن ذكي وقوالب تفاعلية — مجاني للجميع", descFr: "Bibliothèque de prompts, optimiseur IA et modèles — gratuit pour tous", descEn: "Prompt library, AI optimizer and templates — free for everyone" },
 ];
@@ -179,16 +179,17 @@ const SMART_TOOLS: {
     badge: { ar: "جديد", fr: "Nouveau", en: "New", color: "#E11D48" },
   },
   {
-    href: "/handwriting-analyzer",
-    icon: Brain,
-    titleAr: "محلل خط اليد الذكي",
-    titleFr: "Analyseur d'écriture IA",
-    titleEn: "Handwriting Analyzer",
-    descAr: "تحليل خط يد التلميذ للكشف المبكر عن صعوبات واضطرابات التعلم",
-    descFr: "Analysez l'écriture pour détecter les troubles d'apprentissage",
-    descEn: "Analyze handwriting to detect learning difficulties",
-    gradient: "from-violet-500 to-purple-600",
-    iconBg: "rgba(139,92,246,0.08)",
+    href: "/learning-support",
+    icon: HeartHandshake,
+    titleAr: "أدوات ذوي صعوبات التعلم",
+    titleFr: "Outils troubles d'apprentissage",
+    titleEn: "Learning Difficulties Tools",
+    descAr: "أدوات ذكاء اصطناعي متخصصة لمرافقة التلاميذ ذوي صعوبات التعلم",
+    descFr: "Outils IA spécialisés pour accompagner les élèves en difficulté",
+    descEn: "Specialized AI tools to support students with learning difficulties",
+    gradient: "from-teal-500 to-emerald-600",
+    iconBg: "rgba(20,184,166,0.08)",
+    badge: { ar: "جديد", fr: "Nouveau", en: "New", color: "#0D9488" },
   },
   {
     href: "/marketplace",
