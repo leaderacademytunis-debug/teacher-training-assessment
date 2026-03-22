@@ -30,6 +30,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend
 } from "recharts";
+import RichTextEditor from "@/components/RichTextEditor";
 
 // ===== TYPES =====
 type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages";
@@ -2061,6 +2062,21 @@ function PageManagementSection() {
                   rows={2}
                 />
               </div>
+              {(editingPage.pageType === "custom" || editingPage.pageType === "built_in") && (
+                <div className="space-y-2 col-span-2">
+                  <Label className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-400" />
+                    محتوى الصفحة (محرر مرئي)
+                  </Label>
+                  <RichTextEditor
+                    content={editingPage.customContent || ""}
+                    onChange={(html) => setEditingPage({ ...editingPage, customContent: html })}
+                    placeholder="اكتب محتوى الصفحة هنا..."
+                    minHeight="250px"
+                    darkMode={true}
+                  />
+                </div>
+              )}
               <div className="space-y-2 col-span-2">
                 <Label>عنوان SEO</Label>
                 <Input
@@ -2098,6 +2114,7 @@ function PageManagementSection() {
                     externalUrl: editingPage.externalUrl,
                     metaTitle: editingPage.metaTitle,
                     metaDescription: editingPage.metaDescription,
+                    customContent: editingPage.customContent,
                   });
                   setEditingPage(null);
                 }}
@@ -2249,6 +2266,21 @@ function PageManagementSection() {
                 rows={2}
               />
             </div>
+            {newPage.pageType === "custom" && (
+              <div className="space-y-2 col-span-2">
+                <Label className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-green-400" />
+                  محتوى الصفحة (محرر مرئي)
+                </Label>
+                <RichTextEditor
+                  content={newPage.customContent}
+                  onChange={(html) => setNewPage({ ...newPage, customContent: html })}
+                  placeholder="اكتب محتوى الصفحة المخصصة هنا..."
+                  minHeight="250px"
+                  darkMode={true}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>نص الشارة</Label>
               <Input
