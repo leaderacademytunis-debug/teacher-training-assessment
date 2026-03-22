@@ -7,7 +7,7 @@ import {
   ChevronDown, Star, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings, ScanLine, FileCheck, Store, Briefcase, FileText, Theater, Building2, Film, Shield,
+  Megaphone, Settings, ScanLine, FileCheck, Store, Briefcase, FileText, Theater, Building2, Film, Shield, PanelLeft,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { Link, useLocation } from "wouter";
@@ -59,6 +59,7 @@ const ADMIN_LINKS = [
   { href: "/admin/partners", labelAr: "إدارة الشركاء", labelFr: "Gestion des partenaires", labelEn: "Partner Management", icon: Building2, descAr: "اعتماد ورفض طلبات المدارس الشريكة", descFr: "Approuver/rejeter les demandes d'écoles", descEn: "Approve/reject school partner requests", section: "admin", adminOnly: true },
   { href: "/managerial-dashboard", labelAr: "التحليلات والإحصائيات", labelFr: "Analyses & Statistiques", labelEn: "Analytics & Statistics", icon: BarChart3, descAr: "تقارير الأداء والإحصائيات التفصيلية", descFr: "Rapports de performance et statistiques", descEn: "Performance reports and statistics", section: "admin", adminOnly: true },
   { href: "/admin/batches", labelAr: "إدارة الدفعات", labelFr: "Gestion des groupes", labelEn: "Batch Manager", icon: Users, descAr: "إدارة المجموعات والصلاحيات والواجبات", descFr: "Gérer groupes, accès et devoirs", descEn: "Manage batches, access and assignments", section: "admin", adminOnly: true },
+  { href: "/admin-control", labelAr: "لوحة التحكم الشاملة", labelFr: "Panneau de contrôle", labelEn: "Control Panel", icon: PanelLeft, descAr: "إدارة حدود الاستخدام والمستخدمين والاشتراكات والإحصائيات", descFr: "Gérer limites, utilisateurs, abonnements et statistiques", descEn: "Manage limits, users, subscriptions and statistics", section: "admin", adminOnly: true },
 ];
 
 // ===== CAREER LINKS =====
@@ -229,6 +230,11 @@ export default function UnifiedNavbar() {
 
                 {/* More dropdown for logged-in users */}
                 <MoreDropdown language={language} t={t} user={user} location={location} isAdmin={isAdmin} />
+
+                {/* Admin dropdown - separate from More */}
+                {isAdmin && (
+                  <AdminDropdown language={language} t={t} location={location} isAdmin={isAdmin} />
+                )}
               </>
             )}
           </nav>
@@ -507,18 +513,10 @@ export default function UnifiedNavbar() {
 
 // ===== MORE DROPDOWN (for logged-in users on desktop) =====
 function MoreDropdown({ language, t, user, location, isAdmin }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; user: any; location: string; isAdmin: boolean }) {
-  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000, enabled: isAdmin });
-  const pendingCount = isAdmin ? (pendingCountQuery.data?.count || 0) : 0;
-
   return (
     <div className="relative group/more">
       <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-all duration-200">
         {t("المزيد", "Plus", "More")}
-        {pendingCount > 0 && (
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
-            {pendingCount > 9 ? "9+" : pendingCount}
-          </span>
-        )}
         <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/more:rotate-180" />
       </button>
       <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover/more:opacity-100 group-hover/more:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
@@ -571,41 +569,6 @@ function MoreDropdown({ language, t, user, location, isAdmin }: { language: AppL
             );
           })}
 
-          {/* Admin section */}
-          <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Settings className="w-3 h-3" />
-              {t("الإدارة", "Administration", "Management")}
-              {pendingCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-red-500 text-white">
-                  {pendingCount}
-                </span>
-              )}
-            </p>
-          </div>
-          {ADMIN_LINKS.filter(l => !l.adminOnly || isAdmin).map((link) => {
-            const IconComp = link.icon;
-            const isPartners = link.href === "/admin/partners";
-            return (
-              <Link key={link.href} href={link.href}>
-                <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50/60 cursor-pointer transition-colors border-b border-gray-50">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: isPartners ? "linear-gradient(135deg, #DC2626, #EF4444)" : "linear-gradient(135deg, #1A237E, #1565C0)" }}>
-                    <IconComp className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-sm text-gray-800">{getLabel(link, language)}</p>
-                      {isPartners && pendingCount > 0 && (
-                        <span className="flex h-2 w-2 rounded-full bg-red-500" />
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-400">{getDesc(link, language)}</p>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-
           {/* Pricing & Contact */}
           <div className="border-t border-gray-100 flex">
             <Link href="/pricing" className="flex-1">
@@ -620,6 +583,73 @@ function MoreDropdown({ language, t, user, location, isAdmin }: { language: AppL
                 {t("تواصل معنا", "Contact", "Contact")}
               </div>
             </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===== ADMIN DROPDOWN (separate from More, for admin users on desktop) =====
+function AdminDropdown({ language, t, location, isAdmin }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; location: string; isAdmin: boolean }) {
+  const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000, enabled: isAdmin });
+  const pendingCount = isAdmin ? (pendingCountQuery.data?.count || 0) : 0;
+
+  return (
+    <div className="relative group/admin">
+      <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-all duration-200">
+        <Settings className="w-4 h-4" />
+        {t("الإدارة", "Administration", "Management")}
+        {pendingCount > 0 && (
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
+            {pendingCount > 9 ? "9+" : pendingCount}
+          </span>
+        )}
+        <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/admin:rotate-180" />
+      </button>
+      <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "340px" }}>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden" dir="rtl">
+          <div className="px-4 py-3 border-b border-gray-50" style={{ background: "linear-gradient(135deg, #1A237E, #0D47A1)" }}>
+            <p className="text-white font-bold text-sm flex items-center gap-2">
+              <Settings className="w-4 h-4 text-orange-300" />
+              {t("لوحة الإدارة", "Panneau d'administration", "Admin Panel")}
+              {pendingCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-red-500 text-white">
+                  {pendingCount}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="overflow-y-auto py-1" style={{ maxHeight: "calc(100vh - 120px)" }}>
+            {ADMIN_LINKS.filter(l => !l.adminOnly || isAdmin).map((link, idx) => {
+              const IconComp = link.icon;
+              const isActive = location === link.href || location.startsWith(link.href + "/");
+              const isPartners = link.href === "/admin/partners";
+              const isControlPanel = link.href === "/admin-control";
+              return (
+                <Link key={link.href} href={link.href}>
+                  <div className={`flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50/60 cursor-pointer transition-colors ${idx < ADMIN_LINKS.length - 1 ? "border-b border-gray-50" : ""} ${isActive ? "bg-blue-50/40" : ""}`}>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0`} style={{ background: isControlPanel ? "linear-gradient(135deg, #FF6D00, #FF8F00)" : isPartners ? "linear-gradient(135deg, #DC2626, #EF4444)" : "linear-gradient(135deg, #1A237E, #1565C0)" }}>
+                      <IconComp className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className={`font-bold text-sm ${isActive ? "text-[#1A237E]" : "text-gray-800"}`}>{getLabel(link, language)}</p>
+                        {isPartners && pendingCount > 0 && (
+                          <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                        )}
+                        {isControlPanel && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 text-orange-600">
+                            {t("جديد", "Nouveau", "New")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 leading-tight">{getDesc(link, language)}</p>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
