@@ -225,7 +225,7 @@ export const notifications = mysqlTable("notifications", {
   userId: int("userId").notNull(),
   titleAr: varchar("titleAr", { length: 255 }).notNull(),
   messageAr: text("messageAr").notNull(),
-  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review", "assignment_graded", "assignment_returned", "submission_comment"]).notNull(),
+  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review", "assignment_graded", "assignment_returned", "submission_comment", "system"]).notNull(),
   relatedId: int("relatedId"), // courseId, examId, etc.
   isRead: boolean("isRead").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -2044,3 +2044,124 @@ export const courseReviews = mysqlTable("course_reviews", {
 
 export type CourseReview = typeof courseReviews.$inferSelect;
 export type InsertCourseReview = typeof courseReviews.$inferInsert;
+
+
+// ===== ADMIN SETTINGS (إعدادات المنصة العامة) =====
+/**
+ * Key-value store for global platform settings.
+ * Used by admin to configure messages, feature flags, and other platform-wide settings.
+ */
+export const adminSettings = mysqlTable("admin_settings", {
+  id: int("id").primaryKey().autoincrement(),
+  settingKey: varchar("setting_key", { length: 100 }).notNull().unique(),
+  settingValue: text("setting_value"), // JSON or plain text value
+  settingType: mysqlEnum("setting_type", ["string", "number", "boolean", "json"]).default("string").notNull(),
+  category: varchar("category", { length: 50 }).default("general").notNull(), // general, messages, features, branding
+  labelAr: varchar("label_ar", { length: 255 }), // Arabic label for admin UI
+  labelFr: varchar("label_fr", { length: 255 }), // French label
+  labelEn: varchar("label_en", { length: 255 }), // English label
+  description: text("description"), // Help text for admin
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AdminSetting = typeof adminSettings.$inferSelect;
+export type InsertAdminSetting = typeof adminSettings.$inferInsert;
+
+// ===== TOOL CONFIGURATIONS (إعدادات الأدوات) =====
+/**
+ * Stores per-tool configuration: enable/disable, limits per tier, display order, etc.
+ */
+export const toolConfigurations = mysqlTable("tool_configurations", {
+  id: int("id").primaryKey().autoincrement(),
+  toolKey: varchar("tool_key", { length: 100 }).notNull().unique(), // e.g., "exam_builder", "inspector", "visual_studio"
+  
+  // Display info
+  nameAr: varchar("name_ar", { length: 255 }).notNull(),
+  nameFr: varchar("name_fr", { length: 255 }),
+  nameEn: varchar("name_en", { length: 255 }),
+  descriptionAr: text("description_ar"),
+  icon: varchar("icon", { length: 50 }).default("Sparkles"),
+  
+  // Feature flags
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  requiresAuth: boolean("requires_auth").default(true).notNull(),
+  
+  // Tier access: which tiers can use this tool
+  freeAccess: boolean("free_access").default(false).notNull(),
+  proAccess: boolean("pro_access").default(true).notNull(),
+  premiumAccess: boolean("premium_access").default(true).notNull(),
+  
+  // Usage limits per tier per month (0 = unlimited, -1 = blocked)
+  freeLimitPerMonth: int("free_limit_per_month").default(0).notNull(),
+  proLimitPerMonth: int("pro_limit_per_month").default(0).notNull(),
+  premiumLimitPerMonth: int("premium_limit_per_month").default(0).notNull(),
+  
+  // Image generation limits (specific for visual tools)
+  freeImageLimit: int("free_image_limit").default(0).notNull(),
+  proImageLimit: int("pro_image_limit").default(0).notNull(),
+  premiumImageLimit: int("premium_image_limit").default(0).notNull(),
+  
+  // File upload limits (MB)
+  maxFileUploadMB: int("max_file_upload_mb").default(10).notNull(),
+  
+  // Display order
+  sortOrder: int("sort_order").default(0).notNull(),
+  category: varchar("category", { length: 50 }).default("ai_tools"), // ai_tools, assessment, content, management
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ToolConfiguration = typeof toolConfigurations.$inferSelect;
+export type InsertToolConfiguration = typeof toolConfigurations.$inferInsert;
+
+// ===== USAGE TRACKING (تتبع الاستخدام لكل أداة) =====
+/**
+ * Tracks per-user, per-tool usage per month.
+ * Used to enforce dynamic limits set by admin.
+ */
+export const toolUsageTracking = mysqlTable("tool_usage_tracking", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull(),
+  toolKey: varchar("tool_key", { length: 100 }).notNull(), // matches toolConfigurations.toolKey
+  monthYear: varchar("month_year", { length: 7 }).notNull(), // '2026-03'
+  
+  // Counters
+  operationCount: int("operation_count").default(0).notNull(),
+  imageCount: int("image_count").default(0).notNull(),
+  fileUploadCount: int("file_upload_count").default(0).notNull(),
+  
+  // Metadata
+  lastUsedAt: timestamp("last_used_at").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ToolUsageTracking = typeof toolUsageTracking.$inferSelect;
+export type InsertToolUsageTracking = typeof toolUsageTracking.$inferInsert;
+
+// ===== PLATFORM MESSAGES (رسائل المنصة) =====
+/**
+ * Configurable messages shown across the platform (welcome, upgrade prompts, etc.)
+ */
+export const platformMessages = mysqlTable("platform_messages", {
+  id: int("id").primaryKey().autoincrement(),
+  messageKey: varchar("message_key", { length: 100 }).notNull().unique(), // e.g., "welcome_message", "upgrade_prompt"
+  
+  // Content in 3 languages
+  contentAr: text("content_ar"),
+  contentFr: text("content_fr"),
+  contentEn: text("content_en"),
+  
+  // Display settings
+  isActive: boolean("is_active").default(true).notNull(),
+  displayLocation: varchar("display_location", { length: 100 }), // "home", "tools", "pricing", "global_banner"
+  messageType: mysqlEnum("message_type", ["info", "warning", "success", "promo"]).default("info").notNull(),
+  
+  // Scheduling
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PlatformMessage = typeof platformMessages.$inferSelect;
+export type InsertPlatformMessage = typeof platformMessages.$inferInsert;

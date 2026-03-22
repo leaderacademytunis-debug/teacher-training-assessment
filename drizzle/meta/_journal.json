@@ -442,6 +442,20 @@
       "when": 1773764311114,
       "tag": "0062_orange_firelord",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "5",
+      "when": 1774137126880,
+      "tag": "0063_rapid_changeling",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "5",
+      "when": 1774137287591,
+      "tag": "0064_spicy_daimon_hellstrom",
+      "breakpoints": true
     }
   ]
 }

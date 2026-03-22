@@ -1,0 +1,1 @@
+ALTER TABLE `notifications` MODIFY COLUMN `type` enum('enrollment_request','enrollment_approved','enrollment_rejected','new_video','exam_result','marketplace_rating','marketplace_download','marketplace_review','assignment_graded','assignment_returned','submission_comment','system') NOT NULL;

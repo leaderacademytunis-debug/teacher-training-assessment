@@ -2863,3 +2863,48 @@
 
 ## Bug Fix: Inspector text input not editable
 - [x] Fix textarea not accepting input when 'نص' tab is selected (removed disabled={!canAnalyze})
+
+## Admin Dashboard - لوحة تحكم المدير
+### Database Schema
+- [ ] Create adminSettings table (key-value store for global settings)
+- [ ] Create usageLimits table (per-tier limits for each tool)
+- [ ] Create usageTracking table (track per-user usage per tool per month)
+- [ ] Push database migrations
+
+### Backend Procedures
+- [ ] Admin settings CRUD (get/update global settings)
+- [ ] Usage limits CRUD (get/update per-tier limits)
+- [ ] User management (list, update role/tier, ban/unban)
+- [ ] Statistics queries (active users, daily/monthly ops, tool usage)
+- [ ] Usage checking middleware (check limits before tool execution)
+
+### Admin Dashboard UI
+- [ ] Dashboard overview page with key statistics
+- [ ] Usage limits management panel
+- [ ] User management panel (list, search, edit, ban)
+- [ ] Subscription tiers management panel
+- [ ] Content & messages management panel
+- [ ] Tool enable/disable management panel
+
+### Integration
+- [ ] Enforce usage limits in all 11 tools dynamically
+- [ ] Update image generation limit from hardcoded to admin-controlled
+- [ ] Show dynamic limit messages based on admin settings
+
+### Route & Navigation
+- [ ] Register /admin route in App.tsx
+- [ ] Add admin link in navigation (visible only to admin)
+
+## لوحة التحكم الشاملة V2 (Admin Control Panel)
+- [x] إنشاء جداول قاعدة البيانات الجديدة (admin_settings, tool_configurations, tool_usage_tracking, platform_messages)
+- [x] إضافة نوع "system" لجدول الإشعارات
+- [x] بناء Backend Router شامل (adminControl) مع أكثر من 20 endpoint
+- [x] قسم نظرة عامة - إحصائيات + رسوم بيانية (AreaChart, PieChart, BarChart)
+- [x] قسم حدود الاستخدام - إدارة الأدوات وتهيئتها وتعديل حدود كل مستوى
+- [x] قسم إدارة المستخدمين - بحث متقدم، فلترة، حظر/إلغاء حظر، تعديل أدوار، تفاصيل
+- [x] قسم الاشتراكات - خطط الأسعار + إحصائيات + توزيع المستويات
+- [x] قسم المحتوى والرسائل - رسائل المنصة + إعدادات عامة + إرسال إشعارات
+- [x] تسجيل المسار /admin-control في App.tsx
+- [x] كتابة اختبارات Vitest (20 اختبار - جميعها ناجحة)
+- [x] إصلاح مشكلة GROUP BY في MySQL (only_full_group_by)
+- [x] حفظ checkpoint

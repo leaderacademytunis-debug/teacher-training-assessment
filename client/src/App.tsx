@@ -65,6 +65,7 @@ const TeacherAnalytics = lazy(() => import("@/pages/TeacherAnalytics"));
 const JobBoard = lazy(() => import("@/pages/JobBoard"));
 const MyApplications = lazy(() => import("@/pages/MyApplications"));
 const AdminBatchManager = lazy(() => import("@/pages/AdminBatchManager"));
+const AdminDashboardV2 = lazy(() => import("@/pages/AdminDashboardV2"));
 const MyAssignments = lazy(() => import("@/pages/MyAssignments"));
 const JoinBatch = lazy(() => import("@/pages/JoinBatch"));
 const BatchComparison = lazy(() => import("@/pages/BatchComparison"));
@@ -118,6 +119,7 @@ function Router() {
         <Route path="/exam-builder" component={ExamBuilder} />
         <Route path="/visual-studio" component={LeaderVisualStudio} />
         <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin-control" component={AdminDashboardV2} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/legacy-digitizer" component={LegacyDigitizer} />
         <Route path="/my-portfolio" component={TeacherPortfolio} />
