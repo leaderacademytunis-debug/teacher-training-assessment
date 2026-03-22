@@ -89,7 +89,7 @@ const LD_TOOLS: LDTool[] = [
   },
   {
     id: "content-adapter",
-    href: "#",
+    href: "/content-adapter",
     icon: BookOpen,
     nameAr: "مكيّف المحتوى التعليمي",
     nameFr: "Adaptateur de contenu pédagogique",
@@ -97,7 +97,7 @@ const LD_TOOLS: LDTool[] = [
     descAr: "يأخذ أي درس عادي ويعيد صياغته بشكل مبسّط ومكيّف لذوي الصعوبات: نص أكبر، جمل أقصر، صور داعمة، تعليمات مجزّأة",
     descFr: "Prend n'importe quelle leçon et la reformule de manière simplifiée et adaptée : texte plus grand, phrases courtes, images de support",
     descEn: "Takes any lesson and reformulates it in a simplified, adapted way: larger text, shorter sentences, supporting images",
-    status: "coming_soon",
+    status: "available",
     gradient: "linear-gradient(135deg, #E65100 0%, #FF8F00 100%)",
     iconBg: "#FFF3E0",
     stepsAr: ["رفع الدرس الأصلي", "اختيار نوع التكييف المطلوب", "توليد النسخة المكيّفة تلقائياً", "تحميل بصيغة Word أو PDF"],

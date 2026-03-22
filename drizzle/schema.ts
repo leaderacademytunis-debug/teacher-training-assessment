@@ -2304,3 +2304,39 @@ export const supportPlans = mysqlTable("support_plans", {
 });
 export type SupportPlan = typeof supportPlans.$inferSelect;
 export type InsertSupportPlan = typeof supportPlans.$inferInsert;
+
+
+// ===== ADAPTED CONTENT TABLE =====
+export const adaptedContent = mysqlTable("adapted_content", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  
+  // Original content
+  originalTitle: varchar("original_title", { length: 500 }).notNull(),
+  originalContent: text("original_content").notNull(),
+  subject: varchar("subject", { length: 100 }),
+  gradeLevel: varchar("grade_level", { length: 50 }),
+  
+  // Adaptation settings
+  difficultyType: varchar("difficulty_type", { length: 100 }).notNull(),
+  adaptationLevel: mysqlEnum("adaptation_level", ["light", "moderate", "intensive"]).default("moderate").notNull(),
+  
+  // Adapted output
+  adaptedTitle: varchar("adapted_title", { length: 500 }),
+  adaptedContentText: text("adapted_content_text"),
+  simplifiedInstructions: json("simplified_instructions").$type<string[]>(),
+  visualSupports: json("visual_supports").$type<string[]>(),
+  adaptationNotes: json("adaptation_notes").$type<{
+    whatChanged: string[];
+    whyChanged: string[];
+    teacherTips: string[];
+  }>(),
+  
+  // Status
+  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AdaptedContentRow = typeof adaptedContent.$inferSelect;
+export type InsertAdaptedContent = typeof adaptedContent.$inferInsert;

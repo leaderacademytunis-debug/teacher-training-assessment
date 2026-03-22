@@ -470,6 +470,13 @@
       "when": 1774149135961,
       "tag": "0066_dark_hitman",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "5",
+      "when": 1774150262935,
+      "tag": "0067_fancy_mercury",
+      "breakpoints": true
     }
   ]
 }

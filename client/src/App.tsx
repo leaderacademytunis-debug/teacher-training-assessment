@@ -75,6 +75,7 @@ const About = lazy(() => import("@/pages/About"));
 const PromptLab = lazy(() => import("@/pages/PromptLab"));
 const LearningDifficultiesTools = lazy(() => import("@/pages/LearningDifficultiesTools"));
 const PedagogicalCompanion = lazy(() => import("@/pages/PedagogicalCompanion"));
+const ContentAdapter = lazy(() => import("@/pages/ContentAdapter"));
 
 function PageLoader() {
   return (
@@ -149,6 +150,7 @@ function Router() {
         <Route path="/handwriting-analyzer" component={HandwritingAnalyzer} />
         <Route path="/learning-support" component={LearningDifficultiesTools} />
         <Route path="/pedagogical-companion" component={PedagogicalCompanion} />
+        <Route path="/content-adapter" component={ContentAdapter} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path="/about" component={About} />
         <Route path="/prompt-lab" component={PromptLab} />
