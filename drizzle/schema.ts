@@ -2340,3 +2340,56 @@ export const adaptedContent = mysqlTable("adapted_content", {
 });
 export type AdaptedContentRow = typeof adaptedContent.$inferSelect;
 export type InsertAdaptedContent = typeof adaptedContent.$inferInsert;
+
+// ===== GENERATED THERAPEUTIC EXERCISES TABLE =====
+export const generatedTherapeuticExercises = mysqlTable("generated_therapeutic_exercises", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  
+  // Student info (optional)
+  studentName: varchar("student_name", { length: 255 }),
+  studentAge: int("student_age"),
+  gradeLevel: varchar("grade_level", { length: 50 }),
+  
+  // Exercise configuration
+  difficultyType: varchar("difficulty_type", { length: 100 }).notNull(),
+  exerciseCategory: varchar("exercise_category", { length: 100 }).notNull(),
+  difficultyLevel: mysqlEnum("difficulty_level", ["beginner", "intermediate", "advanced"]).default("beginner").notNull(),
+  subject: varchar("subject", { length: 100 }),
+  specificSkill: varchar("specific_skill", { length: 255 }),
+  sessionDuration: int("session_duration").default(20),
+  exerciseCount: int("exercise_count").default(5),
+  
+  // Generated content
+  title: varchar("title", { length: 500 }),
+  introduction: text("introduction"),
+  exercises: json("exercises").$type<{
+    order: number;
+    title: string;
+    type: string;
+    instructions: string;
+    content: string;
+    expectedResponse?: string;
+    hint?: string;
+    adaptationTip?: string;
+    duration?: number;
+    materials?: string[];
+  }[]>(),
+  cooldownActivity: text("cooldown_activity"),
+  teacherNotes: json("teacher_notes").$type<{
+    objectives: string[];
+    prerequisites: string[];
+    successIndicators: string[];
+    commonMistakes: string[];
+    extensionIdeas: string[];
+  }>(),
+  parentGuidance: text("parent_guidance"),
+  
+  // Status
+  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type GeneratedTherapeuticExerciseRow = typeof generatedTherapeuticExercises.$inferSelect;
+export type InsertGeneratedTherapeuticExercise = typeof generatedTherapeuticExercises.$inferInsert;

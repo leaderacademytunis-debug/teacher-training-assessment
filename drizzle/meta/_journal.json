@@ -477,6 +477,13 @@
       "when": 1774150262935,
       "tag": "0067_fancy_mercury",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "5",
+      "when": 1774152063376,
+      "tag": "0068_fat_silver_samurai",
+      "breakpoints": true
     }
   ]
 }

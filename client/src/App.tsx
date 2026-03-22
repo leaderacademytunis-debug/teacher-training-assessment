@@ -76,6 +76,7 @@ const PromptLab = lazy(() => import("@/pages/PromptLab"));
 const LearningDifficultiesTools = lazy(() => import("@/pages/LearningDifficultiesTools"));
 const PedagogicalCompanion = lazy(() => import("@/pages/PedagogicalCompanion"));
 const ContentAdapter = lazy(() => import("@/pages/ContentAdapter"));
+const TherapeuticExercises = lazy(() => import("@/pages/TherapeuticExercises"));
 
 function PageLoader() {
   return (
@@ -151,6 +152,7 @@ function Router() {
         <Route path="/learning-support" component={LearningDifficultiesTools} />
         <Route path="/pedagogical-companion" component={PedagogicalCompanion} />
         <Route path="/content-adapter" component={ContentAdapter} />
+        <Route path="/therapeutic-exercises" component={TherapeuticExercises} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path="/about" component={About} />
         <Route path="/prompt-lab" component={PromptLab} />

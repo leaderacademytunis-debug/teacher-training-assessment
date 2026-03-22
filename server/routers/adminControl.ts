@@ -61,6 +61,7 @@ const DEFAULT_TOOLS = [
   { toolKey: "edugpt", nameAr: "المساعد الذكي", nameFr: "Assistant IA", nameEn: "EduGPT Assistant", icon: "MessageSquare", category: "ai_tools", freeAccess: false, freeLimitPerMonth: 5, proLimitPerMonth: 100, premiumLimitPerMonth: 0 },
   { toolKey: "pedagogical_companion", nameAr: "المرافق البيداغوجي", nameFr: "Accompagnateur pédagogique", nameEn: "Pedagogical Companion", icon: "HeartHandshake", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
   { toolKey: "content_adapter", nameAr: "مكيّف المحتوى التعليمي", nameFr: "Adaptateur de contenu", nameEn: "Content Adapter", icon: "BookOpen", category: "assessment", freeAccess: false, freeLimitPerMonth: 3, proLimitPerMonth: 40, premiumLimitPerMonth: 0 },
+  { toolKey: "therapeutic_exercises_gen", nameAr: "مولّد التمارين العلاجية", nameFr: "Générateur d'exercices thérapeutiques", nameEn: "Therapeutic Exercises Generator", icon: "Dumbbell", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
 ];
 
 export const adminControlRouter = router({

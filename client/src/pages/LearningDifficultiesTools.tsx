@@ -109,7 +109,7 @@ const LD_TOOLS: LDTool[] = [
   },
   {
     id: "remedial-exercises",
-    href: "#",
+    href: "/therapeutic-exercises",
     icon: Puzzle,
     nameAr: "مولّد التمارين العلاجية",
     nameFr: "Générateur d'exercices thérapeutiques",
@@ -117,7 +117,7 @@ const LD_TOOLS: LDTool[] = [
     descAr: "توليد تمارين تدريجية مخصصة لكل نوع اضطراب: تمارين بصرية لعسر القراءة، حركية لعسر الكتابة، تركيز لفرط النشاط",
     descFr: "Générer des exercices progressifs par type de trouble : visuels pour la dyslexie, moteurs pour la dysgraphie, concentration pour le TDAH",
     descEn: "Generate progressive exercises per disorder type: visual for dyslexia, motor for dysgraphia, focus for ADHD",
-    status: "coming_soon",
+    status: "available",
     gradient: "linear-gradient(135deg, #1565C0 0%, #42A5F5 100%)",
     iconBg: "#E3F2FD",
     stepsAr: ["اختيار نوع الاضطراب والمستوى", "تحديد المهارة المستهدفة", "توليد سلسلة تمارين تدريجية", "طباعة أو عرض تفاعلي"],
