@@ -152,14 +152,22 @@ export default function RepartitionJournaliere() {
             </div>
           </div>
 
-          {/* Header */}
-          <Card className="mb-6 border-blue-200 bg-white">
+          {/* Header - Official Tunisian Format */}
+          <Card className="mb-6 border-2 border-blue-300 bg-blue-50/50">
             <CardContent className="p-6">
-              <div className="space-y-2 text-base">
-                <p><strong>Unité d'apprentissage n°</strong> {currentResult.uniteNumber}</p>
-                <p><strong>{currentResult.niveau}</strong> / de {currentResult.dateFrom || "……"} à {currentResult.dateTo || "……"}</p>
-                <p><strong>Module {currentResult.moduleNumber}</strong></p>
-                <p><strong>Journée {currentResult.journeeNumber}</strong></p>
+              <div className="space-y-3 text-base">
+                <div className="flex items-center justify-between">
+                  <p><span className="font-bold text-blue-800">Unité d'apprentissage n°</span> <span className="text-lg font-semibold">{currentResult.uniteNumber}</span></p>
+                  <p className="text-gray-600"><span className="font-semibold">Date :</span> de {currentResult.dateFrom || "……"} à {currentResult.dateTo || "……"}</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p><span className="font-bold text-blue-800">Niveau :</span> <span className="font-semibold">{currentResult.niveau}</span></p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <p><span className="font-bold text-blue-800">Module {currentResult.moduleNumber}</span></p>
+                  <span className="text-gray-400">—</span>
+                  <p><span className="font-bold text-blue-800">Journée {currentResult.journeeNumber}</span></p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -180,10 +188,9 @@ export default function RepartitionJournaliere() {
                 <tbody>
                   {currentResult.activities?.map((activity: any, idx: number) => (
                     <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-blue-50/30"}>
-                      <td className="p-3 border border-gray-200 align-top">
-                        <span className="font-bold text-blue-700">{activity.activityName}</span>
-                        <br />
-                        <span className="text-xs text-gray-500">{activity.duration}</span>
+                      <td className="p-3 border border-gray-200 align-top text-center">
+                        <span className="font-bold text-blue-700 block">{activity.activityName}</span>
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">{activity.duration}</span>
                       </td>
                       <td className="p-3 border border-gray-200 align-top">{activity.objet}</td>
                       <td className="p-3 border border-gray-200 align-top">{activity.objectif}</td>

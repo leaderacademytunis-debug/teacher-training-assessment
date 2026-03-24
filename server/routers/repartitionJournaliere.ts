@@ -6,6 +6,52 @@ import { eq, and, desc, count } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { htmlToPdf } from "../lib/htmlToPdf";
 
+// ===== MANDATORY PEDAGOGICAL STEPS (IMMUTABLE) =====
+const MANDATORY_STEPS = {
+  communicationOrale: [
+    "Situation d'exploration",
+    "Apprentissage systématique structuré",
+    "Intégration",
+    "Évaluation",
+  ],
+  lecture: [
+    "Anticipation",
+    "Approche globale",
+    "Approche analytique",
+    "Lecture vocale",
+    "Étude de vocabulaire",
+    "Évaluation",
+  ],
+  grammaireConjugaisonOrthographe: [
+    "Exploration",
+    "Apprentissage systématique structuré",
+    "Intégration",
+    "Évaluation",
+  ],
+};
+
+// ===== REFERENCE CONTENT FOR U1/M1/J1 (6ème année) =====
+const REFERENCE_CONTENT: Record<string, {
+  communicationOrale: { objet: string; objectif: string };
+  lecture: { objet: string; objectif: string };
+  grammaire: { objet: string; objectif: string };
+}> = {
+  "U1-M1-J1": {
+    communicationOrale: {
+      objet: "Présentation du module et du projet d'écriture",
+      objectif: "Communiquer en situation pour : Informer/s'informer, Décrire/Raconter un événement, Justifier un choix.",
+    },
+    lecture: {
+      objet: "Apprentie comédienne",
+      objectif: "L'élève serait capable de lire de manière expressive et intelligible un passage choisi.",
+    },
+    grammaire: {
+      objet: "Les déterminants / les noms / les pronoms personnels",
+      objectif: "Reconnaître et utiliser les déterminants, les noms et les pronoms personnels.",
+    },
+  },
+};
+
 // ===== RÉPARTITION JOURNALIÈRE ROUTER =====
 export const repartitionJournaliereRouter = router({
 
@@ -78,30 +124,70 @@ export const repartitionJournaliereRouter = router({
       const recordId = inserted.insertId;
 
       try {
-        const systemPrompt = `Tu es un expert pédagogique spécialisé dans le curriculum tunisien de la langue française pour le cycle primaire.
+        // Check if we have reference content for this exact combination
+        const refKey = `U${input.uniteNumber}-M${input.moduleNumber}-J${input.journeeNumber}`;
+        const refContent = REFERENCE_CONTENT[refKey];
+
+        const systemPrompt = `Tu es un EXPERT PÉDAGOGIQUE spécialisé dans le curriculum officiel tunisien de la langue française pour le cycle primaire.
 Tu dois générer une "Répartition Journalière" (التوزيع اليومي) en respectant STRICTEMENT le format officiel tunisien.
 
-RÈGLES ABSOLUES:
-1. Tout le contenu doit être en FRANÇAIS uniquement.
-2. Les objectifs doivent commencer par "L'élève serait capable de..."
-3. Les étapes pédagogiques sont OBLIGATOIRES et ne doivent JAMAIS être modifiées ou réduites.
-4. Le contenu doit être adapté au niveau ${input.niveau}.
+═══════════════════════════════════════════════
+RÈGLES ABSOLUES — AUCUNE EXCEPTION PERMISE :
+═══════════════════════════════════════════════
 
-STRUCTURE DES ÉTAPES OBLIGATOIRES:
-- Communication orale (35 mn): Situation d'exploration → Apprentissage systématique structuré → Intégration → Évaluation
-- Lecture (45 mn): Anticipation → Approche globale → Approche analytique → Lecture vocale → Étude de vocabulaire → Évaluation
-- ${input.grammaireConjugaisonOrthographe.type} (35 mn): Exploration → Apprentissage systématique structuré → Intégration → Évaluation
+1. LANGUE : Tout le contenu DOIT être en FRANÇAIS uniquement. Aucun mot en arabe dans le contenu du tableau.
 
-Réponds UNIQUEMENT en JSON valide avec cette structure exacte:
+2. OBJECTIFS : Les objectifs de la séance doivent être formulés avec précision pédagogique.
+   - Pour la Communication orale : utiliser "Communiquer en situation pour : [verbes d'action]"
+   - Pour la Lecture : commencer par "L'élève serait capable de..."
+   - Pour Grammaire/Conjugaison/Orthographe : utiliser des verbes d'action précis (Reconnaître, Utiliser, Identifier, Conjuguer, Orthographier...)
+
+3. ÉTAPES PÉDAGOGIQUES — OBLIGATOIRES ET IMMUABLES :
+   ┌─ Communication orale (35 mn) ─────────────────────────┐
+   │ 1. Situation d'exploration                              │
+   │ 2. Apprentissage systématique structuré                 │
+   │ 3. Intégration                                          │
+   │ 4. Évaluation                                           │
+   └─────────────────────────────────────────────────────────┘
+   
+   ┌─ Lecture (45 mn) ───────────────────────────────────────┐
+   │ 1. Anticipation                                         │
+   │ 2. Approche globale                                     │
+   │ 3. Approche analytique                                  │
+   │ 4. Lecture vocale                                       │
+   │ 5. Étude de vocabulaire                                 │
+   │ 6. Évaluation                                           │
+   └─────────────────────────────────────────────────────────┘
+   
+   ┌─ ${input.grammaireConjugaisonOrthographe.type} (35 mn) ┐
+   │ 1. Exploration                                          │
+   │ 2. Apprentissage systématique structuré                 │
+   │ 3. Intégration                                          │
+   │ 4. Évaluation                                           │
+   └─────────────────────────────────────────────────────────┘
+
+4. CONTENU : Le contenu (Objet) et les objectifs doivent être conformes au programme officiel tunisien pour le niveau ${input.niveau}.
+
+5. REMARQUES : La colonne "remarques" doit contenir des notes pédagogiques utiles pour l'enseignant (supports utilisés, différenciation pédagogique, évaluation formative, etc.). Si aucune remarque pertinente, laisser vide.
+
+${refContent ? `
+6. RÉFÉRENCE OFFICIELLE pour cette journée :
+   - Communication orale — Objet : "${refContent.communicationOrale.objet}" — Objectif : "${refContent.communicationOrale.objectif}"
+   - Lecture — Objet : "${refContent.lecture.objet}" — Objectif : "${refContent.lecture.objectif}"
+   - Grammaire — Objet : "${refContent.grammaire.objet}" — Objectif : "${refContent.grammaire.objectif}"
+   Utilise ces informations comme base et enrichis-les si nécessaire.
+` : ""}
+
+Réponds UNIQUEMENT en JSON valide avec cette structure exacte :
 {
   "activities": [
     {
       "activityName": "Communication orale",
       "duration": "35 mn",
       "objet": "...",
-      "objectif": "L'élève serait capable de ...",
+      "objectif": "Communiquer en situation pour : ...",
       "etapes": ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"],
-      "remarques": ""
+      "remarques": "..."
     },
     {
       "activityName": "Lecture",
@@ -109,38 +195,45 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte:
       "objet": "...",
       "objectif": "L'élève serait capable de ...",
       "etapes": ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"],
-      "remarques": ""
+      "remarques": "..."
     },
     {
       "activityName": "${input.grammaireConjugaisonOrthographe.type}",
       "duration": "35 mn",
       "objet": "...",
-      "objectif": "L'élève serait capable de ...",
+      "objectif": "...",
       "etapes": ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"],
-      "remarques": ""
+      "remarques": "..."
     }
   ]
 }`;
 
-        const userPrompt = `Génère une Répartition Journalière pour:
-- Unité d'apprentissage n° ${input.uniteNumber}
-- Module ${input.moduleNumber} - Journée ${input.journeeNumber}
-- Niveau: ${input.niveau}
+        const userPrompt = `Génère une Répartition Journalière STRICTEMENT conforme au curriculum tunisien pour :
 
-Activités demandées:
-1. Communication orale (35 mn):
-   - Objet/Contenu: ${input.communicationOrale.objet}
-   ${input.communicationOrale.objectifDetails ? `- Précisions sur l'objectif: ${input.communicationOrale.objectifDetails}` : ""}
+══════════════════════════════════════
+  Unité d'apprentissage n° ${input.uniteNumber}
+  Module ${input.moduleNumber} — Journée ${input.journeeNumber}
+  Niveau : ${input.niveau}
+══════════════════════════════════════
 
-2. Lecture (45 mn):
-   - Objet/Contenu: ${input.lecture.objet}
-   ${input.lecture.objectifDetails ? `- Précisions sur l'objectif: ${input.lecture.objectifDetails}` : ""}
+ACTIVITÉS DEMANDÉES :
 
-3. ${input.grammaireConjugaisonOrthographe.type} (35 mn):
-   - Objet/Contenu: ${input.grammaireConjugaisonOrthographe.objet}
-   ${input.grammaireConjugaisonOrthographe.objectifDetails ? `- Précisions sur l'objectif: ${input.grammaireConjugaisonOrthographe.objectifDetails}` : ""}
+1. COMMUNICATION ORALE (35 mn) :
+   • Objet/Contenu : ${input.communicationOrale.objet}
+   ${input.communicationOrale.objectifDetails ? `• Précisions sur l'objectif : ${input.communicationOrale.objectifDetails}` : "• Formule un objectif pédagogique adapté au contenu ci-dessus."}
 
-IMPORTANT: Formule des objectifs pédagogiques précis et adaptés au niveau ${input.niveau}, en commençant toujours par "L'élève serait capable de...". Le contenu doit être conforme au programme officiel tunisien.`;
+2. LECTURE (45 mn) :
+   • Objet/Contenu : ${input.lecture.objet}
+   ${input.lecture.objectifDetails ? `• Précisions sur l'objectif : ${input.lecture.objectifDetails}` : "• Formule un objectif commençant par 'L'élève serait capable de...'"}
+
+3. ${input.grammaireConjugaisonOrthographe.type.toUpperCase()} (35 mn) :
+   • Objet/Contenu : ${input.grammaireConjugaisonOrthographe.objet}
+   ${input.grammaireConjugaisonOrthographe.objectifDetails ? `• Précisions sur l'objectif : ${input.grammaireConjugaisonOrthographe.objectifDetails}` : "• Formule un objectif avec des verbes d'action précis."}
+
+RAPPEL CRITIQUE :
+- Les étapes pédagogiques sont FIXES et IMMUABLES — ne les modifie JAMAIS.
+- Le contenu doit être en FRANÇAIS uniquement.
+- Les objectifs doivent être précis, mesurables et adaptés au niveau ${input.niveau}.`;
 
         const response = await invokeLLM({
           messages: [
@@ -186,7 +279,7 @@ IMPORTANT: Formule des objectifs pédagogiques précis et adaptés au niveau ${i
         const parsed = JSON.parse(content);
         const activities = parsed.activities;
 
-        // Validate mandatory steps
+        // ===== CRITICAL: ENFORCE MANDATORY STEPS (NEVER TRUST LLM ALONE) =====
         const commOrale = activities.find((a: any) => a.activityName.toLowerCase().includes("communication"));
         const lecture = activities.find((a: any) => a.activityName.toLowerCase().includes("lecture"));
         const grammar = activities.find((a: any) => 
@@ -195,32 +288,63 @@ IMPORTANT: Formule des objectifs pédagogiques précis et adaptés au niveau ${i
           a.activityName.toLowerCase().includes("orthographe")
         );
 
-        // Enforce mandatory steps if LLM missed any
+        // Force correct steps — this is the "Automated Correction Loop"
         if (commOrale) {
-          const requiredSteps = ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"];
-          commOrale.etapes = requiredSteps;
+          commOrale.activityName = "Communication orale";
+          commOrale.duration = "35 mn";
+          commOrale.etapes = [...MANDATORY_STEPS.communicationOrale];
         }
         if (lecture) {
-          const requiredSteps = ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"];
-          lecture.etapes = requiredSteps;
+          lecture.activityName = "Lecture";
+          lecture.duration = "45 mn";
+          lecture.etapes = [...MANDATORY_STEPS.lecture];
         }
         if (grammar) {
-          const requiredSteps = ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"];
-          grammar.etapes = requiredSteps;
+          grammar.activityName = input.grammaireConjugaisonOrthographe.type;
+          grammar.duration = "35 mn";
+          grammar.etapes = [...MANDATORY_STEPS.grammaireConjugaisonOrthographe];
         }
+
+        // Ensure exactly 3 activities in correct order
+        const orderedActivities = [
+          commOrale || {
+            activityName: "Communication orale",
+            duration: "35 mn",
+            objet: input.communicationOrale.objet,
+            objectif: `Communiquer en situation pour : ${input.communicationOrale.objectifDetails || "Informer/s'informer, Décrire/Raconter un événement."}`,
+            etapes: [...MANDATORY_STEPS.communicationOrale],
+            remarques: "",
+          },
+          lecture || {
+            activityName: "Lecture",
+            duration: "45 mn",
+            objet: input.lecture.objet,
+            objectif: `L'élève serait capable de ${input.lecture.objectifDetails || "lire de manière expressive et intelligible un passage choisi."}`,
+            etapes: [...MANDATORY_STEPS.lecture],
+            remarques: "",
+          },
+          grammar || {
+            activityName: input.grammaireConjugaisonOrthographe.type,
+            duration: "35 mn",
+            objet: input.grammaireConjugaisonOrthographe.objet,
+            objectif: input.grammaireConjugaisonOrthographe.objectifDetails || `Reconnaître et utiliser ${input.grammaireConjugaisonOrthographe.objet.toLowerCase()}.`,
+            etapes: [...MANDATORY_STEPS.grammaireConjugaisonOrthographe],
+            remarques: "",
+          },
+        ];
 
         // Update record
         await database.update(repartitionJournaliere)
           .set({
-            activities: activities,
-            generatedContent: content as string,
+            activities: orderedActivities,
+            generatedContent: JSON.stringify({ activities: orderedActivities }),
             status: "completed",
           })
           .where(eq(repartitionJournaliere.id, Number(recordId)));
 
         return {
           id: Number(recordId),
-          activities,
+          activities: orderedActivities,
           uniteNumber: input.uniteNumber,
           moduleNumber: input.moduleNumber,
           journeeNumber: input.journeeNumber,
@@ -252,7 +376,7 @@ IMPORTANT: Formule des objectifs pédagogiques précis et adaptés au niveau ${i
 
       const activities = record.activities as any[];
 
-      // Build HTML for PDF
+      // Build professional PDF HTML matching the official Tunisian format
       const html = `<!DOCTYPE html>
 <html lang="fr" dir="ltr">
 <head>
@@ -260,36 +384,116 @@ IMPORTANT: Formule des objectifs pédagogiques précis et adaptés au niveau ${i
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Noto Sans', Arial, sans-serif; font-size: 12pt; color: #1a1a1a; direction: ltr; text-align: left; padding: 20mm; }
-    .header { margin-bottom: 20px; }
-    .header-line { font-size: 13pt; margin-bottom: 6px; }
-    .header-line strong { font-weight: 700; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th { background: #2c5282; color: white; padding: 10px 8px; font-size: 11pt; font-weight: 600; text-align: center; border: 1px solid #2c5282; }
-    td { padding: 8px; border: 1px solid #cbd5e0; vertical-align: top; font-size: 10.5pt; line-height: 1.5; }
-    tr:nth-child(even) { background: #f7fafc; }
-    .activity-name { font-weight: 700; color: #2c5282; }
-    .duration { font-size: 9.5pt; color: #718096; }
-    .etapes-list { list-style: none; padding: 0; margin: 0; }
-    .etapes-list li { padding: 2px 0; }
-    .etapes-list li::before { content: "→ "; color: #2c5282; font-weight: 600; }
-    .footer { margin-top: 25px; text-align: center; font-size: 9pt; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 10px; }
-    .logo-text { font-size: 10pt; color: #2c5282; font-weight: 600; }
+    body {
+      font-family: 'Noto Sans', Arial, sans-serif;
+      font-size: 12pt;
+      color: #1a1a1a;
+      direction: ltr;
+      text-align: left;
+      padding: 15mm 20mm;
+    }
+    .header {
+      border: 2px solid #2c5282;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      background: #f0f5ff;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .header-row:last-child { margin-bottom: 0; }
+    .header-label { font-weight: 700; color: #2c5282; font-size: 12pt; }
+    .header-value { font-size: 12pt; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      border: 2px solid #2c5282;
+    }
+    th {
+      background: #2c5282;
+      color: white;
+      padding: 10px 8px;
+      font-size: 11pt;
+      font-weight: 700;
+      text-align: center;
+      border: 1px solid #1a365d;
+    }
+    td {
+      padding: 10px 8px;
+      border: 1px solid #a0aec0;
+      vertical-align: top;
+      font-size: 10.5pt;
+      line-height: 1.6;
+    }
+    tr:nth-child(even) td { background: #f7fafc; }
+    .activity-cell {
+      font-weight: 700;
+      color: #2c5282;
+      text-align: center;
+    }
+    .duration-badge {
+      display: inline-block;
+      background: #ebf4ff;
+      color: #2c5282;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 9pt;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .etapes-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .etapes-list li {
+      padding: 2px 0;
+      position: relative;
+      padding-left: 16px;
+    }
+    .etapes-list li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: #2c5282;
+      font-weight: 700;
+    }
+    .footer {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
+      font-size: 8.5pt;
+      color: #718096;
+    }
+    .footer .brand { font-weight: 700; color: #2c5282; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="header-line"><strong>Unité d'apprentissage n°</strong> ${record.uniteNumber}</div>
-    <div class="header-line"><strong>${record.niveau}</strong> / de ${record.dateFrom || "……"} à ${record.dateTo || "……"}</div>
-    <div class="header-line"><strong>Module ${record.moduleNumber}</strong></div>
-    <div class="header-line"><strong>Journée ${record.journeeNumber}</strong></div>
+    <div class="header-row">
+      <span><span class="header-label">Unité d'apprentissage n°</span> <span class="header-value">${record.uniteNumber}</span></span>
+      <span><span class="header-label">Date :</span> <span class="header-value">de ${record.dateFrom || "……"} à ${record.dateTo || "……"}</span></span>
+    </div>
+    <div class="header-row">
+      <span><span class="header-label">Niveau :</span> <span class="header-value">${record.niveau}</span></span>
+    </div>
+    <div class="header-row">
+      <span><span class="header-label">Module ${record.moduleNumber}</span> — <span class="header-label">Journée ${record.journeeNumber}</span></span>
+    </div>
   </div>
+
   <table>
     <thead>
       <tr>
-        <th style="width:15%">Activités</th>
+        <th style="width:14%">Activités</th>
         <th style="width:20%">Objet (contenu)</th>
-        <th style="width:25%">Objectif de la séance</th>
+        <th style="width:26%">Objectif de la séance</th>
         <th style="width:25%">Étapes</th>
         <th style="width:15%">Remarques</th>
       </tr>
@@ -297,16 +501,24 @@ IMPORTANT: Formule des objectifs pédagogiques précis et adaptés au niveau ${i
     <tbody>
       ${activities.map((a: any) => `
       <tr>
-        <td><span class="activity-name">${a.activityName}</span><br><span class="duration">${a.duration}</span></td>
+        <td class="activity-cell">
+          ${a.activityName}
+          <br><span class="duration-badge">${a.duration}</span>
+        </td>
         <td>${a.objet}</td>
         <td>${a.objectif}</td>
-        <td><ul class="etapes-list">${a.etapes.map((e: string) => `<li>${e}</li>`).join("")}</ul></td>
+        <td>
+          <ul class="etapes-list">
+            ${a.etapes.map((e: string) => `<li>${e}</li>`).join("")}
+          </ul>
+        </td>
         <td>${a.remarques || ""}</td>
       </tr>`).join("")}
     </tbody>
   </table>
+
   <div class="footer">
-    <span class="logo-text">Leader Academy</span> — المساعد البيداغوجي الذكي — نسخة تونس 2026
+    <span class="brand">Leader Academy</span> — المساعد البيداغوجي الذكي — نسخة تونس 2026
   </div>
 </body>
 </html>`;
