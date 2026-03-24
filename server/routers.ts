@@ -8,6 +8,7 @@ import { therapeuticExercisesRouter } from "./routers/therapeuticExercises";
 import { followUpReportsRouter } from "./routers/followUpReports";
 import { progressEvaluatorRouter } from "./routers/progressEvaluator";
 import { studentDashboardRouter } from "./routers/studentDashboard";
+import { repartitionJournaliereRouter } from "./routers/repartitionJournaliere";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -40,6 +41,7 @@ export const appRouter = router({
   followUpReports: followUpReportsRouter,
   progressEvaluator: progressEvaluatorRouter,
   studentDashboard: studentDashboardRouter,
+  repartitionJournaliere: repartitionJournaliereRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

@@ -2545,3 +2545,42 @@ export const progressEvaluations = mysqlTable("progress_evaluations", {
 });
 export type ProgressEvaluationRow = typeof progressEvaluations.$inferSelect;
 export type InsertProgressEvaluation = typeof progressEvaluations.$inferInsert;
+
+
+// ===== Répartition Journalière (Daily French Lesson Plan) =====
+export const repartitionJournaliere = mysqlTable("repartition_journaliere", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  // Header info
+  uniteNumber: int("unite_number").notNull(),
+  moduleNumber: int("module_number").notNull(),
+  journeeNumber: int("journee_number").notNull(),
+  niveau: varchar("niveau", { length: 50 }).default("6ème année").notNull(),
+  dateFrom: varchar("date_from", { length: 50 }),
+  dateTo: varchar("date_to", { length: 50 }),
+  
+  // Activity rows (JSON structure for each activity)
+  activities: json("activities").$type<{
+    activityName: string;
+    duration: string;
+    objet: string;
+    objectif: string;
+    etapes: string[];
+    remarques: string;
+  }[]>(),
+  
+  // Full generated content (for display/export)
+  generatedContent: mediumtext("generated_content"),
+  
+  // PDF URL if exported
+  pdfUrl: text("pdf_url"),
+  
+  // Status
+  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RepartitionJournaliereRow = typeof repartitionJournaliere.$inferSelect;
+export type InsertRepartitionJournaliere = typeof repartitionJournaliere.$inferInsert;
