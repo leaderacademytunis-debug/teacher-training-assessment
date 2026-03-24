@@ -11,7 +11,7 @@ export const users = mysqlTable("users", {
   arabicName: text("arabicName"), // Arabic name for certificates
   email: varchar("email", { length: 320 }).notNull(),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin", "trainer", "supervisor"]).default("user").notNull(),
+  role: mysqlEnum("role", ["user", "admin", "trainer", "supervisor", "school", "teacher"]).default("user").notNull(),
   
   // Registration fields
   firstNameAr: varchar("firstNameAr", { length: 100 }),

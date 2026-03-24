@@ -10,7 +10,7 @@ import { progressEvaluatorRouter } from "./routers/progressEvaluator";
 import { studentDashboardRouter } from "./routers/studentDashboard";
 import { repartitionJournaliereRouter } from "./routers/repartitionJournaliere";
 import { referenceContentRouter } from "./routers/referenceContent";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
@@ -23,15 +23,7 @@ import { parseTextQuestions, parseCSVQuestions, parseGoogleFormsCSV } from "./qu
 import { correctOCRText, getGlossaryContext, extractPedagogicalKeywords } from "../shared/tunisian-glossary";
 
 // Admin/Trainer procedure - only for admin, trainer, or supervisor roles
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (!["admin", "trainer", "supervisor"].includes(ctx.user.role)) {
-    throw new TRPCError({ 
-      code: "FORBIDDEN",
-      message: "Access denied. Admin, trainer, or supervisor role required."
-    });
-  }
-  return next({ ctx });
-});
+const adminProcedure = staffProcedure;
 
 export const appRouter = router({
   system: systemRouter,
@@ -123,6 +115,32 @@ export const appRouter = router({
         // Save logo URL to user profile
         await db.updateUserProfile(ctx.user.id, { schoolLogo: url });
         return { url };
+      }),
+
+    // Role selection for new users (only allowed if current role is 'user')
+    selectRole: protectedProcedure
+      .input(z.object({
+        role: z.enum(["teacher", "school"]),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const database = (await db.getDb())!;
+        // Only allow role change if user is still default 'user' role
+        if (ctx.user.role !== 'user') {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: 'لا يمكنك تغيير نوع حسابك بعد اختياره. تواصل مع الإدارة.' 
+          });
+        }
+        await database.update(users).set({ role: input.role }).where(eq(users.id, ctx.user.id));
+        return { success: true, newRole: input.role };
+      }),
+
+    // Get current user's full profile data
+    getMyProfile: protectedProcedure
+      .query(async ({ ctx }) => {
+        const database = (await db.getDb())!;
+        const [user] = await database.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        return user || null;
       }),
   }),
 

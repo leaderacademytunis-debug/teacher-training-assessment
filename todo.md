@@ -3031,3 +3031,29 @@
 - [x] تسجيل المسارات في App.tsx
 - [x] كتابة اختبارات والتحقق
 - [x] حفظ checkpoint
+
+## المرحلة 1: نظام الأدوار (RBAC)
+- [x] تحليل نظام المصادقة الحالي وهيكل الأدوار
+- [x] توسيع enum الأدوار في schema (teacher, school, admin, user)
+- [x] إنشاء middleware محمي لكل دور (teacherProcedure, schoolProcedure, adminProcedure)
+- [ ] بناء صفحة اختيار نوع الحساب للمستخدمين الجدد
+- [ ] بناء لوحة تحكم المدرسة الشريكة (School Dashboard)
+- [ ] تحديث لوحة المعلم وتوجيه المسارات حسب الدور
+- [ ] تحديث لوحة Admin مع إدارة أدوار المستخدمين
+- [ ] كتابة اختبارات وحفظ checkpoint
+
+## RBAC Phase 1: Role-Based Access Control
+- [x] Expand role enum in database schema (teacher, school roles already exist)
+- [x] Create middleware procedures (teacherProcedure, schoolProcedure, staffProcedure, teacherOrSchoolProcedure) - already existed
+- [x] Add profile.selectRole endpoint for new users to choose their role
+- [x] Add profile.getMyProfile endpoint for fetching full user profile
+- [x] Build RoleSelection page with teacher/school choice and confirmation flow
+- [x] Create TeacherDashboard with tier system, points, quick tools, career tab, achievements
+- [x] Create SchoolDashboard with job management, applications, talent discovery
+- [x] Add role-based navigation links in UnifiedNavbar (desktop + mobile)
+- [x] Show "Choose your role" prompt for users with default 'user' role
+- [x] Show teacher dashboard link for teacher role
+- [x] Show school dashboard link for school role
+- [x] Write vitest tests for RBAC logic (20 tests passing)
+- [x] Register new routes in App.tsx (/select-role, /teacher-dashboard, /school-dashboard)
+- [x] Save checkpoint

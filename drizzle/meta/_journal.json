@@ -505,6 +505,13 @@
       "when": 1774384531569,
       "tag": "0071_lyrical_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "5",
+      "when": 1774390263627,
+      "tag": "0072_absent_malcolm_colcord",
+      "breakpoints": true
     }
   ]
 }

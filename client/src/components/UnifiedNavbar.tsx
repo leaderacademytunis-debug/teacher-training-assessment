@@ -97,7 +97,9 @@ export default function UnifiedNavbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = ["admin", "trainer", "supervisor"].includes(user?.role || "");
+  const isSchool = user?.role === "school";
+  const isTeacher = user?.role === "teacher";
 
   return (
     <header
@@ -211,6 +213,37 @@ export default function UnifiedNavbar() {
             {/* Logged-in user extras: Programs, Certificates, Career, Admin */}
             {user && (
               <>
+                {/* Role-based Dashboard Link */}
+                {isTeacher && (
+                  <Link href="/teacher-dashboard">
+                    <button className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      location === "/teacher-dashboard" ? "text-blue-600 bg-blue-50" : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                    }`}>
+                      <GraduationCap className="w-4 h-4" />
+                      {t("لوحة تحكمي", "Mon tableau de bord", "My Dashboard")}
+                    </button>
+                  </Link>
+                )}
+                {isSchool && (
+                  <Link href="/school-dashboard">
+                    <button className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                      location === "/school-dashboard" ? "text-amber-600 bg-amber-50" : "text-gray-600 hover:text-amber-600 hover:bg-amber-50"
+                    }`}>
+                      <Building2 className="w-4 h-4" />
+                      {t("لوحة المدرسة", "Tableau école", "School Dashboard")}
+                    </button>
+                  </Link>
+                )}
+                {/* New user - prompt to select role */}
+                {user.role === "user" && (
+                  <Link href="/select-role">
+                    <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-all duration-200 animate-pulse">
+                      <Star className="w-4 h-4" />
+                      {t("اختر نوع حسابك", "Choisir votre rôle", "Choose your role")}
+                    </button>
+                  </Link>
+                )}
+
                 {/* Programs */}
                 <a
                   href="/#programs"
@@ -376,6 +409,45 @@ export default function UnifiedNavbar() {
                 </Link>
               </div>
             </div>
+
+            {/* Role-based Dashboard - Mobile */}
+            {user && (
+              <div className="border-t border-gray-100 my-2 pt-2">
+                {user.role === "teacher" && (
+                  <Link href="/teacher-dashboard">
+                    <button
+                      className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <GraduationCap className="w-5 h-5 flex-shrink-0" />
+                      {t("لوحة تحكمي", "Mon tableau de bord", "My Dashboard")}
+                    </button>
+                  </Link>
+                )}
+                {user.role === "school" && (
+                  <Link href="/school-dashboard">
+                    <button
+                      className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Building2 className="w-5 h-5 flex-shrink-0" />
+                      {t("لوحة المدرسة", "Tableau école", "School Dashboard")}
+                    </button>
+                  </Link>
+                )}
+                {user.role === "user" && (
+                  <Link href="/select-role">
+                    <button
+                      className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Star className="w-5 h-5 flex-shrink-0" />
+                      {t("اختر نوع حسابك", "Choisir votre rôle", "Choose your role")}
+                    </button>
+                  </Link>
+                )}
+              </div>
+            )}
 
             {/* Programs link */}
             <div className="border-t border-gray-100 my-2 pt-2">

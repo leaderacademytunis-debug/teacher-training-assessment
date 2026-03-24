@@ -7,7 +7,7 @@
  * 4. Statistics Dashboard
  * 5. Content & Tool Management
  */
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router, staffProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import {
@@ -27,16 +27,8 @@ import {
 import { eq, desc, asc, and, sql, count, like, or, gte, lte, between } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
-// Admin-only procedure
-const adminOnlyProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== "admin") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Access denied. Admin role required.",
-    });
-  }
-  return next({ ctx });
-});
+// Admin-only procedure (admin, trainer, supervisor)
+const adminOnlyProcedure = staffProcedure;
 
 // Helper: get current month string
 function getCurrentMonthYear(): string {
@@ -1074,6 +1066,55 @@ export const adminControlRouter = router({
           .where(eq(pageConfigurations.id, update.id));
       }
       return { success: true, count: input.updates.length };
+    }),
+
+  // Update user role
+  updateUserRole: adminOnlyProcedure
+    .input(z.object({
+      userId: z.number(),
+      role: z.enum(["user", "admin", "trainer", "supervisor", "school", "teacher"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const [targetUser] = await database.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      
+      await database
+        .update(users)
+        .set({ role: input.role })
+        .where(eq(users.id, input.userId));
+
+      // Notify user about role change
+      const roleNames: Record<string, string> = {
+        user: "مستخدم عادي",
+        admin: "مدير",
+        trainer: "مدرّب",
+        supervisor: "مشرف",
+        school: "مدرسة شريكة",
+        teacher: "معلّم",
+      };
+      await database.insert(notifications).values({
+        userId: input.userId,
+        titleAr: "تم تحديث دورك",
+        messageAr: `تم تغيير دورك إلى: ${roleNames[input.role] || input.role}`,
+        type: "system",
+      });
+
+      return { success: true, newRole: input.role };
+    }),
+
+  // Get role statistics
+  getRoleStatistics: adminOnlyProcedure
+    .query(async () => {
+      const database = (await getDb())!;
+      const stats = await database
+        .select({
+          role: users.role,
+          count: count(),
+        })
+        .from(users)
+        .groupBy(users.role);
+      return stats;
     }),
 
   // Reorder pages
