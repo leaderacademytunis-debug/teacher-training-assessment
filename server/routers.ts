@@ -9,6 +9,7 @@ import { followUpReportsRouter } from "./routers/followUpReports";
 import { progressEvaluatorRouter } from "./routers/progressEvaluator";
 import { studentDashboardRouter } from "./routers/studentDashboard";
 import { repartitionJournaliereRouter } from "./routers/repartitionJournaliere";
+import { referenceContentRouter } from "./routers/referenceContent";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -42,6 +43,7 @@ export const appRouter = router({
   progressEvaluator: progressEvaluatorRouter,
   studentDashboard: studentDashboardRouter,
   repartitionJournaliere: repartitionJournaliereRouter,
+  referenceContent: referenceContentRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

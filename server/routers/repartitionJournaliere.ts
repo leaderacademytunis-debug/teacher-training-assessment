@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { repartitionJournaliere, servicePermissions } from "../../drizzle/schema";
+import { repartitionJournaliere, servicePermissions, referenceContent } from "../../drizzle/schema";
 import { eq, and, desc, count } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { htmlToPdf } from "../lib/htmlToPdf";
@@ -30,27 +30,8 @@ const MANDATORY_STEPS = {
   ],
 };
 
-// ===== REFERENCE CONTENT FOR U1/M1/J1 (6ème année) =====
-const REFERENCE_CONTENT: Record<string, {
-  communicationOrale: { objet: string; objectif: string };
-  lecture: { objet: string; objectif: string };
-  grammaire: { objet: string; objectif: string };
-}> = {
-  "U1-M1-J1": {
-    communicationOrale: {
-      objet: "Présentation du module et du projet d'écriture",
-      objectif: "Communiquer en situation pour : Informer/s'informer, Décrire/Raconter un événement, Justifier un choix.",
-    },
-    lecture: {
-      objet: "Apprentie comédienne",
-      objectif: "L'élève serait capable de lire de manière expressive et intelligible un passage choisi.",
-    },
-    grammaire: {
-      objet: "Les déterminants / les noms / les pronoms personnels",
-      objectif: "Reconnaître et utiliser les déterminants, les noms et les pronoms personnels.",
-    },
-  },
-};
+// Reference content is now fetched from the database (referenceContent table)
+// instead of being hardcoded. The seed data populates Units 1-4 with official content.
 
 // ===== RÉPARTITION JOURNALIÈRE ROUTER =====
 export const repartitionJournaliereRouter = router({
@@ -124,9 +105,31 @@ export const repartitionJournaliereRouter = router({
       const recordId = inserted.insertId;
 
       try {
-        // Check if we have reference content for this exact combination
-        const refKey = `U${input.uniteNumber}-M${input.moduleNumber}-J${input.journeeNumber}`;
-        const refContent = REFERENCE_CONTENT[refKey];
+        // Fetch reference content from database for this exact combination
+        const [dbRefContent] = await database.select().from(referenceContent)
+          .where(and(
+            eq(referenceContent.uniteNumber, input.uniteNumber),
+            eq(referenceContent.moduleNumber, input.moduleNumber),
+            eq(referenceContent.journeeNumber, input.journeeNumber),
+            eq(referenceContent.niveau, input.niveau),
+          )).limit(1);
+
+        // Build reference content object from DB data
+        const refContent = dbRefContent ? {
+          communicationOrale: {
+            objet: dbRefContent.commOraleObjet || input.communicationOrale.objet,
+            objectif: dbRefContent.commOraleObjectif || "",
+          },
+          lecture: {
+            objet: dbRefContent.lectureObjet || input.lecture.objet,
+            objectif: dbRefContent.lectureObjectif || "",
+          },
+          grammaire: {
+            type: dbRefContent.grammaireType || input.grammaireConjugaisonOrthographe.type,
+            objet: dbRefContent.grammaireObjet || input.grammaireConjugaisonOrthographe.objet,
+            objectif: dbRefContent.grammaireObjectif || "",
+          },
+        } : null;
 
         const systemPrompt = `Tu es un EXPERT PÉDAGOGIQUE spécialisé dans le curriculum officiel tunisien de la langue française pour le cycle primaire.
 Tu dois générer une "Répartition Journalière" (التوزيع اليومي) en respectant STRICTEMENT le format officiel tunisien.

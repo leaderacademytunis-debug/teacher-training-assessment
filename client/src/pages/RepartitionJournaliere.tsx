@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, FileText, Download, Trash2, Loader2, Calendar, BookOpen, GraduationCap, ChevronRight } from "lucide-react";
+import { ArrowRight, ArrowLeft, FileText, Download, Trash2, Loader2, Calendar, BookOpen, GraduationCap, ChevronRight, Database } from "lucide-react";
 import { Link } from "wouter";
 
 export default function RepartitionJournaliere() {
@@ -244,6 +244,10 @@ export default function RepartitionJournaliere() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Répartition Journalière</h1>
           <p className="text-gray-600">التوزيع اليومي للحصص — اللغة الفرنسية — المنهج التونسي الرسمي</p>
+          <a href="/reference-content" className="inline-flex items-center gap-2 mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
+            <Database className="h-4 w-4" />
+            إدارة المحتوى المرجعي الرسمي
+          </a>
         </div>
 
         {/* Progress Steps */}

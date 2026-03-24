@@ -498,6 +498,13 @@
       "when": 1774376173772,
       "tag": "0070_yielding_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "5",
+      "when": 1774384531569,
+      "tag": "0071_lyrical_moon_knight",
+      "breakpoints": true
     }
   ]
 }

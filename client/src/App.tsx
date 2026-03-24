@@ -81,6 +81,7 @@ const FollowUpReport = lazy(() => import("@/pages/FollowUpReport"));
 const ProgressEvaluator = lazy(() => import("@/pages/ProgressEvaluator"));
 const StudentDashboard = lazy(() => import("@/pages/StudentDashboard"));
 const RepartitionJournaliere = lazy(() => import("@/pages/RepartitionJournaliere"));
+const ReferenceContentManager = lazy(() => import("@/pages/ReferenceContentManager"));
 
 function PageLoader() {
   return (
@@ -161,6 +162,7 @@ function Router() {
         <Route path="/progress-evaluator" component={ProgressEvaluator} />
         <Route path="/student-dashboard" component={StudentDashboard} />
         <Route path="/repartition-journaliere" component={RepartitionJournaliere} />
+        <Route path="/reference-content" component={ReferenceContentManager} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path="/about" component={About} />
         <Route path="/prompt-lab" component={PromptLab} />
