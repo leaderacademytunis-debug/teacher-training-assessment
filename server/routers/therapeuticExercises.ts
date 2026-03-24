@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { generatedTherapeuticExercises, servicePermissions } from "../../drizzle/schema";
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, and, desc, count, like } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 
 // ===== DIFFICULTY TYPES =====
@@ -303,6 +303,22 @@ ${input.specificSkill ? `- المهارة المستهدفة: ${input.specificSk
           eq(generatedTherapeuticExercises.userId, String(ctx.user.id))
         ));
       return { success: true };
+    }),
+
+  // ===== GET BY STUDENT NAME (cross-tool integration) =====
+  getByStudentName: protectedProcedure
+    .input(z.object({ studentName: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const exercises = await database.select().from(generatedTherapeuticExercises)
+        .where(and(
+          eq(generatedTherapeuticExercises.userId, String(ctx.user.id)),
+          like(generatedTherapeuticExercises.studentName, `%${input.studentName}%`),
+          eq(generatedTherapeuticExercises.status, "completed")
+        ))
+        .orderBy(desc(generatedTherapeuticExercises.createdAt))
+        .limit(50);
+      return exercises;
     }),
 
   // ===== GET STATS =====

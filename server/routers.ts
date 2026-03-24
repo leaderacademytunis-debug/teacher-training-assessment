@@ -7,6 +7,7 @@ import { contentAdapterRouter } from "./routers/contentAdapter";
 import { therapeuticExercisesRouter } from "./routers/therapeuticExercises";
 import { followUpReportsRouter } from "./routers/followUpReports";
 import { progressEvaluatorRouter } from "./routers/progressEvaluator";
+import { studentDashboardRouter } from "./routers/studentDashboard";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -38,6 +39,7 @@ export const appRouter = router({
   therapeuticExercisesGen: therapeuticExercisesRouter,
   followUpReports: followUpReportsRouter,
   progressEvaluator: progressEvaluatorRouter,
+  studentDashboard: studentDashboardRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -14594,11 +14596,11 @@ ${input.videoDescription ? "- وصف الفيديو: " + input.videoDescription 
         const latestScore = evaluations[0].totalScore;
         const improvement = evaluations.length >= 2 ? evaluations[0].totalScore - evaluations[evaluations.length - 1].totalScore : 0;
         const averages = {
-          visual: Math.round(evaluations.reduce((s, e) => s + e.scoreVisualQuality, 0) / totalEvaluations),
-          narrative: Math.round(evaluations.reduce((s, e) => s + e.scoreNarrative, 0) / totalEvaluations),
-          pedagogical: Math.round(evaluations.reduce((s, e) => s + e.scorePedagogical, 0) / totalEvaluations),
-          engagement: Math.round(evaluations.reduce((s, e) => s + e.scoreEngagement, 0) / totalEvaluations),
-          technical: Math.round(evaluations.reduce((s, e) => s + e.scoreTechnical, 0) / totalEvaluations),
+          visual: Math.round(evaluations.reduce((s: number, e: any) => s + e.scoreVisualQuality, 0) / totalEvaluations),
+          narrative: Math.round(evaluations.reduce((s: number, e: any) => s + e.scoreNarrative, 0) / totalEvaluations),
+          pedagogical: Math.round(evaluations.reduce((s: number, e: any) => s + e.scorePedagogical, 0) / totalEvaluations),
+          engagement: Math.round(evaluations.reduce((s: number, e: any) => s + e.scoreEngagement, 0) / totalEvaluations),
+          technical: Math.round(evaluations.reduce((s: number, e: any) => s + e.scoreTechnical, 0) / totalEvaluations),
         };
         return { totalEvaluations, averageScore, bestScore, latestScore, improvement, averages };
       }),

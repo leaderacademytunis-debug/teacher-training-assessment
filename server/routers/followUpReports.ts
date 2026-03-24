@@ -256,6 +256,40 @@ ${historicalContext}
       }
     }),
 
+  // ===== EXPORT PDF =====
+  exportPdf: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const [report] = await database.select().from(followUpReports)
+        .where(and(eq(followUpReports.id, input.id), eq(followUpReports.userId, String(ctx.user.id))))
+        .limit(1);
+      if (!report) throw new Error("Report not found");
+      const { exportFollowUpReportPdf } = await import("../lib/learningReportPdf");
+      const result = await exportFollowUpReportPdf({
+        studentName: report.studentName,
+        difficultyType: report.difficultyType,
+        gradeLevel: report.gradeLevel || undefined,
+        studentAge: report.studentAge || undefined,
+        severityLevel: report.severityLevel || undefined,
+        reportPeriod: report.reportPeriod || undefined,
+        readingScore: report.readingScore || undefined,
+        writingScore: report.writingScore || undefined,
+        mathScore: report.mathScore || undefined,
+        attentionScore: report.attentionScore || undefined,
+        socialScore: report.socialScore || undefined,
+        motivationScore: report.motivationScore || undefined,
+        reportTitle: report.reportTitle || undefined,
+        strengths: (report.strengths as string[]) || undefined,
+        challenges: (report.challenges as string[]) || undefined,
+        recommendations: (report.recommendations as any[]) || undefined,
+        detailedAnalysis: report.detailedAnalysis || undefined,
+        parentGuidance: report.parentGuidance || undefined,
+        executiveSummary: report.executiveSummary || undefined,
+      });
+      return result;
+    }),
+
   // ===== DELETE REPORT =====
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))

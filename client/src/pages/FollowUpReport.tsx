@@ -9,7 +9,8 @@ import {
   MessageSquare, Zap, Heart, Clock, Target, Users, Loader2,
   Sparkles, GraduationCap, Trash2, FolderOpen, ChevronDown,
   ChevronUp, AlertTriangle, CheckCircle2, TrendingUp, Star,
-  ClipboardList, BarChart3, Lightbulb, Shield, ArrowRight, Info
+  ClipboardList, BarChart3, Lightbulb, Shield, ArrowRight, Info,
+  Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -136,6 +137,14 @@ export default function FollowUpReport() {
       historyQuery.refetch();
       statsQuery.refetch();
     },
+  });
+
+  const exportPdfMutation = trpc.followUpReports.exportPdf.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+      toast.success(data.isPdf ? "تم تصدير التقرير كـ PDF" : "تم تصدير التقرير كصفحة قابلة للطباعة");
+    },
+    onError: () => toast.error("فشل في تصدير التقرير"),
   });
 
   const handleGenerate = () => {
@@ -277,8 +286,20 @@ export default function FollowUpReport() {
                   <p className="text-sm text-gray-500">المدرسة: {report.schoolName}</p>
                 )}
               </div>
-              <div className="text-left text-sm text-gray-500">
-                {new Date(report.createdAt).toLocaleDateString("ar")}
+              <div className="flex flex-col items-end gap-2">
+                <div className="text-sm text-gray-500">
+                  {new Date(report.createdAt).toLocaleDateString("ar")}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => exportPdfMutation.mutate({ id: report.id })}
+                  disabled={exportPdfMutation.isPending}
+                >
+                  {exportPdfMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  تحميل PDF
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -1035,6 +1056,16 @@ export default function FollowUpReport() {
                               >
                                 <FileText className="h-4 w-4 ml-1" />
                                 عرض
+                              </Button>
+                            )}
+                            {item.status === "completed" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => exportPdfMutation.mutate({ id: item.id })}
+                                disabled={exportPdfMutation.isPending}
+                              >
+                                {exportPdfMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-blue-500" />}
                               </Button>
                             )}
                             <Button

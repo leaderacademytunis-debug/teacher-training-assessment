@@ -64,6 +64,7 @@ const DEFAULT_TOOLS = [
   { toolKey: "therapeutic_exercises_gen", nameAr: "مولّد التمارين العلاجية", nameFr: "Générateur d'exercices thérapeutiques", nameEn: "Therapeutic Exercises Generator", icon: "Dumbbell", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
   { toolKey: "follow_up_report", nameAr: "تقرير المتابعة الفردي", nameFr: "Rapport de suivi individuel", nameEn: "Individual Follow-Up Report", icon: "BarChart3", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
   { toolKey: "progress_evaluator", nameAr: "مقيّم التقدم", nameFr: "Évaluateur de progrès", nameEn: "Progress Evaluator", icon: "Activity", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
+  { toolKey: "student_dashboard", nameAr: "لوحة متابعة التلاميذ", nameFr: "Tableau de suivi des élèves", nameEn: "Student Tracking Dashboard", icon: "Users", category: "assessment", freeAccess: true, freeLimitPerMonth: 0, proLimitPerMonth: 0, premiumLimitPerMonth: 0 },
 ];
 
 export const adminControlRouter = router({

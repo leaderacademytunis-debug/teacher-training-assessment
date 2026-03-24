@@ -167,6 +167,26 @@ const LD_TOOLS: LDTool[] = [
     targetFr: "Tous types de troubles • Analyse prédictive",
     targetEn: "All difficulty types • Predictive analysis",
   },
+  {
+    id: "student-dashboard",
+    href: "/student-dashboard",
+    icon: Users,
+    nameAr: "لوحة متابعة التلاميذ",
+    nameFr: "Tableau de suivi des élèves",
+    nameEn: "Student Tracking Dashboard",
+    descAr: "لوحة شاملة تجمع كل تلاميذ المعلم ذوي الصعوبات مع مؤشرات التقدم والرسوم البيانية والجدول الزمني",
+    descFr: "Tableau de bord complet regroupant tous les élèves en difficulté avec indicateurs de progrès et graphiques",
+    descEn: "Comprehensive dashboard tracking all students with difficulties, progress indicators and charts",
+    status: "available" as const,
+    gradient: "linear-gradient(135deg, #1565C0 0%, #42A5F5 100%)",
+    iconBg: "#E3F2FD",
+    stepsAr: ["عرض جميع التلاميذ المسجلين", "إحصائيات عامة ورسوم بيانية", "ملف تفصيلي لكل تلميذ", "جدول زمني للأنشطة والتقدم"],
+    stepsFr: ["Voir tous les élèves", "Statistiques et graphiques", "Profil détaillé", "Chronologie des activités"],
+    stepsEn: ["View all registered students", "Global stats and charts", "Detailed student profile", "Activity timeline"],
+    targetAr: "جميع التلاميذ ذوي الصعوبات • متابعة شاملة",
+    targetFr: "Tous les élèves en difficulté • Suivi global",
+    targetEn: "All students with difficulties • Comprehensive tracking",
+  },
 ];
 
 // ===== Disorder types for the info section =====

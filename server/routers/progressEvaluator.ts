@@ -265,6 +265,33 @@ ${exercisesSummary}
       }
     }),
 
+  // ===== EXPORT PDF =====
+  exportPdf: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const [evaluation] = await database.select().from(progressEvaluations)
+        .where(and(eq(progressEvaluations.id, input.id), eq(progressEvaluations.userId, String(ctx.user.id))))
+        .limit(1);
+      if (!evaluation) throw new Error("Evaluation not found");
+      const { exportProgressEvaluationPdf } = await import("../lib/learningReportPdf");
+      const result = await exportProgressEvaluationPdf({
+        studentName: evaluation.studentName,
+        difficultyType: evaluation.difficultyType,
+        gradeLevel: evaluation.gradeLevel || undefined,
+        analysisTitle: evaluation.analysisTitle || undefined,
+        overallProgress: evaluation.overallProgress || undefined,
+        progressPercentage: evaluation.progressPercentage || undefined,
+        evaluationStartDate: evaluation.evaluationStartDate || undefined,
+        evaluationEndDate: evaluation.evaluationEndDate || undefined,
+        assessmentData: (evaluation.assessmentData as any[]) || undefined,
+        detailedAnalysis: evaluation.detailedAnalysis || undefined,
+        predictiveInsights: evaluation.predictiveInsights || undefined,
+        actionPlan: (evaluation.actionPlan as any[])?.map((a: any) => `${a.phase}: ${a.goals?.join(', ')}`).join('\n') || undefined,
+      });
+      return result;
+    }),
+
   // ===== DELETE EVALUATION =====
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))

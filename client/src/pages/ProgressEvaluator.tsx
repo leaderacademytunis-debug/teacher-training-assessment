@@ -9,7 +9,7 @@ import {
   MessageSquare, Zap, Heart, Clock, Target, Users, Loader2,
   Sparkles, GraduationCap, Trash2, FolderOpen, TrendingUp, TrendingDown,
   AlertTriangle, CheckCircle2, Star, BarChart3, Lightbulb, Info,
-  Plus, Minus, Activity, Award, ArrowUpRight, ArrowDownRight
+  Plus, Minus, Activity, Award, ArrowUpRight, ArrowDownRight, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -76,6 +76,7 @@ const SKILL_COLORS: Record<string, string> = {
 
 export default function ProgressEvaluator() {
   const { user, loading: authLoading } = useAuth();
+  const trpcUtils = trpc.useUtils();
   const [activeTab, setActiveTab] = useState("generate");
   const [viewingResult, setViewingResult] = useState<any>(null);
 
@@ -132,6 +133,14 @@ export default function ProgressEvaluator() {
       historyQuery.refetch();
       statsQuery.refetch();
     },
+  });
+
+  const exportPdfMutation = trpc.progressEvaluator.exportPdf.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+      toast.success(data.isPdf ? "تم تصدير التقييم كـ PDF" : "تم تصدير التقييم كصفحة قابلة للطباعة");
+    },
+    onError: () => toast.error("فشل في تصدير التقييم"),
   });
 
   const addAssessmentPoint = () => {
@@ -306,6 +315,16 @@ export default function ProgressEvaluator() {
                     <div className="text-xs text-gray-500">نسبة التقدم</div>
                   </div>
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2 mt-2"
+                  onClick={() => exportPdfMutation.mutate({ id: ev.id })}
+                  disabled={exportPdfMutation.isPending}
+                >
+                  {exportPdfMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  تحميل PDF
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -803,10 +822,48 @@ export default function ProgressEvaluator() {
                         </Button>
                       </div>
                     ))}
-                    <Button variant="outline" onClick={addExerciseEntry} className="w-full gap-2" size="sm">
-                      <Plus className="h-4 w-4" />
-                      إضافة فئة تمارين
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={addExerciseEntry} className="flex-1 gap-2" size="sm">
+                        <Plus className="h-4 w-4" />
+                        إضافة فئة تمارين
+                      </Button>
+                      {studentName.trim() && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 border-green-300 text-green-700 hover:bg-green-50"
+                          onClick={async () => {
+                            try {
+                              const exercises = await trpcUtils.therapeuticExercisesGen.getByStudentName.fetch({ studentName });
+                              if (!exercises || exercises.length === 0) {
+                                toast.info("لا توجد تمارين علاجية مسجلة لهذا التلميذ");
+                                return;
+                              }
+                              const categoryMap: Record<string, { count: number; total: number }> = {};
+                              exercises.forEach((ex: any) => {
+                                const cat = ex.exerciseCategory || "عام";
+                                if (!categoryMap[cat]) categoryMap[cat] = { count: 0, total: 0 };
+                                categoryMap[cat].count += (ex.exercises as any[])?.length || 1;
+                                categoryMap[cat].total++;
+                              });
+                              const imported = Object.entries(categoryMap).map(([cat, data]) => ({
+                                category: cat,
+                                count: data.count,
+                                successRate: 70,
+                                averageDuration: 20,
+                              }));
+                              setExercisesCompleted(imported);
+                              toast.success(`تم استيراد ${exercises.length} مجموعة تمارين علاجية`);
+                            } catch {
+                              toast.error("فشل في استيراد التمارين");
+                            }
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                          استيراد من التمارين العلاجية
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -960,6 +1017,16 @@ export default function ProgressEvaluator() {
                               >
                                 <FileText className="h-4 w-4 ml-1" />
                                 عرض
+                              </Button>
+                            )}
+                            {item.status === "completed" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => exportPdfMutation.mutate({ id: item.id })}
+                                disabled={exportPdfMutation.isPending}
+                              >
+                                {exportPdfMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-blue-500" />}
                               </Button>
                             )}
                             <Button

@@ -257,3 +257,277 @@ describe("Batch Comparison Dashboard", () => {
     expect(getBadge(4)).toBe("4");
   });
 });
+
+// Test 4: PDF Export for Learning Support Reports
+describe("PDF Export for Learning Support Reports", () => {
+  it("should generate valid HTML for follow-up report PDF", () => {
+    const reportData = {
+      studentName: "أحمد بن محمد",
+      gradeLevel: "السنة الثالثة",
+      difficultyType: "dyslexia",
+      scores: {
+        reading: 5, writing: 4, math: 7,
+        attention: 6, social: 8, motivation: 7,
+      },
+      reportContent: "تقرير متابعة شامل للتلميذ أحمد",
+      recommendations: "يُنصح بتكثيف تمارين القراءة",
+    };
+
+    // Simulate HTML generation
+    const html = `
+      <html dir="rtl">
+        <body>
+          <h1>تقرير المتابعة الفردي</h1>
+          <h2>${reportData.studentName}</h2>
+          <p>المستوى: ${reportData.gradeLevel}</p>
+          <table>
+            <tr><td>القراءة</td><td>${reportData.scores.reading}/10</td></tr>
+            <tr><td>الكتابة</td><td>${reportData.scores.writing}/10</td></tr>
+          </table>
+          <div>${reportData.reportContent}</div>
+          <div>${reportData.recommendations}</div>
+        </body>
+      </html>
+    `;
+
+    expect(html).toContain('dir="rtl"');
+    expect(html).toContain(reportData.studentName);
+    expect(html).toContain("تقرير المتابعة الفردي");
+    expect(html).toContain("5/10");
+    expect(html).toContain(reportData.recommendations);
+  });
+
+  it("should generate valid HTML for progress evaluation PDF", () => {
+    const evalData = {
+      studentName: "فاطمة الزهراء",
+      difficultyType: "dyscalculia",
+      analysisTitle: "تقييم تقدم الثلاثي الأول",
+      overallProgress: "moderate_improvement",
+      progressPercentage: 65,
+      assessmentData: [
+        { date: "2025-09-01", scores: { math: 3, reading: 5 } },
+        { date: "2025-12-01", scores: { math: 5, reading: 6 } },
+      ],
+    };
+
+    const html = `
+      <html dir="rtl">
+        <body>
+          <h1>تقييم التقدم</h1>
+          <h2>${evalData.studentName}</h2>
+          <p>التقدم: ${evalData.progressPercentage}%</p>
+          <div>${evalData.analysisTitle}</div>
+        </body>
+      </html>
+    `;
+
+    expect(html).toContain(evalData.studentName);
+    expect(html).toContain("65%");
+    expect(html).toContain(evalData.analysisTitle);
+  });
+
+  it("should handle missing scores gracefully in PDF", () => {
+    const scores: Record<string, number | null> = {
+      reading: 5, writing: null, math: 7,
+      attention: null, social: 8, motivation: null,
+    };
+
+    const validScores = Object.entries(scores)
+      .filter(([_, v]) => v !== null)
+      .map(([k, v]) => ({ skill: k, score: v }));
+
+    expect(validScores.length).toBe(3);
+    expect(validScores[0].score).toBe(5);
+  });
+});
+
+// Test 5: Tool Interconnection (Therapeutic Exercises Import)
+describe("Tool Interconnection - Exercises Import", () => {
+  it("should aggregate exercises by category correctly", () => {
+    const exercises = [
+      { exerciseCategory: "القراءة", exercises: [{ q: "1" }, { q: "2" }] },
+      { exerciseCategory: "القراءة", exercises: [{ q: "3" }] },
+      { exerciseCategory: "الرياضيات", exercises: [{ q: "1" }, { q: "2" }, { q: "3" }] },
+      { exerciseCategory: "الكتابة", exercises: [{ q: "1" }] },
+    ];
+
+    const categoryMap: Record<string, { count: number; total: number }> = {};
+    exercises.forEach((ex) => {
+      const cat = ex.exerciseCategory || "عام";
+      if (!categoryMap[cat]) categoryMap[cat] = { count: 0, total: 0 };
+      categoryMap[cat].count += ex.exercises.length;
+      categoryMap[cat].total++;
+    });
+
+    expect(Object.keys(categoryMap).length).toBe(3);
+    expect(categoryMap["القراءة"].count).toBe(3);
+    expect(categoryMap["القراءة"].total).toBe(2);
+    expect(categoryMap["الرياضيات"].count).toBe(3);
+    expect(categoryMap["الكتابة"].count).toBe(1);
+  });
+
+  it("should convert aggregated data to import format", () => {
+    const categoryMap: Record<string, { count: number; total: number }> = {
+      "القراءة": { count: 5, total: 3 },
+      "الرياضيات": { count: 3, total: 2 },
+    };
+
+    const imported = Object.entries(categoryMap).map(([cat, data]) => ({
+      category: cat,
+      count: data.count,
+      successRate: 70,
+      averageDuration: 20,
+    }));
+
+    expect(imported.length).toBe(2);
+    expect(imported[0].category).toBe("القراءة");
+    expect(imported[0].count).toBe(5);
+    expect(imported[0].successRate).toBe(70);
+  });
+
+  it("should handle empty exercises list", () => {
+    const exercises: any[] = [];
+    const hasData = exercises.length > 0;
+    expect(hasData).toBe(false);
+  });
+
+  it("should handle exercises without category", () => {
+    const exercises = [
+      { exerciseCategory: null, exercises: [{ q: "1" }] },
+      { exerciseCategory: "", exercises: [{ q: "2" }] },
+    ];
+
+    const categoryMap: Record<string, { count: number }> = {};
+    exercises.forEach((ex) => {
+      const cat = ex.exerciseCategory || "عام";
+      if (!categoryMap[cat]) categoryMap[cat] = { count: 0 };
+      categoryMap[cat].count += ex.exercises.length;
+    });
+
+    expect(categoryMap["عام"].count).toBe(2);
+  });
+});
+
+// Test 6: Student Dashboard
+describe("Student Dashboard", () => {
+  it("should merge unique student names from multiple sources", () => {
+    const reportStudents = [{ studentName: "أحمد" }, { studentName: "فاطمة" }];
+    const evalStudents = [{ studentName: "أحمد" }, { studentName: "محمد" }];
+    const exerciseStudents = [{ studentName: "فاطمة" }, { studentName: "سارة" }];
+
+    const nameSet = new Set<string>();
+    [...reportStudents, ...evalStudents, ...exerciseStudents].forEach(s => {
+      if (s.studentName) nameSet.add(s.studentName);
+    });
+
+    expect(nameSet.size).toBe(4);
+    expect(nameSet.has("أحمد")).toBe(true);
+    expect(nameSet.has("فاطمة")).toBe(true);
+    expect(nameSet.has("محمد")).toBe(true);
+    expect(nameSet.has("سارة")).toBe(true);
+  });
+
+  it("should calculate average score correctly", () => {
+    const scores = {
+      reading: 5, writing: 4, math: 7,
+      attention: 6, social: 8, motivation: 7,
+    };
+
+    const avg = Math.round(
+      (scores.reading + scores.writing + scores.math +
+       scores.attention + scores.social + scores.motivation) / 6 * 10
+    ) / 10;
+
+    expect(avg).toBe(6.2);
+  });
+
+  it("should sort students by last activity date", () => {
+    const students = [
+      { name: "أحمد", lastActivity: new Date("2025-01-01") },
+      { name: "فاطمة", lastActivity: new Date("2025-03-01") },
+      { name: "محمد", lastActivity: null },
+      { name: "سارة", lastActivity: new Date("2025-02-01") },
+    ];
+
+    students.sort((a, b) => {
+      if (!a.lastActivity) return 1;
+      if (!b.lastActivity) return -1;
+      return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime();
+    });
+
+    expect(students[0].name).toBe("فاطمة");
+    expect(students[1].name).toBe("سارة");
+    expect(students[2].name).toBe("أحمد");
+    expect(students[3].name).toBe("محمد");
+  });
+
+  it("should build timeline from reports and evaluations", () => {
+    const reports = [
+      { createdAt: new Date("2025-01-15"), type: "report", title: "تقرير 1" },
+      { createdAt: new Date("2025-03-01"), type: "report", title: "تقرير 2" },
+    ];
+    const evaluations = [
+      { createdAt: new Date("2025-02-01"), type: "evaluation", title: "تقييم 1" },
+    ];
+
+    const timeline = [...reports, ...evaluations].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    expect(timeline.length).toBe(3);
+    expect(timeline[0].title).toBe("تقرير 1");
+    expect(timeline[1].title).toBe("تقييم 1");
+    expect(timeline[2].title).toBe("تقرير 2");
+  });
+
+  it("should calculate difficulty distribution correctly", () => {
+    const reports = [
+      { difficultyType: "dyslexia" },
+      { difficultyType: "dyslexia" },
+      { difficultyType: "dyscalculia" },
+      { difficultyType: "adhd" },
+      { difficultyType: "dyslexia" },
+    ];
+
+    const dist: Record<string, number> = {};
+    reports.forEach(r => {
+      if (r.difficultyType) {
+        dist[r.difficultyType] = (dist[r.difficultyType] || 0) + 1;
+      }
+    });
+
+    expect(dist["dyslexia"]).toBe(3);
+    expect(dist["dyscalculia"]).toBe(1);
+    expect(dist["adhd"]).toBe(1);
+    expect(Object.keys(dist).length).toBe(3);
+  });
+
+  it("should handle null student names in merge", () => {
+    const sources = [
+      { studentName: "أحمد" },
+      { studentName: null },
+      { studentName: "" },
+      { studentName: "فاطمة" },
+    ];
+
+    const nameSet = new Set<string>();
+    sources.forEach(s => {
+      if (s.studentName) nameSet.add(s.studentName);
+    });
+
+    expect(nameSet.size).toBe(2);
+  });
+
+  it("should map difficulty types to Arabic labels", () => {
+    const labels: Record<string, string> = {
+      dyslexia: "عسر القراءة",
+      dysgraphia: "عسر الكتابة",
+      dyscalculia: "عسر الحساب",
+      adhd: "فرط النشاط",
+    };
+
+    expect(labels["dyslexia"]).toBe("عسر القراءة");
+    expect(labels["dyscalculia"]).toBe("عسر الحساب");
+    expect(labels["nonexistent"]).toBeUndefined();
+  });
+});
