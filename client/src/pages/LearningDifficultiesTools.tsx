@@ -9,7 +9,7 @@ import {
   Brain, PenTool, BookOpen, Puzzle, HeartHandshake, Sparkles,
   ArrowRight, ChevronDown, ChevronUp, Star, Shield, Users,
   Eye, Ear, Hand, GraduationCap, FileText, BarChart3,
-  Lightbulb, Target, Clock, CheckCircle2, AlertTriangle,
+  Lightbulb, Target, Clock, CheckCircle2, AlertTriangle, Activity,
   type LucideIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -129,7 +129,7 @@ const LD_TOOLS: LDTool[] = [
   },
   {
     id: "progress-tracker",
-    href: "#",
+    href: "/follow-up-report",
     icon: BarChart3,
     nameAr: "تقرير المتابعة الفردي",
     nameFr: "Rapport de suivi individuel",
@@ -137,7 +137,7 @@ const LD_TOOLS: LDTool[] = [
     descAr: "توليد تقارير دورية لمتابعة تطور التلميذ ذي الصعوبات مع رسوم بيانية ومقارنات زمنية وتوصيات",
     descFr: "Générer des rapports périodiques de suivi avec graphiques, comparaisons temporelles et recommandations",
     descEn: "Generate periodic progress reports with charts, time comparisons and recommendations",
-    status: "coming_soon",
+    status: "available",
     gradient: "linear-gradient(135deg, #2E7D32 0%, #66BB6A 100%)",
     iconBg: "#E8F5E9",
     stepsAr: ["إدخال بيانات التقييم الدوري", "تحليل التطور عبر الزمن", "توليد رسوم بيانية مقارنة", "تقرير شامل مع توصيات"],
@@ -146,6 +146,26 @@ const LD_TOOLS: LDTool[] = [
     targetAr: "جميع أنواع صعوبات التعلم • متابعة طويلة المدى",
     targetFr: "Tous types de troubles • Suivi à long terme",
     targetEn: "All difficulty types • Long-term tracking",
+  },
+  {
+    id: "progress-evaluator",
+    href: "/progress-evaluator",
+    icon: Activity,
+    nameAr: "مقيّم التقدم",
+    nameFr: "Évaluateur de progrès",
+    nameEn: "Progress Evaluator",
+    descAr: "أداة ذكية تحلل تطور التلميذ عبر الزمن بناءً على التمارين المنجزة وتقدم رؤى تنبؤية وخطة عمل مخصصة",
+    descFr: "Outil IA qui analyse l'évolution de l'élève dans le temps avec des insights prédictifs et un plan d'action personnalisé",
+    descEn: "AI tool that analyzes student progress over time with predictive insights and a personalized action plan",
+    status: "available",
+    gradient: "linear-gradient(135deg, #6A1B9A 0%, #AB47BC 100%)",
+    iconBg: "#F3E5F5",
+    stepsAr: ["إدخال درجات التقييمات الدورية", "تحليل الاتجاهات والأنماط", "رؤى تنبؤية حول مسار التقدم", "خطة عمل مخصصة بمراحل"],
+    stepsFr: ["Saisir les scores des évaluations", "Analyser les tendances", "Insights prédictifs", "Plan d'action personnalisé"],
+    stepsEn: ["Enter assessment scores", "Analyze trends and patterns", "Predictive progress insights", "Phased action plan"],
+    targetAr: "جميع أنواع صعوبات التعلم • تحليل تنبؤي",
+    targetFr: "Tous types de troubles • Analyse prédictive",
+    targetEn: "All difficulty types • Predictive analysis",
   },
 ];
 

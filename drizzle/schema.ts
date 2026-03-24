@@ -2393,3 +2393,155 @@ export const generatedTherapeuticExercises = mysqlTable("generated_therapeutic_e
 });
 export type GeneratedTherapeuticExerciseRow = typeof generatedTherapeuticExercises.$inferSelect;
 export type InsertGeneratedTherapeuticExercise = typeof generatedTherapeuticExercises.$inferInsert;
+
+// ===== FOLLOW-UP REPORTS TABLE =====
+export const followUpReports = mysqlTable("follow_up_reports", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  
+  // Student info
+  studentName: varchar("student_name", { length: 255 }).notNull(),
+  studentAge: int("student_age"),
+  gradeLevel: varchar("grade_level", { length: 50 }),
+  schoolName: varchar("school_name", { length: 255 }),
+  
+  // Difficulty info
+  difficultyType: varchar("difficulty_type", { length: 100 }).notNull(),
+  severityLevel: mysqlEnum("severity_level", ["mild", "moderate", "severe"]).default("moderate").notNull(),
+  
+  // Report period
+  reportPeriod: mysqlEnum("report_period", ["weekly", "monthly", "trimesterly", "yearly"]).default("monthly").notNull(),
+  periodStartDate: varchar("period_start_date", { length: 20 }),
+  periodEndDate: varchar("period_end_date", { length: 20 }),
+  
+  // Observations
+  academicObservations: text("academic_observations"),
+  behavioralObservations: text("behavioral_observations"),
+  socialObservations: text("social_observations"),
+  
+  // Scores (1-10 scale for chart data)
+  readingScore: int("reading_score"),
+  writingScore: int("writing_score"),
+  mathScore: int("math_score"),
+  attentionScore: int("attention_score"),
+  socialScore: int("social_score"),
+  motivationScore: int("motivation_score"),
+  
+  // Previous scores for comparison (JSON array of historical scores)
+  historicalScores: json("historical_scores").$type<{
+    date: string;
+    reading: number;
+    writing: number;
+    math: number;
+    attention: number;
+    social: number;
+    motivation: number;
+  }[]>(),
+  
+  // Generated report content
+  reportTitle: varchar("report_title", { length: 500 }),
+  executiveSummary: text("executive_summary"),
+  detailedAnalysis: text("detailed_analysis"),
+  strengths: json("strengths").$type<string[]>(),
+  challenges: json("challenges").$type<string[]>(),
+  recommendations: json("recommendations").$type<{
+    category: string;
+    recommendation: string;
+    priority: string;
+    timeline: string;
+  }[]>(),
+  parentGuidance: text("parent_guidance"),
+  nextSteps: json("next_steps").$type<{
+    action: string;
+    responsible: string;
+    deadline: string;
+  }[]>(),
+  
+  // Status
+  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FollowUpReportRow = typeof followUpReports.$inferSelect;
+export type InsertFollowUpReport = typeof followUpReports.$inferInsert;
+
+// ===== PROGRESS EVALUATIONS TABLE =====
+export const progressEvaluations = mysqlTable("progress_evaluations", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  
+  // Student info
+  studentName: varchar("student_name", { length: 255 }).notNull(),
+  studentAge: int("student_age"),
+  gradeLevel: varchar("grade_level", { length: 50 }),
+  
+  // Difficulty info
+  difficultyType: varchar("difficulty_type", { length: 100 }).notNull(),
+  
+  // Evaluation period
+  evaluationStartDate: varchar("evaluation_start_date", { length: 20 }).notNull(),
+  evaluationEndDate: varchar("evaluation_end_date", { length: 20 }).notNull(),
+  
+  // Data points for analysis (JSON array of periodic assessments)
+  assessmentData: json("assessment_data").$type<{
+    date: string;
+    label: string;
+    scores: {
+      reading: number;
+      writing: number;
+      math: number;
+      attention: number;
+      social: number;
+      motivation: number;
+    };
+    notes?: string;
+  }[]>(),
+  
+  // Exercises completed data
+  exercisesCompleted: json("exercises_completed").$type<{
+    category: string;
+    count: number;
+    successRate: number;
+    averageDuration: number;
+  }[]>(),
+  
+  // Generated analysis
+  analysisTitle: varchar("analysis_title", { length: 500 }),
+  overallProgress: mysqlEnum("overall_progress", ["significant_improvement", "moderate_improvement", "slight_improvement", "stable", "slight_decline", "needs_attention"]).default("stable").notNull(),
+  progressPercentage: int("progress_percentage"),
+  
+  detailedAnalysis: text("detailed_analysis"),
+  trendAnalysis: text("trend_analysis"),
+  
+  skillsImproved: json("skills_improved").$type<{
+    skill: string;
+    fromScore: number;
+    toScore: number;
+    changePercent: number;
+  }[]>(),
+  
+  skillsNeedingWork: json("skills_needing_work").$type<{
+    skill: string;
+    currentScore: number;
+    targetScore: number;
+    suggestedActivities: string[];
+  }[]>(),
+  
+  predictiveInsights: text("predictive_insights"),
+  actionPlan: json("action_plan").$type<{
+    phase: string;
+    duration: string;
+    goals: string[];
+    activities: string[];
+    successMetrics: string[];
+  }[]>(),
+  
+  // Status
+  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ProgressEvaluationRow = typeof progressEvaluations.$inferSelect;
+export type InsertProgressEvaluation = typeof progressEvaluations.$inferInsert;

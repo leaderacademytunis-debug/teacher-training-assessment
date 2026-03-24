@@ -62,6 +62,8 @@ const DEFAULT_TOOLS = [
   { toolKey: "pedagogical_companion", nameAr: "المرافق البيداغوجي", nameFr: "Accompagnateur pédagogique", nameEn: "Pedagogical Companion", icon: "HeartHandshake", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
   { toolKey: "content_adapter", nameAr: "مكيّف المحتوى التعليمي", nameFr: "Adaptateur de contenu", nameEn: "Content Adapter", icon: "BookOpen", category: "assessment", freeAccess: false, freeLimitPerMonth: 3, proLimitPerMonth: 40, premiumLimitPerMonth: 0 },
   { toolKey: "therapeutic_exercises_gen", nameAr: "مولّد التمارين العلاجية", nameFr: "Générateur d'exercices thérapeutiques", nameEn: "Therapeutic Exercises Generator", icon: "Dumbbell", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 30, premiumLimitPerMonth: 0 },
+  { toolKey: "follow_up_report", nameAr: "تقرير المتابعة الفردي", nameFr: "Rapport de suivi individuel", nameEn: "Individual Follow-Up Report", icon: "BarChart3", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
+  { toolKey: "progress_evaluator", nameAr: "مقيّم التقدم", nameFr: "Évaluateur de progrès", nameEn: "Progress Evaluator", icon: "Activity", category: "assessment", freeAccess: false, freeLimitPerMonth: 2, proLimitPerMonth: 20, premiumLimitPerMonth: 0 },
 ];
 
 export const adminControlRouter = router({
