@@ -14,7 +14,8 @@ import { Link } from "wouter";
 import {
   Briefcase, MapPin, Clock, Building2, Search, Filter, Send,
   CheckCircle2, Star, ArrowRight, Calendar, Users, Sparkles,
-  FileText, ExternalLink, Loader2, GraduationCap, Shield
+  FileText, ExternalLink, Loader2, GraduationCap, Shield,
+  Award, Languages, Brain, Zap, ShieldCheck
 } from "lucide-react";
 
 const REGIONS = [
@@ -296,22 +297,43 @@ function JobCard({ job, onApply, user }: { job: any; onApply: (id: number) => vo
                   {job.salaryRange}
                 </Badge>
               )}
+              {job.minExperience > 0 && (
+                <Badge variant="outline" className="gap-1 text-orange-600 border-orange-200">
+                  <Award className="w-3 h-3" /> {job.minExperience}+ سنة خبرة
+                </Badge>
+              )}
+              {job.requiresCertification && (
+                <Badge variant="outline" className="gap-1 text-green-600 border-green-200">
+                  <ShieldCheck className="w-3 h-3" /> شهادات مطلوبة
+                </Badge>
+              )}
+              {job.urgencyLevel && job.urgencyLevel !== "normal" && (
+                <Badge className={job.urgencyLevel === "immediate" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}>
+                  <Zap className="w-3 h-3 ml-1" />
+                  {job.urgencyLevel === "immediate" ? "فوري" : "مستعجل"}
+                </Badge>
+              )}
             </div>
 
             {job.description && (
               <p className="text-sm text-slate-600 line-clamp-2 mb-3">{job.description}</p>
             )}
 
-            {job.requiredSkills && job.requiredSkills.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                {job.requiredSkills.slice(0, 5).map((skill: string, i: number) => (
-                  <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{skill}</span>
-                ))}
-                {job.requiredSkills.length > 5 && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">+{job.requiredSkills.length - 5}</span>
-                )}
-              </div>
-            )}
+            {/* Skills, Languages, Methodologies */}
+            <div className="flex flex-wrap gap-1 mb-3">
+              {job.requiredSkills && job.requiredSkills.length > 0 && job.requiredSkills.slice(0, 4).map((skill: string, i: number) => (
+                <span key={`s-${i}`} className="text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">{skill}</span>
+              ))}
+              {job.requiredLanguages && job.requiredLanguages.length > 0 && job.requiredLanguages.map((lang: string, i: number) => (
+                <span key={`l-${i}`} className="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-600 border border-purple-200">{lang}</span>
+              ))}
+              {job.preferredMethodologies && job.preferredMethodologies.length > 0 && job.preferredMethodologies.slice(0, 3).map((m: string, i: number) => (
+                <span key={`m-${i}`} className="text-[11px] px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 border border-teal-200">{m}</span>
+              ))}
+              {((job.requiredSkills?.length || 0) + (job.requiredLanguages?.length || 0) + (job.preferredMethodologies?.length || 0)) > 9 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">+المزيد</span>
+              )}
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 text-xs text-slate-400">

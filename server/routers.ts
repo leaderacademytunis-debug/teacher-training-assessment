@@ -10663,6 +10663,12 @@ ${input.lessonContent}
       salaryRange: z.string().optional(),
       requirements: z.string().optional(),
       requiredSkills: z.array(z.string()).optional(),
+      minExperience: z.number().min(0).optional(),
+      maxExperience: z.number().min(0).optional(),
+      requiredLanguages: z.array(z.string()).optional(),
+      preferredMethodologies: z.array(z.string()).optional(),
+      requiresCertification: z.boolean().optional(),
+      urgencyLevel: z.enum(["normal", "urgent", "immediate"]).optional(),
       applicationDeadline: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
@@ -10671,7 +10677,14 @@ ${input.lessonContent}
       const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
       if (!school) throw new TRPCError({ code: "FORBIDDEN", message: "يجب تسجيل مدرستك أولاً" });
       if (!school.isVerified) throw new TRPCError({ code: "FORBIDDEN", message: "مدرستك لم يتم التحقق منها بعد" });
-      const matchedIds = await smartMatchTeachers(database, input.subject, input.region, input.grade);
+      const jobData = {
+        subject: input.subject, region: input.region, grade: input.grade,
+        requiredSkills: input.requiredSkills, minExperience: input.minExperience || 0,
+        maxExperience: input.maxExperience, contractType: input.contractType,
+        requiredLanguages: input.requiredLanguages, preferredMethodologies: input.preferredMethodologies,
+        requiresCertification: input.requiresCertification,
+      };
+      const matchedIds = await smartMatchTeachers(database, input.subject, input.region, input.grade, jobData);
       await database.insert(jobPostings).values({
         schoolId: school.id, postedByUserId: ctx.user.id,
         title: input.title, description: input.description,
@@ -10680,6 +10693,12 @@ ${input.lessonContent}
         salaryRange: input.salaryRange || null,
         requirements: input.requirements || null,
         requiredSkills: input.requiredSkills || null,
+        minExperience: input.minExperience || 0,
+        maxExperience: input.maxExperience || null,
+        requiredLanguages: input.requiredLanguages || null,
+        preferredMethodologies: input.preferredMethodologies || null,
+        requiresCertification: input.requiresCertification || false,
+        urgencyLevel: input.urgencyLevel || 'normal',
         applicationDeadline: input.applicationDeadline ? new Date(input.applicationDeadline) : null,
         matchedTeacherIds: matchedIds,
       });
@@ -10803,7 +10822,7 @@ ${input.lessonContent}
       const matchedIds = job.matchedTeacherIds || [];
       if (matchedIds.length === 0) return [];
       const matched = [];
-      for (const teacherId of matchedIds.slice(0, 5)) {
+      for (const teacherId of matchedIds.slice(0, 10)) {
         const [row] = await database.select({
           portfolio: teacherPortfolios, userName: users.name, arabicName: users.arabicName,
           firstNameAr: users.firstNameAr, lastNameAr: users.lastNameAr, schoolName: users.schoolName,
@@ -10811,18 +10830,41 @@ ${input.lessonContent}
           .where(and(eq(teacherPortfolios.userId, teacherId), eq(teacherPortfolios.isPublic, true))).limit(1);
         if (row) {
           const displayName = row.arabicName || (row.firstNameAr && row.lastNameAr ? `${row.firstNameAr} ${row.lastNameAr}` : row.userName) || "معلم";
-          const subjectBreakdown = row.portfolio.subjectBreakdown || {};
-          const totalScore = Object.values(subjectBreakdown).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+          const matchResult = await calculateEnhancedMatchScore(database, teacherId, job);
           const [certCount] = await database.select({ count: count() }).from(certificates).where(eq(certificates.userId, teacherId));
           matched.push({
-            userId: teacherId, displayName, schoolName: row.schoolName || row.portfolio.currentSchool,
-            region: row.portfolio.region, specializations: row.portfolio.specializations || [],
-            totalScore, isVerified: (certCount?.count || 0) > 0,
+            userId: teacherId,
+            displayName,
+            schoolName: row.schoolName || row.portfolio.currentSchool,
+            region: row.portfolio.region,
+            specializations: row.portfolio.specializations || [],
+            yearsOfExperience: row.portfolio.yearsOfExperience || 0,
+            availabilityStatus: row.portfolio.availabilityStatus || 'open_to_offers',
+            languages: row.portfolio.languages || [],
+            matchScore: matchResult.score,
+            matchBreakdown: matchResult.breakdown,
+            strengthAreas: matchResult.strengthAreas,
+            improvementAreas: matchResult.improvementAreas,
+            matchedSkills: matchResult.matchedSkills,
+            isVerified: (certCount?.count || 0) > 0,
             slug: row.portfolio.publicSlug || row.portfolio.publicToken,
           });
         }
       }
+      matched.sort((a, b) => b.matchScore - a.matchScore);
       return matched;
+    }),
+  // Enhanced match score for a specific teacher-job pair
+  getMatchBreakdown: protectedProcedure
+    .input(z.object({ jobId: z.number(), teacherUserId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const database = await getDb();
+      if (!database) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
+      if (!school) throw new TRPCError({ code: "FORBIDDEN" });
+      const [job] = await database.select().from(jobPostings).where(and(eq(jobPostings.id, input.jobId), eq(jobPostings.schoolId, school.id))).limit(1);
+      if (!job) throw new TRPCError({ code: "NOT_FOUND" });
+      return calculateEnhancedMatchScore(database, input.teacherUserId, job);
     }),
   verifySchool: adminProcedure
     .input(z.object({ schoolId: z.number(), verified: z.boolean() }))
@@ -15032,71 +15074,323 @@ Respond in valid JSON with exactly these fields:
 });
 
 // Helper: Calculate match score between teacher and job
-async function calculateMatchScore(database: any, teacherUserId: number, job: any): Promise<number> {
-  const [portfolio] = await database.select().from(teacherPortfolios).where(eq(teacherPortfolios.userId, teacherUserId));
-  if (!portfolio) return 0;
-  let score = 0;
-  let maxScore = 0;
-  // Subject match (40 points)
-  maxScore += 40;
-  const breakdown = portfolio.subjectBreakdown || {};
-  for (const [key] of Object.entries(breakdown)) {
-    if (key.includes(job.subject)) { score += 25; break; }
-  }
-  if (portfolio.specializations?.some((s: string) => s.includes(job.subject))) score += 15;
-  // Region match (25 points)
-  maxScore += 25;
-  if (portfolio.region && portfolio.region === job.region) score += 25;
-  // Education level match (15 points)
-  maxScore += 15;
-  if (job.grade && portfolio.educationLevel) {
-    const gradeMap: Record<string, string> = { "ابتدائي": "primary", "إعدادي": "middle", "ثانوي": "secondary" };
-    if (portfolio.educationLevel === job.grade || portfolio.educationLevel === gradeMap[job.grade]) score += 15;
-  }
-  // Required skills match (20 points)
-  maxScore += 20;
-  if (job.requiredSkills && job.requiredSkills.length > 0 && portfolio.specializations) {
-    const matched = job.requiredSkills.filter((skill: string) => portfolio.specializations.some((s: string) => s.includes(skill) || skill.includes(s)));
-    score += Math.round((matched.length / job.requiredSkills.length) * 20);
-  }
-  return maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+// ===== ENHANCED SMART MATCHING ALGORITHM v2 =====
+// Weighted multi-criteria scoring with detailed breakdown
+
+interface MatchBreakdown {
+  subject: { score: number; max: number; details: string };
+  region: { score: number; max: number; details: string };
+  educationLevel: { score: number; max: number; details: string };
+  experience: { score: number; max: number; details: string };
+  skills: { score: number; max: number; details: string };
+  certifications: { score: number; max: number; details: string };
+  platformActivity: { score: number; max: number; details: string };
+  availability: { score: number; max: number; details: string };
+  languages: { score: number; max: number; details: string };
+  methodologies: { score: number; max: number; details: string };
 }
 
-// Helper: Smart match teachers for a job postingg
-async function smartMatchTeachers(database: any, subject: string, region: string, grade?: string | null): Promise<number[]> {
-  const conditions: any[] = [eq(teacherPortfolios.isPublic, true)];
+interface EnhancedMatchResult {
+  score: number;
+  breakdown: MatchBreakdown;
+  matchedSkills: string[];
+  matchedRegion: boolean;
+  matchedLevel: boolean;
+  strengthAreas: string[];
+  improvementAreas: string[];
+}
+
+// Weights for each criterion (total = 100)
+const MATCH_WEIGHTS = {
+  subject: 25,        // المادة الدراسية
+  region: 15,         // المنطقة
+  educationLevel: 10, // المستوى التعليمي
+  experience: 15,     // سنوات الخبرة
+  skills: 12,         // المهارات المطلوبة
+  certifications: 8,  // الشهادات
+  platformActivity: 5,// النشاط على المنصة
+  availability: 4,    // التوفر
+  languages: 3,       // اللغات
+  methodologies: 3,   // المنهجيات البيداغوجية
+};
+
+const GRADE_MAP: Record<string, string> = {
+  "ابتدائي": "primary", "إعدادي": "middle", "ثانوي": "secondary",
+  "primary": "primary", "middle": "middle", "secondary": "secondary",
+};
+
+function fuzzyMatch(a: string, b: string): boolean {
+  const normalize = (s: string) => s.trim().toLowerCase().replace(/[\u064B-\u065F]/g, '');
+  const na = normalize(a);
+  const nb = normalize(b);
+  return na.includes(nb) || nb.includes(na);
+}
+
+async function calculateMatchScore(database: any, teacherUserId: number, job: any): Promise<number> {
+  const result = await calculateEnhancedMatchScore(database, teacherUserId, job);
+  return result.score;
+}
+
+async function calculateEnhancedMatchScore(database: any, teacherUserId: number, job: any): Promise<EnhancedMatchResult> {
+  const emptyBreakdown: MatchBreakdown = {
+    subject: { score: 0, max: MATCH_WEIGHTS.subject, details: 'لا توجد بيانات' },
+    region: { score: 0, max: MATCH_WEIGHTS.region, details: 'لا توجد بيانات' },
+    educationLevel: { score: 0, max: MATCH_WEIGHTS.educationLevel, details: 'لا توجد بيانات' },
+    experience: { score: 0, max: MATCH_WEIGHTS.experience, details: 'لا توجد بيانات' },
+    skills: { score: 0, max: MATCH_WEIGHTS.skills, details: 'لا توجد بيانات' },
+    certifications: { score: 0, max: MATCH_WEIGHTS.certifications, details: 'لا توجد بيانات' },
+    platformActivity: { score: 0, max: MATCH_WEIGHTS.platformActivity, details: 'لا توجد بيانات' },
+    availability: { score: 0, max: MATCH_WEIGHTS.availability, details: 'لا توجد بيانات' },
+    languages: { score: 0, max: MATCH_WEIGHTS.languages, details: 'لا توجد بيانات' },
+    methodologies: { score: 0, max: MATCH_WEIGHTS.methodologies, details: 'لا توجد بيانات' },
+  };
+  const emptyResult: EnhancedMatchResult = { score: 0, breakdown: emptyBreakdown, matchedSkills: [], matchedRegion: false, matchedLevel: false, strengthAreas: [], improvementAreas: [] };
+
+  const [portfolio] = await database.select().from(teacherPortfolios).where(eq(teacherPortfolios.userId, teacherUserId));
+  if (!portfolio) return emptyResult;
+
+  const breakdown: MatchBreakdown = { ...emptyBreakdown };
+  const matchedSkills: string[] = [];
+  const strengthAreas: string[] = [];
+  const improvementAreas: string[] = [];
+
+  // 1. SUBJECT MATCH (25 points)
+  const subjectBreakdown = portfolio.subjectBreakdown || {};
+  let subjectScore = 0;
+  let subjectHasExperience = false;
+  for (const [key, val] of Object.entries(subjectBreakdown)) {
+    if (fuzzyMatch(key, job.subject)) {
+      subjectHasExperience = true;
+      const activityCount = Number(val) || 0;
+      subjectScore += Math.min(15, activityCount >= 10 ? 15 : activityCount >= 5 ? 12 : activityCount >= 2 ? 8 : 5);
+      break;
+    }
+  }
+  if (portfolio.specializations?.some((s: string) => fuzzyMatch(s, job.subject))) {
+    subjectScore += 10;
+    subjectHasExperience = true;
+  }
+  breakdown.subject = {
+    score: Math.min(MATCH_WEIGHTS.subject, subjectScore),
+    max: MATCH_WEIGHTS.subject,
+    details: subjectHasExperience ? `تخصص في ${job.subject}` : `لا يوجد تخصص في ${job.subject}`,
+  };
+  if (subjectHasExperience) strengthAreas.push('التخصص');
+  else improvementAreas.push('التخصص في المادة');
+
+  // 2. REGION MATCH (15 points)
+  let regionScore = 0;
+  let regionDetail = 'منطقة مختلفة';
+  const matchedRegion = portfolio.region === job.region;
+  if (matchedRegion) {
+    regionScore = MATCH_WEIGHTS.region;
+    regionDetail = `نفس المنطقة: ${job.region}`;
+    strengthAreas.push('المنطقة');
+  } else if (portfolio.preferredRegions?.some((r: string) => r === job.region)) {
+    regionScore = Math.round(MATCH_WEIGHTS.region * 0.8);
+    regionDetail = `منطقة مفضلة: ${job.region}`;
+    strengthAreas.push('المنطقة (مفضلة)');
+  } else if (portfolio.willingToRelocate) {
+    regionScore = Math.round(MATCH_WEIGHTS.region * 0.5);
+    regionDetail = 'مستعد للانتقال';
+  } else {
+    improvementAreas.push('المنطقة الجغرافية');
+  }
+  breakdown.region = { score: regionScore, max: MATCH_WEIGHTS.region, details: regionDetail };
+
+  // 3. EDUCATION LEVEL MATCH (10 points)
+  let levelScore = 0;
+  let levelDetail = 'غير محدد';
+  const matchedLevel = !!(job.grade && portfolio.educationLevel && (portfolio.educationLevel === job.grade || portfolio.educationLevel === GRADE_MAP[job.grade]));
+  if (matchedLevel) {
+    levelScore = MATCH_WEIGHTS.educationLevel;
+    levelDetail = `مستوى مطابق: ${job.grade}`;
+    strengthAreas.push('المستوى التعليمي');
+  } else if (!job.grade) {
+    levelScore = Math.round(MATCH_WEIGHTS.educationLevel * 0.7);
+    levelDetail = 'لم يُحدد مستوى معين';
+  } else {
+    improvementAreas.push('المستوى التعليمي');
+  }
+  breakdown.educationLevel = { score: levelScore, max: MATCH_WEIGHTS.educationLevel, details: levelDetail };
+
+  // 4. EXPERIENCE MATCH (15 points)
+  let expScore = 0;
+  let expDetail = 'غير محدد';
+  const teacherExp = portfolio.yearsOfExperience || 0;
+  const minExp = job.minExperience || 0;
+  const maxExp = job.maxExperience || 999;
+  if (teacherExp >= minExp && teacherExp <= maxExp) {
+    expScore = MATCH_WEIGHTS.experience;
+    expDetail = `${teacherExp} سنة خبرة (مطلوب: ${minExp}${maxExp < 999 ? `-${maxExp}` : '+'})`;
+    strengthAreas.push('الخبرة');
+  } else if (teacherExp >= minExp) {
+    expScore = Math.round(MATCH_WEIGHTS.experience * 0.7);
+    expDetail = `${teacherExp} سنة (أكثر من المطلوب)`;
+  } else if (teacherExp > 0 && teacherExp < minExp) {
+    const ratio = teacherExp / minExp;
+    expScore = Math.round(MATCH_WEIGHTS.experience * ratio * 0.6);
+    expDetail = `${teacherExp} سنة (المطلوب: ${minExp}+)`;
+    improvementAreas.push('سنوات الخبرة');
+  } else if (minExp === 0) {
+    expScore = Math.round(MATCH_WEIGHTS.experience * 0.5);
+    expDetail = 'لا توجد خبرة مطلوبة';
+  } else {
+    improvementAreas.push('سنوات الخبرة');
+  }
+  breakdown.experience = { score: expScore, max: MATCH_WEIGHTS.experience, details: expDetail };
+
+  // 5. SKILLS MATCH (12 points)
+  let skillsScore = 0;
+  let skillsDetail = 'لا توجد مهارات مطلوبة';
+  const allTeacherSkills = [...(portfolio.specializations || []), ...(portfolio.additionalSkills || [])];
+  if (job.requiredSkills && job.requiredSkills.length > 0 && allTeacherSkills.length > 0) {
+    const matched = job.requiredSkills.filter((skill: string) => allTeacherSkills.some((s: string) => fuzzyMatch(s, skill)));
+    matched.forEach((s: string) => matchedSkills.push(s));
+    const ratio = matched.length / job.requiredSkills.length;
+    skillsScore = Math.round(ratio * MATCH_WEIGHTS.skills);
+    skillsDetail = `${matched.length}/${job.requiredSkills.length} مهارة مطابقة`;
+    if (ratio >= 0.7) strengthAreas.push('المهارات');
+    else if (ratio < 0.3) improvementAreas.push('المهارات المطلوبة');
+  } else if (!job.requiredSkills || job.requiredSkills.length === 0) {
+    skillsScore = Math.round(MATCH_WEIGHTS.skills * 0.5);
+    skillsDetail = 'لم تُحدد مهارات معينة';
+  }
+  breakdown.skills = { score: skillsScore, max: MATCH_WEIGHTS.skills, details: skillsDetail };
+
+  // 6. CERTIFICATIONS (8 points)
+  let certScore = 0;
+  let certDetail = 'لا توجد شهادات';
+  const [certCount] = await database.select({ count: count() }).from(certificates).where(eq(certificates.userId, teacherUserId));
+  const numCerts = certCount?.count || 0;
+  if (numCerts > 0) {
+    certScore = Math.min(MATCH_WEIGHTS.certifications, numCerts >= 5 ? MATCH_WEIGHTS.certifications : numCerts >= 3 ? Math.round(MATCH_WEIGHTS.certifications * 0.8) : Math.round(MATCH_WEIGHTS.certifications * 0.5));
+    certDetail = `${numCerts} شهادة معتمدة`;
+    if (numCerts >= 3) strengthAreas.push('الشهادات');
+  } else if (job.requiresCertification) {
+    improvementAreas.push('الشهادات المطلوبة');
+  }
+  breakdown.certifications = { score: certScore, max: MATCH_WEIGHTS.certifications, details: certDetail };
+
+  // 7. PLATFORM ACTIVITY (5 points)
+  let activityScore = 0;
+  const totalActivity = (portfolio.totalLessonPlans || 0) + (portfolio.totalExams || 0) + (portfolio.totalImages || 0) + (portfolio.totalEvaluations || 0) + (portfolio.totalConversations || 0);
+  if (totalActivity >= 50) {
+    activityScore = MATCH_WEIGHTS.platformActivity;
+  } else if (totalActivity >= 20) {
+    activityScore = Math.round(MATCH_WEIGHTS.platformActivity * 0.7);
+  } else if (totalActivity >= 5) {
+    activityScore = Math.round(MATCH_WEIGHTS.platformActivity * 0.4);
+  }
+  breakdown.platformActivity = {
+    score: activityScore,
+    max: MATCH_WEIGHTS.platformActivity,
+    details: `${totalActivity} نشاط على المنصة`,
+  };
+
+  // 8. AVAILABILITY (4 points)
+  let availScore = 0;
+  let availDetail = 'غير محدد';
+  if (portfolio.availabilityStatus === 'available') {
+    availScore = MATCH_WEIGHTS.availability;
+    availDetail = 'متاح للعمل';
+    strengthAreas.push('التوفر');
+  } else if (portfolio.availabilityStatus === 'open_to_offers') {
+    availScore = Math.round(MATCH_WEIGHTS.availability * 0.7);
+    availDetail = 'منفتح على العروض';
+  } else if (portfolio.availabilityStatus === 'not_available') {
+    availDetail = 'غير متاح حالياً';
+  }
+  // Contract type compatibility bonus
+  if (portfolio.preferredContractTypes?.includes(job.contractType)) {
+    availScore = Math.min(MATCH_WEIGHTS.availability, availScore + 1);
+  }
+  breakdown.availability = { score: availScore, max: MATCH_WEIGHTS.availability, details: availDetail };
+
+  // 9. LANGUAGES (3 points)
+  let langScore = 0;
+  let langDetail = 'غير محدد';
+  if (job.requiredLanguages && job.requiredLanguages.length > 0 && portfolio.languages) {
+    const matchedLangs = job.requiredLanguages.filter((l: string) => portfolio.languages.some((pl: string) => fuzzyMatch(pl, l)));
+    const ratio = matchedLangs.length / job.requiredLanguages.length;
+    langScore = Math.round(ratio * MATCH_WEIGHTS.languages);
+    langDetail = `${matchedLangs.length}/${job.requiredLanguages.length} لغة مطابقة`;
+  } else {
+    langScore = Math.round(MATCH_WEIGHTS.languages * 0.5);
+    langDetail = 'لم تُحدد لغات';
+  }
+  breakdown.languages = { score: langScore, max: MATCH_WEIGHTS.languages, details: langDetail };
+
+  // 10. METHODOLOGIES (3 points)
+  let methScore = 0;
+  let methDetail = 'غير محدد';
+  if (job.preferredMethodologies && job.preferredMethodologies.length > 0 && portfolio.teachingMethodologies) {
+    const matchedMeths = job.preferredMethodologies.filter((m: string) => portfolio.teachingMethodologies.some((pm: string) => fuzzyMatch(pm, m)));
+    const ratio = matchedMeths.length / job.preferredMethodologies.length;
+    methScore = Math.round(ratio * MATCH_WEIGHTS.methodologies);
+    methDetail = `${matchedMeths.length}/${job.preferredMethodologies.length} منهجية مطابقة`;
+  } else {
+    methScore = Math.round(MATCH_WEIGHTS.methodologies * 0.5);
+    methDetail = 'لم تُحدد منهجيات';
+  }
+  breakdown.methodologies = { score: methScore, max: MATCH_WEIGHTS.methodologies, details: methDetail };
+
+  // Calculate total score
+  const totalScore = Object.values(breakdown).reduce((sum: number, b: any) => sum + b.score, 0);
+  const totalMax = Object.values(breakdown).reduce((sum: number, b: any) => sum + b.max, 0);
+  const finalScore = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+
+  return {
+    score: finalScore,
+    breakdown,
+    matchedSkills,
+    matchedRegion,
+    matchedLevel,
+    strengthAreas: [...new Set(strengthAreas)],
+    improvementAreas: [...new Set(improvementAreas)],
+  };
+}
+
+// Helper: Smart match teachers for a job posting (enhanced v2)
+async function smartMatchTeachers(database: any, subject: string, region: string, grade?: string | null, jobData?: any): Promise<number[]> {
   const portfolios = await database.select({
     userId: teacherPortfolios.userId,
     region: teacherPortfolios.region,
     educationLevel: teacherPortfolios.educationLevel,
     specializations: teacherPortfolios.specializations,
     subjectBreakdown: teacherPortfolios.subjectBreakdown,
-  }).from(teacherPortfolios).where(and(...conditions)).limit(100);
+    yearsOfExperience: teacherPortfolios.yearsOfExperience,
+    availabilityStatus: teacherPortfolios.availabilityStatus,
+    preferredRegions: teacherPortfolios.preferredRegions,
+    willingToRelocate: teacherPortfolios.willingToRelocate,
+    preferredContractTypes: teacherPortfolios.preferredContractTypes,
+    languages: teacherPortfolios.languages,
+    teachingMethodologies: teacherPortfolios.teachingMethodologies,
+    additionalSkills: teacherPortfolios.additionalSkills,
+    certificationNames: teacherPortfolios.certificationNames,
+    totalLessonPlans: teacherPortfolios.totalLessonPlans,
+    totalExams: teacherPortfolios.totalExams,
+    totalImages: teacherPortfolios.totalImages,
+    totalEvaluations: teacherPortfolios.totalEvaluations,
+    totalConversations: teacherPortfolios.totalConversations,
+  }).from(teacherPortfolios).where(eq(teacherPortfolios.isPublic, true)).limit(200);
+
+  const job = jobData || { subject, region, grade, requiredSkills: [], minExperience: 0, contractType: 'full_time' };
   const scored: { userId: number; score: number }[] = [];
+
   for (const p of portfolios) {
-    let score = 0;
-    const breakdown = p.subjectBreakdown || {};
-    // Subject match
-    for (const [key, val] of Object.entries(breakdown)) {
-      if (key.includes(subject)) score += Number(val) || 0;
+    // Quick pre-filter: skip teachers not available
+    if (p.availabilityStatus === 'not_available') continue;
+
+    // Use enhanced scoring
+    const result = await calculateEnhancedMatchScore(database, p.userId, job);
+    if (result.score > 20) {
+      scored.push({ userId: p.userId, score: result.score });
     }
-    if (p.specializations?.some((s: string) => s.includes(subject))) score += 20;
-    // Region match
-    if (p.region && p.region === region) score += 15;
-    // Grade match
-    if (grade && p.educationLevel) {
-      const gradeMap: Record<string, string> = { "ابتدائي": "primary", "إعدادي": "middle", "ثانوي": "secondary" };
-      if (p.educationLevel === grade || p.educationLevel === gradeMap[grade]) score += 10;
-    }
-    // Verified bonus
-    if (score > 0) {
-      const [certCount] = await database.select({ count: count() }).from(certificates).where(eq(certificates.userId, p.userId));
-      if ((certCount?.count || 0) > 0) score += 25;
-    }
-    if (score > 0) scored.push({ userId: p.userId, score });
   }
+
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 3).map(s => s.userId);
+  return scored.slice(0, 10).map(s => s.userId); // Return top 10 instead of top 3
 }
 
 // Helper: Build showcase data for public profile

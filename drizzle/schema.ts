@@ -946,6 +946,16 @@ export const teacherPortfolios = mysqlTable("teacher_portfolios", {
   // Subject breakdown for radar chart (JSON map: subject -> count)
   subjectBreakdown: json("subjectBreakdown").$type<Record<string, number>>(),
 
+  // Enhanced matching fields
+  availabilityStatus: mysqlEnum("availabilityStatus", ["available", "open_to_offers", "not_available"]).default("open_to_offers"),
+  preferredContractTypes: json("preferredContractTypes").$type<string[]>(), // ["full_time", "part_time", etc.]
+  preferredRegions: json("preferredRegions").$type<string[]>(), // Additional regions willing to work in
+  languages: json("languages").$type<string[]>(), // ["العربية", "الفرنسية", "الإنجليزية"]
+  certificationNames: json("certificationNames").$type<string[]>(), // Named certifications
+  teachingMethodologies: json("teachingMethodologies").$type<string[]>(), // ["التعلم النشط", "المقاربة بالكفايات"]
+  additionalSkills: json("additionalSkills").$type<string[]>(), // ["تكنولوجيا التعليم", "التربية الخاصة"]
+  willingToRelocate: boolean("willingToRelocate").default(false),
+
   // PDF export URL (cached last export)
   lastPdfExportUrl: text("lastPdfExportUrl"),
   lastPdfExportAt: timestamp("lastPdfExportAt"),
@@ -1435,6 +1445,13 @@ export const jobPostings = mysqlTable("job_postings", {
   salaryRange: varchar("salaryRange", { length: 100 }),
   requirements: text("requirements"),
   requiredSkills: json("requiredSkills").$type<string[]>(),
+  // Enhanced matching requirements
+  minExperience: int("minExperience").default(0), // Minimum years of experience
+  maxExperience: int("maxExperience"), // Maximum years (null = no limit)
+  requiredLanguages: json("requiredLanguages").$type<string[]>(), // Required languages
+  preferredMethodologies: json("preferredMethodologies").$type<string[]>(), // Preferred teaching methods
+  requiresCertification: boolean("requiresCertification").default(false),
+  urgencyLevel: mysqlEnum("urgencyLevel", ["normal", "urgent", "immediate"]).default("normal"),
   isActive: boolean("isActive").default(true).notNull(),
   applicationDeadline: timestamp("applicationDeadline"),
   matchedTeacherIds: json("matchedTeacherIds").$type<number[]>(),
