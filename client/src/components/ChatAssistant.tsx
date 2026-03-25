@@ -80,6 +80,13 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
     }
   }, [isOpen]);
 
+  // On mobile, auto-fullscreen when opened
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 768) {
+      setIsFullScreen(true);
+    }
+  }, [isOpen]);
+
   return (
     <>
       {/* Floating Button */}
@@ -95,43 +102,48 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
 
       {/* Chat Window */}
       {isOpen && (
-        <div className={`fixed bg-background border shadow-2xl flex flex-col z-50 transition-all duration-300 ${
-          isFullScreen 
-            ? 'inset-4 rounded-lg' 
-            : 'bottom-6 left-6 w-[600px] h-[700px] rounded-lg'
-        }`}>
+        <div
+          className={`fixed bg-background border shadow-2xl flex flex-col z-50 transition-all duration-300 ${
+            isFullScreen
+              ? "inset-0 md:inset-4 rounded-none md:rounded-lg"
+              : "bottom-6 left-6 w-[90vw] max-w-[600px] h-[80vh] max-h-[700px] rounded-lg"
+          }`}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-blue-600 text-white rounded-t-lg">
+          <div className="flex items-center justify-between p-3 md:p-4 border-b bg-blue-600 text-white rounded-t-none md:rounded-t-lg shrink-0">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
-              <h3 className="font-semibold">المساعد البيداغوجي</h3>
+              <h3 className="font-semibold text-sm md:text-base">المساعد البيداغوجي</h3>
             </div>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsFullScreen(!isFullScreen)}
-                className="text-white hover:bg-blue-700"
+                className="text-white hover:bg-blue-700 h-8 w-8 md:h-9 md:w-9"
                 title={isFullScreen ? "تصغير" : "تكبير"}
               >
-                {isFullScreen ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+                {isFullScreen ? <Minimize2 className="h-4 w-4 md:h-5 md:w-5" /> : <Maximize2 className="h-4 w-4 md:h-5 md:w-5" />}
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsOpen(false)}
-                className="text-white hover:bg-blue-700"
+                onClick={() => {
+                  setIsFullScreen(false);
+                  setIsOpen(false);
+                }}
+                className="text-white hover:bg-blue-700 h-8 w-8 md:h-9 md:w-9"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
+          <div className="flex-1 overflow-y-auto p-3 md:p-4 min-h-0" ref={scrollRef}>
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground mt-8">
-                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <MessageSquare className="h-10 w-10 md:h-12 md:w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">مرحباً! أنا مساعدك التعليمي الذكي</p>
                 <p className="text-xs mt-2">
                   يمكنني مساعدتك في إعداد المذكرات البيداغوجية والتخطيط الدراسي
@@ -139,7 +151,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
               </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -148,7 +160,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
                   }`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
+                    className={`max-w-[85%] md:max-w-[80%] rounded-lg p-2.5 md:p-3 ${
                       message.role === "user"
                         ? "bg-blue-600 text-white"
                         : "bg-muted"
@@ -176,7 +188,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t">
+          <div className="p-3 md:p-4 border-t shrink-0">
             <div className="flex gap-2">
               <Textarea
                 ref={textareaRef}
@@ -184,16 +196,16 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="اكتب رسالتك هنا..."
-                className="min-h-[60px] max-h-[120px] resize-none"
+                className="min-h-[50px] md:min-h-[60px] max-h-[100px] md:max-h-[120px] resize-none text-sm md:text-base"
                 disabled={isLoading}
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
                 size="icon"
-                className="h-[60px] w-[60px]"
+                className="h-[50px] w-[50px] md:h-[60px] md:w-[60px] shrink-0"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
             </div>
           </div>
