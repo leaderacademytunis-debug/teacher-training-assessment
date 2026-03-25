@@ -14,7 +14,7 @@ import { publicProcedure, protectedProcedure, router, staffProcedure, teacherPro
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, submissionComments, videoEvaluations } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, submissionComments, videoEvaluations, generatedImages, conversations, courses, savedEvaluations } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray, avg, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -10744,6 +10744,20 @@ ${input.lessonContent}
           }
         }
       }
+      // Create in-app notifications for matched teachers
+      if (jobId && matchedIds.length > 0) {
+        try {
+          for (const teacherId of matchedIds.slice(0, 50)) {
+            await db.createNotification({
+              userId: teacherId,
+              titleAr: 'وظيفة جديدة تناسب ملفك',
+              messageAr: `نشرت ${school.schoolNameAr || school.schoolName} وظيفة "${input.title}" في ${input.region} - اطلع عليها الآن`,
+              type: 'new_job',
+              relatedId: jobId,
+            });
+          }
+        } catch (e) { /* notification failure should not block job posting */ }
+      }
       return { success: true, matchedCount: matchedIds.length };
     }),
   getMyJobs: protectedProcedure.query(async ({ ctx }) => {
@@ -11118,6 +11132,20 @@ ${input.lessonContent}
         matchScore,
         status: 'sent',
       });
+      // Notify school about new application
+      try {
+        const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.id, job.schoolId));
+        if (school?.userId) {
+          const teacherName = ctx.user.arabicName || ctx.user.name || 'معلم';
+          await db.createNotification({
+            userId: school.userId,
+            titleAr: 'طلب توظيف جديد',
+            messageAr: `تقدّم ${teacherName} لوظيفة "${job.title}" بنسبة تطابق ${matchScore || 0}%`,
+            type: 'application_received',
+            relatedId: input.jobId,
+          });
+        }
+      } catch (e) { /* notification failure should not block application */ }
       return { success: true, matchScore };
     }),
 
@@ -11188,6 +11216,25 @@ ${input.lessonContent}
       if (['accepted', 'rejected'].includes(input.status)) updateData.respondedAt = new Date();
       if (input.notes) updateData.schoolNotes = input.notes;
       await database.update(jobApplications).set(updateData).where(eq(jobApplications.id, input.applicationId));
+      // Notify teacher about status change
+      try {
+        const statusLabels: Record<string, string> = {
+          viewed: 'تمت مشاهدة طلبك',
+          shortlisted: 'تم إدراجك في القائمة القصيرة',
+          interviewed: 'تمت دعوتك للمقابلة',
+          accepted: 'تم قبول طلبك! مبروك',
+          rejected: 'لم يتم قبول طلبك',
+        };
+        const [job] = await database.select({ title: jobPostings.title }).from(jobPostings).where(eq(jobPostings.id, app.jobPostingId));
+        const schoolName = school?.schoolNameAr || school?.schoolName || 'المدرسة';
+        await db.createNotification({
+          userId: app.teacherUserId,
+          titleAr: statusLabels[input.status] || 'تحديث حالة الطلب',
+          messageAr: `${statusLabels[input.status] || 'تم تحديث حالة طلبك'} لوظيفة "${job?.title || ''}" في ${schoolName}`,
+          type: 'application_status',
+          relatedId: input.applicationId,
+        });
+      } catch (e) { /* notification failure should not block status update */ }
       return { success: true };
     }),
 
@@ -14846,6 +14893,140 @@ Respond in valid JSON with exactly these fields:
         } catch {
           return { optimized: input.prompt, explanation: "Could not optimize. Please try again." };
         }
+      }),
+  }),
+  // ============================================
+  // Dashboard API - Real Data Endpoints
+  // ============================================
+  dashboardApi: router({
+    // Teacher dashboard: live stats from portfolio
+    teacherStats: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return null;
+      // Get live portfolio stats
+      const stats = await db.computePortfolioStats(ctx.user.id);
+      // Get portfolio profile data
+      const [portfolio] = await database.select().from(teacherPortfolios).where(eq(teacherPortfolios.userId, ctx.user.id)).limit(1);
+      // Get job application counts
+      const apps = await database.select({ status: jobApplications.status }).from(jobApplications).where(eq(jobApplications.teacherUserId, ctx.user.id));
+      const appCounts = {
+        total: apps.length,
+        sent: apps.filter((a: any) => a.status === 'sent').length,
+        viewed: apps.filter((a: any) => a.status === 'viewed').length,
+        shortlisted: apps.filter((a: any) => a.status === 'shortlisted').length,
+        accepted: apps.filter((a: any) => a.status === 'accepted').length,
+        rejected: apps.filter((a: any) => a.status === 'rejected').length,
+      };
+      // Get certificates with course names
+      const certs = await database.select({
+        id: certificates.id,
+        certificateNumber: certificates.certificateNumber,
+        issuedAt: certificates.issuedAt,
+        courseId: certificates.courseId,
+      }).from(certificates).where(eq(certificates.userId, ctx.user.id)).orderBy(desc(certificates.issuedAt)).limit(5);
+      const courseIds = certs.map((c: any) => c.courseId).filter(Boolean);
+      const courseNameMap: Record<number, string> = {};
+      if (courseIds.length > 0) {
+        const courseRows = await database.select({ id: courses.id, titleAr: courses.titleAr }).from(courses).where(inArray(courses.id, courseIds));
+        for (const c of courseRows) courseNameMap[c.id] = c.titleAr;
+      }
+      const certsWithNames = certs.map((c: any) => ({ ...c, courseName: courseNameMap[c.courseId] || '\u0634\u0647\u0627\u062f\u0629' }));
+      // Get recent activity (last 10 items across types)
+      const recentSheets = await database.select({ id: pedagogicalSheets.id, subject: pedagogicalSheets.subject, lessonTitle: pedagogicalSheets.lessonTitle, createdAt: pedagogicalSheets.createdAt }).from(pedagogicalSheets).where(eq(pedagogicalSheets.createdBy, ctx.user.id)).orderBy(desc(pedagogicalSheets.createdAt)).limit(5);
+      const recentExams = await database.select({ id: teacherExams.id, subject: teacherExams.subject, title: teacherExams.title, createdAt: teacherExams.createdAt }).from(teacherExams).where(eq(teacherExams.createdBy, ctx.user.id)).orderBy(desc(teacherExams.createdAt)).limit(5);
+      const recentImages = await database.select({ id: generatedImages.id, prompt: generatedImages.prompt, createdAt: generatedImages.createdAt }).from(generatedImages).where(eq(generatedImages.userId, ctx.user.id)).orderBy(desc(generatedImages.createdAt)).limit(3);
+      // Merge and sort recent activity
+      const recentActivity = [
+        ...recentSheets.map((s: any) => ({ type: 'lesson_plan' as const, title: s.lessonTitle || s.subject, subject: s.subject, createdAt: s.createdAt, points: 10 })),
+        ...recentExams.map((e: any) => ({ type: 'exam' as const, title: e.title || e.subject, subject: e.subject, createdAt: e.createdAt, points: 15 })),
+        ...recentImages.map((i: any) => ({ type: 'image' as const, title: (i.prompt || '').substring(0, 50), subject: '', createdAt: i.createdAt, points: 5 })),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10);
+      // Calculate points
+      const points = (stats.totalLessonPlans || 0) * 10 + (stats.totalExams || 0) * 15 + (stats.totalEvaluations || 0) * 8 + (stats.totalCertificates || 0) * 50 + (stats.totalImages || 0) * 5 + (stats.totalDigitizedDocs || 0) * 12 + (stats.totalConversations || 0) * 3;
+      // Profile completeness
+      const [userRow] = await database.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+      const profileFields = [
+        !!(userRow?.firstNameAr && userRow?.lastNameAr),
+        !!userRow?.phone,
+        !!userRow?.schoolName,
+        !!portfolio?.isPublic,
+        !!(portfolio?.specializations && (portfolio.specializations as any[]).length > 0),
+        !!portfolio?.yearsOfExperience,
+      ];
+      const profileCompleteness = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100);
+      return {
+        stats,
+        points,
+        applications: appCounts,
+        certificates: certsWithNames,
+        recentActivity,
+        profileCompleteness,
+        portfolio: portfolio ? {
+          isPublic: portfolio.isPublic,
+          specializations: portfolio.specializations,
+          yearsOfExperience: portfolio.yearsOfExperience,
+          region: portfolio.region,
+          publicSlug: portfolio.publicSlug,
+        } : null,
+      };
+    }),
+
+    // School dashboard: live stats
+    schoolStats: protectedProcedure.query(async ({ ctx }) => {
+      const database = await getDb();
+      if (!database) return null;
+      const [school] = await database.select().from(partnerSchools).where(eq(partnerSchools.userId, ctx.user.id)).limit(1);
+      if (!school) return null;
+      const allJobs = await database.select().from(jobPostings).where(eq(jobPostings.schoolId, school.id)).orderBy(desc(jobPostings.createdAt));
+      const allApps = await database.select().from(jobApplications).where(eq(jobApplications.schoolId, school.id)).orderBy(desc(jobApplications.createdAt));
+      const teacherIds = Array.from(new Set(allApps.map((a: any) => a.teacherUserId)));
+      const teacherRows = teacherIds.length > 0 ? await database.select({ id: users.id, name: users.name, firstNameAr: users.firstNameAr, lastNameAr: users.lastNameAr }).from(users).where(inArray(users.id, teacherIds)) : [];
+      const enrichedApps = allApps.map((app: any) => {
+        const teacher = teacherRows.find((t: any) => t.id === app.teacherUserId);
+        const job = allJobs.find((j: any) => j.id === app.jobPostingId);
+        return {
+          ...app,
+          teacherName: teacher ? (teacher.firstNameAr && teacher.lastNameAr ? `${teacher.firstNameAr} ${teacher.lastNameAr}` : teacher.name) : '\u0645\u0639\u0644\u0645',
+          jobTitle: job?.title || '\u0648\u0638\u064a\u0641\u0629',
+        };
+      });
+      const appStats = {
+        totalJobs: allJobs.length,
+        activeJobs: allJobs.filter((j: any) => j.isActive).length,
+        totalApplications: allApps.length,
+        pendingApplications: allApps.filter((a: any) => a.status === 'sent' || a.status === 'viewed').length,
+        acceptedApplications: allApps.filter((a: any) => a.status === 'accepted').length,
+        shortlistedApplications: allApps.filter((a: any) => a.status === 'shortlisted').length,
+        rejectedApplications: allApps.filter((a: any) => a.status === 'rejected').length,
+        interviewedApplications: allApps.filter((a: any) => a.status === 'interviewed').length,
+      };
+      return {
+        school,
+        jobs: allJobs,
+        applications: enrichedApps,
+        recentApplications: enrichedApps.slice(0, 10),
+        stats: appStats,
+      };
+    }),
+
+    // Send role-based notification
+    sendRoleNotification: protectedProcedure
+      .input(z.object({
+        targetUserId: z.number(),
+        titleAr: z.string(),
+        messageAr: z.string(),
+        type: z.enum(["new_job", "application_received", "application_status", "school_verified", "role_changed", "job_match"]),
+        relatedId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.createNotification({
+          userId: input.targetUserId,
+          titleAr: input.titleAr,
+          messageAr: input.messageAr,
+          type: input.type,
+          relatedId: input.relatedId || null,
+        });
+        return { success: true };
       }),
   }),
 });

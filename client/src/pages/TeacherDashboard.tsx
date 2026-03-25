@@ -41,6 +41,7 @@ import {
   FileCheck,
   Loader2,
   ExternalLink,
+  Image,
   type LucideIcon,
 } from "lucide-react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
@@ -94,42 +95,33 @@ const QUICK_TOOLS: { href: string; icon: LucideIcon; label: string; color: strin
   { href: "/curriculum-map", icon: Calendar, label: "خريطة المنهج", color: "bg-indigo-500" },
 ];
 
+// Activity type icons and labels
+const ACTIVITY_META: Record<string, { icon: LucideIcon; label: string; color: string }> = {
+  lesson_plan: { icon: FileText, label: "جذاذة", color: "text-blue-500" },
+  exam: { icon: FileEdit, label: "اختبار", color: "text-purple-500" },
+  image: { icon: Image, label: "صورة", color: "text-pink-500" },
+};
+
 export default function TeacherDashboard() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Fetch teacher portfolio data
-  const { data: portfolio, isLoading: loadingPortfolio } = trpc.portfolio2.getMyPortfolio.useQuery(
+  // Fetch real dashboard data from the unified endpoint
+  const { data: dashData, isLoading: loadingDash } = trpc.dashboardApi.teacherStats.useQuery(
     undefined, 
-    { enabled: !!user, retry: false }
+    { enabled: !!user, retry: false, refetchOnWindowFocus: false }
   );
 
-  // Fetch job applications
+  // Fetch job applications for career tab
   const { data: applications, isLoading: loadingApps } = trpc.jobBoard.myApplications.useQuery(
     undefined, 
     { enabled: !!user, retry: false }
   );
 
-  // Fetch certificates
-  const { data: certificates, isLoading: loadingCerts } = trpc.certificates.listMyCertificates.useQuery(
-    undefined, 
-    { enabled: !!user, retry: false }
-  );
-
-  // Calculate points (based on portfolio stats)
-  const points = useMemo(() => {
-    if (!portfolio) return 0;
-    return (
-      (portfolio.totalLessonPlans || 0) * 10 +
-      (portfolio.totalExams || 0) * 15 +
-      (portfolio.totalEvaluations || 0) * 8 +
-      (portfolio.totalCertificates || 0) * 50 +
-      (portfolio.totalImages || 0) * 5 +
-      (portfolio.totalDigitizedDocs || 0) * 12 +
-      (portfolio.totalConversations || 0) * 3
-    );
-  }, [portfolio]);
+  // Real points from backend
+  const points = dashData?.points || 0;
+  const stats = dashData?.stats;
 
   const currentTier = getTier(points);
   const nextTier = getNextTier(points);
@@ -216,6 +208,19 @@ export default function TeacherDashboard() {
                 })}
               </div>
             </div>
+            {/* Profile completeness bar */}
+            {dashData && dashData.profileCompleteness < 100 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500">اكتمال الملف المهني</span>
+                  <span className="text-xs font-bold text-blue-600">{dashData.profileCompleteness}%</span>
+                </div>
+                <Progress value={dashData.profileCompleteness} className="h-1.5" />
+                <Link href="/my-portfolio">
+                  <span className="text-xs text-blue-500 hover:underline cursor-pointer mt-1 inline-block">أكمل ملفك لتحسين فرصك</span>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -242,75 +247,136 @@ export default function TeacherDashboard() {
 
           {/* Overview Tab */}
           <TabsContent value="overview">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <StatCard
-                icon={FileText}
-                label="الجذاذات"
-                value={portfolio?.totalLessonPlans || 0}
-                color="bg-blue-500"
-                points={10}
-              />
-              <StatCard
-                icon={FileEdit}
-                label="الاختبارات"
-                value={portfolio?.totalExams || 0}
-                color="bg-purple-500"
-                points={15}
-              />
-              <StatCard
-                icon={Award}
-                label="الشهادات"
-                value={portfolio?.totalCertificates || 0}
-                color="bg-amber-500"
-                points={50}
-              />
-              <StatCard
-                icon={CheckCircle}
-                label="التقييمات"
-                value={portfolio?.totalEvaluations || 0}
-                color="bg-emerald-500"
-                points={8}
-              />
-            </div>
-
-            {/* Quick Actions */}
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">وصول سريع للأدوات</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-              {QUICK_TOOLS.map((tool) => (
-                <Link key={tool.href} href={tool.href}>
-                  <Card className="cursor-pointer hover:shadow-md transition-all border-0 shadow-sm group">
-                    <CardContent className="py-4 flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl ${tool.color} text-white flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                        <tool.icon className="w-5 h-5" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-700">{tool.label}</span>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-
-            {/* Recent Activity Placeholder */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-gray-400" />
-                  النشاط الأخير
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-gray-500">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>استخدم الأدوات لتبدأ في جمع النقاط وتتبع نشاطك</p>
-                  <Link href="/teacher-tools">
-                    <Button variant="outline" className="mt-4 gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      استكشف الأدوات
-                    </Button>
-                  </Link>
+            {loadingDash ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                  <StatCard
+                    icon={FileText}
+                    label="الجذاذات"
+                    value={stats?.totalLessonPlans || 0}
+                    color="bg-blue-500"
+                    points={10}
+                  />
+                  <StatCard
+                    icon={FileEdit}
+                    label="الاختبارات"
+                    value={stats?.totalExams || 0}
+                    color="bg-purple-500"
+                    points={15}
+                  />
+                  <StatCard
+                    icon={Award}
+                    label="الشهادات"
+                    value={stats?.totalCertificates || 0}
+                    color="bg-amber-500"
+                    points={50}
+                  />
+                  <StatCard
+                    icon={CheckCircle}
+                    label="التقييمات"
+                    value={stats?.totalEvaluations || 0}
+                    color="bg-emerald-500"
+                    points={8}
+                  />
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Additional stats row */}
+                <div className="grid grid-cols-3 gap-4 mb-8">
+                  <StatCard
+                    icon={Palette}
+                    label="الصور التعليمية"
+                    value={stats?.totalImages || 0}
+                    color="bg-pink-500"
+                    points={5}
+                  />
+                  <StatCard
+                    icon={ScanLine}
+                    label="الوثائق المرقمنة"
+                    value={stats?.totalDigitizedDocs || 0}
+                    color="bg-teal-500"
+                    points={12}
+                  />
+                  <StatCard
+                    icon={Bot}
+                    label="المحادثات"
+                    value={stats?.totalConversations || 0}
+                    color="bg-indigo-500"
+                    points={3}
+                  />
+                </div>
+
+                {/* Quick Actions */}
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">وصول سريع للأدوات</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+                  {QUICK_TOOLS.map((tool) => (
+                    <Link key={tool.href} href={tool.href}>
+                      <Card className="cursor-pointer hover:shadow-md transition-all border-0 shadow-sm group">
+                        <CardContent className="py-4 flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-xl ${tool.color} text-white flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                            <tool.icon className="w-5 h-5" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">{tool.label}</span>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Recent Activity - REAL DATA */}
+                <Card className="border-0 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-gray-400" />
+                      النشاط الأخير
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {dashData?.recentActivity && dashData.recentActivity.length > 0 ? (
+                      <div className="space-y-3">
+                        {dashData.recentActivity.map((activity: any, idx: number) => {
+                          const meta = ACTIVITY_META[activity.type] || { icon: FileText, label: "نشاط", color: "text-gray-500" };
+                          const ActivityIcon = meta.icon;
+                          return (
+                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <ActivityIcon className={`w-5 h-5 ${meta.color}`} />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{activity.title || meta.label}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {meta.label} {activity.subject ? `• ${activity.subject}` : ""}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Badge variant="secondary" className="text-xs">+{activity.points} نقطة</Badge>
+                                <span className="text-xs text-gray-400">
+                                  {activity.createdAt ? new Date(activity.createdAt).toLocaleDateString("ar-TN") : ""}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                        <p>استخدم الأدوات لتبدأ في جمع النقاط وتتبع نشاطك</p>
+                        <Link href="/teacher-tools">
+                          <Button variant="outline" className="mt-4 gap-2">
+                            <Sparkles className="w-4 h-4" />
+                            استكشف الأدوات
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
 
           {/* Tools Tab */}
@@ -361,12 +427,15 @@ export default function TeacherDashboard() {
           {/* Career Tab */}
           <TabsContent value="career">
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Job Applications */}
+              {/* Job Applications - REAL DATA */}
               <Card className="border-0 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Briefcase className="w-5 h-5 text-blue-500" />
                     طلبات التوظيف
+                    {dashData?.applications && dashData.applications.total > 0 && (
+                      <Badge variant="secondary" className="text-xs">{dashData.applications.total}</Badge>
+                    )}
                   </CardTitle>
                   <CardDescription>تتبع طلباتك للوظائف في المدارس الشريكة</CardDescription>
                 </CardHeader>
@@ -380,20 +449,39 @@ export default function TeacherDashboard() {
                       {applications.slice(0, 5).map((app: any) => (
                         <div key={app.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div>
-                            <p className="font-medium text-sm">{app.jobTitle || "وظيفة"}</p>
-                            <p className="text-xs text-gray-500">{app.schoolName || ""}</p>
+                            <p className="font-medium text-sm">{app.job?.title || "وظيفة"}</p>
+                            <p className="text-xs text-gray-500">{app.school?.schoolName || ""}</p>
                           </div>
                           <Badge variant={
                             app.status === "accepted" ? "default" :
                             app.status === "rejected" ? "destructive" : "secondary"
                           }>
-                            {app.status === "pending" ? "قيد المراجعة" :
+                            {app.status === "sent" ? "مُرسل" :
+                             app.status === "viewed" ? "تمت المشاهدة" :
                              app.status === "accepted" ? "مقبول" :
                              app.status === "rejected" ? "مرفوض" :
-                             app.status === "shortlisted" ? "في القائمة القصيرة" : app.status}
+                             app.status === "shortlisted" ? "في القائمة القصيرة" :
+                             app.status === "interviewed" ? "تمت المقابلة" : app.status}
                           </Badge>
                         </div>
                       ))}
+                      {/* Application stats summary */}
+                      {dashData?.applications && (
+                        <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-gray-100">
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-blue-600">{dashData.applications.sent + dashData.applications.viewed}</p>
+                            <p className="text-xs text-gray-500">قيد المراجعة</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-amber-600">{dashData.applications.shortlisted}</p>
+                            <p className="text-xs text-gray-500">قائمة قصيرة</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-emerald-600">{dashData.applications.accepted}</p>
+                            <p className="text-xs text-gray-500">مقبول</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
@@ -410,12 +498,15 @@ export default function TeacherDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Profile Completeness */}
+              {/* Profile Completeness - REAL DATA */}
               <Card className="border-0 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Users className="w-5 h-5 text-emerald-500" />
                     الملف المهني
+                    {dashData && (
+                      <Badge variant="secondary" className="text-xs">{dashData.profileCompleteness}%</Badge>
+                    )}
                   </CardTitle>
                   <CardDescription>أكمل ملفك لتحسين فرصك</CardDescription>
                 </CardHeader>
@@ -424,9 +515,9 @@ export default function TeacherDashboard() {
                     <ProfileCheckItem label="الاسم الكامل" completed={!!(user.firstNameAr && user.lastNameAr)} />
                     <ProfileCheckItem label="رقم الهاتف" completed={!!user.phone} />
                     <ProfileCheckItem label="اسم المدرسة" completed={!!user.schoolName} />
-                    <ProfileCheckItem label="الملف العام (Portfolio)" completed={!!portfolio?.isPublic} />
-                    <ProfileCheckItem label="التخصصات" completed={!!portfolio?.specializations?.length} />
-                    <ProfileCheckItem label="سنوات الخبرة" completed={!!portfolio?.yearsOfExperience} />
+                    <ProfileCheckItem label="الملف العام (Portfolio)" completed={!!dashData?.portfolio?.isPublic} />
+                    <ProfileCheckItem label="التخصصات" completed={!!(dashData?.portfolio?.specializations && (dashData.portfolio.specializations as any[]).length > 0)} />
+                    <ProfileCheckItem label="سنوات الخبرة" completed={!!dashData?.portfolio?.yearsOfExperience} />
                   </div>
                   <Link href="/my-portfolio">
                     <Button className="w-full mt-6 gap-2" variant="outline">
@@ -459,28 +550,28 @@ export default function TeacherDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Certificates */}
+              {/* Certificates - REAL DATA */}
               <Card className="border-0 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Award className="w-5 h-5 text-amber-500" />
                     الشهادات
+                    {dashData?.certificates && dashData.certificates.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">{dashData.certificates.length}</Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {loadingCerts ? (
-                    <div className="flex justify-center py-6">
-                      <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                    </div>
-                  ) : certificates && certificates.length > 0 ? (
+                  {dashData?.certificates && dashData.certificates.length > 0 ? (
                     <div className="space-y-2">
-                      {certificates.slice(0, 3).map((cert: any) => (
+                      {dashData.certificates.map((cert: any) => (
                         <div key={cert.id} className="flex items-center gap-3 p-2 bg-amber-50 rounded-lg">
                           <Award className="w-5 h-5 text-amber-500" />
                           <div>
                             <p className="text-sm font-medium">{cert.courseName || "شهادة"}</p>
                             <p className="text-xs text-gray-500">
                               {cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString("ar-TN") : ""}
+                              {cert.certificateNumber ? ` • ${cert.certificateNumber}` : ""}
                             </p>
                           </div>
                         </div>
@@ -510,7 +601,7 @@ export default function TeacherDashboard() {
                 icon={FileText}
                 title="كاتب الجذاذات"
                 description="أنشئ 10 جذاذات بيداغوجية"
-                current={portfolio?.totalLessonPlans || 0}
+                current={stats?.totalLessonPlans || 0}
                 target={10}
                 points={100}
                 color="blue"
@@ -519,7 +610,7 @@ export default function TeacherDashboard() {
                 icon={FileEdit}
                 title="بنّاء الاختبارات"
                 description="أنشئ 5 اختبارات"
-                current={portfolio?.totalExams || 0}
+                current={stats?.totalExams || 0}
                 target={5}
                 points={75}
                 color="purple"
@@ -528,7 +619,7 @@ export default function TeacherDashboard() {
                 icon={Award}
                 title="جامع الشهادات"
                 description="احصل على 3 شهادات"
-                current={portfolio?.totalCertificates || 0}
+                current={stats?.totalCertificates || 0}
                 target={3}
                 points={150}
                 color="amber"
@@ -537,7 +628,7 @@ export default function TeacherDashboard() {
                 icon={Palette}
                 title="المبدع البصري"
                 description="أنشئ 20 صورة تعليمية"
-                current={portfolio?.totalImages || 0}
+                current={stats?.totalImages || 0}
                 target={20}
                 points={100}
                 color="pink"
@@ -546,7 +637,7 @@ export default function TeacherDashboard() {
                 icon={ScanLine}
                 title="حافظ التراث"
                 description="رقمن 10 وثائق قديمة"
-                current={portfolio?.totalDigitizedDocs || 0}
+                current={stats?.totalDigitizedDocs || 0}
                 target={10}
                 points={120}
                 color="emerald"
@@ -555,7 +646,7 @@ export default function TeacherDashboard() {
                 icon={Bot}
                 title="صديق الذكاء الاصطناعي"
                 description="أجرِ 50 محادثة مع المساعد"
-                current={portfolio?.totalConversations || 0}
+                current={stats?.totalConversations || 0}
                 target={50}
                 points={150}
                 color="indigo"

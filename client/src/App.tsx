@@ -6,6 +6,7 @@ import Redirect from "./components/Redirect";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import RoleGuard from "./components/RoleGuard";
 
 // Eagerly loaded pages (critical path - home & auth)
 import Home from "./pages/Home";
@@ -198,6 +199,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
+          <RoleGuard />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

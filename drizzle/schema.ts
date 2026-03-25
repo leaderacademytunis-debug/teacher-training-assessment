@@ -225,7 +225,7 @@ export const notifications = mysqlTable("notifications", {
   userId: int("userId").notNull(),
   titleAr: varchar("titleAr", { length: 255 }).notNull(),
   messageAr: text("messageAr").notNull(),
-  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review", "assignment_graded", "assignment_returned", "submission_comment", "system"]).notNull(),
+  type: mysqlEnum("type", ["enrollment_request", "enrollment_approved", "enrollment_rejected", "new_video", "exam_result", "marketplace_rating", "marketplace_download", "marketplace_review", "assignment_graded", "assignment_returned", "submission_comment", "system", "new_job", "application_received", "application_status", "school_verified", "role_changed", "job_match"]).notNull(),
   relatedId: int("relatedId"), // courseId, examId, etc.
   isRead: boolean("isRead").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
