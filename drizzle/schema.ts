@@ -177,10 +177,35 @@ export const certificates = mysqlTable("certificates", {
   certificateNumber: varchar("certificateNumber", { length: 50 }).notNull().unique(),
   issuedAt: timestamp("issuedAt").defaultNow().notNull(),
   pdfUrl: text("pdfUrl"),
+  correctedName: text("correctedName"), // Corrected participant name (overrides user name)
+  lastRegeneratedAt: timestamp("lastRegeneratedAt"), // When the certificate was last regenerated
 });
 
 export type Certificate = typeof certificates.$inferSelect;
 export type InsertCertificate = typeof certificates.$inferInsert;
+
+/**
+ * Name Edit History table - tracks all name corrections for audit trail
+ */
+export const nameEditHistory = mysqlTable("name_edit_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // The participant whose name was corrected
+  editedBy: int("editedBy").notNull(), // The admin who made the correction
+  previousFirstNameAr: varchar("previousFirstNameAr", { length: 100 }),
+  previousLastNameAr: varchar("previousLastNameAr", { length: 100 }),
+  previousFirstNameFr: varchar("previousFirstNameFr", { length: 100 }),
+  previousLastNameFr: varchar("previousLastNameFr", { length: 100 }),
+  newFirstNameAr: varchar("newFirstNameAr", { length: 100 }),
+  newLastNameAr: varchar("newLastNameAr", { length: 100 }),
+  newFirstNameFr: varchar("newFirstNameFr", { length: 100 }),
+  newLastNameFr: varchar("newLastNameFr", { length: 100 }),
+  reason: text("reason"), // Reason for the correction
+  certificatesRegenerated: int("certificatesRegenerated").default(0), // Number of certificates regenerated
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type NameEditHistory = typeof nameEditHistory.$inferSelect;
+export type InsertNameEditHistory = typeof nameEditHistory.$inferInsert;
 
 /**
  * Videos table - stores course videos

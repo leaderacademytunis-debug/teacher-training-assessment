@@ -3159,3 +3159,17 @@
 - [x] إضافة أنشطة جديدة للواجهة (Phonétique, Copie, Initiation à la production, Vocabulaire, Abécédaire, Chrono-syllabes)
 - [x] تحديث الاختبارات (55 اختبار لملف repartitionJournaliere.test.ts - نجحت جميعها)
 - [x] حفظ checkpoint
+
+## ميزة تصحيح اسم المشارك وإعادة إصدار الشهادة
+- [x] تحليل نظام الشهادات الحالي (schema, generation, routes)
+- [x] إضافة حقول تصحيح الاسم (correctedName, lastRegeneratedAt) في schema الشهادات
+- [x] إضافة جدول سجل التعديلات (name_edit_history) مع 14 حقل
+- [x] إنشاء endpoint خلفي لتعديل اسم المشارك (correctParticipantName)
+- [x] إنشاء endpoint للبحث عن المشاركين (searchUsersForCorrection)
+- [x] إنشاء endpoint لعرض بيانات المشارك مع شهاداته (getUserForNameCorrection)
+- [x] إنشاء endpoint لسجل التعديلات (getNameEditHistory)
+- [x] إعادة توليد الشهادة بالاسم المصحح مع الحفاظ على رقم الشهادة وتاريخ الإصدار
+- [x] بناء صفحة مستقلة لتصحيح الأسماء (/admin/name-correction)
+- [x] إضافة قسم تصحيح الأسماء في لوحة التحكم AdminDashboardV2
+- [x] كتابة 17 اختبار vitest (جميعها ناجحة)
+- [ ] حفظ checkpoint

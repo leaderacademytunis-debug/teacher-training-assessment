@@ -24,7 +24,7 @@ import {
   BarChart3, Bell, Menu, Sliders, TrendingUp, UserCheck, UserX,
   Zap, Image, Upload, Clock, ArrowUpRight, ArrowDownRight,
   MessageSquare, ToggleLeft, Save, Trash2, Plus, Edit, AlertTriangle,
-  PenTool, ScanLine, Video, Theater, Map, Calendar, Lightbulb, EyeOff
+  PenTool, ScanLine, Video, Theater, Map, Calendar, Lightbulb, EyeOff, UserCog
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -33,7 +33,7 @@ import {
 import RichTextEditor from "@/components/RichTextEditor";
 
 // ===== TYPES =====
-type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages";
+type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages" | "names";
 
 const TOOL_ICONS: Record<string, React.ReactNode> = {
   FileText: <FileText className="h-4 w-4" />,
@@ -99,6 +99,7 @@ export default function AdminDashboardV2() {
     { id: "subscriptions", label: "الاشتراكات", icon: <CreditCard className="h-5 w-5" /> },
     { id: "content", label: "المحتوى والرسائل", icon: <MessageSquare className="h-5 w-5" /> },
     { id: "pages", label: "إدارة الصفحات", icon: <FileText className="h-5 w-5" /> },
+    { id: "names", label: "تصحيح الأسماء", icon: <PenTool className="h-5 w-5" /> },
   ];
 
   return (
@@ -202,6 +203,7 @@ export default function AdminDashboardV2() {
           {activeSection === "subscriptions" && <SubscriptionSection />}
           {activeSection === "content" && <ContentManagementSection />}
           {activeSection === "pages" && <PageManagementSection />}
+          {activeSection === "names" && <NameCorrectionSection />}
         </div>
       </main>
     </div>
@@ -2347,5 +2349,328 @@ function PageManagementSection() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// ===== SECTION 6: NAME CORRECTION =====
+function NameCorrectionSection() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState("search");
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    setTimeout(() => {
+      if (value.trim().length >= 2) {
+        setDebouncedQuery(value.trim());
+      } else {
+        setDebouncedQuery("");
+      }
+    }, 400);
+  };
+
+  const searchResults = trpc.adminControl.searchUsersForCorrection.useQuery(
+    { query: debouncedQuery },
+    { enabled: debouncedQuery.length >= 2 }
+  );
+
+  const history = trpc.adminControl.getNameEditHistory.useQuery({ limit: 20 });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <PenTool className="h-6 w-6 text-orange-400" />
+            تصحيح أسماء المشاركين
+          </h2>
+          <p className="text-slate-400 mt-1">تعديل الأسماء وإعادة إصدار الشهادات</p>
+        </div>
+        <a href="/admin/name-correction" target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+            <ArrowUpRight className="h-4 w-4 ml-1" />
+            فتح في صفحة كاملة
+          </Button>
+        </a>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-slate-800 border border-slate-700">
+          <TabsTrigger value="search" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
+            <Search className="h-4 w-4 ml-1" />
+            البحث والتصحيح
+          </TabsTrigger>
+          <TabsTrigger value="history" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
+            <Clock className="h-4 w-4 ml-1" />
+            سجل التعديلات
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="search" className="mt-4">
+          {/* Search */}
+          <Card className="bg-slate-900 border-slate-800">
+            <CardContent className="pt-6">
+              <div className="relative mb-4">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Input
+                  placeholder="ابحث بالاسم أو البريد الإلكتروني..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pr-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                />
+              </div>
+
+              {searchResults.isLoading && debouncedQuery && (
+                <div className="flex items-center justify-center py-6">
+                  <RefreshCw className="h-5 w-5 animate-spin text-orange-400" />
+                  <span className="mr-2 text-slate-400">جاري البحث...</span>
+                </div>
+              )}
+
+              {searchResults.data && searchResults.data.length > 0 && (
+                <div className="space-y-2">
+                  {searchResults.data.map((u) => (
+                    <div
+                      key={u.id}
+                      onClick={() => setSelectedUserId(u.id)}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                        selectedUserId === u.id
+                          ? "border-orange-500 bg-orange-500/10"
+                          : "border-slate-700 hover:border-orange-500/50 bg-slate-800/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-medium text-white">
+                            {u.firstNameAr || ""} {u.lastNameAr || ""}
+                          </span>
+                          {(u.firstNameFr || u.lastNameFr) && (
+                            <span className="text-sm text-slate-400 mr-2" dir="ltr">
+                              ({u.firstNameFr || ""} {u.lastNameFr || ""})
+                            </span>
+                          )}
+                          <div className="text-xs text-slate-500 mt-0.5">{u.email}</div>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-slate-500" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {searchResults.data && searchResults.data.length === 0 && debouncedQuery && (
+                <div className="text-center py-6 text-slate-500">
+                  <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p>لم يتم العثور على نتائج</p>
+                </div>
+              )}
+
+              {!debouncedQuery && (
+                <div className="text-center py-8 text-slate-500">
+                  <UserCog className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p>اكتب اسم المشارك للبحث</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Inline correction form */}
+          {selectedUserId && (
+            <InlineNameCorrection
+              userId={selectedUserId}
+              onClose={() => setSelectedUserId(null)}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <Card className="bg-slate-900 border-slate-800">
+            <CardContent className="pt-6">
+              {history.isLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <RefreshCw className="h-5 w-5 animate-spin text-orange-400" />
+                </div>
+              ) : !history.data || history.data.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <Clock className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p>لا توجد تعديلات سابقة</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {history.data.map((h) => (
+                    <div key={h.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-white">{h.participantName}</span>
+                        <span className="text-xs text-slate-500">
+                          {new Date(h.createdAt).toLocaleDateString("ar-TN")}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="text-red-400 line-through">
+                          {h.previousFirstNameAr} {h.previousLastNameAr}
+                        </div>
+                        <div className="text-green-400 font-medium">
+                          {h.newFirstNameAr} {h.newLastNameAr}
+                        </div>
+                      </div>
+                      {h.certificatesRegenerated && h.certificatesRegenerated > 0 && (
+                        <Badge className="mt-2 bg-green-500/20 text-green-400 text-xs">
+                          {h.certificatesRegenerated} شهادة معاد إصدارها
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// Inline name correction form for AdminDashboardV2
+function InlineNameCorrection({ userId, onClose }: { userId: number; onClose: () => void }) {
+  const userDetails = trpc.adminControl.getUserForNameCorrection.useQuery({ userId });
+  const correctName = trpc.adminControl.correctParticipantName.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      userDetails.refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "حدث خطأ");
+    },
+  });
+
+  const [firstNameAr, setFirstNameAr] = useState("");
+  const [lastNameAr, setLastNameAr] = useState("");
+  const [firstNameFr, setFirstNameFr] = useState("");
+  const [lastNameFr, setLastNameFr] = useState("");
+  const [reason, setReason] = useState("");
+  const [regenerateCerts, setRegenerateCerts] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+
+  if (userDetails.data && !initialized) {
+    const u = userDetails.data.user;
+    setFirstNameAr(u.firstNameAr || "");
+    setLastNameAr(u.lastNameAr || "");
+    setFirstNameFr(u.firstNameFr || "");
+    setLastNameFr(u.lastNameFr || "");
+    setInitialized(true);
+  }
+
+  const hasChanges = useMemo(() => {
+    if (!userDetails.data) return false;
+    const u = userDetails.data.user;
+    return (
+      firstNameAr !== (u.firstNameAr || "") ||
+      lastNameAr !== (u.lastNameAr || "") ||
+      firstNameFr !== (u.firstNameFr || "") ||
+      lastNameFr !== (u.lastNameFr || "")
+    );
+  }, [firstNameAr, lastNameAr, firstNameFr, lastNameFr, userDetails.data]);
+
+  if (userDetails.isLoading) {
+    return (
+      <Card className="bg-slate-900 border-slate-800 mt-4">
+        <CardContent className="py-8 text-center">
+          <RefreshCw className="h-6 w-6 animate-spin text-orange-400 mx-auto" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!userDetails.data) return null;
+  const { user: participant, certificates: certs } = userDetails.data;
+
+  return (
+    <Card className="bg-slate-900 border-orange-500/30 mt-4">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg text-white flex items-center gap-2">
+            <PenTool className="h-5 w-5 text-orange-400" />
+            تصحيح: {participant.firstNameAr} {participant.lastNameAr}
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label className="text-slate-300 text-xs">الاسم الأول (عربي)</Label>
+            <Input value={firstNameAr} onChange={(e) => setFirstNameAr(e.target.value)}
+              className="bg-slate-800 border-slate-700 text-white mt-1" dir="rtl" />
+          </div>
+          <div>
+            <Label className="text-slate-300 text-xs">اللقب (عربي)</Label>
+            <Input value={lastNameAr} onChange={(e) => setLastNameAr(e.target.value)}
+              className="bg-slate-800 border-slate-700 text-white mt-1" dir="rtl" />
+          </div>
+          <div>
+            <Label className="text-slate-300 text-xs">Prénom (فرنسي)</Label>
+            <Input value={firstNameFr} onChange={(e) => setFirstNameFr(e.target.value)}
+              className="bg-slate-800 border-slate-700 text-white mt-1" dir="ltr" />
+          </div>
+          <div>
+            <Label className="text-slate-300 text-xs">Nom (فرنسي)</Label>
+            <Input value={lastNameFr} onChange={(e) => setLastNameFr(e.target.value)}
+              className="bg-slate-800 border-slate-700 text-white mt-1" dir="ltr" />
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-slate-300 text-xs">سبب التصحيح</Label>
+          <Input value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder="مثال: خطأ إملائي..."
+            className="bg-slate-800 border-slate-700 text-white mt-1 placeholder:text-slate-600" />
+        </div>
+
+        {certs.length > 0 && (
+          <div className="flex items-center gap-2 p-2 bg-amber-500/10 rounded border border-amber-500/20">
+            <input
+              type="checkbox"
+              checked={regenerateCerts}
+              onChange={(e) => setRegenerateCerts(e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-sm text-amber-300">
+              إعادة إصدار {certs.length} شهادة بالاسم الجديد
+            </span>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              correctName.mutate({
+                userId,
+                firstNameAr: firstNameAr || undefined,
+                lastNameAr: lastNameAr || undefined,
+                firstNameFr: firstNameFr || undefined,
+                lastNameFr: lastNameFr || undefined,
+                reason: reason || undefined,
+                regenerateCertificates: regenerateCerts,
+              });
+            }}
+            disabled={!hasChanges || correctName.isPending}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            {correctName.isPending ? (
+              <RefreshCw className="h-4 w-4 animate-spin ml-1" />
+            ) : (
+              <Check className="h-4 w-4 ml-1" />
+            )}
+            حفظ التصحيح
+          </Button>
+          <Button variant="outline" onClick={onClose} className="border-slate-700 text-slate-300">
+            إلغاء
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

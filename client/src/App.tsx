@@ -87,6 +87,7 @@ const ReferenceContentManager = lazy(() => import("@/pages/ReferenceContentManag
 const RoleSelection = lazy(() => import("@/pages/RoleSelection"));
 const TeacherDashboard = lazy(() => import("@/pages/TeacherDashboard"));
 const SchoolDashboard = lazy(() => import("@/pages/SchoolDashboard"));
+const NameCorrectionManager = lazy(() => import("@/pages/NameCorrectionManager"));
 
 function PageLoader() {
   return (
@@ -171,6 +172,7 @@ function Router() {
         <Route path="/select-role" component={RoleSelection} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/school-dashboard" component={SchoolDashboard} />
+        <Route path="/admin/name-correction" component={NameCorrectionManager} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path="/about" component={About} />
         <Route path="/prompt-lab" component={PromptLab} />
