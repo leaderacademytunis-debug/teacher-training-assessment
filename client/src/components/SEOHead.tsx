@@ -13,7 +13,7 @@ interface SEOHeadProps {
 
 const DEFAULT_TITLE = "Leader Academy - منصة التعليم الذكي والمساعد البيداغوجي في تونس";
 const DEFAULT_DESCRIPTION = "المنصة التونسية الأولى للذكاء الاصطناعي في التعليم. أعدّ جذاذاتك في دقائق، قيّم تلاميذك بذكاء، وطوّر مهاراتك المهنية.";
-const DEFAULT_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/apple-touch-icon_ecd511e1.png";
+const DEFAULT_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/apple-touch-icon_abd3e008.png";
 const SITE_URL = "https://leaderacademy.school";
 
 function setMetaTag(attr: string, attrValue: string, content: string) {

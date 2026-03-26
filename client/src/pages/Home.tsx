@@ -1633,7 +1633,7 @@ export default function Home() {
               <div className="flex items-center gap-3.5 mb-6">
                 <div className="relative">
                   <div className="absolute -inset-1 bg-gradient-to-br from-orange-400/20 to-blue-400/20 rounded-2xl blur-sm" />
-                  <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png" alt="Leader Academy" className="relative h-12 w-auto" />
+                  <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/logo_navbar_74c3be1f.png" alt="Leader Academy" className="relative h-12 w-auto" />
                 </div>
                 <div>
                   <p className="font-bold text-xl tracking-wide" style={{ fontFamily: "'Cairo', sans-serif" }}>Leader Academy</p>

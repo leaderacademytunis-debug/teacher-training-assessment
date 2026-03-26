@@ -3093,4 +3093,12 @@
 - [x] إضافة زر/نافذة تثبيت التطبيق (Install Prompt + دليل iOS)
 - [x] إضافة meta tags للتوافق مع iOS (Apple Touch Icon 180x180)
 - [x] اختبار والتحقق من PWA (25 اختبار - نجحت جميعها)
+- [x] حفظ checkpoint (version: 2a24b7c0)
+
+## تحديث الشعار الرسمي لـ Leader Academy
+- [x] استخراج الشعار من ملف PDF
+- [x] إنشاء أيقونات PWA بأحجام متعددة من الشعار الجديد (10 أحجام + favicon)
+- [x] تحديث الشعار في الـ navbar وجميع الصفحات (Navbar, Home, SmartInspector, SEOHead)
+- [x] تحديث الـ favicon (16x16, 32x32, ICO)
+- [x] تحديث manifest.json بالأيقونات الجديدة
 - [ ] حفظ checkpoint (جاري)

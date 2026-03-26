@@ -116,7 +116,7 @@ export default function UnifiedNavbar() {
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png"
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/logo_navbar_74c3be1f.png"
                 alt="Leader Academy"
                 className="h-11 w-auto"
               />
