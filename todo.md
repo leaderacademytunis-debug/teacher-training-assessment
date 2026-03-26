@@ -3194,4 +3194,15 @@
 
 ## إصلاح خطأ: No certificate content found for course: تأهيل مدرّسي الفرنسية
 - [x] إصلاح مطابقة اسم الدورة (مسافة زائدة في اسم الدورة بقاعدة البيانات) - إضافة trim() في getCertificateContent
+- [x] حفظ checkpoint
+
+## النظام البيئي المتصل - العصب المركزي والمكتبة التفاعلية
+- [x] تثبيت Zustand و pdfjs-dist
+- [x] إنشاء Global State (extracted_payload) باستخدام Zustand (extractionStore.ts)
+- [x] بناء عارض PDF بنظام Split-Screen (60% عارض / 40% مساحة عمل)
+- [x] برمجة طبقة Canvas Snipping Tool شفافة فوق العارض (مع تظليل ومقابض زوايا)
+- [x] تنفيذ OCR Logic عبر LLM Vision (textbookOCR router)
+- [x] عرض النص المستخرج في Textarea قابل للتعديل + تحديث extracted_payload
+- [x] إضافة Route /textbook-viewer
+- [x] كتابة 9 اختبارات vitest (جميعها ناجحة)
 - [ ] حفظ checkpoint

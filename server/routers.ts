@@ -10,6 +10,7 @@ import { progressEvaluatorRouter } from "./routers/progressEvaluator";
 import { studentDashboardRouter } from "./routers/studentDashboard";
 import { repartitionJournaliereRouter } from "./routers/repartitionJournaliere";
 import { referenceContentRouter } from "./routers/referenceContent";
+import { textbookOCRRouter } from "./routers/textbookOCR";
 import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -36,6 +37,7 @@ export const appRouter = router({
   studentDashboard: studentDashboardRouter,
   repartitionJournaliere: repartitionJournaliereRouter,
   referenceContent: referenceContentRouter,
+  textbookOCR: textbookOCRRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
