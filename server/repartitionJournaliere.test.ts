@@ -35,9 +35,27 @@ const ACTIVITIES_6EME: Record<string, ActivityConfig[]> = {
     { name: "Projet d'écriture", mandatorySteps: ["Exploration", "Exploitation de l'outil d'aide", "Intégration", "Évaluation"] },
   ],
   "5": [
-    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"] },
-    { name: "Lecture", duration: "45 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"] },
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], objectifPrefix: "Communiquer en situation pour :" },
+    { name: "Lecture", duration: "45 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
     { name: "Grammaire", duration: "35 mn", mandatorySteps: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"] },
+  ],
+  "6": [
+    { name: "Mise en train", mandatorySteps: ["Présentation", "Audition", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Communication orale", mandatorySteps: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Lecture fonctionnement", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices de fonctionnement", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Conjugaison", mandatorySteps: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"] },
+  ],
+  "7": [
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], objectifPrefix: "Communiquer en situation pour :" },
+    { name: "Lecture", duration: "45 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Orthographe", duration: "35 mn", mandatorySteps: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"] },
+  ],
+  "8": [
+    { name: "Mise en train", mandatorySteps: ["Présentation", "Audition", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Lecture fonctionnement", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices de fonctionnement", "Intégration", "Évaluation"] },
+    { name: "Écriture", mandatorySteps: ["Présentation", "Entraînement", "Écriture"] },
+    { name: "Auto dictée", mandatorySteps: ["Diction", "Reproduction de mémoire", "Correction collective et exploitation des erreurs", "Correction individuelle"] },
+    { name: "Projet d'écriture", mandatorySteps: ["Exploration", "Exploitation de l'outil d'aide", "Intégration", "Évaluation"] },
   ],
 };
 
@@ -72,6 +90,25 @@ const ACTIVITIES_3_5EME: Record<string, ActivityConfig[]> = {
     { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
     { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+  ],
+  "6": [
+    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+    { name: "Lecture compréhension", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+  ],
+  "7": [
+    { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+  ],
+  "8": [
+    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+    { name: "Lecture fonctionnement", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices du cahier d'activités"] },
+    { name: "Écriture", mandatorySteps: ["Présentation", "Entraînement", "Écriture"] },
+    { name: "Auto dictée", mandatorySteps: ["Diction", "Reproduction de mémoire", "Correction collective et exploitation des erreurs", "Correction individuelle"] },
+    { name: "Projet (Entraînement)", mandatorySteps: ["Exploration", "Exploitation du 1er outil d'aide", "Intégration", "Évaluation"] },
   ],
 };
 
@@ -145,8 +182,28 @@ describe("Répartition Journalière - Grade Configuration", () => {
       expect(j5[2].name).toBe("Grammaire");
     });
 
-    it("all activities should have mandatory steps", () => {
-      for (let j = 1; j <= 5; j++) {
+    it("J6 should have 4 activities: Mise en train, Communication orale, Lecture fonctionnement, Conjugaison", () => {
+      const activities = getActivitiesForGrade("6ème année", 6);
+      expect(activities).toHaveLength(4);
+      expect(activities[0].name).toBe("Mise en train");
+      expect(activities[3].name).toBe("Conjugaison");
+    });
+
+    it("J7 should have 3 activities: Communication orale, Lecture, Orthographe", () => {
+      const activities = getActivitiesForGrade("6ème année", 7);
+      expect(activities).toHaveLength(3);
+      expect(activities[2].name).toBe("Orthographe");
+    });
+
+    it("J8 should have 5 activities including Écriture and Auto dictée", () => {
+      const activities = getActivitiesForGrade("6ème année", 8);
+      expect(activities).toHaveLength(5);
+      expect(activities.map(a => a.name)).toContain("Écriture");
+      expect(activities.map(a => a.name)).toContain("Auto dictée");
+    });
+
+    it("all activities J1-J8 should have mandatory steps", () => {
+      for (let j = 1; j <= 8; j++) {
         const activities = getActivitiesForGrade("6ème année", j);
         for (const a of activities) {
           expect(a.mandatorySteps.length).toBeGreaterThan(0);
@@ -217,8 +274,29 @@ describe("Répartition Journalière - Grade Configuration", () => {
       expect(activities[3].name).toBe("P.E.L (Pratique Écrite de la Langue)");
     });
 
+    it("J6 should have 4 activities: Activité d'écoute, Lecture compréhension, Étude de graphies, P.E.L", () => {
+      const activities = getActivitiesForGrade("4ème année", 6);
+      expect(activities).toHaveLength(4);
+      expect(activities[0].name).toBe("Activité d'écoute");
+      expect(activities[1].name).toBe("Lecture compréhension");
+    });
+
+    it("J7 should have 4 activities: Mise en train, Communication orale, Étude de graphies, P.E.L", () => {
+      const activities = getActivitiesForGrade("4ème année", 7);
+      expect(activities).toHaveLength(4);
+      expect(activities[0].name).toBe("Mise en train");
+      expect(activities[1].name).toBe("Communication orale");
+    });
+
+    it("J8 should have 5 activities including Écriture, Auto dictée, Projet", () => {
+      const activities = getActivitiesForGrade("4ème année", 8);
+      expect(activities).toHaveLength(5);
+      expect(activities.map(a => a.name)).toContain("Écriture");
+      expect(activities.map(a => a.name)).toContain("Auto dictée");
+    });
+
     it("3ème-5ème activities should NOT have duration", () => {
-      for (let j = 1; j <= 5; j++) {
+      for (let j = 1; j <= 8; j++) {
         const activities = getActivitiesForGrade("4ème année", j);
         for (const a of activities) {
           expect(a.duration).toBeUndefined();
@@ -226,8 +304,8 @@ describe("Répartition Journalière - Grade Configuration", () => {
       }
     });
 
-    it("all activities should have mandatory steps", () => {
-      for (let j = 1; j <= 5; j++) {
+    it("all activities J1-J8 should have mandatory steps", () => {
+      for (let j = 1; j <= 8; j++) {
         const activities = getActivitiesForGrade("4ème année", j);
         for (const a of activities) {
           expect(a.mandatorySteps.length).toBeGreaterThan(0);

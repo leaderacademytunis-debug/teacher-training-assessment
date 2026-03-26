@@ -542,7 +542,7 @@ export default function RepartitionJournaliere() {
                   <Select value={String(journeeNumber)} onValueChange={(v) => setJourneeNumber(Number(v))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {[1,2,3,4,5].map(n => (
+                      {[1,2,3,4,5,6,7,8].map(n => (
                         <SelectItem key={n} value={String(n)}>
                           <div className="flex items-center gap-2">
                             <span>Journée {n}</span>
