@@ -70,6 +70,16 @@ const ACTIVITY_COLORS: Record<string, { border: string; text: string; bg: string
   "Projet d'écriture (production en groupe)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "👥" },
   "Projet d'écriture (production individuelle)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
   "Projet d'écriture (réécriture et finalisation)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
+  // 3ème année specific
+  "Poème/chant": { border: "border-yellow-200", text: "text-yellow-700", bg: "bg-yellow-50", icon: "🎵" },
+  "Phonétique": { border: "border-pink-200", text: "text-pink-700", bg: "bg-pink-50", icon: "🔊" },
+  "Lecture (intégration)": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
+  "Copie": { border: "border-amber-200", text: "text-amber-700", bg: "bg-amber-50", icon: "✍️" },
+  "Initiation à la production": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "✏️" },
+  "Vocabulaire": { border: "border-fuchsia-200", text: "text-fuchsia-700", bg: "bg-fuchsia-50", icon: "📚" },
+  "Abécédaire": { border: "border-indigo-200", text: "text-indigo-700", bg: "bg-indigo-50", icon: "🔤" },
+  "Lecture action": { border: "border-blue-200", text: "text-blue-700", bg: "bg-blue-50", icon: "🛠️" },
+  "Chrono-syllabes": { border: "border-red-200", text: "text-red-700", bg: "bg-red-50", icon: "⏱️" },
 };
 
 function getActivityStyle(name: string) {

@@ -292,6 +292,65 @@ const ACTIVITIES_5EME_PAIRS: Record<string, ActivityConfig[]> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+// 3ÈME ANNÉE — Source: Guide Méthodologique 3ème année (CNP 2022-2023)
+// Structure unique: Focus oral, phonétique, initiation lecture/écriture
+// Chaque séance = 2h (Rituel 5 min + activités)
+// J1,J3,J5: Poème/chant (jours impairs) | J2,J4,J6: Phonétique (jours pairs)
+// J7 et J8: Structures complètement différentes
+// ═══════════════════════════════════════════════════════════════════
+
+const ACTIVITIES_3EME: Record<string, ActivityConfig[]> = {
+  "1": [ // J1: Communication orale + Poème/chant + Lecture + Écriture
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Mise en situation", "Exploration", "Apprentissage systématique", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Poème/chant", duration: "10 mn", mandatorySteps: ["Audition", "Compréhension", "Mémorisation"] },
+    { name: "Lecture", duration: "40 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Écriture", duration: "25 mn", mandatorySteps: ["Présentation du modèle", "Entraînement", "Écriture sur cahier"] },
+  ],
+  "2": [ // J2: Communication orale + Phonétique + Lecture + Écriture
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Mise en situation", "Exploration", "Apprentissage systématique", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Phonétique", duration: "10 mn", mandatorySteps: ["Discrimination auditive", "Discrimination visuelle", "Fixation"] },
+    { name: "Lecture", duration: "40 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Écriture", duration: "25 mn", mandatorySteps: ["Présentation du modèle", "Entraînement", "Écriture sur cahier"] },
+  ],
+  "3": [ // J3: Communication orale + Poème/chant + Lecture (intégration) + Copie
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Mise en situation", "Exploration", "Apprentissage systématique", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Poème/chant", duration: "10 mn", mandatorySteps: ["Audition", "Compréhension", "Mémorisation"] },
+    { name: "Lecture (intégration)", duration: "40 mn", mandatorySteps: ["Rappel", "Relecture", "Exercices d'intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Copie", duration: "25 mn", mandatorySteps: ["Lecture du texte", "Copie", "Vérification"] },
+  ],
+  "4": [ // J4: Communication orale + Phonétique + Lecture + Écriture
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Mise en situation", "Exploration", "Apprentissage systématique", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Phonétique", duration: "10 mn", mandatorySteps: ["Discrimination auditive", "Discrimination visuelle", "Fixation"] },
+    { name: "Lecture", duration: "40 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Écriture", duration: "25 mn", mandatorySteps: ["Présentation du modèle", "Entraînement", "Écriture sur cahier"] },
+  ],
+  "5": [ // J5: Communication orale + Poème/chant + Lecture + Écriture
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Mise en situation", "Exploration", "Apprentissage systématique", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Poème/chant", duration: "10 mn", mandatorySteps: ["Audition", "Compréhension", "Mémorisation"] },
+    { name: "Lecture", duration: "40 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Écriture", duration: "25 mn", mandatorySteps: ["Présentation du modèle", "Entraînement", "Écriture sur cahier"] },
+  ],
+  "6": [ // J6: Communication orale + Phonétique + Lecture (intégration) + Initiation à la production
+    { name: "Communication orale", duration: "35 mn", mandatorySteps: ["Mise en situation", "Exploration", "Apprentissage systématique", "Intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Phonétique", duration: "10 mn", mandatorySteps: ["Discrimination auditive", "Discrimination visuelle", "Fixation"] },
+    { name: "Lecture (intégration)", duration: "40 mn", mandatorySteps: ["Rappel", "Relecture", "Exercices d'intégration", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Initiation à la production", duration: "25 mn", mandatorySteps: ["Exploration", "Production guidée", "Évaluation"] },
+  ],
+  "7": [ // J7: SPÉCIAL — Communication orale + Dictée + Vocabulaire + Abécédaire
+    { name: "Communication orale", duration: "30 mn", mandatorySteps: ["Mise en situation", "Exploration", "Apprentissage systématique", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Dictée", duration: "25 mn", mandatorySteps: ["Préparation", "Diction", "Correction collective", "Correction individuelle"] },
+    { name: "Vocabulaire", duration: "30 mn", mandatorySteps: ["Découverte", "Exploitation", "Fixation", "Évaluation"] },
+    { name: "Abécédaire", duration: "25 mn", mandatorySteps: ["Présentation", "Classement", "Illustration", "Évaluation"] },
+  ],
+  "8": [ // J8: SPÉCIAL — Poème/chant + Lecture documentaire + Lecture action + Chrono-syllabes
+    { name: "Poème/chant", duration: "10 mn", mandatorySteps: ["Audition", "Compréhension", "Mémorisation"] },
+    { name: "Lecture documentaire", duration: "40 mn", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"], objectifPrefix: "L'élève serait capable de" },
+    { name: "Lecture action", duration: "40 mn", mandatorySteps: ["Découverte", "Compréhension", "Exécution", "Évaluation"] },
+    { name: "Chrono-syllabes", duration: "20 mn", mandatorySteps: ["Présentation", "Lecture rapide", "Évaluation"] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // UNIFIED ACTIVITY RESOLVER
 // ═══════════════════════════════════════════════════════════════════
 
@@ -315,7 +374,12 @@ function getActivitiesForGrade(niveau: string, journee: number, moduleNum?: numb
     return ACTIVITIES_5EME_IMPAIRS[j] || ACTIVITIES_5EME_IMPAIRS["1"];
   }
 
-  // 3ème, 4ème: Phase 1 (M1-M4) vs Phase 2 (M5-M10)
+  if (niveau === "3ème année") {
+    // 3ème: Structure unique — pas de phases, focus oral/phonétique
+    return ACTIVITIES_3EME[j] || ACTIVITIES_3EME["1"];
+  }
+
+  // 4ème: Phase 1 (M1-M4) vs Phase 2 (M5-M10)
   if (mod >= 5) {
     return ACTIVITIES_4EME_PHASE2[j] || ACTIVITIES_4EME_PHASE2["1"];
   }

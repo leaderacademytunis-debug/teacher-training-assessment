@@ -273,6 +273,61 @@ const ACTIVITIES_5EME_PAIRS: Record<string, ActivityConfig[]> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
+// 3ÈME ANNÉE CONFIGS (based on Guide Méthodologique CNP)
+// ═══════════════════════════════════════════════════════════════════
+
+const ACTIVITIES_3EME: Record<string, ActivityConfig[]> = {
+  "1": [
+    { name: "Communication orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Poème/chant", mandatorySteps: ["Audition", "Compréhension", "Mémorisation", "Évaluation"] },
+    { name: "Lecture", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Écriture", mandatorySteps: ["Observation du modèle", "Entraînement", "Production", "Évaluation"] },
+  ],
+  "2": [
+    { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Phonétique", mandatorySteps: ["Discrimination auditive", "Discrimination visuelle", "Fixation", "Évaluation"] },
+    { name: "Lecture", mandatorySteps: ["Rappel", "Relecture", "Exploitation", "Évaluation"] },
+    { name: "Copie", mandatorySteps: ["Observation", "Reproduction", "Vérification", "Évaluation"] },
+  ],
+  "3": [
+    { name: "Communication orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Poème/chant", mandatorySteps: ["Audition", "Compréhension", "Mémorisation", "Évaluation"] },
+    { name: "Lecture", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Écriture", mandatorySteps: ["Observation du modèle", "Entraînement", "Production", "Évaluation"] },
+  ],
+  "4": [
+    { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Phonétique", mandatorySteps: ["Discrimination auditive", "Discrimination visuelle", "Fixation", "Évaluation"] },
+    { name: "Lecture (intégration)", mandatorySteps: ["Rappel", "Exercices d'intégration", "Correction", "Évaluation"] },
+    { name: "Initiation à la production", mandatorySteps: ["Exploration", "Entraînement", "Production", "Évaluation"] },
+  ],
+  "5": [
+    { name: "Communication orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Poème/chant", mandatorySteps: ["Audition", "Compréhension", "Mémorisation", "Évaluation"] },
+    { name: "Lecture", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Écriture", mandatorySteps: ["Observation du modèle", "Entraînement", "Production", "Évaluation"] },
+  ],
+  "6": [
+    { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Phonétique", mandatorySteps: ["Discrimination auditive", "Discrimination visuelle", "Fixation", "Évaluation"] },
+    { name: "Lecture", mandatorySteps: ["Rappel", "Relecture", "Exploitation", "Évaluation"] },
+    { name: "Copie", mandatorySteps: ["Observation", "Reproduction", "Vérification", "Évaluation"] },
+  ],
+  "7": [
+    { name: "Communication orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Dictée", mandatorySteps: ["Préparation", "Diction", "Correction collective", "Correction individuelle"] },
+    { name: "Vocabulaire", mandatorySteps: ["Découverte", "Exploitation", "Fixation", "Évaluation"] },
+    { name: "Abécédaire", mandatorySteps: ["Exploration", "Classement", "Production", "Évaluation"] },
+  ],
+  "8": [
+    { name: "Poème/chant", mandatorySteps: ["Audition", "Compréhension", "Mémorisation", "Récitation/Chant"] },
+    { name: "Lecture documentaire", mandatorySteps: ["Anticipation", "Approche globale", "Exploitation", "Évaluation"] },
+    { name: "Lecture action", mandatorySteps: ["Observation", "Exploration", "Réalisation", "Évaluation"] },
+    { name: "Chrono-syllabes", mandatorySteps: ["Présentation", "Lecture chronométrée", "Correction", "Évaluation"] },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════════
 // UNIFIED RESOLVER (mirrors the backend function)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -290,9 +345,13 @@ function getActivitiesForGrade(niveau: string, journee: number, moduleNum?: numb
     return ACTIVITIES_5EME_IMPAIRS[j] || ACTIVITIES_5EME_IMPAIRS["1"];
   }
 
-  // 3ème, 4ème
-  if (mod >= 5) return ACTIVITIES_4EME_PHASE2[j] || ACTIVITIES_4EME_PHASE2["1"];
-  return ACTIVITIES_4EME_PHASE1[j] || ACTIVITIES_4EME_PHASE1["1"];
+  if (niveau === "4ème année") {
+    if (mod >= 5) return ACTIVITIES_4EME_PHASE2[j] || ACTIVITIES_4EME_PHASE2["1"];
+    return ACTIVITIES_4EME_PHASE1[j] || ACTIVITIES_4EME_PHASE1["1"];
+  }
+
+  // 3ème année
+  return ACTIVITIES_3EME[j] || ACTIVITIES_3EME["1"];
 }
 
 function getTableStructure(niveau: string): "6eme" | "3_5eme" {
@@ -556,7 +615,87 @@ describe("5ème année - Modules Pairs (2,4,6,8)", () => {
   });
 });
 
+describe("3ème année", () => {
+  it("J1 should have Communication orale, Poème/chant, Lecture, Écriture", () => {
+    const a = getActivitiesForGrade("3ème année", 1, 1);
+    expect(a).toHaveLength(4);
+    expect(a[0].name).toBe("Communication orale");
+    expect(a[1].name).toBe("Poème/chant");
+    expect(a[2].name).toBe("Lecture");
+    expect(a[3].name).toBe("Écriture");
+  });
+
+  it("J2 should have Communication orale, Phonétique, Lecture, Copie", () => {
+    const a = getActivitiesForGrade("3ème année", 2, 1);
+    expect(a).toHaveLength(4);
+    expect(a[0].name).toBe("Communication orale");
+    expect(a[1].name).toBe("Phonétique");
+    expect(a[2].name).toBe("Lecture");
+    expect(a[3].name).toBe("Copie");
+  });
+
+  it("J4 should have Lecture (intégration) and Initiation à la production", () => {
+    const a = getActivitiesForGrade("3ème année", 4, 1);
+    expect(a).toHaveLength(4);
+    expect(a[2].name).toBe("Lecture (intégration)");
+    expect(a[3].name).toBe("Initiation à la production");
+  });
+
+  it("J7 should have Dictée, Vocabulaire, Abécédaire (special day)", () => {
+    const a = getActivitiesForGrade("3ème année", 7, 1);
+    expect(a).toHaveLength(4);
+    expect(a[1].name).toBe("Dictée");
+    expect(a[2].name).toBe("Vocabulaire");
+    expect(a[3].name).toBe("Abécédaire");
+  });
+
+  it("J8 should have Poème/chant, Lecture documentaire, Lecture action, Chrono-syllabes", () => {
+    const a = getActivitiesForGrade("3ème année", 8, 1);
+    expect(a).toHaveLength(4);
+    expect(a[0].name).toBe("Poème/chant");
+    expect(a[1].name).toBe("Lecture documentaire");
+    expect(a[2].name).toBe("Lecture action");
+    expect(a[3].name).toBe("Chrono-syllabes");
+  });
+
+  it("odd days (J1,J3,J5) should have Poème/chant as 2nd activity", () => {
+    for (const j of [1, 3, 5]) {
+      const a = getActivitiesForGrade("3ème année", j, 1);
+      expect(a[1].name).toBe("Poème/chant");
+    }
+  });
+
+  it("even days (J2,J4,J6) should have Phonétique as 2nd activity", () => {
+    for (const j of [2, 4, 6]) {
+      const a = getActivitiesForGrade("3ème année", j, 1);
+      expect(a[1].name).toBe("Phonétique");
+    }
+  });
+
+  it("all days should start with Communication orale except J8", () => {
+    for (const j of [1, 2, 3, 4, 5, 6, 7]) {
+      const a = getActivitiesForGrade("3ème année", j, 1);
+      expect(a[0].name).toBe("Communication orale");
+    }
+    const j8 = getActivitiesForGrade("3ème année", 8, 1);
+    expect(j8[0].name).toBe("Poème/chant");
+  });
+
+  it("3ème has no phase distinction - module number doesn't affect activities", () => {
+    const m1 = getActivitiesForGrade("3ème année", 1, 1);
+    const m5 = getActivitiesForGrade("3ème année", 1, 5);
+    expect(m1.map(a => a.name)).toEqual(m5.map(a => a.name));
+  });
+});
+
 describe("Cross-grade validation", () => {
+  it("3ème has completely different structure from 4ème", () => {
+    const g3j1 = getActivitiesForGrade("3ème année", 1, 1);
+    const g4j1 = getActivitiesForGrade("4ème année", 1, 1);
+    expect(g3j1[0].name).toBe("Communication orale");
+    expect(g4j1[0].name).toContain("Mise en train");
+  });
+
   it("5ème has completely different structure from 4ème", () => {
     const g5j1 = getActivitiesForGrade("5ème année", 1, 1);
     const g4j1 = getActivitiesForGrade("4ème année", 1, 1);
@@ -578,8 +717,8 @@ describe("Cross-grade validation", () => {
     expect(g6[0].name).not.toBe(g4[0].name);
   });
 
-  it("all grades should have activities for all 8 journées", () => {
-    for (const niveau of ["4ème année", "5ème année", "6ème année"]) {
+  it("all 4 grades should have activities for all 8 journées", () => {
+    for (const niveau of ["3ème année", "4ème année", "5ème année", "6ème année"]) {
       for (let j = 1; j <= 8; j++) {
         const a = getActivitiesForGrade(niveau, j, 1);
         expect(a.length).toBeGreaterThan(0);
@@ -594,6 +733,12 @@ describe("Cross-grade validation", () => {
     const g6 = getActivitiesForGrade("6ème année", 99);
     const g6j1 = getActivitiesForGrade("6ème année", 1);
     expect(g6.map(a => a.name)).toEqual(g6j1.map(a => a.name));
+  });
+
+  it("3ème invalid journee should fallback to J1", () => {
+    const g3 = getActivitiesForGrade("3ème année", 99);
+    const g3j1 = getActivitiesForGrade("3ème année", 1);
+    expect(g3.map(a => a.name)).toEqual(g3j1.map(a => a.name));
   });
 });
 

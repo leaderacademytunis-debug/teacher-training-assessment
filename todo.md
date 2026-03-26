@@ -3151,3 +3151,11 @@
 - [x] إضافة أنشطة جديدة للواجهة (Grammaire, Conjugaison, Lecture suivie, Lecture-action, etc.)
 - [x] تحديث الاختبارات (106 اختبار - نجحت جميعها)
 - [x] حفظ checkpoint
+
+## تحليل الدليل المرجعي الرسمي للسنة الثالثة (guide_maitre_3ieme)
+- [x] تحليل PDF واستخراج الهيكلة الدقيقة لكل يوم J1-J8 (8 أيام بأنشطة مختلفة)
+- [x] إنشاء تكوين منفصل ACTIVITIES_3EME (Communication orale, Poème/chant, Phonétique, Copie, etc.)
+- [x] تحديث getActivitiesForGrade لدعم 4 تكوينات (3ème, 4ème, 5ème, 6ème)
+- [x] إضافة أنشطة جديدة للواجهة (Phonétique, Copie, Initiation à la production, Vocabulaire, Abécédaire, Chrono-syllabes)
+- [x] تحديث الاختبارات (55 اختبار لملف repartitionJournaliere.test.ts - نجحت جميعها)
+- [x] حفظ checkpoint
