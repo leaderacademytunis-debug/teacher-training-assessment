@@ -1,11 +1,23 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { referenceContent } from "../../drizzle/schema";
-import { eq, and, desc, count, asc } from "drizzle-orm";
+import { eq, and, count, asc } from "drizzle-orm";
 
-// ===== REFERENCE CONTENT ROUTER =====
+// ===== Activity schema for validation =====
+const activitySchema = z.object({
+  activityName: z.string().min(1),
+  objet: z.string().min(1),
+  objectifSpecifique: z.string().optional(),
+  objectif: z.string().min(1),
+  etapes: z.array(z.string()).min(1),
+  remarques: z.string().optional(),
+  duration: z.string().optional(),
+});
+
+// ===== REFERENCE CONTENT ROUTER (Smart Autofill System) =====
 // Manages official Tunisian curriculum content for Répartition Journalière
+// Uses flexible JSON activities array to support all grade levels (3ème-6ème)
 export const referenceContentRouter = router({
 
   // ===== LIST ALL REFERENCE CONTENT =====
@@ -30,7 +42,7 @@ export const referenceContentRouter = router({
 
       const items = await database.select().from(referenceContent)
         .where(whereClause)
-        .orderBy(asc(referenceContent.uniteNumber), asc(referenceContent.moduleNumber), asc(referenceContent.journeeNumber))
+        .orderBy(asc(referenceContent.niveau), asc(referenceContent.uniteNumber), asc(referenceContent.moduleNumber), asc(referenceContent.journeeNumber))
         .limit(limit).offset(offset);
 
       const [{ total }] = await database.select({ total: count() }).from(referenceContent)
@@ -49,43 +61,63 @@ export const referenceContentRouter = router({
       return item || null;
     }),
 
-  // ===== GET BY UNIT/MODULE/JOURNÉE =====
-  getByKey: protectedProcedure
+  // ===== SMART AUTOFILL: GET BY NIVEAU/UNITÉ/MODULE/JOURNÉE =====
+  // This is the main endpoint for the Smart Autofill System
+  getByKey: publicProcedure
     .input(z.object({
+      niveau: z.string(),
       uniteNumber: z.number().min(1).max(8),
       moduleNumber: z.number().min(1).max(8),
-      journeeNumber: z.number().min(1).max(8),
-      niveau: z.string().default("6ème année"),
+      journeeNumber: z.number().min(1).max(5),
     }))
     .query(async ({ input }) => {
       const database = (await getDb())!;
       const [item] = await database.select().from(referenceContent)
         .where(and(
+          eq(referenceContent.niveau, input.niveau),
           eq(referenceContent.uniteNumber, input.uniteNumber),
           eq(referenceContent.moduleNumber, input.moduleNumber),
           eq(referenceContent.journeeNumber, input.journeeNumber),
-          eq(referenceContent.niveau, input.niveau),
         )).limit(1);
       return item || null;
+    }),
+
+  // ===== CHECK AVAILABILITY: Does reference data exist for this combination? =====
+  checkAvailability: publicProcedure
+    .input(z.object({
+      niveau: z.string(),
+      uniteNumber: z.number().min(1).max(8),
+      moduleNumber: z.number().min(1).max(8),
+    }))
+    .query(async ({ input }) => {
+      const database = (await getDb())!;
+      const items = await database.select({
+        journeeNumber: referenceContent.journeeNumber,
+      }).from(referenceContent)
+        .where(and(
+          eq(referenceContent.niveau, input.niveau),
+          eq(referenceContent.uniteNumber, input.uniteNumber),
+          eq(referenceContent.moduleNumber, input.moduleNumber),
+        ))
+        .orderBy(asc(referenceContent.journeeNumber));
+
+      const availableJournees = items.map(i => i.journeeNumber);
+      return {
+        hasData: availableJournees.length > 0,
+        availableJournees,
+        totalJournees: availableJournees.length,
+      };
     }),
 
   // ===== CREATE REFERENCE CONTENT =====
   create: protectedProcedure
     .input(z.object({
+      niveau: z.string(),
       uniteNumber: z.number().min(1).max(8),
       moduleNumber: z.number().min(1).max(8),
-      journeeNumber: z.number().min(1).max(8),
-      niveau: z.string().default("6ème année"),
-      commOraleObjet: z.string().min(1),
-      commOraleObjectif: z.string().min(1),
-      commOraleRemarques: z.string().optional(),
-      lectureObjet: z.string().min(1),
-      lectureObjectif: z.string().min(1),
-      lectureRemarques: z.string().optional(),
-      grammaireType: z.enum(["Grammaire", "Conjugaison", "Orthographe"]),
-      grammaireObjet: z.string().min(1),
-      grammaireObjectif: z.string().min(1),
-      grammaireRemarques: z.string().optional(),
+      journeeNumber: z.number().min(1).max(5),
+      sousTheme: z.string().optional(),
+      activities: z.array(activitySchema).min(1),
       isOfficial: z.boolean().default(true),
       source: z.string().optional(),
       notes: z.string().optional(),
@@ -93,25 +125,29 @@ export const referenceContentRouter = router({
     .mutation(async ({ ctx, input }) => {
       const database = (await getDb())!;
 
-      // Check if entry already exists for this combination
+      // Check if entry already exists
       const [existing] = await database.select().from(referenceContent)
         .where(and(
+          eq(referenceContent.niveau, input.niveau),
           eq(referenceContent.uniteNumber, input.uniteNumber),
           eq(referenceContent.moduleNumber, input.moduleNumber),
           eq(referenceContent.journeeNumber, input.journeeNumber),
-          eq(referenceContent.niveau, input.niveau),
         )).limit(1);
 
       if (existing) {
-        throw new Error(`Un contenu de référence existe déjà pour U${input.uniteNumber}-M${input.moduleNumber}-J${input.journeeNumber} (${input.niveau}). Utilisez la modification.`);
+        throw new Error(`Un contenu de référence existe déjà pour ${input.niveau} U${input.uniteNumber}-M${input.moduleNumber}-J${input.journeeNumber}. Utilisez la modification.`);
       }
 
       const [inserted] = await database.insert(referenceContent).values({
-        ...input,
-        commOraleRemarques: input.commOraleRemarques || "",
-        lectureRemarques: input.lectureRemarques || "",
-        grammaireRemarques: input.grammaireRemarques || "",
+        niveau: input.niveau,
+        uniteNumber: input.uniteNumber,
+        moduleNumber: input.moduleNumber,
+        journeeNumber: input.journeeNumber,
+        sousTheme: input.sousTheme || null,
+        activities: input.activities,
+        isOfficial: input.isOfficial,
         source: input.source || "Programme officiel tunisien",
+        notes: input.notes || null,
         addedBy: ctx.user.id,
       });
 
@@ -122,16 +158,8 @@ export const referenceContentRouter = router({
   update: protectedProcedure
     .input(z.object({
       id: z.number(),
-      commOraleObjet: z.string().min(1).optional(),
-      commOraleObjectif: z.string().min(1).optional(),
-      commOraleRemarques: z.string().optional(),
-      lectureObjet: z.string().min(1).optional(),
-      lectureObjectif: z.string().min(1).optional(),
-      lectureRemarques: z.string().optional(),
-      grammaireType: z.enum(["Grammaire", "Conjugaison", "Orthographe"]).optional(),
-      grammaireObjet: z.string().min(1).optional(),
-      grammaireObjectif: z.string().min(1).optional(),
-      grammaireRemarques: z.string().optional(),
+      sousTheme: z.string().optional(),
+      activities: z.array(activitySchema).min(1).optional(),
       isOfficial: z.boolean().optional(),
       source: z.string().optional(),
       notes: z.string().optional(),
@@ -140,7 +168,6 @@ export const referenceContentRouter = router({
       const database = (await getDb())!;
       const { id, ...updates } = input;
 
-      // Remove undefined fields
       const cleanUpdates: Record<string, any> = {};
       for (const [key, value] of Object.entries(updates)) {
         if (value !== undefined) cleanUpdates[key] = value;
@@ -167,7 +194,32 @@ export const referenceContentRouter = router({
       return { success: true };
     }),
 
-  // ===== SEED INITIAL DATA =====
+  // ===== GET STATISTICS =====
+  getStats: protectedProcedure
+    .query(async () => {
+      const database = (await getDb())!;
+      const [{ total }] = await database.select({ total: count() }).from(referenceContent);
+
+      const allItems = await database.select({
+        niveau: referenceContent.niveau,
+        unite: referenceContent.uniteNumber,
+        module: referenceContent.moduleNumber,
+      }).from(referenceContent);
+
+      const niveaux = new Set(allItems.map(i => i.niveau));
+      const unites = new Set(allItems.map(i => `${i.niveau}-U${i.unite}`));
+      const modules = new Set(allItems.map(i => `${i.niveau}-U${i.unite}-M${i.module}`));
+
+      return {
+        totalEntries: total,
+        totalNiveaux: niveaux.size,
+        totalUnites: unites.size,
+        totalModules: modules.size,
+        niveauxList: Array.from(niveaux),
+      };
+    }),
+
+  // ===== SEED OFFICIAL DATA =====
   seedData: protectedProcedure
     .mutation(async ({ ctx }) => {
       const database = (await getDb())!;
@@ -178,272 +230,134 @@ export const referenceContentRouter = router({
         return { message: "Les données existent déjà.", seeded: 0 };
       }
 
-      // ===== OFFICIAL TUNISIAN CURRICULUM DATA - 6ème année =====
-      const seedEntries = [
-        // ===== UNITÉ 1 =====
-        // Module 1
+      // ===== 6ème année - U1 M1 J1-J5 =====
+      const SIXEME_U1M1 = [
         {
-          uniteNumber: 1, moduleNumber: 1, journeeNumber: 1, niveau: "6ème année",
-          commOraleObjet: "Présentation du module et du projet d'écriture",
-          commOraleObjectif: "Communiquer en situation pour : Informer/s'informer, Décrire/Raconter un événement, Justifier un choix.",
-          lectureObjet: "Apprentie comédienne",
-          lectureObjectif: "L'élève serait capable de lire de manière expressive et intelligible un passage choisi.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "Les déterminants / les noms / les pronoms personnels",
-          grammaireObjectif: "Reconnaître et utiliser les déterminants, les noms et les pronoms personnels.",
+          niveau: "6ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 1,
+          activities: [
+            { activityName: "Communication orale", duration: "35 mn", objet: "Présenter / Se présenter", objectif: "Communiquer en situation pour : se présenter et présenter quelqu'un", etapes: ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+            { activityName: "Lecture", duration: "45 mn", objet: "Texte : \"Le jour de la rentrée\"", objectif: "L'élève serait capable de lire le texte et de répondre à des questions de compréhension", etapes: ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"], remarques: "" },
+            { activityName: "Grammaire", duration: "35 mn", objet: "La phrase – Les types de phrases", objectif: "L'élève serait capable de reconnaître les types de phrases et de les transformer", etapes: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+          ]
         },
         {
-          uniteNumber: 1, moduleNumber: 1, journeeNumber: 2, niveau: "6ème année",
-          commOraleObjet: "Raconter un événement vécu ou imaginé",
-          commOraleObjectif: "Communiquer en situation pour : Raconter un événement en respectant l'ordre chronologique.",
-          lectureObjet: "Apprentie comédienne (suite)",
-          lectureObjectif: "L'élève serait capable de dégager les idées essentielles du texte et de répondre à des questions de compréhension.",
-          grammaireType: "Conjugaison" as const,
-          grammaireObjet: "Le présent de l'indicatif (verbes du 1er et 2ème groupe)",
-          grammaireObjectif: "Conjuguer correctement les verbes du 1er et 2ème groupe au présent de l'indicatif.",
+          niveau: "6ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 2,
+          activities: [
+            { activityName: "Mise en train", objet: "Poème : \"Mon cartable\"", objectif: "L'élève serait capable de dire le poème de manière expressive", etapes: ["Présentation", "Audition", "Évaluation"], remarques: "" },
+            { activityName: "Communication orale", objet: "Présenter / Se présenter", objectif: "Communiquer en situation pour : se présenter et présenter quelqu'un", etapes: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+            { activityName: "Lecture fonctionnement", objet: "Texte : \"Le jour de la rentrée\"", objectif: "L'élève serait capable de repérer les personnages et de comprendre les actions", etapes: ["Rappel", "Relecture", "Exploitation des exercices de fonctionnement", "Intégration", "Évaluation"], remarques: "" },
+            { activityName: "Conjugaison", objet: "Le verbe \"être\" au présent", objectif: "L'élève serait capable de conjuguer le verbe être au présent", etapes: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+          ]
         },
         {
-          uniteNumber: 1, moduleNumber: 1, journeeNumber: 3, niveau: "6ème année",
-          commOraleObjet: "Décrire un lieu / un personnage",
-          commOraleObjectif: "Communiquer en situation pour : Décrire avec précision un lieu ou un personnage en utilisant un vocabulaire approprié.",
-          lectureObjet: "Apprentie comédienne (fin)",
-          lectureObjectif: "L'élève serait capable de lire silencieusement un texte et d'en dégager le sens global.",
-          grammaireType: "Orthographe" as const,
-          grammaireObjet: "Les accords dans le groupe nominal",
-          grammaireObjectif: "Appliquer correctement les règles d'accord en genre et en nombre dans le groupe nominal.",
+          niveau: "6ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 3,
+          activities: [
+            { activityName: "Communication orale", duration: "35 mn", objet: "Présenter / Se présenter (suite)", objectif: "Communiquer en situation pour : décrire et informer", etapes: ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+            { activityName: "Lecture", duration: "45 mn", objet: "Texte : \"Le jour de la rentrée\" (suite)", objectif: "L'élève serait capable de lire le texte de manière fluide et de répondre aux questions", etapes: ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"], remarques: "" },
+            { activityName: "Orthographe", duration: "35 mn", objet: "Les accents", objectif: "L'élève serait capable d'utiliser correctement les accents dans les mots étudiés", etapes: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+          ]
         },
         {
-          uniteNumber: 1, moduleNumber: 1, journeeNumber: 4, niveau: "6ème année",
-          commOraleObjet: "Justifier un choix / exprimer son avis",
-          commOraleObjectif: "Communiquer en situation pour : Exprimer et justifier un point de vue en utilisant des connecteurs logiques.",
-          lectureObjet: "Lecture documentaire : Le théâtre",
-          lectureObjectif: "L'élève serait capable de lire un texte documentaire et d'en extraire les informations essentielles.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "Les types de phrases (déclarative, interrogative, exclamative, impérative)",
-          grammaireObjectif: "Identifier et produire les différents types de phrases.",
+          niveau: "6ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 4,
+          activities: [
+            { activityName: "Mise en train", objet: "Poème : \"Mon cartable\"", objectif: "L'élève serait capable de réciter le poème de mémoire", etapes: ["Présentation", "Audition", "Évaluation"], remarques: "" },
+            { activityName: "Lecture fonctionnement", objet: "Texte : \"Le jour de la rentrée\"", objectif: "L'élève serait capable d'exploiter les exercices de fonctionnement du cahier d'activités", etapes: ["Rappel", "Relecture", "Exploitation des exercices de fonctionnement", "Intégration", "Évaluation"], remarques: "" },
+            { activityName: "Écriture", objet: "La lettre majuscule cursive", objectif: "L'élève serait capable d'écrire correctement en respectant les normes", etapes: ["Présentation", "Entraînement", "Écriture"], remarques: "" },
+            { activityName: "Auto dictée", objet: "Paragraphe à mémoriser", objectif: "L'élève serait capable de reproduire de mémoire le paragraphe étudié", etapes: ["Diction", "Reproduction de mémoire", "Correction collective et exploitation des erreurs", "Correction individuelle"], remarques: "" },
+            { activityName: "Projet d'écriture", objet: "Rédiger une invitation", objectif: "L'élève serait capable de produire un texte court en respectant la structure étudiée", etapes: ["Exploration", "Exploitation de l'outil d'aide", "Intégration", "Évaluation"], remarques: "" },
+          ]
         },
         {
-          uniteNumber: 1, moduleNumber: 1, journeeNumber: 5, niveau: "6ème année",
-          commOraleObjet: "Évaluation et remédiation - Communication orale",
-          commOraleObjectif: "Évaluer les acquis des élèves en communication orale et remédier aux difficultés identifiées.",
-          lectureObjet: "Évaluation de lecture - Texte de synthèse",
-          lectureObjectif: "L'élève serait capable de lire un texte nouveau et de répondre à des questions de compréhension variées.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "Évaluation - Grammaire / Conjugaison / Orthographe",
-          grammaireObjectif: "Évaluer les acquis des élèves en grammaire, conjugaison et orthographe.",
-        },
-
-        // Module 2
-        {
-          uniteNumber: 1, moduleNumber: 2, journeeNumber: 1, niveau: "6ème année",
-          commOraleObjet: "Présentation du module 2 et du projet d'écriture",
-          commOraleObjectif: "Communiquer en situation pour : Informer/s'informer sur un sujet lié à la vie quotidienne.",
-          lectureObjet: "Le petit prince (extrait)",
-          lectureObjectif: "L'élève serait capable de lire un texte narratif et d'identifier les personnages et les événements principaux.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "Les adjectifs qualificatifs (épithète et attribut)",
-          grammaireObjectif: "Identifier et utiliser l'adjectif qualificatif comme épithète ou attribut du sujet.",
-        },
-        {
-          uniteNumber: 1, moduleNumber: 2, journeeNumber: 2, niveau: "6ème année",
-          commOraleObjet: "Décrire une situation / un processus",
-          commOraleObjectif: "Communiquer en situation pour : Décrire les étapes d'un processus en utilisant des indicateurs temporels.",
-          lectureObjet: "Le petit prince (suite)",
-          lectureObjectif: "L'élève serait capable de repérer les informations explicites et implicites dans un texte narratif.",
-          grammaireType: "Conjugaison" as const,
-          grammaireObjet: "Le présent de l'indicatif (verbes du 3ème groupe)",
-          grammaireObjectif: "Conjuguer correctement les verbes du 3ème groupe au présent de l'indicatif (être, avoir, aller, faire, dire, pouvoir, vouloir).",
-        },
-        {
-          uniteNumber: 1, moduleNumber: 2, journeeNumber: 3, niveau: "6ème année",
-          commOraleObjet: "Raconter une expérience personnelle",
-          commOraleObjectif: "Communiquer en situation pour : Raconter une expérience vécue en utilisant le vocabulaire des sentiments.",
-          lectureObjet: "Le petit prince (fin)",
-          lectureObjectif: "L'élève serait capable de résumer oralement un texte lu en respectant la chronologie des événements.",
-          grammaireType: "Orthographe" as const,
-          grammaireObjet: "Les homophones grammaticaux (a/à, et/est, on/ont, son/sont)",
-          grammaireObjectif: "Distinguer et orthographier correctement les homophones grammaticaux courants.",
-        },
-        {
-          uniteNumber: 1, moduleNumber: 2, journeeNumber: 4, niveau: "6ème année",
-          commOraleObjet: "Argumenter et convaincre",
-          commOraleObjectif: "Communiquer en situation pour : Présenter des arguments pour convaincre un interlocuteur.",
-          lectureObjet: "Lecture documentaire : Les animaux en danger",
-          lectureObjectif: "L'élève serait capable de lire un texte informatif et d'en extraire les données essentielles sous forme de tableau.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "Les compléments du verbe (COD / COI)",
-          grammaireObjectif: "Identifier et utiliser correctement les compléments d'objet direct et indirect.",
-        },
-        {
-          uniteNumber: 1, moduleNumber: 2, journeeNumber: 5, niveau: "6ème année",
-          commOraleObjet: "Évaluation et remédiation - Module 2",
-          commOraleObjectif: "Évaluer les acquis des élèves et proposer des activités de remédiation adaptées.",
-          lectureObjet: "Évaluation de lecture - Texte de synthèse Module 2",
-          lectureObjectif: "L'élève serait capable de mobiliser ses compétences de lecture pour comprendre un texte nouveau.",
-          grammaireType: "Conjugaison" as const,
-          grammaireObjet: "Évaluation - Grammaire / Conjugaison / Orthographe Module 2",
-          grammaireObjectif: "Évaluer les acquis des élèves et identifier les lacunes à combler.",
-        },
-
-        // ===== UNITÉ 2 =====
-        // Module 3
-        {
-          uniteNumber: 2, moduleNumber: 3, journeeNumber: 1, niveau: "6ème année",
-          commOraleObjet: "Présentation du module 3 et du projet d'écriture",
-          commOraleObjectif: "Communiquer en situation pour : S'informer et informer sur un thème lié à l'environnement.",
-          lectureObjet: "La forêt enchantée",
-          lectureObjectif: "L'élève serait capable de lire un texte descriptif et d'identifier les éléments de description.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "Les compléments circonstanciels (lieu, temps, manière)",
-          grammaireObjectif: "Identifier et utiliser les compléments circonstanciels de lieu, de temps et de manière.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 3, journeeNumber: 2, niveau: "6ème année",
-          commOraleObjet: "Décrire un paysage / un environnement naturel",
-          commOraleObjectif: "Communiquer en situation pour : Décrire un paysage en utilisant un vocabulaire riche et varié.",
-          lectureObjet: "La forêt enchantée (suite)",
-          lectureObjectif: "L'élève serait capable d'analyser la structure d'un texte descriptif et d'en dégager le plan.",
-          grammaireType: "Conjugaison" as const,
-          grammaireObjet: "L'imparfait de l'indicatif",
-          grammaireObjectif: "Conjuguer correctement les verbes à l'imparfait de l'indicatif et comprendre ses valeurs d'emploi.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 3, journeeNumber: 3, niveau: "6ème année",
-          commOraleObjet: "Exprimer ses sentiments face à la nature",
-          commOraleObjectif: "Communiquer en situation pour : Exprimer ses émotions et sentiments en utilisant le vocabulaire approprié.",
-          lectureObjet: "La forêt enchantée (fin)",
-          lectureObjectif: "L'élève serait capable de lire à haute voix un passage descriptif avec l'intonation appropriée.",
-          grammaireType: "Orthographe" as const,
-          grammaireObjet: "L'accord du participe passé employé avec être",
-          grammaireObjectif: "Appliquer correctement la règle d'accord du participe passé employé avec l'auxiliaire être.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 3, journeeNumber: 4, niveau: "6ème année",
-          commOraleObjet: "Débattre sur la protection de l'environnement",
-          commOraleObjectif: "Communiquer en situation pour : Participer à un débat en respectant les règles de prise de parole.",
-          lectureObjet: "Lecture documentaire : La pollution et ses effets",
-          lectureObjectif: "L'élève serait capable de lire un texte documentaire et d'en extraire les causes et les conséquences.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "La phrase complexe (juxtaposition, coordination)",
-          grammaireObjectif: "Identifier et construire des phrases complexes par juxtaposition et coordination.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 3, journeeNumber: 5, niveau: "6ème année",
-          commOraleObjet: "Évaluation et remédiation - Module 3",
-          commOraleObjectif: "Évaluer les acquis des élèves en communication orale et remédier aux difficultés.",
-          lectureObjet: "Évaluation de lecture - Texte de synthèse Module 3",
-          lectureObjectif: "L'élève serait capable de mobiliser ses compétences pour comprendre un texte descriptif nouveau.",
-          grammaireType: "Orthographe" as const,
-          grammaireObjet: "Évaluation - Grammaire / Conjugaison / Orthographe Module 3",
-          grammaireObjectif: "Évaluer les acquis des élèves et proposer des remédiations ciblées.",
-        },
-
-        // Module 4
-        {
-          uniteNumber: 2, moduleNumber: 4, journeeNumber: 1, niveau: "6ème année",
-          commOraleObjet: "Présentation du module 4 et du projet d'écriture",
-          commOraleObjectif: "Communiquer en situation pour : Présenter un projet et en expliquer les étapes.",
-          lectureObjet: "Le voyage de Gulliver (extrait)",
-          lectureObjectif: "L'élève serait capable de lire un texte d'aventure et d'identifier le schéma narratif.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "Les pronoms relatifs (qui, que, où, dont)",
-          grammaireObjectif: "Identifier et utiliser correctement les pronoms relatifs dans des phrases complexes.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 4, journeeNumber: 2, niveau: "6ème année",
-          commOraleObjet: "Raconter un voyage / une aventure",
-          commOraleObjectif: "Communiquer en situation pour : Raconter un voyage en utilisant les temps du récit.",
-          lectureObjet: "Le voyage de Gulliver (suite)",
-          lectureObjectif: "L'élève serait capable de distinguer les passages narratifs et descriptifs dans un texte.",
-          grammaireType: "Conjugaison" as const,
-          grammaireObjet: "Le passé composé de l'indicatif",
-          grammaireObjectif: "Conjuguer correctement les verbes au passé composé et choisir le bon auxiliaire.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 4, journeeNumber: 3, niveau: "6ème année",
-          commOraleObjet: "Comparer des cultures / des modes de vie",
-          commOraleObjectif: "Communiquer en situation pour : Comparer en utilisant les outils de comparaison appropriés.",
-          lectureObjet: "Le voyage de Gulliver (fin)",
-          lectureObjectif: "L'élève serait capable de résumer un texte narratif en respectant le schéma narratif.",
-          grammaireType: "Orthographe" as const,
-          grammaireObjet: "L'accord du participe passé employé avec avoir",
-          grammaireObjectif: "Appliquer correctement la règle d'accord du participe passé employé avec l'auxiliaire avoir.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 4, journeeNumber: 4, niveau: "6ème année",
-          commOraleObjet: "Présenter un exposé sur un pays / une culture",
-          commOraleObjectif: "Communiquer en situation pour : Structurer et présenter un exposé oral avec supports visuels.",
-          lectureObjet: "Lecture documentaire : Les grandes découvertes",
-          lectureObjectif: "L'élève serait capable de lire un texte historique et d'en situer les événements dans le temps.",
-          grammaireType: "Grammaire" as const,
-          grammaireObjet: "La voix active et la voix passive",
-          grammaireObjectif: "Transformer des phrases de la voix active à la voix passive et inversement.",
-        },
-        {
-          uniteNumber: 2, moduleNumber: 4, journeeNumber: 5, niveau: "6ème année",
-          commOraleObjet: "Évaluation et remédiation - Module 4",
-          commOraleObjectif: "Évaluer les acquis des élèves et proposer des activités de remédiation adaptées.",
-          lectureObjet: "Évaluation de lecture - Texte de synthèse Module 4",
-          lectureObjectif: "L'élève serait capable de mobiliser toutes ses compétences de lecture pour comprendre un texte nouveau.",
-          grammaireType: "Conjugaison" as const,
-          grammaireObjet: "Évaluation - Grammaire / Conjugaison / Orthographe Module 4",
-          grammaireObjectif: "Évaluer les acquis des élèves et identifier les compétences à renforcer.",
+          niveau: "6ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 5,
+          activities: [
+            { activityName: "Communication orale", duration: "35 mn", objet: "Présenter / Se présenter (bilan)", objectif: "Communiquer en situation pour : se présenter dans des situations variées", etapes: ["Situation d'exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+            { activityName: "Lecture", duration: "45 mn", objet: "Texte : \"Le jour de la rentrée\" (bilan)", objectif: "L'élève serait capable de lire le texte de manière autonome et expressive", etapes: ["Anticipation", "Approche globale", "Approche analytique", "Lecture vocale", "Étude de vocabulaire", "Évaluation"], remarques: "" },
+            { activityName: "Grammaire", duration: "35 mn", objet: "La phrase – Les types de phrases (bilan)", objectif: "L'élève serait capable d'identifier et produire les différents types de phrases", etapes: ["Exploration", "Apprentissage systématique structuré", "Intégration", "Évaluation"], remarques: "" },
+          ]
         },
       ];
 
-      // Insert all seed entries
-      for (const entry of seedEntries) {
+      // ===== 4ème année - U1 M1 J1-J5 =====
+      const QUATRIEME_U1M1 = [
+        {
+          niveau: "4ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 1, sousTheme: "Vive l'école",
+          activities: [
+            { activityName: "Mise en train", objet: "Chant : \"Bonjour, bonjour\"", objectifSpecifique: "Assurer la compréhension du chant", objectif: "L'élève serait capable de chanter correctement le chant", etapes: ["Rappel", "Diction", "Évaluation"] },
+            { activityName: "Présentation du projet et du module", objet: "Informer / s'informer – Présenter", objectifSpecifique: "Informer / s'informer – Présenter", objectif: "L'élève serait capable de repérer des indices à travers la fiche contrat", etapes: ["Exploration / anticipation", "Présentation du projet", "Exploitation de la fiche contrat", "Élaboration de la carte d'exploration de pistes"] },
+            { activityName: "Étude de graphies", objet: "La graphie s = z", objectifSpecifique: "Discriminer auditivement les phonèmes-graphèmes. Reconnaître visuellement les graphèmes", objectif: "L'élève serait capable de compléter les mots donnés par la graphie qui convient", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
+            { activityName: "P.E.L", objet: "La phrase", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de mettre en ordre des mots pour former une phrase correcte", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+          ]
+        },
+        {
+          niveau: "4ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 2, sousTheme: "Vive l'école",
+          activities: [
+            { activityName: "Activité d'écoute", objet: "Conte en séquence au choix", objectifSpecifique: "Assurer un bain de langue", objectif: "L'élève serait capable de comprendre la 1ère séquence du conte", etapes: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+            { activityName: "Lecture compréhension", objet: "Texte : \"La nouvelle élève\"", objectifSpecifique: "Identifier les personnages et les actions", objectif: "L'élève serait capable de lire le texte et de répondre aux questions de compréhension", etapes: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+            { activityName: "Étude de graphies", objet: "La graphie s = z (suite)", objectifSpecifique: "Discriminer auditivement les phonèmes-graphèmes", objectif: "L'élève serait capable de lire et écrire des mots contenant la graphie étudiée", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
+            { activityName: "P.E.L", objet: "La phrase (suite)", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de produire des phrases simples et correctes", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+          ]
+        },
+        {
+          niveau: "4ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 3, sousTheme: "Vive l'école",
+          activities: [
+            { activityName: "Mise en train", objet: "Poème : \"L'école\"", objectifSpecifique: "Assurer la compréhension du poème", objectif: "L'élève serait capable de répondre correctement à la question : le poète aime-t-il l'école ?", etapes: ["Audition", "Compréhension", "Évaluation"] },
+            { activityName: "Communication orale", objet: "La phrase à présentatif – La phrase à verbe être", objectifSpecifique: "Rendre compte d'un événement de la vie quotidienne", objectif: "L'élève serait capable de produire un énoncé oral de 3 phrases au moins", etapes: ["Reprise de la situation n° 1", "Apprentissage systématique / Structuré", "Intégration", "Évaluation"] },
+            { activityName: "Étude de graphies", objet: "La graphie k_q", objectifSpecifique: "Discriminer auditivement les phonèmes-graphèmes", objectif: "L'élève serait capable de produire une phrase avec des mots contenant la graphie étudiée", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
+            { activityName: "P.E.L", objet: "Le verbe être au présent", objectifSpecifique: "Conjuguer des verbes au présent de l'indicatif", objectif: "L'élève serait capable de compléter les phrases par le verbe être au présent", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+          ]
+        },
+        {
+          niveau: "4ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 4, sousTheme: "Vive l'école",
+          activities: [
+            { activityName: "Activité d'écoute", objet: "Conte en séquence au choix", objectifSpecifique: "Assurer un bain de langue", objectif: "L'élève serait capable de produire des hypothèses", etapes: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+            { activityName: "Lecture Fonctionnement", objet: "Texte : \"La nouvelle élève\"", objectifSpecifique: "Identifier les personnages et les actions", objectif: "L'élève serait capable de repérer les personnages du texte et leurs paroles", etapes: ["Rappel", "Relecture", "Exploitation des exercices du cahier d'activités"] },
+            { activityName: "Écriture", objet: "La lettre majuscule : M", objectifSpecifique: "Écrire correctement les graphies au programme", objectif: "L'élève serait capable d'écrire correctement la lettre majuscule M", etapes: ["Présentation", "Entraînement", "Écriture"] },
+            { activityName: "Auto dictée", objet: "\"Amélie est en classe. Elle dessine des cerises et des fraises\"", objectifSpecifique: "Orthographier correctement les mots d'usage", objectif: "L'élève serait capable de reproduire de mémoire le paragraphe", etapes: ["Diction", "Reproduction de mémoire", "Correction collective et exploitation des erreurs", "Correction individuelle"] },
+            { activityName: "Projet (Entraînement)", objet: "Exploitation du texte \"L'invitation\"", objectifSpecifique: "Se repérer dans le récit", objectif: "L'élève serait capable de repérer les trois parties du récit", etapes: ["Exploration", "Exploitation du 1er outil d'aide", "Intégration", "Évaluation"] },
+          ]
+        },
+        {
+          niveau: "4ème année", uniteNumber: 1, moduleNumber: 1, journeeNumber: 5, sousTheme: "Vive l'école",
+          activities: [
+            { activityName: "Mise en train", objet: "Poème : \"L'école\"", objectifSpecifique: "Assurer la compréhension du poème", objectif: "L'élève serait capable de réciter le poème de manière expressive", etapes: ["Audition", "Compréhension", "Évaluation"] },
+            { activityName: "Communication orale", objet: "La phrase à présentatif (bilan)", objectifSpecifique: "Rendre compte d'un événement", objectif: "L'élève serait capable de produire un énoncé oral intégrant les structures étudiées", etapes: ["Reprise de la situation", "Apprentissage systématique / Structuré", "Intégration", "Évaluation"] },
+            { activityName: "Étude de graphies", objet: "La graphie g = g", objectifSpecifique: "Reconnaître auditivement et visuellement la graphie", objectif: "L'élève serait capable de compléter les mots par la graphie qui convient", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
+            { activityName: "P.E.L", objet: "Produire des phrases avec le verbe \"être\" au présent", objectifSpecifique: "Conjuguer le verbe être au présent", objectif: "L'élève serait capable de produire des phrases correctes avec le verbe être au présent", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+          ]
+        },
+      ];
+
+      const allRecords = [...SIXEME_U1M1, ...QUATRIEME_U1M1];
+      let seeded = 0;
+
+      for (const record of allRecords) {
         await database.insert(referenceContent).values({
-          ...entry,
-          commOraleRemarques: "",
-          lectureRemarques: "",
-          grammaireRemarques: "",
+          niveau: record.niveau,
+          uniteNumber: record.uniteNumber,
+          moduleNumber: record.moduleNumber,
+          journeeNumber: record.journeeNumber,
+          sousTheme: (record as any).sousTheme || null,
+          activities: record.activities,
           isOfficial: true,
-          source: "Programme officiel tunisien",
+          source: "Programme officiel tunisien - Documents DOCX de référence",
           addedBy: ctx.user.id,
         });
+        seeded++;
       }
 
-      return { message: `${seedEntries.length} entrées de référence créées avec succès.`, seeded: seedEntries.length };
-    }),
-
-  // ===== GET STATISTICS =====
-  getStats: protectedProcedure
-    .query(async () => {
-      const database = (await getDb())!;
-      const [{ total }] = await database.select({ total: count() }).from(referenceContent);
-
-      // Get unique unités
-      const allItems = await database.select({
-        unite: referenceContent.uniteNumber,
-        module: referenceContent.moduleNumber,
-      }).from(referenceContent);
-
-      const unites = new Set(allItems.map((i: { unite: number }) => i.unite));
-      const modules = new Set(allItems.map((i: { unite: number; module: number }) => `${i.unite}-${i.module}`));
-
-      return {
-        totalEntries: total,
-        totalUnites: unites.size,
-        totalModules: modules.size,
-      };
+      return { message: `${seeded} entrées de référence créées avec succès (6ème + 4ème année, U1 M1 J1-J5).`, seeded };
     }),
 
   // ===== BULK IMPORT =====
   bulkImport: protectedProcedure
     .input(z.object({
       entries: z.array(z.object({
+        niveau: z.string(),
         uniteNumber: z.number().min(1).max(8),
         moduleNumber: z.number().min(1).max(8),
-        journeeNumber: z.number().min(1).max(8),
-        niveau: z.string().default("6ème année"),
-        commOraleObjet: z.string(),
-        commOraleObjectif: z.string(),
-        lectureObjet: z.string(),
-        lectureObjectif: z.string(),
-        grammaireType: z.enum(["Grammaire", "Conjugaison", "Orthographe"]),
-        grammaireObjet: z.string(),
-        grammaireObjectif: z.string(),
+        journeeNumber: z.number().min(1).max(5),
+        sousTheme: z.string().optional(),
+        activities: z.array(activitySchema).min(1),
       })),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -452,13 +366,12 @@ export const referenceContentRouter = router({
       let skipped = 0;
 
       for (const entry of input.entries) {
-        // Check if exists
         const [existing] = await database.select().from(referenceContent)
           .where(and(
+            eq(referenceContent.niveau, entry.niveau),
             eq(referenceContent.uniteNumber, entry.uniteNumber),
             eq(referenceContent.moduleNumber, entry.moduleNumber),
             eq(referenceContent.journeeNumber, entry.journeeNumber),
-            eq(referenceContent.niveau, entry.niveau),
           )).limit(1);
 
         if (existing) {
@@ -467,10 +380,12 @@ export const referenceContentRouter = router({
         }
 
         await database.insert(referenceContent).values({
-          ...entry,
-          commOraleRemarques: "",
-          lectureRemarques: "",
-          grammaireRemarques: "",
+          niveau: entry.niveau,
+          uniteNumber: entry.uniteNumber,
+          moduleNumber: entry.moduleNumber,
+          journeeNumber: entry.journeeNumber,
+          sousTheme: entry.sousTheme || null,
+          activities: entry.activities,
           isOfficial: true,
           source: "Import en masse",
           addedBy: ctx.user.id,

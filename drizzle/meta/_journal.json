@@ -533,6 +533,13 @@
       "when": 1774550861673,
       "tag": "0075_shallow_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "5",
+      "when": 1774554906322,
+      "tag": "0076_slim_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

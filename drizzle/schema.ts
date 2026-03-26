@@ -2607,39 +2607,38 @@ export type RepartitionJournaliereRow = typeof repartitionJournaliere.$inferSele
 export type InsertRepartitionJournaliere = typeof repartitionJournaliere.$inferInsert;
 
 
-// ===== REFERENCE CONTENT DATABASE =====
-// Stores official Tunisian curriculum content for each Unité/Module/Journée
+// ===== REFERENCE CONTENT DATABASE (Smart Autofill) =====
+// Stores official Tunisian curriculum content for each Niveau/Unité/Module/Journée
+// Uses flexible JSON activities array to support all grade levels (3ème-6ème)
+// Each record = one complete day's activities for a specific grade/unit/module/day
 export const referenceContent = mysqlTable("reference_content", {
   id: int("id").autoincrement().primaryKey(),
   
-  // Identifiers
+  // Composite key: Niveau + Unité + Module + Journée
+  niveau: varchar("niveau", { length: 50 }).notNull(), // "3ème année", "4ème année", "5ème année", "6ème année"
   uniteNumber: int("unite_number").notNull(),
   moduleNumber: int("module_number").notNull(),
   journeeNumber: int("journee_number").notNull(),
-  niveau: varchar("niveau", { length: 50 }).default("6ème année").notNull(),
   
-  // Communication orale content
-  commOraleObjet: text("comm_orale_objet"),
-  commOraleObjectif: text("comm_orale_objectif"),
-  commOraleRemarques: text("comm_orale_remarques"),
+  // Sous-thème (only for 3ème-5ème)
+  sousTheme: varchar("sous_theme", { length: 255 }),
   
-  // Lecture content
-  lectureObjet: text("lecture_objet"),
-  lectureObjectif: text("lecture_objectif"),
-  lectureRemarques: text("lecture_remarques"),
-  
-  // Grammar/Conjugation/Spelling content
-  grammaireType: mysqlEnum("grammaire_type", ["Grammaire", "Conjugaison", "Orthographe"]).default("Grammaire").notNull(),
-  grammaireObjet: text("grammaire_objet"),
-  grammaireObjectif: text("grammaire_objectif"),
-  grammaireRemarques: text("grammaire_remarques"),
+  // Activities array stored as JSON
+  // Each activity: { activityName, objet, objectifSpecifique?, objectif, etapes[], remarques?, duration? }
+  activities: json("activities").$type<Array<{
+    activityName: string;
+    objet: string;
+    objectifSpecifique?: string; // Only for 3ème-5ème
+    objectif: string;
+    etapes: string[];
+    remarques?: string; // Only for 6ème
+    duration?: string; // Only for 6ème
+  }>>().notNull(),
   
   // Metadata
   isOfficial: boolean("is_official").default(true).notNull(),
   source: varchar("source", { length: 255 }).default("Programme officiel tunisien"),
   notes: text("notes"),
-  
-  // Who added/modified
   addedBy: int("added_by"),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),

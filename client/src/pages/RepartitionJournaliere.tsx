@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight, ArrowLeft, FileText, Download, Trash2, Loader2, Calendar, BookOpen, GraduationCap, ChevronRight, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, FileText, Download, Trash2, Loader2, Calendar, BookOpen, GraduationCap, ChevronRight, Sparkles, Database, Wand2, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 
 // Activity color mapping
@@ -17,6 +17,7 @@ const ACTIVITY_COLORS: Record<string, { border: string; text: string; bg: string
   "Lecture": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
   "Lecture compréhension": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
   "Lecture fonctionnement": { border: "border-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", icon: "📗" },
+  "Lecture Fonctionnement": { border: "border-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", icon: "📗" },
   "Grammaire": { border: "border-purple-200", text: "text-purple-700", bg: "bg-purple-50", icon: "📝" },
   "Conjugaison": { border: "border-indigo-200", text: "text-indigo-700", bg: "bg-indigo-50", icon: "📝" },
   "Orthographe": { border: "border-violet-200", text: "text-violet-700", bg: "bg-violet-50", icon: "📝" },
@@ -42,6 +43,9 @@ interface ActivityInput {
   objectifSpecifique: string;
 }
 
+// Autofill status type
+type AutofillStatus = "idle" | "loading" | "found" | "not_found" | "error";
+
 export default function RepartitionJournaliere() {
   const { user, loading } = useAuth();
   const [step, setStep] = useState(1);
@@ -60,13 +64,30 @@ export default function RepartitionJournaliere() {
   // Dynamic activity inputs
   const [activityInputs, setActivityInputs] = useState<ActivityInput[]>([]);
 
+  // Smart Autofill state
+  const [autofillStatus, setAutofillStatus] = useState<AutofillStatus>("idle");
+  const [autofillApplied, setAutofillApplied] = useState(false);
+  const [autofillSource, setAutofillSource] = useState<string>("");
+
   // Fetch grade config when niveau/journee changes
   const gradeConfigQuery = trpc.repartitionJournaliere.getGradeConfig.useQuery(
     { niveau, journeeNumber },
     { enabled: !!niveau && !!journeeNumber }
   );
 
-  // Update activity inputs when grade config changes
+  // Smart Autofill: Check reference data availability
+  const refAvailabilityQuery = trpc.referenceContent.checkAvailability.useQuery(
+    { niveau, uniteNumber, moduleNumber },
+    { enabled: !!niveau && !!uniteNumber && !!moduleNumber }
+  );
+
+  // Smart Autofill: Fetch reference content for exact combination
+  const refContentQuery = trpc.referenceContent.getByKey.useQuery(
+    { niveau, uniteNumber, moduleNumber, journeeNumber },
+    { enabled: !!niveau && !!uniteNumber && !!moduleNumber && !!journeeNumber }
+  );
+
+  // Update activity inputs when grade config changes (reset form)
   useEffect(() => {
     if (gradeConfigQuery.data) {
       const newInputs = gradeConfigQuery.data.activities.map(a => ({
@@ -76,8 +97,72 @@ export default function RepartitionJournaliere() {
         objectifSpecifique: "",
       }));
       setActivityInputs(newInputs);
+      setAutofillApplied(false);
+      setAutofillSource("");
     }
   }, [gradeConfigQuery.data]);
+
+  // Smart Autofill: Auto-apply reference data when available
+  useEffect(() => {
+    if (refContentQuery.isLoading) {
+      setAutofillStatus("loading");
+      return;
+    }
+    if (refContentQuery.error) {
+      setAutofillStatus("error");
+      return;
+    }
+    if (refContentQuery.data) {
+      setAutofillStatus("found");
+      // Auto-apply the reference data if not already applied by user
+      if (!autofillApplied) {
+        applyAutofill(refContentQuery.data);
+      }
+    } else {
+      setAutofillStatus("not_found");
+    }
+  }, [refContentQuery.data, refContentQuery.isLoading, refContentQuery.error]);
+
+  // Apply autofill data to form
+  const applyAutofill = useCallback((refData: any) => {
+    if (!refData?.activities || !gradeConfigQuery.data) return;
+
+    const refActivities = refData.activities as any[];
+    const gradeActivities = gradeConfigQuery.data.activities;
+
+    const newInputs = gradeActivities.map((gradeAct, idx) => {
+      // Try to match by index first, then by name
+      let refAct = refActivities[idx];
+      if (!refAct || refAct.activityName?.toLowerCase() !== gradeAct.name.toLowerCase()) {
+        refAct = refActivities.find((ra: any) =>
+          ra.activityName?.toLowerCase().includes(gradeAct.name.toLowerCase().split(" ")[0])
+        ) || refActivities[idx];
+      }
+
+      return {
+        activityName: gradeAct.name,
+        objet: refAct?.objet || "",
+        objectifDetails: refAct?.objectif || "",
+        objectifSpecifique: refAct?.objectifSpecifique || "",
+      };
+    });
+
+    setActivityInputs(newInputs);
+    setAutofillApplied(true);
+    setAutofillSource(refData.source || "Données de référence officielles");
+
+    // Auto-fill sous-thème if available
+    if (refData.sousTheme) {
+      setSousTheme(refData.sousTheme);
+    }
+  }, [gradeConfigQuery.data]);
+
+  // Reset autofill when key parameters change
+  useEffect(() => {
+    setAutofillApplied(false);
+    setAutofillSource("");
+    setAutofillStatus("idle");
+  }, [niveau, uniteNumber, moduleNumber, journeeNumber]);
 
   const historyQuery = trpc.repartitionJournaliere.getHistory.useQuery({ limit: 20, offset: 0 });
   const generateMutation = trpc.repartitionJournaliere.generate.useMutation({
@@ -119,6 +204,18 @@ export default function RepartitionJournaliere() {
     },
   });
 
+  // Seed data mutation
+  const seedMutation = trpc.referenceContent.seedData.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      refAvailabilityQuery.refetch();
+      refContentQuery.refetch();
+    },
+    onError: (err) => {
+      toast.error("Erreur: " + err.message);
+    },
+  });
+
   const handleGenerate = () => {
     // Validate at least the first activity has content
     const hasContent = activityInputs.some(a => a.objet.trim());
@@ -147,6 +244,8 @@ export default function RepartitionJournaliere() {
     setStep(1);
     setShowResult(false);
     setCurrentResult(null);
+    setAutofillApplied(false);
+    setAutofillSource("");
     setActivityInputs(prev => prev.map(a => ({ ...a, objet: "", objectifDetails: "", objectifSpecifique: "" })));
   };
 
@@ -157,6 +256,15 @@ export default function RepartitionJournaliere() {
       return updated;
     });
   };
+
+  // Availability info
+  const availableJournees = useMemo(() => {
+    return refAvailabilityQuery.data?.availableJournees || [];
+  }, [refAvailabilityQuery.data]);
+
+  const hasRefDataForCurrentJournee = useMemo(() => {
+    return availableJournees.includes(journeeNumber);
+  }, [availableJournees, journeeNumber]);
 
   if (loading) {
     return (
@@ -248,64 +356,71 @@ export default function RepartitionJournaliere() {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-blue-800">{currentResult.niveau}</p>
-                    <p className="text-gray-600">De {currentResult.dateFrom || "……"} à {currentResult.dateTo || "……"}</p>
+                    <p className="text-gray-500 text-xs mt-1">De {currentResult.dateFrom || "……"} à {currentResult.dateTo || "……"}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Table */}
-          <Card className="border-blue-200 bg-white overflow-hidden">
+          {/* Activities Table */}
+          <Card className="overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-blue-700 text-white">
-                    <th className="p-3 text-center border border-blue-600 font-semibold" style={{ width: resultIs6eme ? "14%" : "16%" }}>Activités</th>
-                    <th className="p-3 text-center border border-blue-600 font-semibold" style={{ width: resultIs6eme ? "20%" : "18%" }}>{resultIs6eme ? "Objet (contenu)" : "Objets"}</th>
-                    {!resultIs6eme && <th className="p-3 text-center border border-blue-600 font-semibold" style={{ width: "22%" }}>Objectifs spécifiques</th>}
-                    <th className="p-3 text-center border border-blue-600 font-semibold" style={{ width: resultIs6eme ? "26%" : "22%" }}>Objectif de la séance</th>
-                    <th className="p-3 text-center border border-blue-600 font-semibold" style={{ width: resultIs6eme ? "25%" : "22%" }}>Étapes</th>
-                    {resultIs6eme && <th className="p-3 text-center border border-blue-600 font-semibold" style={{ width: "15%" }}>Remarques</th>}
+                    {resultIs6eme ? (
+                      <>
+                        <th className="px-3 py-3 text-center font-semibold w-[14%]">Activités</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[20%]">Objet (contenu)</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[26%]">Objectif de la séance</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[25%]">Étapes</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[15%]">Remarques</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-3 py-3 text-center font-semibold w-[16%]">Activités</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[18%]">Objets</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[22%]">Objectifs spécifiques</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[22%]">Objectif de la séance</th>
+                        <th className="px-3 py-3 text-center font-semibold w-[22%]">Étapes</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {currentResult.activities?.map((activity: any, idx: number) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-blue-50/30"}>
-                      <td className="p-3 border border-gray-200 align-top text-center">
-                        <span className="font-bold text-blue-700 block">{activity.activityName}</span>
-                        {activity.duration && (
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">{activity.duration}</span>
-                        )}
-                      </td>
-                      <td className="p-3 border border-gray-200 align-top">{activity.objet}</td>
-                      {!resultIs6eme && <td className="p-3 border border-gray-200 align-top text-gray-600">{activity.objectifSpecifique || "—"}</td>}
-                      <td className="p-3 border border-gray-200 align-top">{activity.objectif}</td>
-                      <td className="p-3 border border-gray-200 align-top">
-                        <ul className="space-y-1">
-                          {activity.etapes?.map((etape: string, i: number) => (
-                            <li key={i} className="flex items-start gap-1.5">
-                              <ChevronRight className="h-3.5 w-3.5 mt-0.5 text-blue-600 shrink-0" />
-                              <span>{etape}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
-                      {resultIs6eme && (
-                        <td className="p-3 border border-gray-200 align-top text-gray-500 italic">
-                          {activity.remarques || "—"}
+                  {currentResult.activities?.map((a: any, i: number) => {
+                    const style = getActivityStyle(a.activityName);
+                    return (
+                      <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                        <td className={`px-3 py-3 font-bold text-center ${style.text}`}>
+                          {a.activityName}
+                          {a.duration && <div className="text-xs font-normal mt-1 bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 inline-block">{a.duration}</div>}
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td className="px-3 py-3">{a.objet}</td>
+                        {!resultIs6eme && <td className="px-3 py-3 text-xs">{a.objectifSpecifique || ""}</td>}
+                        <td className="px-3 py-3">{a.objectif}</td>
+                        <td className="px-3 py-3">
+                          <div className="space-y-0.5">
+                            {a.etapes?.map((e: string, j: number) => (
+                              <div key={j} className="text-xs flex items-start gap-1">
+                                <span className="text-blue-600 font-bold mt-0.5">→</span>
+                                <span>{e}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        {resultIs6eme && <td className="px-3 py-3 text-xs text-gray-500">{a.remarques || ""}</td>}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </Card>
 
-          {/* Footer */}
           <div className="mt-4 text-center text-xs text-gray-400">
-            Leader Academy — المساعد البيداغوجي الذكي — نسخة تونس 2026
+            <span className="font-bold text-blue-600">Leader Academy</span> — المساعد البيداغوجي الذكي — نسخة تونس 2026
           </div>
         </div>
       </div>
@@ -316,41 +431,40 @@ export default function RepartitionJournaliere() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 md:p-8" dir="ltr">
       <div className="max-w-4xl mx-auto">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-6" dir="rtl">
-          <Link href="/" className="hover:text-blue-600">الرئيسية</Link>
-          <span>/</span>
-          <Link href="/ai-tools" className="hover:text-blue-600">الأدوات الذكية</Link>
-          <span>/</span>
-          <span className="text-blue-700 font-medium">Répartition Journalière</span>
-        </div>
-
-        {/* Title */}
-        <div className="text-center mb-8" dir="rtl">
-          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-medium mb-3">
-            <Calendar className="h-4 w-4" />
-            أداة التوزيع اليومي
+        {/* Page Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-medium mb-4">
+            <BookOpen className="h-4 w-4" />
+            Répartition Journalière — FLE
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Répartition Journalière</h1>
-          <p className="text-gray-500 max-w-2xl mx-auto">
-            أداة توليد التوزيع اليومي لمادة الفرنسية — مطابقة تماماً للنماذج الرسمية التونسية
-          </p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">دفتر الإعداد اليومي</h1>
+          <p className="text-gray-500 text-sm">Générateur intelligent conforme au curriculum officiel tunisien</p>
         </div>
 
-        {/* Grade info badge */}
+        {/* Grade Info Badge */}
         {config && (
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-3 bg-white border border-blue-200 rounded-lg px-4 py-2 shadow-sm">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="flex items-center gap-2 bg-white border border-blue-200 rounded-full px-4 py-2 shadow-sm">
+              <GraduationCap className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-700">{niveau}</span>
-              <span className="text-gray-300">|</span>
-              <span className="text-sm text-gray-600">
-                {config.activities.length} activités • Journée {journeeNumber}
-              </span>
               <span className="text-gray-300">|</span>
               <span className="text-xs text-gray-500">
                 {is6eme ? "Avec durée + Remarques" : "Avec Objectifs spécifiques"}
               </span>
             </div>
+            {/* Smart Autofill Status Badge */}
+            {autofillStatus === "found" && autofillApplied && (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-2 shadow-sm">
+                <Database className="h-4 w-4 text-green-600" />
+                <span className="text-xs font-medium text-green-700">Données officielles chargées</span>
+              </div>
+            )}
+            {autofillStatus === "not_found" && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-full px-4 py-2 shadow-sm">
+                <Wand2 className="h-4 w-4 text-amber-600" />
+                <span className="text-xs font-medium text-amber-700">Mode IA disponible</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -428,7 +542,14 @@ export default function RepartitionJournaliere() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {[1,2,3,4,5].map(n => (
-                        <SelectItem key={n} value={String(n)}>Journée {n}</SelectItem>
+                        <SelectItem key={n} value={String(n)}>
+                          <div className="flex items-center gap-2">
+                            <span>Journée {n}</span>
+                            {availableJournees.includes(n) && (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                            )}
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -446,12 +567,60 @@ export default function RepartitionJournaliere() {
               {/* Sous-thème for 3ème-5ème */}
               {!is6eme && (
                 <div>
-                  <Label>Sous-thème (optionnel)</Label>
+                  <Label>Sous-thème {autofillApplied && sousTheme ? "(pré-rempli)" : "(optionnel)"}</Label>
                   <Input
                     placeholder="Ex: Vive l'école"
                     value={sousTheme}
                     onChange={(e) => setSousTheme(e.target.value)}
+                    className={autofillApplied && sousTheme ? "border-green-300 bg-green-50/50" : ""}
                   />
+                </div>
+              )}
+
+              {/* Smart Autofill Status Banner */}
+              {refAvailabilityQuery.data && (
+                <div className={`rounded-lg p-4 ${
+                  hasRefDataForCurrentJournee 
+                    ? "bg-green-50 border border-green-200" 
+                    : "bg-amber-50 border border-amber-200"
+                }`}>
+                  {hasRefDataForCurrentJournee ? (
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-green-800">
+                          Données officielles disponibles
+                        </p>
+                        <p className="text-xs text-green-600 mt-1">
+                          Les champs seront pré-remplis automatiquement avec le contenu officiel du programme tunisien.
+                          Vous pourrez modifier librement chaque champ selon vos besoins.
+                        </p>
+                        {refAvailabilityQuery.data.availableJournees.length > 0 && (
+                          <p className="text-xs text-green-500 mt-1">
+                            Journées disponibles : {refAvailabilityQuery.data.availableJournees.map(j => `J${j}`).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-800">
+                          Pas de données de référence pour cette combinaison
+                        </p>
+                        <p className="text-xs text-amber-600 mt-1">
+                          Vous pouvez remplir les champs manuellement ou utiliser le bouton "Générer par IA" pour que l'intelligence artificielle 
+                          propose un contenu conforme au programme.
+                        </p>
+                        {refAvailabilityQuery.data.availableJournees.length > 0 && (
+                          <p className="text-xs text-amber-500 mt-1">
+                            Journées avec données : {refAvailabilityQuery.data.availableJournees.map(j => `J${j}`).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -484,20 +653,99 @@ export default function RepartitionJournaliere() {
           </Card>
         )}
 
-        {/* Step 2: Activities */}
+        {/* Step 2: Activities with Smart Autofill */}
         {step === 2 && (
           <div className="space-y-6">
+            {/* Autofill Action Bar */}
+            {autofillStatus === "found" && !autofillApplied && refContentQuery.data && (
+              <Card className="border-green-300 bg-green-50/50">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Database className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-800">Données officielles disponibles</p>
+                      <p className="text-xs text-green-600">Cliquez pour pré-remplir les champs avec le contenu officiel</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 gap-2"
+                    onClick={() => applyAutofill(refContentQuery.data)}
+                  >
+                    <Database className="h-4 w-4" />
+                    Appliquer les données officielles
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {autofillApplied && (
+              <Card className="border-green-300 bg-green-50/30">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <p className="text-xs text-green-700">
+                      <span className="font-semibold">Données pré-remplies</span> — Source : {autofillSource || "Programme officiel tunisien"}
+                      <span className="text-green-500 ml-2">• Tous les champs sont modifiables</span>
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-green-600 hover:text-green-800 gap-1 h-7 text-xs"
+                    onClick={() => {
+                      if (refContentQuery.data) {
+                        applyAutofill(refContentQuery.data);
+                        toast.success("Données officielles rechargées");
+                      }
+                    }}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Recharger
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {autofillStatus === "not_found" && (
+              <Card className="border-amber-300 bg-amber-50/50">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Wand2 className="h-5 w-5 text-amber-600" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-800">Pas de données de référence</p>
+                      <p className="text-xs text-amber-600">Remplissez manuellement ou laissez l'IA générer le contenu à l'étape suivante</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-amber-500">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    L'IA complétera les champs vides
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Activity Cards */}
             {activityInputs.map((input, idx) => {
               const actConfig = config?.activities[idx];
               const style = getActivityStyle(input.activityName);
+              const isPreFilled = autofillApplied && input.objet.trim() !== "";
               return (
-                <Card key={idx} className={style.border}>
+                <Card key={idx} className={`${style.border} ${isPreFilled ? "ring-1 ring-green-200" : ""}`}>
                   <CardHeader className="pb-3">
-                    <CardTitle className={`flex items-center gap-2 ${style.text} text-lg`}>
-                      <span className="text-xl">{style.icon}</span>
-                      {input.activityName}
-                      {actConfig?.duration && <span className="text-sm font-normal opacity-70">({actConfig.duration})</span>}
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className={`flex items-center gap-2 ${style.text} text-lg`}>
+                        <span className="text-xl">{style.icon}</span>
+                        {input.activityName}
+                        {actConfig?.duration && <span className="text-sm font-normal opacity-70">({actConfig.duration})</span>}
+                      </CardTitle>
+                      {isPreFilled && (
+                        <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+                          <Database className="h-3 w-3" />
+                          Pré-rempli
+                        </span>
+                      )}
+                    </div>
                     <CardDescription>
                       Étapes obligatoires : {actConfig?.mandatorySteps.join(" → ")}
                     </CardDescription>
@@ -509,6 +757,7 @@ export default function RepartitionJournaliere() {
                         placeholder={`Ex: Contenu pour ${input.activityName}`}
                         value={input.objet}
                         onChange={(e) => updateActivityInput(idx, "objet", e.target.value)}
+                        className={isPreFilled ? "border-green-300 bg-green-50/30" : ""}
                       />
                     </div>
                     {config?.hasObjectifSpecifique && (
@@ -519,6 +768,7 @@ export default function RepartitionJournaliere() {
                           value={input.objectifSpecifique}
                           onChange={(e) => updateActivityInput(idx, "objectifSpecifique", e.target.value)}
                           rows={2}
+                          className={isPreFilled && input.objectifSpecifique ? "border-green-300 bg-green-50/30" : ""}
                         />
                       </div>
                     )}
@@ -531,6 +781,7 @@ export default function RepartitionJournaliere() {
                         value={input.objectifDetails}
                         onChange={(e) => updateActivityInput(idx, "objectifDetails", e.target.value)}
                         rows={2}
+                        className={isPreFilled && input.objectifDetails ? "border-green-300 bg-green-50/30" : ""}
                       />
                     </div>
                   </CardContent>
@@ -571,6 +822,26 @@ export default function RepartitionJournaliere() {
                   <div><strong>Journée :</strong> {journeeNumber}</div>
                   {sousTheme && <div className="col-span-2"><strong>Sous-thème :</strong> {sousTheme}</div>}
                 </div>
+
+                {/* Data source indicator */}
+                <div className={`flex items-center gap-2 text-xs px-3 py-2 rounded-md ${
+                  autofillApplied 
+                    ? "bg-green-50 text-green-700 border border-green-200" 
+                    : "bg-amber-50 text-amber-700 border border-amber-200"
+                }`}>
+                  {autofillApplied ? (
+                    <>
+                      <Database className="h-3.5 w-3.5" />
+                      <span>Données pré-remplies depuis la base de référence officielle</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-3.5 w-3.5" />
+                      <span>L'IA complétera les champs vides selon le programme officiel</span>
+                    </>
+                  )}
+                </div>
+
                 <hr />
                 {activityInputs.map((input, idx) => {
                   const style = getActivityStyle(input.activityName);
