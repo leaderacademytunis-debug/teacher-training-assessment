@@ -126,6 +126,22 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+// ── Service Worker Registration (PWA) ───────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registration) => {
+        console.log('[PWA] Service Worker registered:', registration.scope);
+        // Check for updates periodically
+        setInterval(() => registration.update(), 60 * 60 * 1000); // every hour
+      })
+      .catch((error) => {
+        console.warn('[PWA] Service Worker registration failed:', error);
+      });
+  });
+}
+
 // ── Mount ───────────────────────────────────────────────────────
 try {
   createRoot(document.getElementById("root")!).render(

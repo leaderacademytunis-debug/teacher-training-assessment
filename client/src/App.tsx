@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import RoleGuard from "./components/RoleGuard";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 
 // Eagerly loaded pages (critical path - home & auth)
 import Home from "./pages/Home";
@@ -201,6 +202,7 @@ function App() {
           <Toaster />
           <RoleGuard />
           <Router />
+          <PWAInstallPrompt />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
