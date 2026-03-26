@@ -130,6 +130,7 @@ interface CertificateData {
   score: number;
   certificateNumber: string;
   idCardNumber?: string; // National ID card number
+  courseDuration?: number; // Course duration in hours
 }
 
 /**
@@ -671,25 +672,40 @@ async function drawFrenchCertificate(
     color: gray,
   });
   
+  // Duration line (e.g., "Durée : 12 heures")
+  if (data.courseDuration) {
+    const durationText = `Durée : ${data.courseDuration} heures`;
+    const durationWidth = latinFont.widthOfTextAtSize(durationText, 10);
+    page.drawText(durationText, {
+      x: (width - durationWidth) / 2,
+      y: height - 290,
+      size: 10,
+      font: latinFont,
+      color: gray,
+    });
+  }
+  
   // Underline
+  const underlineYFr = data.courseDuration ? height - 300 : height - 285;
   page.drawLine({
-    start: { x: 150, y: height - 285 },
-    end: { x: width - 150, y: height - 285 },
+    start: { x: 150, y: underlineYFr },
+    end: { x: width - 150, y: underlineYFr },
     thickness: 1.5,
     color: black,
   });
   
   // Axes header
+  const axesYOffset = data.courseDuration ? 15 : 0;
   page.drawText("Thématiques abordées:", {
     x: 100,
-    y: height - 315,
+    y: height - 315 - axesYOffset,
     size: 10,
     font: latinFont,
     color: gray,
   });
   
   // Draw axes (left-aligned for French)
-  let yPosition = height - 340;
+  let yPosition = height - 340 - axesYOffset;
   for (const axis of content.axes) {
     // Wrap text if too long
     const maxWidth = width - 200;

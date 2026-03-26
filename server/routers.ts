@@ -705,6 +705,7 @@ export const appRouter = router({
           score: attempt.score || 0,
           certificateNumber,
           idCardNumber: ctx.user.idCardNumber || undefined,
+          courseDuration: course.duration || undefined,
         });
 
         // Save certificate record
@@ -854,6 +855,7 @@ export const appRouter = router({
           score: avgScore,
           certificateNumber,
           idCardNumber: ctx.user.idCardNumber || undefined,
+          courseDuration: cumulativeCourse.duration || undefined,
         });
 
         // Save certificate record (without examAttemptId since it's cumulative)
@@ -1123,6 +1125,7 @@ export const appRouter = router({
                 completionDate: cert.issuedAt || new Date(),
                 score: 0,
                 certificateNumber: cert.certificateNumber,
+                courseDuration: course.duration || undefined,
               });
 
               await database.update(certificates).set({

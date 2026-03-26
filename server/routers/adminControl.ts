@@ -1287,6 +1287,7 @@ export const adminControlRouter = router({
               completionDate: cert.issuedAt || new Date(),
               score: 0, // Score is not stored in cert table, use 0 as placeholder
               certificateNumber: cert.certificateNumber,
+              courseDuration: course.duration || undefined,
             });
 
             // Update certificate record
