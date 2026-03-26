@@ -3172,4 +3172,16 @@
 - [x] بناء صفحة مستقلة لتصحيح الأسماء (/admin/name-correction)
 - [x] إضافة قسم تصحيح الأسماء في لوحة التحكم AdminDashboardV2
 - [x] كتابة 17 اختبار vitest (جميعها ناجحة)
+- [x] حفظ checkpoint
+
+## ميزة طلب تصحيح الاسم من طرف المشارك (مع موافقة المدير)
+- [x] إضافة جدول name_correction_requests في schema (16 حقل)
+- [x] إنشاء endpoints خلفية: submitCorrectionRequest, myCorrectionRequests, listCorrectionRequests, reviewCorrectionRequest
+- [x] إضافة زر "طلب تصحيح الاسم" في صفحة شهاداتي (MyCertificates)
+- [x] بناء نموذج طلب التصحيح (الاسم الجديد + السبب) مع عرض حالة الطلبات
+- [x] إضافة قسم "طلبات المشاركين" في لوحة التحكم (CorrectionRequestsPanel)
+- [x] إشعار المدير عند وصول طلب جديد (notifyOwner)
+- [x] إشعار المشارك عند الموافقة/الرفض (إشعار داخلي)
+- [x] إعادة إصدار الشهادة تلقائياً بعد الموافقة مع تحديث اسم المستخدم
+- [x] كتابة 30 اختبار vitest (جميعها ناجحة)
 - [ ] حفظ checkpoint

@@ -1,0 +1,20 @@
+CREATE TABLE `name_correction_requests` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`currentFirstNameAr` varchar(100),
+	`currentLastNameAr` varchar(100),
+	`currentFirstNameFr` varchar(100),
+	`currentLastNameFr` varchar(100),
+	`requestedFirstNameAr` varchar(100),
+	`requestedLastNameAr` varchar(100),
+	`requestedFirstNameFr` varchar(100),
+	`requestedLastNameFr` varchar(100),
+	`reason` text,
+	`status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+	`reviewedBy` int,
+	`reviewNote` text,
+	`reviewedAt` timestamp,
+	`certificatesRegenerated` int DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `name_correction_requests_id` PRIMARY KEY(`id`)
+);

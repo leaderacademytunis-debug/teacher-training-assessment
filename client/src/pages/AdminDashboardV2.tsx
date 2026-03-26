@@ -24,7 +24,7 @@ import {
   BarChart3, Bell, Menu, Sliders, TrendingUp, UserCheck, UserX,
   Zap, Image, Upload, Clock, ArrowUpRight, ArrowDownRight,
   MessageSquare, ToggleLeft, Save, Trash2, Plus, Edit, AlertTriangle,
-  PenTool, ScanLine, Video, Theater, Map, Calendar, Lightbulb, EyeOff, UserCog
+  PenTool, ScanLine, Video, Theater, Map, Calendar, Lightbulb, EyeOff, UserCog, Send
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -2401,6 +2401,10 @@ function NameCorrectionSection() {
             <Search className="h-4 w-4 ml-1" />
             البحث والتصحيح
           </TabsTrigger>
+          <TabsTrigger value="requests" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
+            <Send className="h-4 w-4 ml-1" />
+            طلبات المشاركين
+          </TabsTrigger>
           <TabsTrigger value="history" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
             <Clock className="h-4 w-4 ml-1" />
             سجل التعديلات
@@ -2482,6 +2486,10 @@ function NameCorrectionSection() {
               onClose={() => setSelectedUserId(null)}
             />
           )}
+        </TabsContent>
+
+        <TabsContent value="requests" className="mt-4">
+          <CorrectionRequestsPanel />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
@@ -2672,5 +2680,216 @@ function InlineNameCorrection({ userId, onClose }: { userId: number; onClose: ()
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ===== Correction Requests Panel (Admin reviews participant requests) =====
+function CorrectionRequestsPanel() {
+  const [statusFilter, setStatusFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const requests = trpc.certificates.listCorrectionRequests.useQuery({ status: statusFilter });
+  const reviewRequest = trpc.certificates.reviewCorrectionRequest.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      requests.refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message || "حدث خطأ");
+    },
+  });
+
+  const [reviewingId, setReviewingId] = useState<number | null>(null);
+  const [reviewNote, setReviewNote] = useState("");
+
+  return (
+    <div className="space-y-4">
+      {/* Status filter */}
+      <div className="flex gap-2">
+        {([
+          { value: "pending" as const, label: "قيد الانتظار", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+          { value: "approved" as const, label: "مقبولة", color: "bg-green-500/20 text-green-400 border-green-500/30" },
+          { value: "rejected" as const, label: "مرفوضة", color: "bg-red-500/20 text-red-400 border-red-500/30" },
+          { value: "all" as const, label: "الكل", color: "bg-slate-500/20 text-slate-400 border-slate-500/30" },
+        ]).map((f) => (
+          <Button
+            key={f.value}
+            variant="outline"
+            size="sm"
+            onClick={() => setStatusFilter(f.value)}
+            className={`border ${statusFilter === f.value ? f.color : "border-slate-700 text-slate-500 hover:text-slate-300"}`}
+          >
+            {f.label}
+          </Button>
+        ))}
+      </div>
+
+      {requests.isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <RefreshCw className="h-5 w-5 animate-spin text-orange-400" />
+        </div>
+      ) : !requests.data || requests.data.length === 0 ? (
+        <Card className="bg-slate-900 border-slate-800">
+          <CardContent className="py-8 text-center text-slate-500">
+            <Send className="h-10 w-10 mx-auto mb-2 opacity-30" />
+            <p>لا توجد طلبات {statusFilter === "pending" ? "قيد الانتظار" : ""}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {requests.data.map((req) => (
+            <Card key={req.id} className={`bg-slate-900 border ${
+              req.status === "pending" ? "border-amber-500/30" :
+              req.status === "approved" ? "border-green-500/30" :
+              "border-red-500/30"
+            }`}>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <span className="font-medium text-white">{req.userName || "مشارك"}</span>
+                    <span className="text-xs text-slate-500 mr-2">{req.userEmail}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {req.status === "pending" && (
+                      <Badge className="bg-amber-500/20 text-amber-400 text-xs">قيد الانتظار</Badge>
+                    )}
+                    {req.status === "approved" && (
+                      <Badge className="bg-green-500/20 text-green-400 text-xs">مقبول</Badge>
+                    )}
+                    {req.status === "rejected" && (
+                      <Badge className="bg-red-500/20 text-red-400 text-xs">مرفوض</Badge>
+                    )}
+                    <span className="text-xs text-slate-600">
+                      {new Date(req.createdAt).toLocaleDateString("ar-TN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Name comparison */}
+                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-800/50 rounded-lg mb-3">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">الاسم الحالي</p>
+                    <p className="text-red-400 line-through text-sm">
+                      {req.currentFirstNameAr} {req.currentLastNameAr}
+                    </p>
+                    {(req.currentFirstNameFr || req.currentLastNameFr) && (
+                      <p className="text-red-400/60 line-through text-xs" dir="ltr">
+                        {req.currentFirstNameFr} {req.currentLastNameFr}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">الاسم المطلوب</p>
+                    <p className="text-green-400 font-medium text-sm">
+                      {req.requestedFirstNameAr} {req.requestedLastNameAr}
+                    </p>
+                    {(req.requestedFirstNameFr || req.requestedLastNameFr) && (
+                      <p className="text-green-400/60 text-xs" dir="ltr">
+                        {req.requestedFirstNameFr} {req.requestedLastNameFr}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Reason */}
+                {req.reason && (
+                  <div className="text-sm text-slate-400 mb-3">
+                    <span className="text-slate-500">السبب:</span> {req.reason}
+                  </div>
+                )}
+
+                {/* Review note */}
+                {req.reviewNote && (
+                  <div className="text-sm text-slate-400 mb-3 p-2 bg-slate-800/30 rounded">
+                    <span className="text-slate-500">ملاحظة المراجعة:</span> {req.reviewNote}
+                  </div>
+                )}
+
+                {/* Regenerated certificates count */}
+                {req.status === "approved" && req.certificatesRegenerated && req.certificatesRegenerated > 0 && (
+                  <Badge className="bg-green-500/20 text-green-400 text-xs mb-3">
+                    {req.certificatesRegenerated} شهادة معاد إصدارها
+                  </Badge>
+                )}
+
+                {/* Action buttons for pending requests */}
+                {req.status === "pending" && (
+                  <div className="space-y-3 mt-3 pt-3 border-t border-slate-800">
+                    {reviewingId === req.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={reviewNote}
+                          onChange={(e) => setReviewNote(e.target.value)}
+                          placeholder="ملاحظة (اختياري)..."
+                          className="bg-slate-800 border-slate-700 text-white text-sm placeholder:text-slate-600"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              reviewRequest.mutate({
+                                requestId: req.id,
+                                action: "approve",
+                                reviewNote: reviewNote || undefined,
+                              });
+                              setReviewingId(null);
+                              setReviewNote("");
+                            }}
+                            disabled={reviewRequest.isPending}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            {reviewRequest.isPending ? (
+                              <RefreshCw className="h-3 w-3 animate-spin ml-1" />
+                            ) : (
+                              <Check className="h-3 w-3 ml-1" />
+                            )}
+                            قبول وتصحيح
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              reviewRequest.mutate({
+                                requestId: req.id,
+                                action: "reject",
+                                reviewNote: reviewNote || undefined,
+                              });
+                              setReviewingId(null);
+                              setReviewNote("");
+                            }}
+                            disabled={reviewRequest.isPending}
+                            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                          >
+                            <X className="h-3 w-3 ml-1" />
+                            رفض
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setReviewingId(null); setReviewNote(""); }}
+                            className="text-slate-500"
+                          >
+                            إلغاء
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => setReviewingId(req.id)}
+                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                        >
+                          <PenTool className="h-3 w-3 ml-1" />
+                          مراجعة الطلب
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

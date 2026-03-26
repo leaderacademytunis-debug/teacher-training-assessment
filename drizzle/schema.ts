@@ -208,6 +208,32 @@ export type NameEditHistory = typeof nameEditHistory.$inferSelect;
 export type InsertNameEditHistory = typeof nameEditHistory.$inferInsert;
 
 /**
+ * Name Correction Requests table - participant-initiated name correction requests
+ */
+export const nameCorrectionRequests = mysqlTable("name_correction_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // The participant requesting correction
+  currentFirstNameAr: varchar("currentFirstNameAr", { length: 100 }),
+  currentLastNameAr: varchar("currentLastNameAr", { length: 100 }),
+  currentFirstNameFr: varchar("currentFirstNameFr", { length: 100 }),
+  currentLastNameFr: varchar("currentLastNameFr", { length: 100 }),
+  requestedFirstNameAr: varchar("requestedFirstNameAr", { length: 100 }),
+  requestedLastNameAr: varchar("requestedLastNameAr", { length: 100 }),
+  requestedFirstNameFr: varchar("requestedFirstNameFr", { length: 100 }),
+  requestedLastNameFr: varchar("requestedLastNameFr", { length: 100 }),
+  reason: text("reason"), // Reason for the correction request
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  reviewedBy: int("reviewedBy"), // Admin who reviewed the request
+  reviewNote: text("reviewNote"), // Admin note on approval/rejection
+  reviewedAt: timestamp("reviewedAt"), // When the request was reviewed
+  certificatesRegenerated: int("certificatesRegenerated").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type NameCorrectionRequest = typeof nameCorrectionRequests.$inferSelect;
+export type InsertNameCorrectionRequest = typeof nameCorrectionRequests.$inferInsert;
+
+/**
  * Videos table - stores course videos
  */
 export const videos = mysqlTable("videos", {
