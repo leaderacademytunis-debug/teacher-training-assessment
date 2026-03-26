@@ -31,6 +31,18 @@ const ACTIVITY_COLORS: Record<string, { border: string; text: string; bg: string
   "Projet (Entraînement)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
   "Présentation du projet et du module": { border: "border-blue-200", text: "text-blue-700", bg: "bg-blue-50", icon: "📋" },
   "Activité d'écoute": { border: "border-pink-200", text: "text-pink-700", bg: "bg-pink-50", icon: "👂" },
+  "Mise en train (Poème/Chant)": { border: "border-yellow-200", text: "text-yellow-700", bg: "bg-yellow-50", icon: "🎵" },
+  "Expression orale": { border: "border-orange-200", text: "text-orange-700", bg: "bg-orange-50", icon: "🗣️" },
+  "Lecture Texte 1 (compréhension)": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
+  "Lecture Texte 1 (fonctionnement)": { border: "border-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", icon: "📗" },
+  "Lecture Texte 2 (compréhension et fonctionnement)": { border: "border-lime-200", text: "text-lime-700", bg: "bg-lime-50", icon: "📘" },
+  "Lecture (compréhension)": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
+  "Lecture (fonctionnement)": { border: "border-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", icon: "📗" },
+  "Page vocabulaire": { border: "border-fuchsia-200", text: "text-fuchsia-700", bg: "bg-fuchsia-50", icon: "📚" },
+  "Dictée": { border: "border-teal-200", text: "text-teal-700", bg: "bg-teal-50", icon: "📝" },
+  "Lecture pour s'informer (page documentaire)": { border: "border-cyan-200", text: "text-cyan-700", bg: "bg-cyan-50", icon: "📰" },
+  "Lecture pour agir": { border: "border-blue-200", text: "text-blue-700", bg: "bg-blue-50", icon: "🛠️" },
+  "Projet (Entraînement ou Production)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
 };
 
 function getActivityStyle(name: string) {
@@ -72,7 +84,7 @@ export default function RepartitionJournaliere() {
 
   // Fetch grade config when niveau/journee changes
   const gradeConfigQuery = trpc.repartitionJournaliere.getGradeConfig.useQuery(
-    { niveau, journeeNumber },
+    { niveau, journeeNumber, moduleNumber },
     { enabled: !!niveau && !!journeeNumber }
   );
 

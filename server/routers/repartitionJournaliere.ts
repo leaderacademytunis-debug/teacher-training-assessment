@@ -70,67 +70,131 @@ const ACTIVITIES_6EME: Record<string, ActivityConfig[]> = {
   ],
 };
 
-// 3ème-5ème année: 5 columns with Objectifs spécifiques, NO timing, NO Remarques
-const ACTIVITIES_3_5EME: Record<string, ActivityConfig[]> = {
-  "1": [ // J1
-    { name: "Mise en train", mandatorySteps: ["Rappel", "Diction", "Évaluation"] },
+// 3ème-5ème année: TWO PHASES based on official guide (p.17)
+// Phase 1 (M1-M4): Uses "Étude de graphies" and "Lecture-phrases/textes"
+// Phase 2 (M5-M10): Replaces "Étude de graphies" with "Orthographe" and uses "Lecture (compréhension/fonctionnement)"
+
+// Phase 1: Modules 1 à 4
+const ACTIVITIES_3_5EME_PHASE1: Record<string, ActivityConfig[]> = {
+  "1": [ // J1 - Poème et/ou chant
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
     { name: "Présentation du projet et du module", mandatorySteps: ["Exploration/anticipation", "Présentation du projet", "Exploitation de la fiche contrat", "Élaboration de la carte d'exploration de pistes"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
     { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
-  "2": [ // J2
+  "2": [ // J2 - Activité d'écoute
     { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
-    { name: "Lecture compréhension", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Expression orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Lecture Texte 1 (compréhension)", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Écriture", mandatorySteps: ["Présentation", "Entraînement", "Écriture"] },
+  ],
+  "3": [ // J3 - Poème et/ou chant
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Expression orale", mandatorySteps: ["Reprise de la situation n° 1", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
     { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
-  "3": [ // J3
-    { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
-    { name: "Communication orale", mandatorySteps: ["Reprise de la situation n° 1", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
-    { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
-  ],
-  "4": [ // J4
+  "4": [ // J4 - Activité d'écoute
     { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
-    { name: "Lecture fonctionnement", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices du cahier d'activités"] },
+    { name: "Lecture Texte 1 (fonctionnement)", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices du cahier d'activités"] },
     { name: "Écriture", mandatorySteps: ["Présentation", "Entraînement", "Écriture"] },
     { name: "Auto dictée", mandatorySteps: ["Diction", "Reproduction de mémoire", "Correction collective et exploitation des erreurs", "Correction individuelle"] },
     { name: "Projet (Entraînement)", mandatorySteps: ["Exploration", "Exploitation du 1er outil d'aide", "Intégration", "Évaluation"] },
   ],
-  "5": [ // J5
-    { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
-    { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+  "5": [ // J5 - Poème et/ou chant
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Expression orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
     { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
-  "6": [ // J6 - similar to J2 pattern
+  "6": [ // J6 - Activité d'écoute
     { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
-    { name: "Lecture compréhension", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
-    { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
-  ],
-  "7": [ // J7 - similar to J3 pattern
-    { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
-    { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
-    { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
-  ],
-  "8": [ // J8 - Journée d'intégration et d'évaluation
-    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
-    { name: "Lecture fonctionnement", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices du cahier d'activités"] },
+    { name: "Expression orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Lecture Texte 2 (compréhension et fonctionnement)", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Exploitation des exercices", "Évaluation"] },
     { name: "Écriture", mandatorySteps: ["Présentation", "Entraînement", "Écriture"] },
-    { name: "Auto dictée", mandatorySteps: ["Diction", "Reproduction de mémoire", "Correction collective et exploitation des erreurs", "Correction individuelle"] },
-    { name: "Projet (Entraînement)", mandatorySteps: ["Exploration", "Exploitation du 1er outil d'aide", "Intégration", "Évaluation"] },
+  ],
+  "7": [ // J7 - Poème et/ou chant - SPÉCIAL: vocabulaire + dictée
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Expression orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Page vocabulaire", mandatorySteps: ["Découverte", "Exploitation", "Fixation", "Évaluation"] },
+    { name: "Dictée", mandatorySteps: ["Préparation", "Diction", "Correction collective", "Correction individuelle"] },
+  ],
+  "8": [ // J8 - Activité d'écoute - SPÉCIAL: lecture pour s'informer/agir + projet
+    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+    { name: "Lecture pour s'informer (page documentaire)", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Lecture pour agir", mandatorySteps: ["Découverte", "Compréhension", "Exécution", "Évaluation"] },
+    { name: "Projet (Entraînement ou Production)", mandatorySteps: ["Exploration", "Exploitation de l'outil d'aide", "Production", "Évaluation"] },
   ],
 };
 
-function getActivitiesForGrade(niveau: string, journee: number): ActivityConfig[] {
+// Phase 2: Modules 5 à 10 (replaces "Étude de graphies" with "Orthographe")
+const ACTIVITIES_3_5EME_PHASE2: Record<string, ActivityConfig[]> = {
+  "1": [ // J1 - Poème et/ou chant
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Présentation du projet et du module", mandatorySteps: ["Exploration/anticipation", "Présentation du projet", "Exploitation de la fiche contrat", "Élaboration de la carte d'exploration de pistes"] },
+    { name: "Lecture (compréhension)", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+  ],
+  "2": [ // J2 - Activité d'écoute
+    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+    { name: "Expression orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Lecture (fonctionnement)", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices", "Évaluation"] },
+    { name: "Orthographe", mandatorySteps: ["Exploration", "Apprentissage systématique", "Fixation", "Évaluation"] },
+  ],
+  "3": [ // J3 - Poème et/ou chant
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Expression orale", mandatorySteps: ["Reprise de la situation n° 1", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Lecture (compréhension)", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+  ],
+  "4": [ // J4 - Activité d'écoute
+    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+    { name: "Lecture (fonctionnement)", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices", "Évaluation"] },
+    { name: "Écriture", mandatorySteps: ["Présentation", "Entraînement", "Écriture"] },
+    { name: "Orthographe", mandatorySteps: ["Exploration", "Apprentissage systématique", "Fixation", "Évaluation"] },
+    { name: "Projet (Entraînement)", mandatorySteps: ["Exploration", "Exploitation de l'outil d'aide", "Intégration", "Évaluation"] },
+  ],
+  "5": [ // J5 - Poème et/ou chant
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Expression orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Lecture (compréhension)", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+  ],
+  "6": [ // J6 - Activité d'écoute
+    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+    { name: "Expression orale", mandatorySteps: ["Exploration", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Lecture (fonctionnement)", mandatorySteps: ["Rappel", "Relecture", "Exploitation des exercices", "Évaluation"] },
+    { name: "Écriture", mandatorySteps: ["Présentation", "Entraînement", "Écriture"] },
+    { name: "Auto dictée", mandatorySteps: ["Diction", "Reproduction de mémoire", "Correction collective", "Correction individuelle"] },
+  ],
+  "7": [ // J7 - Poème et/ou chant - SPÉCIAL: vocabulaire + dictée
+    { name: "Mise en train (Poème/Chant)", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
+    { name: "Expression orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
+    { name: "Page vocabulaire", mandatorySteps: ["Découverte", "Exploitation", "Fixation", "Évaluation"] },
+    { name: "Dictée", mandatorySteps: ["Préparation", "Diction", "Correction collective", "Correction individuelle"] },
+  ],
+  "8": [ // J8 - Activité d'écoute - SPÉCIAL: lecture pour s'informer/agir + projet
+    { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
+    { name: "Lecture pour s'informer (page documentaire)", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
+    { name: "Lecture pour agir", mandatorySteps: ["Découverte", "Compréhension", "Exécution", "Évaluation"] },
+    { name: "Projet (Entraînement ou Production)", mandatorySteps: ["Exploration", "Exploitation de l'outil d'aide", "Production", "Évaluation"] },
+  ],
+};
+
+// Backward compatibility alias
+const ACTIVITIES_3_5EME = ACTIVITIES_3_5EME_PHASE1;
+
+function getActivitiesForGrade(niveau: string, journee: number, moduleNum?: number): ActivityConfig[] {
   const j = String(journee);
   if (niveau === "6ème année") {
     return ACTIVITIES_6EME[j] || ACTIVITIES_6EME["1"];
   }
-  // 3ème, 4ème, 5ème use the same structure
-  return ACTIVITIES_3_5EME[j] || ACTIVITIES_3_5EME["1"];
+  // 3ème, 4ème, 5ème: choose Phase 1 (M1-M4) or Phase 2 (M5-M10) based on module number
+  const mod = moduleNum || 1;
+  if (mod >= 5) {
+    return ACTIVITIES_3_5EME_PHASE2[j] || ACTIVITIES_3_5EME_PHASE2["1"];
+  }
+  return ACTIVITIES_3_5EME_PHASE1[j] || ACTIVITIES_3_5EME_PHASE1["1"];
 }
 
 function getTableStructure(niveau: string): "6eme" | "3_5eme" {
@@ -153,9 +217,10 @@ export const repartitionJournaliereRouter = router({
     .input(z.object({
       niveau: z.string(),
       journeeNumber: z.number().min(1).max(8),
+      moduleNumber: z.number().min(1).max(10).optional(),
     }))
     .query(({ input }) => {
-      const activities = getActivitiesForGrade(input.niveau, input.journeeNumber);
+      const activities = getActivitiesForGrade(input.niveau, input.journeeNumber, input.moduleNumber);
       const tableStructure = getTableStructure(input.niveau);
       return {
         activities: activities.map(a => ({
@@ -225,7 +290,7 @@ export const repartitionJournaliereRouter = router({
       });
 
       const recordId = inserted.insertId;
-      const gradeConfig = getActivitiesForGrade(input.niveau, input.journeeNumber);
+      const gradeConfig = getActivitiesForGrade(input.niveau, input.journeeNumber, input.moduleNumber);
       const tableStructure = getTableStructure(input.niveau);
 
       try {
@@ -280,8 +345,17 @@ RÈGLES ABSOLUES — AUCUNE EXCEPTION PERMISE :
 6. TERMINOLOGIE OFFICIELLE :
    - P.E.L = Pratique Écrite de la Langue (regroupe : Grammaire, Conjugaison, Orthographe)
    - Pour l'activité P.E.L, le contenu (Objet) doit porter sur un point de grammaire, conjugaison ou orthographe selon le programme.
+   ${input.niveau !== "6ème année" ? `
+7. PHASES DU PROGRAMME (4ème année) :
+   - Phase 1 (Modules 1-4) : utilise "Étude de graphies" et "Lecture-phrases/textes"
+   - Phase 2 (Modules 5-10) : remplace "Étude de graphies" par "Orthographe" et utilise "Lecture (compréhension/fonctionnement)"
+   - Module actuel : ${input.moduleNumber} (${input.moduleNumber <= 4 ? 'Phase 1' : 'Phase 2'})
+   - J7 est spécial : Expression orale + Page vocabulaire + Dictée (PAS d'Étude de graphies ni P.E.L)
+   - J8 est spécial : Lecture pour s'informer + Lecture pour agir + Projet
+   - Jours impairs (J1,J3,J5,J7) : commencent par Poème et/ou chant (Mise en train)
+   - Jours pairs (J2,J4,J6,J8) : commencent par Activité d'écoute` : ''}
 
-7. ACTIVITÉS : Exactement ${gradeConfig.length} activités dans cet ordre :
+8. ACTIVITÉS : Exactement ${gradeConfig.length} activités dans cet ordre :
 ${gradeConfig.map((a, i) => `   ${i + 1}. ${a.name}${a.duration ? ` (${a.duration})` : ""}`).join("\n")}
 
 Réponds UNIQUEMENT en JSON valide avec cette structure exacte :
