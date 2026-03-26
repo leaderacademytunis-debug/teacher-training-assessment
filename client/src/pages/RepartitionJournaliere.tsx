@@ -43,6 +43,33 @@ const ACTIVITY_COLORS: Record<string, { border: string; text: string; bg: string
   "Lecture pour s'informer (page documentaire)": { border: "border-cyan-200", text: "text-cyan-700", bg: "bg-cyan-50", icon: "📰" },
   "Lecture pour agir": { border: "border-blue-200", text: "text-blue-700", bg: "bg-blue-50", icon: "🛠️" },
   "Projet (Entraînement ou Production)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
+  // 6ème année specific
+  "Poème ou chant": { border: "border-yellow-200", text: "text-yellow-700", bg: "bg-yellow-50", icon: "🎵" },
+  "Expression orale (présentation du module et du projet d'écriture)": { border: "border-orange-200", text: "text-orange-700", bg: "bg-orange-50", icon: "🗣️" },
+  "Lecture Compréhension": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
+  "Autodictée": { border: "border-teal-200", text: "text-teal-700", bg: "bg-teal-50", icon: "📋" },
+  "Grammaire et conjugaison (intégration)": { border: "border-purple-200", text: "text-purple-700", bg: "bg-purple-50", icon: "📝" },
+  "Lecture documentaire": { border: "border-cyan-200", text: "text-cyan-700", bg: "bg-cyan-50", icon: "📰" },
+  "Lecture suivie": { border: "border-lime-200", text: "text-lime-700", bg: "bg-lime-50", icon: "📘" },
+  "Page vocabulaire (jouer avec les mots)": { border: "border-fuchsia-200", text: "text-fuchsia-700", bg: "bg-fuchsia-50", icon: "📚" },
+  "Lecture-action": { border: "border-blue-200", text: "text-blue-700", bg: "bg-blue-50", icon: "🛠️" },
+  "Bibliothèque de classe": { border: "border-amber-200", text: "text-amber-700", bg: "bg-amber-50", icon: "📚" },
+  "Projet d'écriture (entraînement)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
+  "Projet d'écriture (production)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
+  "Projet d'écriture (remédiation)": { border: "border-red-200", text: "text-red-700", bg: "bg-red-50", icon: "🔧" },
+  "Projet d'écriture (réécriture)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
+  // 5ème année specific
+  "Présentation du module, du projet et de la fiche-contrat": { border: "border-blue-200", text: "text-blue-700", bg: "bg-blue-50", icon: "📋" },
+  "Élaboration de la carte d'exploration de pistes": { border: "border-indigo-200", text: "text-indigo-700", bg: "bg-indigo-50", icon: "🗺️" },
+  "Lecture Texte (1) Compréhension": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
+  "Lecture Texte (1) Fonctionnement": { border: "border-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", icon: "📗" },
+  "Lecture Texte (2) Compréhension": { border: "border-green-200", text: "text-green-700", bg: "bg-green-50", icon: "📖" },
+  "Lecture Texte (2) Fonctionnement": { border: "border-emerald-200", text: "text-emerald-700", bg: "bg-emerald-50", icon: "📗" },
+  "Auto-dictée": { border: "border-teal-200", text: "text-teal-700", bg: "bg-teal-50", icon: "📋" },
+  "Projet d'écriture (entraînement et outil d'aide)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
+  "Projet d'écriture (production en groupe)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "👥" },
+  "Projet d'écriture (production individuelle)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
+  "Projet d'écriture (réécriture et finalisation)": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },
 };
 
 function getActivityStyle(name: string) {

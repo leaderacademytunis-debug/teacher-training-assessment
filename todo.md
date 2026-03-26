@@ -3142,3 +3142,12 @@
 - [x] تحديث تكوين الأنشطة في backend لمطابقة الدليل الرسمي + إضافة Phase1/Phase2
 - [x] تحديث الاختبارات (102 اختبار - نجحت جميعها)
 - [x] حفظ checkpoint
+
+## تحليل الأدلة المرجعية الرسمية (5ème و 6ème)
+- [x] تحليل دليل السنة الخامسة (Guide Méthodologique CNP) - استخراج J1-J8 (Modules impairs/pairs)
+- [x] تحليل دليل السنة السادسة (Un Pas de Plus... Vers le Collège) - استخراج J1-J8 (Phase1/Phase2)
+- [x] إنشاء تكوينات منفصلة: ACTIVITIES_4EME (Phase1/2) + ACTIVITIES_5EME (Impairs/Pairs) + ACTIVITIES_6EME (Phase1/2)
+- [x] تحديث getActivitiesForGrade لدعم 3 تكوينات منفصلة
+- [x] إضافة أنشطة جديدة للواجهة (Grammaire, Conjugaison, Lecture suivie, Lecture-action, etc.)
+- [x] تحديث الاختبارات (106 اختبار - نجحت جميعها)
+- [x] حفظ checkpoint
