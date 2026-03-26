@@ -2577,11 +2577,15 @@ export const repartitionJournaliere = mysqlTable("repartition_journaliere", {
   dateFrom: varchar("date_from", { length: 50 }),
   dateTo: varchar("date_to", { length: 50 }),
   
+  // Sub-theme for 3ème-5ème année header
+  sousTheme: varchar("sous_theme", { length: 255 }),
+  
   // Activity rows (JSON structure for each activity)
   activities: json("activities").$type<{
     activityName: string;
     duration: string;
     objet: string;
+    objectifSpecifique: string;
     objectif: string;
     etapes: string[];
     remarques: string;

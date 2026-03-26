@@ -1,0 +1,1 @@
+ALTER TABLE `repartition_journaliere` ADD `sous_theme` varchar(255);

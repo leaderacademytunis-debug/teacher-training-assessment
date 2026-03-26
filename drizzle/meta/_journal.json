@@ -526,6 +526,13 @@
       "when": 1774422776974,
       "tag": "0074_mysterious_shocker",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "5",
+      "when": 1774550861673,
+      "tag": "0075_shallow_black_widow",
+      "breakpoints": true
     }
   ]
 }
