@@ -3190,4 +3190,8 @@
 - [x] البحث عن كود توليد الشهادة وتحديد مكان عرض التاريخ
 - [x] تعديل القالب لعرض "Durée : 12 heures" بدل "Date : de XX au XX"
 - [x] إضافة courseDuration في CertificateData وتمريرها في 4 مواضع لتوليد الشهادات
+- [x] حفظ checkpoint
+
+## إصلاح خطأ: No certificate content found for course: تأهيل مدرّسي الفرنسية
+- [x] إصلاح مطابقة اسم الدورة (مسافة زائدة في اسم الدورة بقاعدة البيانات) - إضافة trim() في getCertificateContent
 - [ ] حفظ checkpoint
