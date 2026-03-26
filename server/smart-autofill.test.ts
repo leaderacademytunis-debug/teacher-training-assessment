@@ -56,7 +56,7 @@ const REFERENCE_DB: RefRecord[] = [
       { activityName: "Mise en train", objet: "Chant : « Bonjour, bonjour »", objectifSpecifique: "Assurer la compréhension du chant", objectif: "L'élève serait capable de chanter correctement", etapes: ["Rappel", "Diction", "Évaluation"] },
       { activityName: "Présentation du projet et du module", objet: "Informer / s'informer – Présenter", objectifSpecifique: "Informer / s'informer", objectif: "L'élève serait capable de repérer des indices", etapes: ["Exploration / anticipation", "Présentation du projet", "Exploitation de la fiche contrat", "Élaboration de la carte d'exploration de pistes"] },
       { activityName: "Étude de graphies", objet: "La graphie s = z", objectifSpecifique: "Discriminer auditivement les phonèmes-graphèmes", objectif: "L'élève serait capable de compléter les mots", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-      { activityName: "P.E.L", objet: "La phrase", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de mettre en ordre des mots", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+      { activityName: "P.E.L (Pratique Écrite de la Langue)", objet: "La phrase", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de mettre en ordre des mots", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
     ]
   },
   // 4ème année U1M1 J4 (5 activities)
@@ -110,9 +110,9 @@ function getGradeConfig(niveau: string, journee: number): GradeConfig {
     { name: "Mise en train", mandatorySteps: ["Rappel", "Diction", "Évaluation"] },
     { name: "Présentation du projet et du module", mandatorySteps: ["Exploration / anticipation", "Présentation du projet"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
-  ];
-  return { tableStructure: "3_5eme", hasObjectifSpecifique: true, activities: j1Activities };
+{ name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    ];
+    return { tableStructure: "3_5eme", hasObjectifSpecifique: true, activities: j1Activities };
 }
 
 // ===== Autofill application logic (mirrors frontend) =====

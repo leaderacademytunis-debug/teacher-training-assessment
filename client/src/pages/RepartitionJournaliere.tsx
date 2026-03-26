@@ -24,6 +24,7 @@ const ACTIVITY_COLORS: Record<string, { border: string; text: string; bg: string
   "Mise en train": { border: "border-yellow-200", text: "text-yellow-700", bg: "bg-yellow-50", icon: "🎵" },
   "Étude de graphies": { border: "border-cyan-200", text: "text-cyan-700", bg: "bg-cyan-50", icon: "✏️" },
   "P.E.L": { border: "border-rose-200", text: "text-rose-700", bg: "bg-rose-50", icon: "📐" },
+  "P.E.L (Pratique Écrite de la Langue)": { border: "border-rose-200", text: "text-rose-700", bg: "bg-rose-50", icon: "📐" },
   "Écriture": { border: "border-amber-200", text: "text-amber-700", bg: "bg-amber-50", icon: "✍️" },
   "Auto dictée": { border: "border-teal-200", text: "text-teal-700", bg: "bg-teal-50", icon: "📋" },
   "Projet d'écriture": { border: "border-sky-200", text: "text-sky-700", bg: "bg-sky-50", icon: "📄" },

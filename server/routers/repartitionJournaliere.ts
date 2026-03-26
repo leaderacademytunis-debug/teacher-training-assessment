@@ -58,19 +58,19 @@ const ACTIVITIES_3_5EME: Record<string, ActivityConfig[]> = {
     { name: "Mise en train", mandatorySteps: ["Rappel", "Diction", "Évaluation"] },
     { name: "Présentation du projet et du module", mandatorySteps: ["Exploration/anticipation", "Présentation du projet", "Exploitation de la fiche contrat", "Élaboration de la carte d'exploration de pistes"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
   "2": [ // J2
     { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
     { name: "Lecture compréhension", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
   "3": [ // J3
     { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
     { name: "Communication orale", mandatorySteps: ["Reprise de la situation n° 1", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
   "4": [ // J4
     { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
@@ -83,7 +83,7 @@ const ACTIVITIES_3_5EME: Record<string, ActivityConfig[]> = {
     { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
     { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
 };
 
@@ -240,7 +240,11 @@ RÈGLES ABSOLUES — AUCUNE EXCEPTION PERMISE :
 
 5. ÉTAPES PÉDAGOGIQUES : Les étapes sont FIXES et IMMUABLES pour chaque activité. Ne les modifie JAMAIS.
 
-6. ACTIVITÉS : Exactement ${gradeConfig.length} activités dans cet ordre :
+6. TERMINOLOGIE OFFICIELLE :
+   - P.E.L = Pratique Écrite de la Langue (regroupe : Grammaire, Conjugaison, Orthographe)
+   - Pour l'activité P.E.L, le contenu (Objet) doit porter sur un point de grammaire, conjugaison ou orthographe selon le programme.
+
+7. ACTIVITÉS : Exactement ${gradeConfig.length} activités dans cet ordre :
 ${gradeConfig.map((a, i) => `   ${i + 1}. ${a.name}${a.duration ? ` (${a.duration})` : ""}`).join("\n")}
 
 Réponds UNIQUEMENT en JSON valide avec cette structure exacte :

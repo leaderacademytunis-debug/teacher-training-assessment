@@ -231,7 +231,7 @@ const QUATRIEME_U1M1 = [
         etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"]
       },
       {
-        activityName: "P.E.L",
+        activityName: "P.E.L (Pratique Écrite de la Langue)",
         objet: "La phrase",
         objectifSpecifique: "Identifier la phrase et ses constituants",
         objectif: "L'élève serait capable de mettre en ordre des mots pour former une phrase correcte",
@@ -269,7 +269,7 @@ const QUATRIEME_U1M1 = [
         etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"]
       },
       {
-        activityName: "P.E.L",
+        activityName: "P.E.L (Pratique Écrite de la Langue)",
         objet: "La phrase (suite)",
         objectifSpecifique: "Identifier la phrase et ses constituants",
         objectif: "L'élève serait capable de produire des phrases simples et correctes",
@@ -307,7 +307,7 @@ const QUATRIEME_U1M1 = [
         etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"]
       },
       {
-        activityName: "P.E.L",
+        activityName: "P.E.L (Pratique Écrite de la Langue)",
         objet: "Le verbe être au présent",
         objectifSpecifique: "Conjuguer des verbes du 1er, 2ème, 3ème groupes au présent de l'indicatif",
         objectif: "L'élève serait capable de compléter correctement les phrases données par le verbe être au présent",
@@ -390,7 +390,7 @@ const QUATRIEME_U1M1 = [
         etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"]
       },
       {
-        activityName: "P.E.L",
+        activityName: "P.E.L (Pratique Écrite de la Langue)",
         objet: "Produire des phrases intégrant le verbe « être » au présent",
         objectifSpecifique: "Conjuguer le verbe être au présent dans des phrases",
         objectif: "L'élève serait capable de produire des phrases correctes avec le verbe être au présent",

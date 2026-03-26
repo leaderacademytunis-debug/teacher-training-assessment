@@ -285,7 +285,7 @@ export const referenceContentRouter = router({
             { activityName: "Mise en train", objet: "Chant : \"Bonjour, bonjour\"", objectifSpecifique: "Assurer la compréhension du chant", objectif: "L'élève serait capable de chanter correctement le chant", etapes: ["Rappel", "Diction", "Évaluation"] },
             { activityName: "Présentation du projet et du module", objet: "Informer / s'informer – Présenter", objectifSpecifique: "Informer / s'informer – Présenter", objectif: "L'élève serait capable de repérer des indices à travers la fiche contrat", etapes: ["Exploration / anticipation", "Présentation du projet", "Exploitation de la fiche contrat", "Élaboration de la carte d'exploration de pistes"] },
             { activityName: "Étude de graphies", objet: "La graphie s = z", objectifSpecifique: "Discriminer auditivement les phonèmes-graphèmes. Reconnaître visuellement les graphèmes", objectif: "L'élève serait capable de compléter les mots donnés par la graphie qui convient", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-            { activityName: "P.E.L", objet: "La phrase", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de mettre en ordre des mots pour former une phrase correcte", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+            { activityName: "P.E.L (Pratique Écrite de la Langue)", objet: "La phrase", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de mettre en ordre des mots pour former une phrase correcte", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
           ]
         },
         {
@@ -294,7 +294,7 @@ export const referenceContentRouter = router({
             { activityName: "Activité d'écoute", objet: "Conte en séquence au choix", objectifSpecifique: "Assurer un bain de langue", objectif: "L'élève serait capable de comprendre la 1ère séquence du conte", etapes: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
             { activityName: "Lecture compréhension", objet: "Texte : \"La nouvelle élève\"", objectifSpecifique: "Identifier les personnages et les actions", objectif: "L'élève serait capable de lire le texte et de répondre aux questions de compréhension", etapes: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
             { activityName: "Étude de graphies", objet: "La graphie s = z (suite)", objectifSpecifique: "Discriminer auditivement les phonèmes-graphèmes", objectif: "L'élève serait capable de lire et écrire des mots contenant la graphie étudiée", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-            { activityName: "P.E.L", objet: "La phrase (suite)", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de produire des phrases simples et correctes", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+            { activityName: "P.E.L (Pratique Écrite de la Langue)", objet: "La phrase (suite)", objectifSpecifique: "Identifier la phrase et ses constituants", objectif: "L'élève serait capable de produire des phrases simples et correctes", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
           ]
         },
         {
@@ -303,7 +303,7 @@ export const referenceContentRouter = router({
             { activityName: "Mise en train", objet: "Poème : \"L'école\"", objectifSpecifique: "Assurer la compréhension du poème", objectif: "L'élève serait capable de répondre correctement à la question : le poète aime-t-il l'école ?", etapes: ["Audition", "Compréhension", "Évaluation"] },
             { activityName: "Communication orale", objet: "La phrase à présentatif – La phrase à verbe être", objectifSpecifique: "Rendre compte d'un événement de la vie quotidienne", objectif: "L'élève serait capable de produire un énoncé oral de 3 phrases au moins", etapes: ["Reprise de la situation n° 1", "Apprentissage systématique / Structuré", "Intégration", "Évaluation"] },
             { activityName: "Étude de graphies", objet: "La graphie k_q", objectifSpecifique: "Discriminer auditivement les phonèmes-graphèmes", objectif: "L'élève serait capable de produire une phrase avec des mots contenant la graphie étudiée", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-            { activityName: "P.E.L", objet: "Le verbe être au présent", objectifSpecifique: "Conjuguer des verbes au présent de l'indicatif", objectif: "L'élève serait capable de compléter les phrases par le verbe être au présent", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+            { activityName: "P.E.L (Pratique Écrite de la Langue)", objet: "Le verbe être au présent", objectifSpecifique: "Conjuguer des verbes au présent de l'indicatif", objectif: "L'élève serait capable de compléter les phrases par le verbe être au présent", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
           ]
         },
         {
@@ -322,7 +322,7 @@ export const referenceContentRouter = router({
             { activityName: "Mise en train", objet: "Poème : \"L'école\"", objectifSpecifique: "Assurer la compréhension du poème", objectif: "L'élève serait capable de réciter le poème de manière expressive", etapes: ["Audition", "Compréhension", "Évaluation"] },
             { activityName: "Communication orale", objet: "La phrase à présentatif (bilan)", objectifSpecifique: "Rendre compte d'un événement", objectif: "L'élève serait capable de produire un énoncé oral intégrant les structures étudiées", etapes: ["Reprise de la situation", "Apprentissage systématique / Structuré", "Intégration", "Évaluation"] },
             { activityName: "Étude de graphies", objet: "La graphie g = g", objectifSpecifique: "Reconnaître auditivement et visuellement la graphie", objectif: "L'élève serait capable de compléter les mots par la graphie qui convient", etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-            { activityName: "P.E.L", objet: "Produire des phrases avec le verbe \"être\" au présent", objectifSpecifique: "Conjuguer le verbe être au présent", objectif: "L'élève serait capable de produire des phrases correctes avec le verbe être au présent", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
+            { activityName: "P.E.L (Pratique Écrite de la Langue)", objet: "Produire des phrases avec le verbe \"être\" au présent", objectifSpecifique: "Conjuguer le verbe être au présent", objectif: "L'élève serait capable de produire des phrases correctes avec le verbe être au présent", etapes: ["Manipulation-exploration", "Manipulation-fixation"] },
           ]
         },
       ];

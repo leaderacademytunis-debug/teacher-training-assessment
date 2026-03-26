@@ -86,7 +86,7 @@ const SEED_4EME_J1: RefRecord = {
       etapes: ["Reconnaissance auditive", "Reconnaissance visuelle"]
     },
     {
-      activityName: "P.E.L",
+      activityName: "P.E.L (Pratique Écrite de la Langue)",
       objet: "La phrase",
       objectifSpecifique: "Identifier la phrase et ses constituants",
       objectif: "L'élève serait capable de mettre en ordre des mots pour former une phrase correcte",
@@ -237,7 +237,7 @@ describe("Reference Content - New JSON Schema", () => {
 
     it("should have correct J1 activity sequence", () => {
       expect(SEED_4EME_J1.activities.map(a => a.activityName)).toEqual([
-        "Mise en train", "Présentation du projet et du module", "Étude de graphies", "P.E.L"
+        "Mise en train", "Présentation du projet et du module", "Étude de graphies", "P.E.L (Pratique Écrite de la Langue)"
       ]);
     });
   });

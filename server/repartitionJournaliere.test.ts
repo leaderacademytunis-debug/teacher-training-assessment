@@ -46,19 +46,19 @@ const ACTIVITIES_3_5EME: Record<string, ActivityConfig[]> = {
     { name: "Mise en train", mandatorySteps: ["Rappel", "Diction", "Évaluation"] },
     { name: "Présentation du projet et du module", mandatorySteps: ["Exploration/anticipation", "Présentation du projet", "Exploitation de la fiche contrat", "Élaboration de la carte d'exploration de pistes"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
   "2": [
     { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
     { name: "Lecture compréhension", mandatorySteps: ["Anticipation", "Approche globale", "Approche analytique", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
   "3": [
     { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
     { name: "Communication orale", mandatorySteps: ["Reprise de la situation n° 1", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
   "4": [
     { name: "Activité d'écoute", mandatorySteps: ["Rappel de la 1ère séquence", "Émission d'hypothèses", "Audition de la 2ème séquence"] },
@@ -71,7 +71,7 @@ const ACTIVITIES_3_5EME: Record<string, ActivityConfig[]> = {
     { name: "Mise en train", mandatorySteps: ["Audition", "Compréhension", "Évaluation"] },
     { name: "Communication orale", mandatorySteps: ["Reprise de la situation", "Apprentissage systématique/Structuré", "Intégration", "Évaluation"] },
     { name: "Étude de graphies", mandatorySteps: ["Reconnaissance auditive", "Reconnaissance visuelle"] },
-    { name: "P.E.L", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
+    { name: "P.E.L (Pratique Écrite de la Langue)", mandatorySteps: ["Manipulation-exploration", "Manipulation-fixation"] },
   ],
 };
 
@@ -184,7 +184,7 @@ describe("Répartition Journalière - Grade Configuration", () => {
       expect(activities[0].name).toBe("Mise en train");
       expect(activities[1].name).toBe("Présentation du projet et du module");
       expect(activities[2].name).toBe("Étude de graphies");
-      expect(activities[3].name).toBe("P.E.L");
+      expect(activities[3].name).toBe("P.E.L (Pratique Écrite de la Langue)");
     });
 
     it("J2 should have Activité d'écoute and Lecture compréhension", () => {
@@ -214,7 +214,7 @@ describe("Répartition Journalière - Grade Configuration", () => {
       expect(activities[0].name).toBe("Mise en train");
       expect(activities[1].name).toBe("Communication orale");
       expect(activities[2].name).toBe("Étude de graphies");
-      expect(activities[3].name).toBe("P.E.L");
+      expect(activities[3].name).toBe("P.E.L (Pratique Écrite de la Langue)");
     });
 
     it("3ème-5ème activities should NOT have duration", () => {
@@ -245,7 +245,7 @@ describe("Répartition Journalière - Grade Configuration", () => {
 
     it("P.E.L should always have 2 steps: exploration + fixation", () => {
       const j1 = getActivitiesForGrade("4ème année", 1);
-      const pel = j1.find(a => a.name === "P.E.L");
+      const pel = j1.find(a => a.name === "P.E.L (Pratique Écrite de la Langue)");
       expect(pel?.mandatorySteps).toHaveLength(2);
       expect(pel?.mandatorySteps).toContain("Manipulation-exploration");
       expect(pel?.mandatorySteps).toContain("Manipulation-fixation");
@@ -326,7 +326,7 @@ describe("Répartition Journalière - Activity Sequence Validation", () => {
       "Mise en train",
       "Présentation du projet et du module",
       "Étude de graphies",
-      "P.E.L",
+      "P.E.L (Pratique Écrite de la Langue)",
     ]);
   });
 
