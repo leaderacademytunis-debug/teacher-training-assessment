@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo, useCallback } from "react";
-import { Loader2, Paperclip, X, Image as ImageIcon, Video, FileText, File, Film, Target, BarChart3, History, ChevronLeft, Star, TrendingUp, Award, Eye, BookOpen, Zap, Wrench, Upload, Copy, RefreshCw, ChevronRight, Sparkles } from "lucide-react";
+import { Loader2, Paperclip, X, Image as ImageIcon, Video, FileText, File, Film, Target, BarChart3, History, ChevronLeft, Star, TrendingUp, Award, Eye, BookOpen, Zap, Wrench, Upload, Copy, RefreshCw, ChevronRight, Sparkles, Globe, Youtube, Camera, Link2, Play, CheckCircle2 } from "lucide-react";
 import ToolPageHeader from "@/components/ToolPageHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getToolTranslations } from "@/lib/toolTranslations";
@@ -271,6 +271,21 @@ const VideoEvaluator = () => {
   const [activeTab, setActiveTab] = useState<"form" | "results" | "history">("form");
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<any | null>(null);
 
+  // Multi-input source state
+  const [inputMode, setInputMode] = useState<"upload" | "youtube" | "url" | "camera">("upload");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [directUrl, setDirectUrl] = useState("");
+  const [youtubeData, setYoutubeData] = useState<{ videoId: string; title: string; author: string; thumbnailUrl: string; embedUrl: string } | null>(null);
+  const [directUrlData, setDirectUrlData] = useState<{ fileUrl: string; contentType: string; size: number } | null>(null);
+  const [isProcessingUrl, setIsProcessingUrl] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordedPreviewUrl, setRecordedPreviewUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: history, refetch: refetchHistory } = trpc.tool.videoEvaluator.getMyEvaluations.useQuery(undefined, {
@@ -330,8 +345,43 @@ const VideoEvaluator = () => {
   const handleSubmit = async () => {
     if (!canSubmit) return;
 
-    const fileUrls = await uploadFiles();
-    if (!fileUrls) return; // Upload failed
+    let fileUrls: string[] = [];
+
+    if (inputMode === "upload") {
+      const uploaded = await uploadFiles();
+      if (!uploaded) return;
+      fileUrls = uploaded;
+    } else if (inputMode === "youtube" && youtubeData) {
+      // Pass thumbnail URL as attachment for the AI to analyze
+      fileUrls = [youtubeData.thumbnailUrl];
+    } else if (inputMode === "url" && directUrlData) {
+      fileUrls = [directUrlData.fileUrl];
+    } else if (inputMode === "camera" && recordedBlob) {
+      // Convert recorded blob to a File and upload via the same presigned URL flow
+      const file = new File([recordedBlob], "camera-recording.webm", { type: "video/webm" });
+      const cameraFile: AttachedFile = { name: file.name, size: file.size, type: file.type, file };
+      // Temporarily set attachedFiles to upload the recording
+      const savedFiles = [...attachedFiles];
+      setAttachedFiles([cameraFile]);
+      // Need to wait for state update - use direct upload instead
+      try {
+        const presigned = await trpc.general.getPresignedUrl.mutate({ fileName: file.name, fileType: file.type });
+        const response = await fetch(presigned.url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+        if (!response.ok) throw new Error("Upload failed");
+        fileUrls = [presigned.fileUrl];
+      } catch {
+        toast.error(t("فشل في رفع التسجيل", "Échec de l'envoi", "Upload failed"));
+        setAttachedFiles(savedFiles);
+        return;
+      }
+      setAttachedFiles(savedFiles);
+    }
+
+    // Build video description with source info
+    let enrichedDescription = videoDescription;
+    if (inputMode === "youtube" && youtubeData) {
+      enrichedDescription = `[فيديو يوتيوب: ${youtubeData.title} - ${youtubeData.author}] ${videoDescription}`;
+    }
 
     evaluateVideo({
       prompt,
@@ -341,7 +391,7 @@ const VideoEvaluator = () => {
       grade,
       subject,
       lessonTitle,
-      videoDescription,
+      videoDescription: enrichedDescription,
       fileUrls,
     });
   };
@@ -406,11 +456,87 @@ const VideoEvaluator = () => {
     }
   };
 
+  // Process YouTube URL
+  const handleProcessYoutubeUrl = async () => {
+    if (!youtubeUrl.trim()) return;
+    setIsProcessingUrl(true);
+    try {
+      const result = await trpc.tool.videoEvaluator.processVideoUrl.mutate({ url: youtubeUrl.trim(), type: "youtube" });
+      if (result.success && result.type === "youtube") {
+        setYoutubeData({ videoId: result.videoId!, title: result.title!, author: result.author!, thumbnailUrl: result.thumbnailUrl!, embedUrl: result.embedUrl! });
+        toast.success(t("تم جلب معلومات الفيديو بنجاح!", "Informations vidéo récupérées!", "Video info fetched!"));
+      }
+    } catch (e: any) {
+      toast.error(e.message || t("فشل في معالجة رابط يوتيوب", "Échec du traitement du lien YouTube", "Failed to process YouTube link"));
+    } finally {
+      setIsProcessingUrl(false);
+    }
+  };
+
+  // Process direct URL
+  const handleProcessDirectUrl = async () => {
+    if (!directUrl.trim()) return;
+    setIsProcessingUrl(true);
+    try {
+      const result = await trpc.tool.videoEvaluator.processVideoUrl.mutate({ url: directUrl.trim(), type: "direct" });
+      if (result.success && result.type === "direct") {
+        setDirectUrlData({ fileUrl: result.fileUrl!, contentType: result.contentType!, size: result.size! });
+        toast.success(t("تم التحقق من الرابط بنجاح!", "Lien vérifié avec succès!", "Link verified!"));
+      }
+    } catch (e: any) {
+      toast.error(e.message || t("فشل في معالجة الرابط", "Échec du traitement du lien", "Failed to process link"));
+    } finally {
+      setIsProcessingUrl(false);
+    }
+  };
+
+  // Camera recording
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setCameraStream(stream);
+      if (videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = stream;
+      }
+    } catch (e) {
+      toast.error(t("تعذر الوصول إلى الكاميرا. تأكد من منح الإذن.", "Impossible d'accéder à la caméra.", "Cannot access camera."));
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+  };
+
+  const startRecording = () => {
+    if (!cameraStream) return;
+    recordedChunksRef.current = [];
+    const mr = new MediaRecorder(cameraStream, { mimeType: "video/webm" });
+    mr.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data); };
+    mr.onstop = () => {
+      const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+      setRecordedBlob(blob);
+      setRecordedPreviewUrl(URL.createObjectURL(blob));
+      stopCamera();
+    };
+    mr.start();
+    mediaRecorderRef.current = mr;
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
   const handleNewEvaluation = () => {
     setEvaluationResult(null);
     setSelectedHistoryItem(null);
     setActiveTab("form");
-    // Reset form fields if needed
     setPrompt("");
     setTargetAudience("");
     setEducationalObjective("");
@@ -420,6 +546,13 @@ const VideoEvaluator = () => {
     setLessonTitle("");
     setVideoDescription("");
     setAttachedFiles([]);
+    setYoutubeUrl("");
+    setDirectUrl("");
+    setYoutubeData(null);
+    setDirectUrlData(null);
+    setRecordedBlob(null);
+    setRecordedPreviewUrl(null);
+    stopCamera();
   };
 
   return (
@@ -584,51 +717,218 @@ const VideoEvaluator = () => {
               </CardContent>
             </Card>
 
-            {/* File Upload */}
+            {/* Video Input - Multi-Tab */}
             <Card className="shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2 text-gray-600" style={{ fontFamily: "Cairo, sans-serif" }}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100">
-                    <Upload className="w-4 h-4 text-gray-500" />
+                    <Film className="w-4 h-4 text-gray-500" />
                   </div>
-                  {t("إرفاق الفيديو أو لقطات شاشة", "Joindre la vidéo ou des captures d'écran", "Attach Video or Screenshots")}
+                  {t("إدخال الفيديو", "Source Vidéo", "Video Input")}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <input ref={fileInputRef} type="file" multiple accept="video/*,image/*" className="hidden" onChange={handleFileSelect} />
-                
-                {attachedFiles.length === 0 ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed rounded-xl p-10 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group"
-                  >
-                    <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-colors">
-                      <Paperclip className="w-6 h-6 text-blue-400 group-hover:text-blue-600 transition-colors" />
-                    </div>
-                    <p className="text-sm text-gray-600 font-medium">{t("اضغط لإرفاق فيديو أو صور من الفيديو", "Cliquez pour joindre une vidéo ou des images", "Click to attach a video or images from the video")}</p>
-                    <p className="text-xs text-gray-400 mt-1">{t("يدعم", "Supporte", "Supports")}: MP4, WebM, JPG, PNG — {t("الحد الأقصى", "Max", "Max")}: 16MB {t("لكل ملف", "par fichier", "per file")}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {attachedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-3 bg-muted rounded-lg p-3">
-                        {file.preview ? (
-                          <img src={file.preview} alt={file.name} className="w-12 h-12 object-cover rounded" />
-                        ) : (
-                          <div className="w-12 h-12 bg-background rounded flex items-center justify-center">{getFileIcon(file.type)}</div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{file.name}</p>
-                          <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+              <CardContent className="space-y-4">
+                {/* Input mode tabs */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { mode: "upload" as const, icon: Upload, label: t("رفع ملف", "Importer", "Upload"), color: "#3b82f6" },
+                    { mode: "youtube" as const, icon: Youtube, label: t("يوتيوب", "YouTube", "YouTube"), color: "#ef4444" },
+                    { mode: "url" as const, icon: Globe, label: t("رابط مباشر", "Lien Direct", "Direct URL"), color: "#10b981" },
+                    { mode: "camera" as const, icon: Camera, label: t("كاميرا", "Caméra", "Camera"), color: "#8b5cf6" },
+                  ].map(({ mode, icon: Icon, label, color }) => (
+                    <button
+                      key={mode}
+                      onClick={() => { setInputMode(mode); if (mode !== "camera") stopCamera(); }}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
+                        inputMode === mode
+                          ? "border-current shadow-md scale-[1.02]"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                      style={inputMode === mode ? { borderColor: color, backgroundColor: color + "08" } : {}}
+                    >
+                      <Icon className="w-5 h-5" style={{ color: inputMode === mode ? color : "#9ca3af" }} />
+                      <span className={`text-xs font-medium ${inputMode === mode ? "" : "text-gray-500"}`} style={inputMode === mode ? { color } : {}}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Upload Mode */}
+                {inputMode === "upload" && (
+                  <>
+                    <input ref={fileInputRef} type="file" multiple accept="video/*,image/*" className="hidden" onChange={handleFileSelect} />
+                    {attachedFiles.length === 0 ? (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-100 transition-colors">
+                          <Paperclip className="w-5 h-5 text-blue-400 group-hover:text-blue-600 transition-colors" />
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => removeFile(index)}>
-                          <X className="h-4 w-4" />
+                        <p className="text-sm text-gray-600 font-medium">{t("اضغط لإرفاق فيديو أو صور من الفيديو", "Cliquez pour joindre une vidéo ou des images", "Click to attach a video or images")}</p>
+                        <p className="text-xs text-gray-400 mt-1">MP4, WebM, JPG, PNG — {t("الحد الأقصى", "Max", "Max")}: 16MB</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {attachedFiles.map((file, index) => (
+                          <div key={index} className="flex items-center gap-3 bg-muted rounded-lg p-3">
+                            {file.preview ? (
+                              <img src={file.preview} alt={file.name} className="w-12 h-12 object-cover rounded" />
+                            ) : (
+                              <div className="w-12 h-12 bg-background rounded flex items-center justify-center">{getFileIcon(file.type)}</div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                            </div>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-500" onClick={() => removeFile(index)}>
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="mt-2">
+                          <Paperclip className={`w-4 h-4 ${isRTL ? "ml-1" : "mr-1"}`} /> {t("إضافة ملف آخر", "Ajouter un autre", "Add another")}
                         </Button>
                       </div>
-                    ))}
-                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="mt-2">
-                      <Paperclip className={`w-4 h-4 ${isRTL ? "ml-1" : "mr-1"}`} /> {t("إضافة ملف آخر", "Ajouter un autre fichier", "Add another file")}
-                    </Button>
+                    )}
+                  </>
+                )}
+
+                {/* YouTube Mode */}
+                {inputMode === "youtube" && (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Youtube className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-red-400`} />
+                        <input
+                          type="url"
+                          value={youtubeUrl}
+                          onChange={(e) => { setYoutubeUrl(e.target.value); setYoutubeData(null); }}
+                          placeholder={t("الصق رابط يوتيوب هنا...", "Collez le lien YouTube ici...", "Paste YouTube link here...")}
+                          className={`w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-background`}
+                          dir="ltr"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleProcessYoutubeUrl}
+                        disabled={!youtubeUrl.trim() || isProcessingUrl}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4"
+                      >
+                        {isProcessingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    {youtubeData && (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-4 items-start">
+                        <img src={youtubeData.thumbnailUrl} alt={youtubeData.title} className="w-32 h-20 object-cover rounded-lg shadow-sm flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            <span className="text-xs text-green-600 font-medium">{t("تم التحقق", "Vérifié", "Verified")}</span>
+                          </div>
+                          <h4 className="text-sm font-bold text-gray-800 line-clamp-2">{youtubeData.title}</h4>
+                          <p className="text-xs text-gray-500 mt-0.5">{youtubeData.author}</p>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400">{t("يدعم: youtube.com/watch?v=... و youtu.be/... و youtube.com/shorts/...", "Supporte: youtube.com/watch?v=... et youtu.be/... et youtube.com/shorts/...", "Supports: youtube.com/watch?v=... and youtu.be/... and youtube.com/shorts/...")}</p>
+                  </div>
+                )}
+
+                {/* Direct URL Mode */}
+                {inputMode === "url" && (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Link2 className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400`} />
+                        <input
+                          type="url"
+                          value={directUrl}
+                          onChange={(e) => { setDirectUrl(e.target.value); setDirectUrlData(null); }}
+                          placeholder={t("الصق رابط الفيديو المباشر هنا...", "Collez le lien direct de la vidéo ici...", "Paste direct video URL here...")}
+                          className={`w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-background`}
+                          dir="ltr"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleProcessDirectUrl}
+                        disabled={!directUrl.trim() || isProcessingUrl}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4"
+                      >
+                        {isProcessingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    {directUrlData && (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium text-green-700">{t("تم التحقق من الرابط", "Lien vérifié", "Link verified")}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-gray-600">
+                          <span>{t("النوع", "Type", "Type")}: {directUrlData.contentType || t("غير محدد", "Indéfini", "Unknown")}</span>
+                          {directUrlData.size > 0 && <span>{t("الحجم", "Taille", "Size")}: {formatFileSize(directUrlData.size)}</span>}
+                        </div>
+                        {directUrlData.contentType?.startsWith("video/") && (
+                          <video src={directUrlData.fileUrl} controls className="w-full mt-3 rounded-lg max-h-48" />
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400">{t("يدعم روابط مباشرة لملفات MP4, WebM, أو صور من الفيديو", "Supporte les liens directs vers MP4, WebM ou captures d'écran", "Supports direct links to MP4, WebM, or video screenshots")}</p>
+                  </div>
+                )}
+
+                {/* Camera Mode */}
+                {inputMode === "camera" && (
+                  <div className="space-y-3">
+                    {!cameraStream && !recordedPreviewUrl && (
+                      <div
+                        onClick={startCamera}
+                        className="border-2 border-dashed border-purple-300 rounded-xl p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-all group"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-purple-100 transition-colors">
+                          <Camera className="w-5 h-5 text-purple-400 group-hover:text-purple-600 transition-colors" />
+                        </div>
+                        <p className="text-sm text-gray-600 font-medium">{t("اضغط لتشغيل الكاميرا", "Cliquez pour activer la caméra", "Click to start camera")}</p>
+                        <p className="text-xs text-gray-400 mt-1">{t("سجل فيديو مباشرة من كاميرا جهازك", "Enregistrez directement depuis votre caméra", "Record directly from your device camera")}</p>
+                      </div>
+                    )}
+                    {cameraStream && (
+                      <div className="relative">
+                        <video ref={videoPreviewRef} autoPlay muted playsInline className="w-full rounded-xl bg-black max-h-64" />
+                        <div className="flex justify-center gap-3 mt-3">
+                          {!isRecording ? (
+                            <Button onClick={startRecording} className="bg-red-600 hover:bg-red-700 text-white gap-2">
+                              <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
+                              {t("بدء التسجيل", "Démarrer", "Start Recording")}
+                            </Button>
+                          ) : (
+                            <Button onClick={stopRecording} variant="destructive" className="gap-2">
+                              <div className="w-3 h-3 rounded-sm bg-white" />
+                              {t("إيقاف التسجيل", "Arrêter", "Stop Recording")}
+                            </Button>
+                          )}
+                          <Button onClick={stopCamera} variant="outline">
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {isRecording && (
+                          <div className="absolute top-3 right-3 flex items-center gap-2 bg-red-600 text-white text-xs px-3 py-1.5 rounded-full">
+                            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                            {t("جارٍ التسجيل...", "Enregistrement...", "Recording...")}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {recordedPreviewUrl && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium text-green-700">{t("تم التسجيل بنجاح", "Enregistrement réussi", "Recording successful")}</span>
+                        </div>
+                        <video src={recordedPreviewUrl} controls className="w-full rounded-xl max-h-48" />
+                        <Button variant="outline" size="sm" onClick={() => { setRecordedBlob(null); setRecordedPreviewUrl(null); startCamera(); }}>
+                          <RefreshCw className={`w-4 h-4 ${isRTL ? 'ml-1' : 'mr-1'}`} /> {t("إعادة التسجيل", "Réenregistrer", "Re-record")}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

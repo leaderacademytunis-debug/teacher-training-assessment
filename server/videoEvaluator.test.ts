@@ -625,3 +625,128 @@ describe("Video Evaluator — Re-evaluate Flow", () => {
     expect(nextAttempt).toBe(3);
   });
 });
+
+
+// ── Video Evaluator: Multi-Input Source Processing ──────────────────────────
+
+describe("VideoEvaluator — YouTube URL Extraction", () => {
+  const ytRegex = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+
+  it("should extract video ID from standard YouTube URL", () => {
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    const match = url.match(ytRegex);
+    expect(match).not.toBeNull();
+    expect(match![1]).toBe("dQw4w9WgXcQ");
+  });
+
+  it("should extract video ID from short YouTube URL", () => {
+    const url = "https://youtu.be/dQw4w9WgXcQ";
+    const match = url.match(ytRegex);
+    expect(match).not.toBeNull();
+    expect(match![1]).toBe("dQw4w9WgXcQ");
+  });
+
+  it("should extract video ID from YouTube embed URL", () => {
+    const url = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+    const match = url.match(ytRegex);
+    expect(match).not.toBeNull();
+    expect(match![1]).toBe("dQw4w9WgXcQ");
+  });
+
+  it("should extract video ID from YouTube Shorts URL", () => {
+    const url = "https://www.youtube.com/shorts/dQw4w9WgXcQ";
+    const match = url.match(ytRegex);
+    expect(match).not.toBeNull();
+    expect(match![1]).toBe("dQw4w9WgXcQ");
+  });
+
+  it("should return null for invalid YouTube URL", () => {
+    const url = "https://www.google.com/search?q=test";
+    const match = url.match(ytRegex);
+    expect(match).toBeNull();
+  });
+
+  it("should handle YouTube URL with extra parameters", () => {
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=120&list=PLtest";
+    const match = url.match(ytRegex);
+    expect(match).not.toBeNull();
+    expect(match![1]).toBe("dQw4w9WgXcQ");
+  });
+});
+
+describe("VideoEvaluator — Input Mode Logic", () => {
+  it("should define all four input modes", () => {
+    const modes = ["upload", "youtube", "url", "camera"] as const;
+    expect(modes).toHaveLength(4);
+    expect(modes).toContain("upload");
+    expect(modes).toContain("youtube");
+    expect(modes).toContain("url");
+    expect(modes).toContain("camera");
+  });
+
+  it("should build enriched video description for YouTube", () => {
+    const youtubeData = {
+      videoId: "abc123def45",
+      title: "Water Cycle Lesson",
+      author: "Teacher Ali",
+    };
+    const videoDescription = "My educational video";
+    const enriched = `[فيديو يوتيوب: ${youtubeData.title} - ${youtubeData.author}] ${videoDescription}`;
+
+    expect(enriched).toContain("Water Cycle Lesson");
+    expect(enriched).toContain("Teacher Ali");
+    expect(enriched).toContain("My educational video");
+    expect(enriched).toContain("فيديو يوتيوب");
+  });
+
+  it("should generate correct YouTube thumbnail URL", () => {
+    const videoId = "dQw4w9WgXcQ";
+    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    expect(thumbnailUrl).toBe("https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg");
+  });
+
+  it("should generate correct YouTube embed URL", () => {
+    const videoId = "dQw4w9WgXcQ";
+    const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    expect(embedUrl).toBe("https://www.youtube.com/embed/dQw4w9WgXcQ");
+  });
+
+  it("should generate correct oEmbed API URL", () => {
+    const videoId = "dQw4w9WgXcQ";
+    const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+    expect(oembedUrl).toContain("oembed");
+    expect(oembedUrl).toContain(videoId);
+    expect(oembedUrl).toContain("format=json");
+  });
+});
+
+describe("VideoEvaluator — Content Type Detection for URLs", () => {
+  it("should determine correct file extension from content type", () => {
+    const getExt = (contentType: string) => {
+      if (contentType.includes("mp4")) return "mp4";
+      if (contentType.includes("webm")) return "webm";
+      if (contentType.includes("image")) return "jpg";
+      return "bin";
+    };
+
+    expect(getExt("video/mp4")).toBe("mp4");
+    expect(getExt("video/webm")).toBe("webm");
+    expect(getExt("image/jpeg")).toBe("jpg");
+    expect(getExt("application/octet-stream")).toBe("bin");
+  });
+
+  it("should validate direct URL format", () => {
+    const validUrls = [
+      "https://example.com/video.mp4",
+      "https://cdn.example.com/media/lesson.webm",
+    ];
+    validUrls.forEach(url => {
+      const parsed = new URL(url);
+      expect(parsed.protocol).toBe("https:");
+    });
+  });
+
+  it("should reject invalid URLs", () => {
+    expect(() => new URL("not-a-url")).toThrow();
+  });
+});

@@ -14793,6 +14793,102 @@ ${contextInfo ? "\n# معلومات مقدمة\n" + contextInfo : ""}
         const content = response.choices[0].message.content;
         return { message: typeof content === "string" ? content : "" };
       }),
+    // Process a video URL (YouTube or direct) - fetch metadata and optionally download
+    processVideoUrl: protectedProcedure
+      .input(z.object({
+        url: z.string().url(),
+        type: z.enum(["youtube", "direct"]),
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import("./storage");
+        
+        if (input.type === "youtube") {
+          // Extract YouTube video ID
+          const ytRegex = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+          const match = input.url.match(ytRegex);
+          if (!match) throw new TRPCError({ code: "BAD_REQUEST", message: "رابط يوتيوب غير صالح" });
+          const videoId = match[1];
+          
+          // Get video metadata via oEmbed (no API key needed)
+          try {
+            const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+            const metaRes = await fetch(oembedUrl);
+            if (!metaRes.ok) throw new Error("Video not found");
+            const meta = await metaRes.json();
+            
+            // Get the best thumbnail
+            const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+            
+            // Download thumbnail and upload to S3
+            const thumbRes = await fetch(thumbnailUrl);
+            let thumbS3Url = thumbnailUrl;
+            if (thumbRes.ok) {
+              const thumbBuffer = Buffer.from(await thumbRes.arrayBuffer());
+              const suffix = Math.random().toString(36).substring(2, 8);
+              const { url } = await storagePut(`video-eval/yt-thumb-${videoId}-${suffix}.jpg`, thumbBuffer, "image/jpeg");
+              thumbS3Url = url;
+            }
+            
+            return {
+              success: true,
+              videoId,
+              title: meta.title || "",
+              author: meta.author_name || "",
+              thumbnailUrl: thumbS3Url,
+              embedUrl: `https://www.youtube.com/embed/${videoId}`,
+              originalUrl: input.url,
+              type: "youtube" as const,
+            };
+          } catch (e: any) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "تعذر الوصول إلى فيديو يوتيوب. تأكد من أن الفيديو عام وليس خاصاً." });
+          }
+        } else {
+          // Direct URL - try to fetch headers to validate
+          try {
+            const headRes = await fetch(input.url, { method: "HEAD" });
+            if (!headRes.ok) throw new Error("URL not accessible");
+            
+            const contentType = headRes.headers.get("content-type") || "";
+            const contentLength = parseInt(headRes.headers.get("content-length") || "0");
+            const isVideo = contentType.startsWith("video/");
+            const isImage = contentType.startsWith("image/");
+            
+            if (!isVideo && !isImage) {
+              // Try to download anyway - some servers don't set content-type correctly
+            }
+            
+            // For small files (< 16MB), download and re-upload to S3
+            if (contentLength > 0 && contentLength <= 16 * 1024 * 1024) {
+              const dataRes = await fetch(input.url);
+              const buffer = Buffer.from(await dataRes.arrayBuffer());
+              const ext = contentType.includes("mp4") ? "mp4" : contentType.includes("webm") ? "webm" : contentType.includes("image") ? "jpg" : "bin";
+              const suffix = Math.random().toString(36).substring(2, 8);
+              const { url } = await storagePut(`video-eval/direct-${suffix}.${ext}`, buffer, contentType || "application/octet-stream");
+              
+              return {
+                success: true,
+                fileUrl: url,
+                originalUrl: input.url,
+                contentType,
+                size: contentLength,
+                type: "direct" as const,
+              };
+            }
+            
+            // For larger files or unknown size, just validate and return the URL
+            return {
+              success: true,
+              fileUrl: input.url,
+              originalUrl: input.url,
+              contentType,
+              size: contentLength,
+              type: "direct" as const,
+            };
+          } catch (e: any) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "تعذر الوصول إلى الرابط. تأكد من صحة الرابط وأنه متاح للعموم." });
+          }
+        }
+      }),
   }),
 
   // ===== COURSE REVIEWS (مراجعات الدورات) =====
