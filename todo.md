@@ -3196,3 +3196,9 @@
 - [x] إضافة تأثير blur + قفل للزوار غير المسجلين/غير المعتمدين
 - [x] إضافة زر CTA للتسجيل/الاشتراك فوق الأدوات المقفلة
 - [x] حفظ checkpoint
+
+## إصلاح: التسجيل المولّد بالصوت المستنسخ لا يظهر في Edu-Studio
+- [x] فحص سجلات الخادم - السبب: externalVoiceId يبدأ ب~ clone_ (محاكاة قديمة)
+- [x] فحص كود voiceCloning router وEdu-Studio integration
+- [x] إصلاح: إضافة auto-upgrade للأصوات المحاكاة إلى ElevenLabs حقيقي
+- [x] حفظ checkpoint

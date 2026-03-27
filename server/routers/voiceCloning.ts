@@ -404,6 +404,36 @@ export const voiceCloningRouter = router({
         });
       }
 
+      let externalVoiceId = clones[0].externalVoiceId || "";
+      const isSimulatedVoice = !externalVoiceId || externalVoiceId.startsWith("sim_") || externalVoiceId.startsWith("clone_");
+
+      // Auto-upgrade: if ElevenLabs is now configured but voice was created with simulation,
+      // automatically re-create the voice clone with the real API
+      if (isElevenLabsConfigured() && isSimulatedVoice && clones[0].sampleAudioUrl) {
+        console.log("[VoiceClone TTS] Auto-upgrading simulated voice to real ElevenLabs clone...");
+        try {
+          const result = await elevenLabsCreateVoiceClone(
+            clones[0].sampleAudioUrl,
+            ctx.user.name || `user_${ctx.user.id}`
+          );
+          externalVoiceId = result.voiceId;
+          // Update the database with the real voice ID
+          await db!.update(voiceClones)
+            .set({
+              externalVoiceId: result.voiceId,
+              externalProvider: "elevenlabs",
+            })
+            .where(eq(voiceClones.id, clones[0].id));
+          console.log("[VoiceClone TTS] Auto-upgrade successful, new voice ID:", result.voiceId);
+        } catch (upgradeErr: any) {
+          console.error("[VoiceClone TTS] Auto-upgrade failed:", upgradeErr.message);
+          // Continue with fallback TTS instead of failing completely
+        }
+      }
+
+      // Re-check if we now have a real voice ID after potential auto-upgrade
+      const hasRealVoice = isElevenLabsConfigured() && externalVoiceId && !externalVoiceId.startsWith("sim_") && !externalVoiceId.startsWith("clone_");
+
       // Deduct points (Credit Guard)
       const newBalance = await deductPoints(
         ctx.user.id,
@@ -415,15 +445,14 @@ export const voiceCloningRouter = router({
 
       try {
         let audioBuffer: Buffer;
-        const externalVoiceId = clones[0].externalVoiceId || "";
 
-        if (isElevenLabsConfigured() && externalVoiceId && !externalVoiceId.startsWith("sim_")) {
+        if (hasRealVoice) {
           // ===== REAL ElevenLabs TTS with cloned voice =====
           console.log("[VoiceClone TTS] Using ElevenLabs with voice:", externalVoiceId);
           audioBuffer = await elevenLabsTextToSpeech(externalVoiceId, input.text);
         } else {
           // ===== Fallback: Built-in Forge TTS =====
-          console.log("[VoiceClone TTS] Falling back to Forge TTS");
+          console.log("[VoiceClone TTS] Falling back to Forge TTS (no real voice ID)");
           audioBuffer = await forgeTTS(input.text, "alloy");
         }
 
@@ -442,7 +471,7 @@ export const voiceCloningRouter = router({
           audioUrl,
           pointsUsed: VOICE_CLONE_TTS_COST,
           remainingBalance: newBalance,
-          provider: isElevenLabsConfigured() ? "elevenlabs" : "builtin",
+          provider: hasRealVoice ? "elevenlabs" : "builtin_fallback",
         };
       } catch (error: any) {
         // Refund points on failure
