@@ -3273,4 +3273,12 @@
 - [x] رسم بياني رادار يقارن المعايير الخمسة بين أول وآخر تقييم
 - [x] عرض نسبة التحسن بين التقييم الأول والأخير
 - [x] كتابة اختبارات vitest (83 اختبار ناجح)
+- [x] حفظ checkpoint
+
+## إصلاح خطأ تصدير الفيديو في Ultimate Studio
+- [x] تحقيق في سبب خطأ "فشل في إنشاء الفيديو" - السبب: SharedArrayBuffer يحتاج COOP/COEP headers
+- [x] إضافة COOP/COEP headers فقط على /ultimate-studio
+- [x] إضافة تحقق crossOriginIsolated مع إعادة تحميل تلقائية
+- [x] تحسين رسائل الخطأ التفصيلية
+- [x] تحسين fetchFileData مع fallback
 - [ ] حفظ checkpoint

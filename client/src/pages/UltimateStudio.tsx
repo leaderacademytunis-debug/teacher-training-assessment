@@ -395,6 +395,14 @@ export default function UltimateStudio() {
       return;
     }
 
+    // Check Cross-Origin Isolation (needed for SharedArrayBuffer / FFmpeg.wasm)
+    // If not isolated, force a full page reload to get the COOP/COEP headers
+    if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
+      toast.info("جاري تفعيل محرك الفيديو... سيتم تحديث الصفحة.");
+      window.location.reload();
+      return;
+    }
+
     setIsExporting(true);
     setExportError(null);
     setExportProgress({ phase: 'loading', percent: 0, message: 'جاري التحضير...' });
@@ -427,6 +435,10 @@ export default function UltimateStudio() {
         setExportError('متصفحك يحتاج إلى تحديث لدعم هذه الميزة الخارقة. يرجى استخدام Google Chrome أحدث إصدار.');
       } else if (err.message === 'NO_SCENES') {
         setExportError('لا توجد مشاهد لتصديرها.');
+      } else if (err.message === 'CROSS_ORIGIN_ISOLATION') {
+        setExportError('متصفحك لا يدعم العزل المطلوب. يرجى استخدام Google Chrome أحدث إصدار وتحديث الصفحة.');
+      } else if (err.message?.startsWith('FFMPEG_LOAD_FAILED')) {
+        setExportError('فشل تحميل محرك الفيديو. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.');
       } else {
         setExportError(err.message || 'حدث خطأ أثناء إنشاء الفيديو. حاول مرة أخرى.');
       }

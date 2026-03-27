@@ -60,6 +60,7 @@ export function isWasmSupported(): boolean {
 
 /**
  * Load the FFmpeg.wasm core (downloads ~31MB on first use, cached after)
+ * Uses single-threaded mode (no SharedArrayBuffer requirement)
  */
 async function loadFFmpeg(onProgress?: ProgressCallback): Promise<FFmpeg> {
   if (ffmpegInstance && isLoaded) return ffmpegInstance;
@@ -76,12 +77,22 @@ async function loadFFmpeg(onProgress?: ProgressCallback): Promise<FFmpeg> {
     console.log('[FFmpeg]', message);
   });
 
-  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
+  try {
+    // Use the ESM single-threaded core (no SharedArrayBuffer needed)
+    const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
 
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-  });
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+  } catch (loadError: any) {
+    console.error('[FFmpeg] Load error:', loadError);
+    // If the error is about SharedArrayBuffer, provide a clear message
+    if (loadError.message?.includes('SharedArrayBuffer') || loadError.message?.includes('cross-origin')) {
+      throw new Error('CROSS_ORIGIN_ISOLATION');
+    }
+    throw new Error(`FFMPEG_LOAD_FAILED: ${loadError.message || 'Unknown error'}`);
+  }
 
   ffmpegInstance = ffmpeg;
   isLoaded = true;
@@ -97,10 +108,20 @@ async function loadFFmpeg(onProgress?: ProgressCallback): Promise<FFmpeg> {
 
 /**
  * Fetch a remote file as Uint8Array with CORS handling
+ * In cross-origin isolated context, we need to handle CORS carefully
  */
 async function fetchFileData(url: string): Promise<Uint8Array> {
-  const data = await fetchFile(url);
-  return new Uint8Array(data);
+  try {
+    const data = await fetchFile(url);
+    return new Uint8Array(data);
+  } catch (fetchError) {
+    // Fallback: try fetching with no-cors mode and converting
+    console.warn('[VideoRenderer] fetchFile failed, trying direct fetch:', fetchError);
+    const response = await fetch(url, { mode: 'cors' });
+    if (!response.ok) throw new Error(`Failed to fetch: ${url}`);
+    const buffer = await response.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
 }
 
 /**
