@@ -15,4 +15,6 @@ export const ENV = {
   SMTP_PASS: process.env.SMTP_PASS ?? "",
   SMTP_FROM_NAME: process.env.SMTP_FROM_NAME ?? "منصة تأهيل المدu0631سين",
   VITE_APP_URL: process.env.VITE_APP_URL ?? "",
+  // ElevenLabs Voice Cloning API
+  ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY ?? "",
 };

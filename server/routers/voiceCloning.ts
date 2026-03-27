@@ -7,12 +7,168 @@ import { eq, desc, and } from "drizzle-orm";
 import { storagePut } from "../storage";
 import { ENV } from "../_core/env";
 
-// Cost in points for each voice clone TTS generation
+// ============ CONSTANTS ============
 const VOICE_CLONE_TTS_COST = 5;
 const IMAGE_GENERATION_COST = 3;
 const STANDARD_TTS_COST = 1;
 
-// Helper: ensure user has a points record
+// ElevenLabs API base URL
+const ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1";
+
+// ============ ELEVENLABS HELPERS ============
+
+/**
+ * Check if ElevenLabs API key is configured
+ */
+function isElevenLabsConfigured(): boolean {
+  return !!ENV.ELEVENLABS_API_KEY && ENV.ELEVENLABS_API_KEY.length > 10;
+}
+
+/**
+ * Create an Instant Voice Clone on ElevenLabs
+ * POST https://api.elevenlabs.io/v1/voices/add
+ * multipart/form-data: name, files, remove_background_noise, description, labels
+ * Returns: { voice_id: string, requires_verification: boolean }
+ */
+async function elevenLabsCreateVoiceClone(
+  audioUrl: string,
+  userName: string
+): Promise<{ voiceId: string }> {
+  if (!isElevenLabsConfigured()) {
+    throw new Error("ElevenLabs API key is not configured");
+  }
+
+  // Download the audio file from S3
+  const audioResponse = await fetch(audioUrl);
+  if (!audioResponse.ok) {
+    throw new Error(`Failed to download audio sample: ${audioResponse.status}`);
+  }
+  const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+
+  // Build multipart form data
+  const formData = new FormData();
+  formData.append("name", `LeaderAcademy_${userName}_${Date.now()}`);
+  formData.append(
+    "files",
+    new Blob([audioBuffer], { type: "audio/webm" }),
+    "voice_sample.webm"
+  );
+  formData.append("remove_background_noise", "true");
+  formData.append("description", `Voice clone for ${userName} - Leader Academy`);
+  formData.append("labels", JSON.stringify({ platform: "leader_academy", language: "ar" }));
+
+  const response = await fetch(`${ELEVENLABS_BASE_URL}/voices/add`, {
+    method: "POST",
+    headers: {
+      "xi-api-key": ENV.ELEVENLABS_API_KEY,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[ElevenLabs] Voice clone creation failed:", response.status, errorText);
+    throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
+  }
+
+  const result = await response.json() as { voice_id: string; requires_verification: boolean };
+  console.log("[ElevenLabs] Voice clone created:", result.voice_id);
+  return { voiceId: result.voice_id };
+}
+
+/**
+ * Generate TTS audio using ElevenLabs with a specific voice_id
+ * POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}
+ * Returns: audio buffer (mpeg)
+ */
+async function elevenLabsTextToSpeech(
+  voiceId: string,
+  text: string
+): Promise<Buffer> {
+  if (!isElevenLabsConfigured()) {
+    throw new Error("ElevenLabs API key is not configured");
+  }
+
+  const response = await fetch(`${ELEVENLABS_BASE_URL}/text-to-speech/${voiceId}`, {
+    method: "POST",
+    headers: {
+      "xi-api-key": ENV.ELEVENLABS_API_KEY,
+      "Content-Type": "application/json",
+      "Accept": "audio/mpeg",
+    },
+    body: JSON.stringify({
+      text,
+      model_id: "eleven_multilingual_v2", // Supports Arabic
+      voice_settings: {
+        stability: 0.5,
+        similarity_boost: 0.75,
+        style: 0.0,
+        use_speaker_boost: true,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[ElevenLabs] TTS failed:", response.status, errorText);
+    throw new Error(`ElevenLabs TTS error (${response.status}): ${errorText}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+/**
+ * Delete a voice from ElevenLabs
+ * DELETE https://api.elevenlabs.io/v1/voices/{voice_id}
+ */
+async function elevenLabsDeleteVoice(voiceId: string): Promise<void> {
+  if (!isElevenLabsConfigured() || !voiceId || voiceId.startsWith("clone_")) {
+    // Skip deletion for non-ElevenLabs voices (simulated ones)
+    return;
+  }
+
+  try {
+    const response = await fetch(`${ELEVENLABS_BASE_URL}/voices/${voiceId}`, {
+      method: "DELETE",
+      headers: {
+        "xi-api-key": ENV.ELEVENLABS_API_KEY,
+      },
+    });
+    if (!response.ok) {
+      console.warn("[ElevenLabs] Voice deletion warning:", response.status);
+    }
+  } catch (err) {
+    console.warn("[ElevenLabs] Voice deletion error:", err);
+  }
+}
+
+/**
+ * Fallback: Generate TTS using built-in Forge API (when ElevenLabs is not configured)
+ */
+async function forgeTTS(text: string, voice: string = "alloy"): Promise<Buffer> {
+  const response = await fetch(`${ENV.forgeApiUrl}/v1/audio/speech`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${ENV.forgeApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "tts-1",
+      input: text,
+      voice,
+      response_format: "mp3",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Forge TTS error: ${response.status}`);
+  }
+
+  return Buffer.from(await response.arrayBuffer());
+}
+
+// ============ POINTS HELPERS ============
+
 async function ensurePointsRecord(userId: number) {
   const db = await getDb();
   const existing = await db!.select().from(leaderPoints).where(eq(leaderPoints.userId, userId)).limit(1);
@@ -23,23 +179,22 @@ async function ensurePointsRecord(userId: number) {
   return existing[0];
 }
 
-// Helper: deduct points
 async function deductPoints(userId: number, amount: number, description: string, featureUsed: string, referenceId?: string) {
   const db = await getDb();
   const points = await ensurePointsRecord(userId);
-  
+
   if (points.balance < amount) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: `رصيدك غير كافٍ. تحتاج ${amount} نقطة ولديك ${points.balance} نقطة فقط.`,
     });
   }
-  
+
   const newBalance = points.balance - amount;
   await db!.update(leaderPoints)
     .set({ balance: newBalance, totalSpent: points.totalSpent + amount })
     .where(eq(leaderPoints.userId, userId));
-  
+
   await db!.insert(pointsTransactions).values({
     userId,
     type: "spend",
@@ -49,14 +204,16 @@ async function deductPoints(userId: number, amount: number, description: string,
     featureUsed,
     referenceId,
   });
-  
+
   return newBalance;
 }
 
+// ============ ROUTER ============
+
 export const voiceCloningRouter = router({
-  
+
   // ========== Points Management ==========
-  
+
   getMyPoints: protectedProcedure.query(async ({ ctx }) => {
     const points = await ensurePointsRecord(ctx.user.id);
     return {
@@ -65,7 +222,7 @@ export const voiceCloningRouter = router({
       totalSpent: points.totalSpent,
     };
   }),
-  
+
   getPointsHistory: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
     .query(async ({ ctx, input }) => {
@@ -77,9 +234,9 @@ export const voiceCloningRouter = router({
         .limit(input.limit);
       return transactions;
     }),
-  
+
   // ========== Voice Clone Management ==========
-  
+
   getMyVoiceClone: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     const clones = await db!.select()
@@ -89,7 +246,15 @@ export const voiceCloningRouter = router({
       .limit(1);
     return clones[0] || null;
   }),
-  
+
+  // Check if ElevenLabs is configured (for frontend UI)
+  getVoiceCloneStatus: protectedProcedure.query(() => {
+    return {
+      elevenLabsConfigured: isElevenLabsConfigured(),
+      provider: isElevenLabsConfigured() ? "elevenlabs" : "builtin_simulation",
+    };
+  }),
+
   // Upload voice sample to S3
   uploadVoiceSample: protectedProcedure
     .input(z.object({
@@ -99,22 +264,21 @@ export const voiceCloningRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      
+
       // Convert base64 to buffer
       const audioBuffer = Buffer.from(input.audioBase64, "base64");
-      
+
       // Upload to S3
       const fileKey = `voice-samples/${ctx.user.id}-${Date.now()}.webm`;
       const { url } = await storagePut(fileKey, audioBuffer, input.mimeType);
-      
+
       // Check if user already has a voice clone record
       const existing = await db!.select()
         .from(voiceClones)
         .where(eq(voiceClones.userId, ctx.user.id))
         .limit(1);
-      
+
       if (existing.length > 0) {
-        // Update existing record
         await db!.update(voiceClones)
           .set({
             sampleAudioUrl: url,
@@ -127,7 +291,6 @@ export const voiceCloningRouter = router({
           .where(eq(voiceClones.id, existing[0].id));
         return { id: existing[0].id, sampleUrl: url };
       } else {
-        // Create new record
         const result = await db!.insert(voiceClones).values({
           userId: ctx.user.id,
           sampleAudioUrl: url,
@@ -138,14 +301,13 @@ export const voiceCloningRouter = router({
         return { id: Number(result[0].insertId), sampleUrl: url };
       }
     }),
-  
+
   // Create voice clone from uploaded sample
   createVoiceClone: protectedProcedure
     .input(z.object({ voiceCloneId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      
-      // Get the voice clone record
+
       const clones = await db!.select()
         .from(voiceClones)
         .where(and(
@@ -153,37 +315,39 @@ export const voiceCloningRouter = router({
           eq(voiceClones.userId, ctx.user.id)
         ))
         .limit(1);
-      
+
       if (clones.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على التسجيل الصوتي" });
       }
-      
+
       const clone = clones[0];
       if (!clone.sampleAudioUrl) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "لم يتم رفع عينة صوتية بعد" });
       }
-      
+
       // Update status to processing
       await db!.update(voiceClones)
         .set({ status: "processing" })
         .where(eq(voiceClones.id, clone.id));
-      
+
       try {
-        // Call ElevenLabs-style API to create voice clone
-        // Using the forge API as a proxy
-        const forgeUrl = ENV.forgeApiUrl;
-        const forgeKey = ENV.forgeApiKey;
-        
-        // For now, we'll use a simulated voice clone creation
-        // In production, this would call ElevenLabs API:
-        // POST https://api.elevenlabs.io/v1/voices/add
-        // with the audio sample
-        
-        // Simulate processing and generate a voice ID
-        const voiceId = `clone_${ctx.user.id}_${Date.now()}`;
-        
-        // Try to call the TTS endpoint to verify it works
-        // If ElevenLabs is configured, use it; otherwise use built-in
+        let voiceId: string;
+
+        if (isElevenLabsConfigured()) {
+          // ===== REAL ElevenLabs API Call =====
+          console.log("[VoiceClone] Using ElevenLabs API for voice cloning...");
+          const result = await elevenLabsCreateVoiceClone(
+            clone.sampleAudioUrl,
+            ctx.user.name || `user_${ctx.user.id}`
+          );
+          voiceId = result.voiceId;
+          console.log("[VoiceClone] ElevenLabs voice created:", voiceId);
+        } else {
+          // ===== Fallback: Simulated clone =====
+          console.log("[VoiceClone] ElevenLabs not configured, using simulation...");
+          voiceId = `sim_clone_${ctx.user.id}_${Date.now()}`;
+        }
+
         await db!.update(voiceClones)
           .set({
             status: "ready",
@@ -191,23 +355,29 @@ export const voiceCloningRouter = router({
             errorMessage: null,
           })
           .where(eq(voiceClones.id, clone.id));
-        
-        return { success: true, voiceId, status: "ready" };
+
+        return {
+          success: true,
+          voiceId,
+          status: "ready",
+          provider: isElevenLabsConfigured() ? "elevenlabs" : "simulation",
+        };
       } catch (error: any) {
+        console.error("[VoiceClone] Error:", error.message);
         await db!.update(voiceClones)
           .set({
             status: "failed",
             errorMessage: error.message || "فشل في إنشاء البصمة الصوتية",
           })
           .where(eq(voiceClones.id, clone.id));
-        
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "فشل في إنشاء البصمة الصوتية. يرجى المحاولة مرة أخرى.",
+          message: `فشل في إنشاء البصمة الصوتية: ${error.message}`,
         });
       }
     }),
-  
+
   // Generate TTS with cloned voice (costs points)
   generateWithClonedVoice: protectedProcedure
     .input(z.object({
@@ -217,7 +387,7 @@ export const voiceCloningRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      
+
       // Verify voice clone exists and is ready
       const clones = await db!.select()
         .from(voiceClones)
@@ -226,14 +396,14 @@ export const voiceCloningRouter = router({
           eq(voiceClones.userId, ctx.user.id)
         ))
         .limit(1);
-      
+
       if (clones.length === 0 || clones[0].status !== "ready") {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "البصمة الصوتية غير جاهزة. يرجى إنشاء بصمة صوتية أولاً.",
         });
       }
-      
+
       // Deduct points (Credit Guard)
       const newBalance = await deductPoints(
         ctx.user.id,
@@ -242,36 +412,24 @@ export const voiceCloningRouter = router({
         "voice_clone_tts",
         input.sceneIndex !== undefined ? `scene_${input.sceneIndex}` : undefined
       );
-      
+
       try {
-        // Generate TTS using the cloned voice
-        // In production, this calls ElevenLabs TTS with the cloned voice ID
-        // For now, use the built-in TTS with a note about the voice
-        const forgeUrl = ENV.forgeApiUrl;
-        const forgeKey = ENV.forgeApiKey;
-        
-        const ttsResponse = await fetch(`${forgeUrl}/v1/audio/speech`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${forgeKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "tts-1",
-            input: input.text,
-            voice: "alloy", // Would be clones[0].externalVoiceId in production
-            response_format: "mp3",
-          }),
-        });
-        
-        if (!ttsResponse.ok) {
-          throw new Error(`TTS API error: ${ttsResponse.status}`);
+        let audioBuffer: Buffer;
+        const externalVoiceId = clones[0].externalVoiceId || "";
+
+        if (isElevenLabsConfigured() && externalVoiceId && !externalVoiceId.startsWith("sim_")) {
+          // ===== REAL ElevenLabs TTS with cloned voice =====
+          console.log("[VoiceClone TTS] Using ElevenLabs with voice:", externalVoiceId);
+          audioBuffer = await elevenLabsTextToSpeech(externalVoiceId, input.text);
+        } else {
+          // ===== Fallback: Built-in Forge TTS =====
+          console.log("[VoiceClone TTS] Falling back to Forge TTS");
+          audioBuffer = await forgeTTS(input.text, "alloy");
         }
-        
-        const audioBuffer = Buffer.from(await ttsResponse.arrayBuffer());
+
         const audioKey = `voice-clone-output/${ctx.user.id}/${Date.now()}-scene${input.sceneIndex ?? 0}.mp3`;
         const { url: audioUrl } = await storagePut(audioKey, audioBuffer, "audio/mpeg");
-        
+
         // Update usage stats
         await db!.update(voiceClones)
           .set({
@@ -279,14 +437,16 @@ export const voiceCloningRouter = router({
             lastUsedAt: new Date(),
           })
           .where(eq(voiceClones.id, clones[0].id));
-        
+
         return {
           audioUrl,
           pointsUsed: VOICE_CLONE_TTS_COST,
           remainingBalance: newBalance,
+          provider: isElevenLabsConfigured() ? "elevenlabs" : "builtin",
         };
       } catch (error: any) {
         // Refund points on failure
+        console.error("[VoiceClone TTS] Error, refunding points:", error.message);
         const points = await ensurePointsRecord(ctx.user.id);
         await db!.update(leaderPoints)
           .set({
@@ -294,7 +454,7 @@ export const voiceCloningRouter = router({
             totalSpent: points.totalSpent - VOICE_CLONE_TTS_COST,
           })
           .where(eq(leaderPoints.userId, ctx.user.id));
-        
+
         await db!.insert(pointsTransactions).values({
           userId: ctx.user.id,
           type: "refund",
@@ -303,19 +463,34 @@ export const voiceCloningRouter = router({
           description: "استرداد - فشل توليد الصوت المستنسخ",
           featureUsed: "voice_clone_tts_refund",
         });
-        
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "فشل في توليد الصوت. تم استرداد النقاط.",
         });
       }
     }),
-  
-  // Delete voice clone
+
+  // Delete voice clone (also deletes from ElevenLabs)
   deleteVoiceClone: protectedProcedure
     .input(z.object({ voiceCloneId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+
+      // Get the clone to find the external voice ID
+      const clones = await db!.select()
+        .from(voiceClones)
+        .where(and(
+          eq(voiceClones.id, input.voiceCloneId),
+          eq(voiceClones.userId, ctx.user.id)
+        ))
+        .limit(1);
+
+      if (clones.length > 0 && clones[0].externalVoiceId) {
+        // Delete from ElevenLabs if it's a real voice
+        await elevenLabsDeleteVoice(clones[0].externalVoiceId);
+      }
+
       await db!.delete(voiceClones)
         .where(and(
           eq(voiceClones.id, input.voiceCloneId),
@@ -323,7 +498,7 @@ export const voiceCloningRouter = router({
         ));
       return { success: true };
     }),
-  
+
   // Get pricing info
   getPricing: protectedProcedure.query(() => {
     return {
@@ -331,6 +506,7 @@ export const voiceCloningRouter = router({
       standardTTS: STANDARD_TTS_COST,
       imageGeneration: IMAGE_GENERATION_COST,
       initialFreePoints: 100,
+      provider: isElevenLabsConfigured() ? "elevenlabs" : "builtin_simulation",
     };
   }),
 });
