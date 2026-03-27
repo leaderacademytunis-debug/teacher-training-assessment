@@ -7,7 +7,7 @@ import {
   BookOpen, Loader2, ArrowRight, FileText, Clock, Video, Lock, Film, Sparkles,
   CheckCircle2, Users, Star, Calendar, Tag, Package, ChevronLeft, GraduationCap,
   Award, Target, Zap, MessageSquare, Send, Quote, ThumbsUp, CreditCard, Upload,
-  Phone, Banknote, Wallet, Mic, Coins, Clapperboard, Wand2
+  Phone, Banknote, Wallet, Mic, Coins, Clapperboard, Wand2, PenTool, MonitorPlay
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -400,7 +400,7 @@ export default function CourseDetail() {
                 <p className="text-gray-500 text-sm mb-4">
                   {isAr ? "أدوات متقدمة متاحة حصرياً لمشاركي هذه الدورة لإنشاء محتوى تعليمي احترافي" : "Outils avancés exclusifs aux participants de ce cours"}
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
                   {/* Edu-Studio */}
                   <Link href="/edu-studio">
                     <Card className="group cursor-pointer border-2 border-transparent hover:border-purple-300 rounded-2xl transition-all hover:shadow-lg h-full">
@@ -441,6 +441,46 @@ export default function CourseDetail() {
                     </Card>
                   </Link>
 
+                  {/* Video Evaluator */}
+                  <Link href="/video-evaluator">
+                    <Card className="group cursor-pointer border-2 border-transparent hover:border-indigo-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                      <CardContent className="p-5 text-center">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #1A237E, #0D47A1)' }}>
+                          <MonitorPlay className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                          {isAr ? "مُقيِّم الفيديو" : "Évaluateur Vidéo"}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {isAr ? "وكيل ذكاء اصطناعي لتقييم فيديوهاتك التعليمية" : "Agent IA pour évaluer vos vidéos"}
+                        </p>
+                        <Badge className="mt-3 bg-indigo-100 text-indigo-700 border-0 text-xs">
+                          {isAr ? "وكيل ذكاء اصطناعي" : "Agent IA"}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  </Link>
+
+                  {/* Prompt Lab */}
+                  <Link href="/prompt-lab">
+                    <Card className="group cursor-pointer border-2 border-transparent hover:border-cyan-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                      <CardContent className="p-5 text-center">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #0891B2, #06B6D4)' }}>
+                          <PenTool className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                          {isAr ? "محسّن الأوامر" : "Prompt Lab"}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {isAr ? "حسّن أوامرك للذكاء الاصطناعي واحصل على نتائج أفضل" : "Améliorez vos prompts IA"}
+                        </p>
+                        <Badge className="mt-3 bg-cyan-100 text-cyan-700 border-0 text-xs">
+                          {isAr ? "هندسة الأوامر" : "Prompt Engineering"}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  </Link>
+
                   {/* My Points */}
                   <Link href="/my-points">
                     <Card className="group cursor-pointer border-2 border-transparent hover:border-green-300 rounded-2xl transition-all hover:shadow-lg h-full">
@@ -462,37 +502,6 @@ export default function CourseDetail() {
                   </Link>
                 </div>
               </div>
-            )}
-
-            {/* AI Video Evaluator - Only for Video AI course */}
-            {isApproved && course && (course.slug === 'digital_teacher_ai' || course.slug === 'digital_teacher_ai ') && (
-              <Card className="border-2 overflow-hidden rounded-2xl" style={{ borderColor: 'rgba(26,35,126,0.2)' }}>
-                <div className="p-1" style={{ background: 'linear-gradient(135deg, #1A237E 0%, #0D47A1 50%, #01579B 100%)' }}>
-                  <div className="flex items-center gap-2 px-4 py-2">
-                    <Sparkles className="w-5 h-5 text-yellow-300" />
-                    <span className="text-white font-bold text-sm" style={{ fontFamily: 'Cairo, sans-serif' }}>{isAr ? "وكيل ذكاء اصطناعي" : "Agent IA"}</span>
-                  </div>
-                </div>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #1A237E, #0D47A1)' }}>
-                      <Film className="w-7 h-7 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold" style={{ color: '#1A237E' }}>{isAr ? "مُقيِّم المعلم الرقمي" : "Évaluateur Vidéo IA"}</h3>
-                      <p className="text-gray-500 text-sm mt-1">
-                        {isAr ? "وكيل ذكاء اصطناعي خبير في تقييم الفيديوهات التعليمية وتحسين هندسة الأوامر" : "Agent IA expert en évaluation de vidéos pédagogiques"}
-                      </p>
-                    </div>
-                  </div>
-                  <Link href="/video-evaluator">
-                    <Button size="lg" className="w-full mt-4 text-white rounded-xl" style={{ background: 'linear-gradient(135deg, #1A237E, #1565C0)' }}>
-                      <Film className="w-5 h-5 ml-2" />
-                      {isAr ? "بدء التقييم مع المُقيِّم الرقمي" : "Commencer l'évaluation"}
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
             )}
 
             {/* Exams Section */}
