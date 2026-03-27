@@ -3156,7 +3156,7 @@
 - [ ] البحث عن ElevenLabs API endpoints (Voice Cloning + TTS)
 - [ ] تحديث Backend لاستخدام ElevenLabs API الحقيقي
 - [ ] إضافة مفتاح ELEVENLABS_API_KEY كـ secret
-- [ ] كتابة اختبارات vitest
+- [x] كتابة اختبارات vitest
 - [ ] حفظ checkpoint
 
 ## إضافة روابط الأدوات إلى صفحة دورة إعداد الفيديو بالذكاء الاصطناعي
@@ -3222,4 +3222,15 @@
 - [x] إنشاء endpoints للحفظ والاسترجاع التلقائي
 - [x] دمج الحفظ التلقائي في واجهة UltimateStudio.tsx
 - [x] اختبار سلسلة الإنتاج الكاملة
+- [x] حفظ checkpoint
+
+## تصدير الفيديو MP4 من Ultimate Studio (FFmpeg.wasm)
+- [x] تنصيب مكتبة @ffmpeg/ffmpeg و @ffmpeg/util للعمل في المتصفح
+- [x] إنشاء محرك VideoRenderer مع دعم دمج الصور + الصوت
+- [x] إضافة زر "تصدير كفيديو MP4" في العمود الثالث (Storyboard)
+- [x] بناء نافذة تحميل مع شريط تقدم ونسبة مئوية
+- [x] تنفيذ المنطق الهندسي: مدة الصورة = مدة الصوت + fade transitions
+- [x] تحميل تلقائي للملف باسم Leader-Lesson-Video.mp4
+- [x] معالجة الأخطاء: رسالة ودية إذا المتصفح لا يدعم wasm
+- [x] كتابة اختبارات vitest
 - [ ] حفظ checkpoint

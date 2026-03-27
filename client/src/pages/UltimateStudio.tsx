@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,10 @@ import {
   Upload, Loader2, Copy, Play, Pause, Download, ArrowRight,
   Sparkles, Eye, Volume2, Check, RefreshCw, ZoomIn, ZoomOut,
   ChevronLeft, ChevronRight, Film, Save, FolderOpen, Trash2,
-  PenLine, Clock, MoreVertical, Plus,
+  PenLine, Clock, MoreVertical, Plus, Clapperboard, X,
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
+import { renderVideo, downloadBlob, isWasmSupported, type RenderProgress, type SceneData as VideoSceneData } from "@/lib/videoRenderer";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs`;
 
@@ -373,6 +374,61 @@ export default function UltimateStudio() {
     toast.success("تم النسخ");
   };
 
+  // ═══ Video Export State ═══
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<RenderProgress | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  // Check if all scenes have both image and audio (ready for video export)
+  const canExportVideo = useMemo(() => {
+    if (!scenario || scenario.scenes.length === 0) return false;
+    return scenario.scenes.every(s => s.imageUrl && s.audioUrl);
+  }, [scenario]);
+
+  // ═══ Export Video (FFmpeg.wasm in browser) ═══
+  const handleExportVideo = async () => {
+    if (!scenario || !canExportVideo) return;
+
+    // Check WASM support
+    if (!isWasmSupported()) {
+      toast.error("متصفحك لا يدعم WebAssembly. يرجى استخدام Google Chrome أحدث إصدار.");
+      return;
+    }
+
+    setIsExporting(true);
+    setExportError(null);
+    setExportProgress({ phase: 'loading', percent: 0, message: 'جاري التحضير...' });
+
+    try {
+      const videoScenes: VideoSceneData[] = scenario.scenes.map(s => ({
+        sceneNumber: s.sceneNumber,
+        imageUrl: s.imageUrl!,
+        audioUrl: s.audioUrl!,
+        duration: s.duration,
+      }));
+
+      const blob = await renderVideo(videoScenes, (progress) => {
+        setExportProgress(progress);
+      });
+
+      // Auto-download
+      const filename = `Leader-${scenario.title || 'Lesson'}-Video.mp4`;
+      downloadBlob(blob, filename);
+      toast.success("تم تصدير الفيديو بنجاح! تحقق من مجلد التحميلات.");
+    } catch (err: any) {
+      console.error('[VideoExport]', err);
+      if (err.message === 'WASM_NOT_SUPPORTED') {
+        setExportError('متصفحك يحتاج إلى تحديث لدعم هذه الميزة الخارقة. يرجى استخدام Google Chrome أحدث إصدار.');
+      } else if (err.message === 'NO_SCENES') {
+        setExportError('لا توجد مشاهد لتصديرها.');
+      } else {
+        setExportError(err.message || 'حدث خطأ أثناء إنشاء الفيديو. حاول مرة أخرى.');
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // ═══ Pipeline Step Config ═══
   const steps: { key: PipelineStep; icon: typeof FileText; label: string; labelEn: string; color: string }[] = [
     { key: "script", icon: FileText, label: "السيناريو", labelEn: "Edu-Script", color: "from-blue-500 to-blue-600" },
@@ -465,7 +521,23 @@ export default function UltimateStudio() {
                   toast.success("تم تصدير خطة العمل");
                 }}
               >
-                <Download className="w-4 h-4 ml-1" /> تصدير
+                <Download className="w-4 h-4 ml-1" /> تصدير MD
+              </Button>
+            )}
+
+            {/* Export Video MP4 */}
+            {scenario && (
+              <Button
+                size="sm"
+                className={canExportVideo
+                  ? "bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/20 animate-pulse hover:animate-none"
+                  : "bg-white/10 text-white/30 cursor-not-allowed"
+                }
+                onClick={handleExportVideo}
+                disabled={!canExportVideo || isExporting}
+                title={!canExportVideo ? "يجب توليد الصور والصوت لجميع المشاهد أولاً" : "تصدير كفيديو MP4"}
+              >
+                <Clapperboard className="w-4 h-4 ml-1" /> تصدير فيديو MP4
               </Button>
             )}
             <span className="text-xs text-white/40">مرحباً {user?.name?.split(" ")[0]}</span>
@@ -843,9 +915,21 @@ export default function UltimateStudio() {
               <h2 className="text-sm font-bold text-white">شاشة العرض النهائية</h2>
               <span className="text-[10px] text-white/40 bg-white/10 px-2 py-0.5 rounded-full">Storyboard</span>
             </div>
-            {scenario && (
-              <span className="text-[10px] text-white/40">{scenario.scenes.length} مشاهد</span>
-            )}
+            <div className="flex items-center gap-2">
+              {scenario && (
+                <span className="text-[10px] text-white/40">{scenario.scenes.length} مشاهد</span>
+              )}
+              {scenario && canExportVideo && (
+                <Button
+                  size="sm"
+                  className="h-7 text-[11px] bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/20"
+                  onClick={handleExportVideo}
+                  disabled={isExporting}
+                >
+                  <Clapperboard className="w-3.5 h-3.5 ml-1" /> تصدير MP4
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Storyboard Content */}
@@ -953,6 +1037,75 @@ export default function UltimateStudio() {
           </div>
         </div>
       </div>
+
+      {/* ═══ Video Export Overlay ═══ */}
+      {(isExporting || exportError) && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center" dir="rtl">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            {exportError ? (
+              /* Error State */
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-red-500/20 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+                  <X className="w-8 h-8 text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">فشل في إنشاء الفيديو</h3>
+                <p className="text-sm text-white/60 mb-6">{exportError}</p>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => { setExportError(null); handleExportVideo(); }}
+                  >
+                    <RefreshCw className="w-4 h-4 ml-1" /> إعادة المحاولة
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-white/20 text-white"
+                    onClick={() => { setExportError(null); setExportProgress(null); }}
+                  >
+                    إغلاق
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Progress State */
+              <div className="text-center">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center mx-auto mb-6 relative">
+                  <Clapperboard className="w-10 h-10 text-amber-400 animate-pulse" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-1">جاري إنشاء الفيديو</h3>
+                <p className="text-sm text-amber-400/80 mb-6">{exportProgress?.message || 'جاري التحضير...'}</p>
+
+                {/* Progress Bar */}
+                <div className="relative w-full h-4 bg-white/5 rounded-full overflow-hidden mb-3 border border-white/10">
+                  <div
+                    className="absolute inset-y-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${exportProgress?.percent || 0}%` }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white drop-shadow">{exportProgress?.percent || 0}%</span>
+                  </div>
+                </div>
+
+                {/* Phase indicator */}
+                <div className="flex items-center justify-center gap-4 text-[10px] text-white/40">
+                  <span className={exportProgress?.phase === 'loading' ? 'text-amber-400 font-bold' : ''}>تحميل المحرك</span>
+                  <span>→</span>
+                  <span className={exportProgress?.phase === 'preparing' ? 'text-amber-400 font-bold' : ''}>تحضير الملفات</span>
+                  <span>→</span>
+                  <span className={exportProgress?.phase === 'rendering' ? 'text-amber-400 font-bold' : ''}>دمج المشاهد</span>
+                  <span>→</span>
+                  <span className={exportProgress?.phase === 'finalizing' ? 'text-amber-400 font-bold' : ''}>إنهاء</span>
+                </div>
+
+                <p className="text-[10px] text-white/20 mt-6">يتم المعالجة في متصفحك مباشرة - لا يتم إرسال أي بيانات للسيرفر</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ═══ Projects Dialog ═══ */}
       <Dialog open={showProjectsDialog} onOpenChange={setShowProjectsDialog}>
