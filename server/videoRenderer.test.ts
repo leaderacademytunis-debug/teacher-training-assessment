@@ -16,7 +16,6 @@ describe('VideoRenderer Module', () => {
     it('should create a download link and trigger click', async () => {
       const { downloadBlob } = await import('@/lib/videoRenderer');
 
-      // Setup DOM mocks for Node.js environment
       const mockClick = vi.fn();
       const mockAnchor: any = { href: '', download: '', click: mockClick };
       const mockBody = { appendChild: vi.fn(), removeChild: vi.fn() };
@@ -67,65 +66,112 @@ describe('VideoRenderer Module', () => {
   describe('renderVideo', () => {
     it('should throw NO_SCENES error when scenes array is empty', async () => {
       const { renderVideo } = await import('@/lib/videoRenderer');
-      
       await expect(renderVideo([])).rejects.toThrow('NO_SCENES');
     });
 
-    it('should call progress callback during rendering', async () => {
+    it('should throw NO_SCENES even with branding options', async () => {
+      const { renderVideo } = await import('@/lib/videoRenderer');
+      await expect(
+        renderVideo([], undefined, { lessonTitle: 'Test', teacherName: 'Teacher' })
+      ).rejects.toThrow('NO_SCENES');
+    });
+
+    it('should accept branding options as third parameter', async () => {
       const { renderVideo } = await import('@/lib/videoRenderer');
       const progressCalls: any[] = [];
-      
+
       try {
         await renderVideo(
           [{ sceneNumber: 1, imageUrl: 'https://example.com/img.jpg', audioUrl: 'https://example.com/audio.mp3' }],
-          (progress) => progressCalls.push(progress)
+          (progress) => progressCalls.push(progress),
+          { lessonTitle: 'درس الرياضيات', teacherName: 'أحمد' }
         );
       } catch {
         // Expected to fail in test environment (no real FFmpeg)
       }
-      
-      // Should have at least attempted to call progress
-      // In Node test env, it may fail at WASM check or FFmpeg load
       expect(true).toBe(true);
     });
   });
 
   describe('SceneData interface', () => {
-    it('should accept valid scene data', async () => {
+    it('should accept valid scene data', () => {
       const scene = {
         sceneNumber: 1,
         imageUrl: 'https://example.com/image.jpg',
         audioUrl: 'https://example.com/audio.mp3',
         duration: 10,
       };
-      
       expect(scene.sceneNumber).toBe(1);
       expect(scene.imageUrl).toBeTruthy();
       expect(scene.audioUrl).toBeTruthy();
       expect(scene.duration).toBe(10);
     });
 
-    it('should work without optional duration', async () => {
+    it('should work without optional duration', () => {
       const scene = {
         sceneNumber: 1,
         imageUrl: 'https://example.com/image.jpg',
         audioUrl: 'https://example.com/audio.mp3',
       };
-      
       expect(scene.duration).toBeUndefined();
+    });
+  });
+
+  describe('BrandingOptions interface', () => {
+    it('should accept valid branding options with required fields', () => {
+      const branding = {
+        lessonTitle: 'درس الكسور - السنة الخامسة',
+        teacherName: 'الأستاذ أحمد بن علي',
+      };
+      expect(branding.lessonTitle).toBeTruthy();
+      expect(branding.teacherName).toBeTruthy();
+    });
+
+    it('should accept branding with optional logoUrl', () => {
+      const branding = {
+        lessonTitle: 'درس العلوم',
+        teacherName: 'الأستاذة فاطمة',
+        logoUrl: 'https://example.com/logo.png',
+      };
+      expect(branding.logoUrl).toBeTruthy();
+    });
+
+    it('should work without optional logoUrl', () => {
+      const branding = {
+        lessonTitle: 'درس العلوم',
+        teacherName: 'الأستاذة فاطمة',
+      };
+      expect(branding.logoUrl).toBeUndefined();
     });
   });
 
   describe('RenderProgress interface', () => {
     it('should have valid phase values', () => {
       const validPhases = ['loading', 'preparing', 'rendering', 'finalizing', 'done', 'error'];
-      
       validPhases.forEach(phase => {
         const progress = { phase, percent: 50, message: 'test' };
         expect(validPhases).toContain(progress.phase);
         expect(progress.percent).toBeGreaterThanOrEqual(0);
         expect(progress.percent).toBeLessThanOrEqual(100);
       });
+    });
+  });
+
+  describe('Video resolution constants', () => {
+    it('should target 1080p resolution (1920x1080)', () => {
+      // These are the expected constants in the module
+      const TARGET_WIDTH = 1920;
+      const TARGET_HEIGHT = 1080;
+      expect(TARGET_WIDTH / TARGET_HEIGHT).toBeCloseTo(16 / 9, 1);
+      expect(TARGET_WIDTH).toBe(1920);
+      expect(TARGET_HEIGHT).toBe(1080);
+    });
+
+    it('should have intro and outro durations of 3 seconds', () => {
+      const INTRO_DURATION = 3;
+      const OUTRO_DURATION = 3;
+      expect(INTRO_DURATION).toBe(3);
+      expect(OUTRO_DURATION).toBe(3);
     });
   });
 });

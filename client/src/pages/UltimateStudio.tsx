@@ -15,7 +15,7 @@ import {
   PenLine, Clock, MoreVertical, Plus, Clapperboard, X,
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import { renderVideo, downloadBlob, isWasmSupported, type RenderProgress, type SceneData as VideoSceneData } from "@/lib/videoRenderer";
+import { renderVideo, downloadBlob, isWasmSupported, type RenderProgress, type SceneData as VideoSceneData, type BrandingOptions } from "@/lib/videoRenderer";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs`;
 
@@ -407,9 +407,15 @@ export default function UltimateStudio() {
         duration: s.duration,
       }));
 
+      // Build branding options from current scenario and user
+      const brandingOpts: BrandingOptions = {
+        lessonTitle: scenario.title || 'درس تعليمي',
+        teacherName: user?.name || 'معلم',
+      };
+
       const blob = await renderVideo(videoScenes, (progress) => {
         setExportProgress(progress);
-      });
+      }, brandingOpts);
 
       // Auto-download
       const filename = `Leader-${scenario.title || 'Lesson'}-Video.mp4`;
