@@ -3202,3 +3202,15 @@
 - [x] فحص كود voiceCloning router وEdu-Studio integration
 - [x] إصلاح: إضافة auto-upgrade للأصوات المحاكاة إلى ElevenLabs حقيقي
 - [x] حفظ checkpoint
+
+## بناء صفحة Ultimate Studio (/ultimate-studio)
+- [x] مراجعة الأدوات الحالية (EduStudio, textbooks, voiceCloning) وتخطيط البنية
+- [x] إنشاء backend router مع endpoint استخراج النص (LLM Vision) + Quick Scenario
+- [x] بناء العمود الأول: عارض PDF مصغر + محرك الاستخراج الذكي (Page Extractor)
+- [x] بناء العمود الثاني: Pipeline Engine (Edu-Script, Edu-Vision, Edu-Voice) بتصميم Accordion Stepper
+- [x] بناء العمود الثالث: شاشة العرض النهائية (Storyboard) مع بطاقات المشاهد
+- [x] تنفيذ تدفق البيانات الأفقي بين الأعمدة الثلاثة (بدون تحديث الصفحة)
+- [x] إضافة تصدير خطة العمل PDF
+- [x] تسجيل المسار /ultimate-studio في App.tsx
+- [x] كتابة 8 اختبارات vitest (جميعها ناجحة)
+- [x] حفظ checkpoint
