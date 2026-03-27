@@ -12,6 +12,7 @@ import { repartitionJournaliereRouter } from "./routers/repartitionJournaliere";
 import { referenceContentRouter } from "./routers/referenceContent";
 import { textbookArchiveRouter } from "./routers/textbookArchive";
 import { eduStudioRouter } from "./routers/eduStudio";
+import { voiceCloningRouter } from "./routers/voiceCloning";
 import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -40,6 +41,7 @@ export const appRouter = router({
   referenceContent: referenceContentRouter,
   textbookArchive: textbookArchiveRouter,
   eduStudio: eduStudioRouter,
+  voiceCloning: voiceCloningRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

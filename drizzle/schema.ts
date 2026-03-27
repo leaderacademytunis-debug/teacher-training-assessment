@@ -2715,3 +2715,79 @@ export const studioProjects = mysqlTable("studio_projects", {
 });
 export type StudioProjectRow = typeof studioProjects.$inferSelect;
 export type InsertStudioProject = typeof studioProjects.$inferInsert;
+
+
+// ========== Voice Cloning & Credits System ==========
+
+/**
+ * Voice clones - stores teacher voice imprints for TTS
+ */
+export const voiceClones = mysqlTable("voice_clones", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  
+  // Voice clone metadata
+  name: varchar("name", { length: 255 }).default("صوتي الرقمي").notNull(),
+  status: mysqlEnum("status", ["recording", "processing", "ready", "failed"]).default("recording").notNull(),
+  
+  // Audio sample uploaded by user
+  sampleAudioUrl: text("sample_audio_url"),
+  sampleAudioKey: varchar("sample_audio_key", { length: 500 }),
+  sampleDurationSeconds: int("sample_duration_seconds"),
+  
+  // Cloned voice ID from external API (e.g., ElevenLabs voice_id)
+  externalVoiceId: varchar("external_voice_id", { length: 255 }),
+  externalProvider: varchar("external_provider", { length: 50 }).default("elevenlabs"),
+  
+  // Usage stats
+  totalGenerations: int("total_generations").default(0).notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+  
+  // Error tracking
+  errorMessage: text("error_message"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type VoiceCloneRow = typeof voiceClones.$inferSelect;
+export type InsertVoiceClone = typeof voiceClones.$inferInsert;
+
+/**
+ * Leader Points - credit system for premium AI features
+ */
+export const leaderPoints = mysqlTable("leader_points", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  
+  // Current balance
+  balance: int("balance").default(100).notNull(), // Start with 100 free points
+  totalEarned: int("total_earned").default(100).notNull(),
+  totalSpent: int("total_spent").default(0).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type LeaderPointsRow = typeof leaderPoints.$inferSelect;
+export type InsertLeaderPoints = typeof leaderPoints.$inferInsert;
+
+/**
+ * Points transactions - audit log for all credit operations
+ */
+export const pointsTransactions = mysqlTable("points_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  
+  // Transaction details
+  type: mysqlEnum("type", ["earn", "spend", "bonus", "refund"]).notNull(),
+  amount: int("amount").notNull(), // positive for earn, negative for spend
+  balanceAfter: int("balance_after").notNull(),
+  
+  // What was this for
+  description: text("description").notNull(),
+  featureUsed: varchar("feature_used", { length: 100 }), // e.g., "voice_clone_tts", "image_generation"
+  referenceId: varchar("reference_id", { length: 255 }), // e.g., project ID or scene ID
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PointsTransactionRow = typeof pointsTransactions.$inferSelect;
+export type InsertPointsTransaction = typeof pointsTransactions.$inferInsert;

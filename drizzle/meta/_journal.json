@@ -540,6 +540,13 @@
       "when": 1774573439439,
       "tag": "0076_chemical_thunderbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "5",
+      "when": 1774575998548,
+      "tag": "0077_broken_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

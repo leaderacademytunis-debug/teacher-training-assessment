@@ -10,8 +10,9 @@ import {
   ArrowRight, BookOpen, Clock, Wand2, Play, Layers,
   CheckCircle2, Circle, Lock, Image as ImageIcon,
   ArrowLeft, Save, FolderOpen, Pause, Volume2, ZoomIn, X,
-  Trash2, RotateCcw
+  Trash2, RotateCcw, Coins, User
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Link, useLocation } from "wouter";
 
@@ -103,6 +104,12 @@ export default function EduStudioEngine() {
   // Project saving
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Voice clone integration
+  const [voiceMode, setVoiceMode] = useState<"standard" | "cloned">("standard");
+  const voiceCloneQuery = trpc.voiceCloning.getMyVoiceClone.useQuery();
+  const pointsQuery = trpc.voiceCloning.getMyPoints.useQuery();
+  const clonedAudioMut = trpc.voiceCloning.generateWithClonedVoice.useMutation();
 
   // Mutations
   const scenarioMut = trpc.eduStudio.generateScenario.useMutation();
@@ -261,14 +268,33 @@ export default function EduStudioEngine() {
     }
   };
 
-  // Generate Audio for a scene
+  // Generate Audio for a scene (standard or cloned voice)
   const handleGenerateAudio = async (sceneNumber: number, spokenText: string) => {
     setAudioLoadingScenes(prev => new Set([...Array.from(prev), sceneNumber]));
     try {
-      const result = await audioGenMut.mutateAsync({ sceneNumber, spokenText, voice: ttsVoice });
-      if (result.audioUrl) {
-        setGeneratedAudios(prev => ({ ...prev, [sceneNumber]: result.audioUrl }));
-        toast.success(t(`تم توليد صوت المشهد ${sceneNumber}!`, `Audio scène ${sceneNumber} généré !`, `Scene ${sceneNumber} audio generated!`));
+      if (voiceMode === "cloned" && voiceCloneQuery.data?.status === "ready") {
+        // Use cloned voice (costs points)
+        const result = await clonedAudioMut.mutateAsync({
+          text: spokenText,
+          voiceCloneId: voiceCloneQuery.data.id,
+          sceneIndex: sceneNumber,
+        });
+        if (result.audioUrl) {
+          setGeneratedAudios(prev => ({ ...prev, [sceneNumber]: result.audioUrl }));
+          pointsQuery.refetch();
+          toast.success(t(
+            `تم توليد صوت المشهد ${sceneNumber} بصوتك! (${result.pointsUsed} نقاط)`,
+            `Audio scène ${sceneNumber} généré avec votre voix ! (${result.pointsUsed} pts)`,
+            `Scene ${sceneNumber} audio generated with your voice! (${result.pointsUsed} pts)`
+          ));
+        }
+      } else {
+        // Standard TTS
+        const result = await audioGenMut.mutateAsync({ sceneNumber, spokenText, voice: ttsVoice });
+        if (result.audioUrl) {
+          setGeneratedAudios(prev => ({ ...prev, [sceneNumber]: result.audioUrl }));
+          toast.success(t(`تم توليد صوت المشهد ${sceneNumber}!`, `Audio scène ${sceneNumber} généré !`, `Scene ${sceneNumber} audio generated!`));
+        }
       }
     } catch (err: any) {
       toast.error(err.message || t("فشل في توليد الصوت", "Échec de la génération audio", "Audio generation failed"));
@@ -816,7 +842,68 @@ export default function EduStudioEngine() {
                         </select>
                       </div>
                     </div>
-                    {/* TTS Voice Selection */}
+                    {/* Voice Mode Selector */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">{t("نوع الصوت", "Type de voix", "Voice Type")}</label>
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <button
+                          onClick={() => setVoiceMode("standard")}
+                          className={`p-2.5 rounded-lg text-xs transition-all border ${voiceMode === "standard"
+                            ? "bg-amber-500/30 text-amber-200 border-amber-400/40"
+                            : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"}`}
+                        >
+                          <Volume2 className="w-4 h-4 mx-auto mb-1" />
+                          <div className="font-medium">{t("أصوات AI عادية", "Voix AI standard", "Standard AI Voices")}</div>
+                          <div className="text-[10px] opacity-60">{t("مجاني", "Gratuit", "Free")}</div>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (voiceCloneQuery.data?.status === "ready") {
+                              setVoiceMode("cloned");
+                            } else {
+                              toast.info(t(
+                                "يجب إنشاء بصمة صوتية أولاً من صفحة 'صوتي الرقمي'",
+                                "Créez d'abord votre empreinte vocale",
+                                "Create your voice clone first"
+                              ));
+                            }
+                          }}
+                          className={`p-2.5 rounded-lg text-xs transition-all border relative ${voiceMode === "cloned"
+                            ? "bg-violet-500/30 text-violet-200 border-violet-400/40"
+                            : voiceCloneQuery.data?.status === "ready"
+                            ? "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
+                            : "bg-white/5 text-gray-600 border-white/5 opacity-60"}`}
+                        >
+                          {voiceCloneQuery.data?.status === "ready" && (
+                            <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+                            </span>
+                          )}
+                          <User className="w-4 h-4 mx-auto mb-1" />
+                          <div className="font-medium">{t("صوتي المستنسخ", "Ma voix clonée", "My Cloned Voice")}</div>
+                          <div className="text-[10px] opacity-60">
+                            {voiceCloneQuery.data?.status === "ready"
+                              ? t("5 نقاط/مشهد", "5 pts/scène", "5 pts/scene")
+                              : t("غير مفعّل", "Non activé", "Not activated")}
+                          </div>
+                        </button>
+                      </div>
+                      {voiceMode === "cloned" && (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 mb-2">
+                          <Coins className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-xs text-violet-300">
+                            {t("رصيدك:", "Solde:", "Balance:")} <span className="font-bold text-amber-300">{pointsQuery.data?.balance ?? "..."}</span> {t("نقطة", "pts", "pts")}
+                          </span>
+                          <Link href="/my-voice" className="mr-auto">
+                            <span className="text-xs text-violet-400 hover:text-violet-300 underline">{t("إعدادات الصوت", "Paramètres voix", "Voice settings")}</span>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* TTS Voice Selection (only for standard mode) */}
+                    {voiceMode === "standard" && (
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">{t("صوت TTS", "Voix TTS", "TTS Voice")}</label>
                       <div className="grid grid-cols-3 gap-1">
@@ -831,6 +918,7 @@ export default function EduStudioEngine() {
                         ))}
                       </div>
                     </div>
+                    )}
                   </div>
                 )}
                 <Button onClick={handleGenerateVoiceover} disabled={!visualPrompts.length || voiceoverMut.isPending}

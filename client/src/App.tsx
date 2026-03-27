@@ -92,6 +92,8 @@ const TextbookViewer = lazy(() => import("@/pages/TextbookViewer"));
 const EduStudioEngine = lazy(() => import("@/pages/EduStudioEngine"));
 const EduStudioExport = lazy(() => import("@/pages/EduStudioExport"));
 const MyStudioProjects = lazy(() => import("@/pages/MyStudioProjects"));
+const MyDigitalVoice = lazy(() => import("@/pages/MyDigitalVoice"));
+const MyPoints = lazy(() => import("@/pages/MyPoints"));
 
 function PageLoader() {
   return (
@@ -184,6 +186,8 @@ function Router() {
         <Route path="/edu-studio" component={EduStudioEngine} />
         <Route path="/edu-studio-export" component={EduStudioExport} />
         <Route path="/my-studio-projects" component={MyStudioProjects} />
+        <Route path="/my-voice" component={MyDigitalVoice} />
+        <Route path="/my-points" component={MyPoints} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>
