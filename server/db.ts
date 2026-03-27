@@ -28,7 +28,8 @@ import {
   interventionPlans, InterventionPlan, InsertInterventionPlan,
   handwritingWorksheets, HandwritingWorksheet, InsertHandwritingWorksheet,
   monthlyProgressReports, MonthlyProgressReport, InsertMonthlyProgressReport,
-  courseReviews, CourseReview, InsertCourseReview
+  courseReviews, CourseReview, InsertCourseReview,
+  studioProjects, StudioProjectRow, InsertStudioProject
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 

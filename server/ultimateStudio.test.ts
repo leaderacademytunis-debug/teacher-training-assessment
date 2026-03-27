@@ -52,6 +52,36 @@ describe("Ultimate Studio Router", () => {
     expect(router._def.procedures).toHaveProperty("quickScenario");
   });
 
+  it("should define saveProject procedure", async () => {
+    const mod = await import("./routers/ultimateStudio");
+    const router = mod.ultimateStudioRouter;
+    expect(router._def.procedures).toHaveProperty("saveProject");
+  });
+
+  it("should define listProjects procedure", async () => {
+    const mod = await import("./routers/ultimateStudio");
+    const router = mod.ultimateStudioRouter;
+    expect(router._def.procedures).toHaveProperty("listProjects");
+  });
+
+  it("should define loadProject procedure", async () => {
+    const mod = await import("./routers/ultimateStudio");
+    const router = mod.ultimateStudioRouter;
+    expect(router._def.procedures).toHaveProperty("loadProject");
+  });
+
+  it("should define deleteProject procedure", async () => {
+    const mod = await import("./routers/ultimateStudio");
+    const router = mod.ultimateStudioRouter;
+    expect(router._def.procedures).toHaveProperty("deleteProject");
+  });
+
+  it("should define renameProject procedure", async () => {
+    const mod = await import("./routers/ultimateStudio");
+    const router = mod.ultimateStudioRouter;
+    expect(router._def.procedures).toHaveProperty("renameProject");
+  });
+
   it("should validate extractPageText input requires imageBase64", () => {
     // Test that the schema rejects empty input
     const { z } = require("zod");
@@ -125,5 +155,66 @@ describe("Ultimate Studio Router", () => {
     expect(content.scenes[0]).toHaveProperty("sceneNumber");
     expect(content.scenes[0]).toHaveProperty("visualPrompt");
     expect(content.scenes[0]).toHaveProperty("spokenText");
+  });
+
+  it("should validate saveProject input - title is required", () => {
+    const { z } = require("zod");
+    const schema = z.object({
+      projectId: z.number().optional(),
+      title: z.string().min(1).max(255),
+      pdfUrl: z.string().optional(),
+      pdfFileName: z.string().optional(),
+      currentPage: z.number().optional(),
+      extractedText: z.string().optional(),
+      scriptContent: z.string().optional(),
+      scenarioData: z.any().optional(),
+      status: z.enum(["draft", "in_progress", "completed"]).optional(),
+    });
+
+    // Valid input
+    expect(schema.safeParse({ title: "مشروع اختبار" }).success).toBe(true);
+    // Empty title should fail
+    expect(schema.safeParse({ title: "" }).success).toBe(false);
+    // With projectId for update
+    expect(schema.safeParse({ projectId: 1, title: "تحديث" }).success).toBe(true);
+    // With all fields
+    expect(schema.safeParse({
+      title: "مشروع كامل",
+      pdfFileName: "test.pdf",
+      currentPage: 5,
+      extractedText: "نص مستخرج",
+      status: "in_progress",
+    }).success).toBe(true);
+  });
+
+  it("should validate deleteProject input", () => {
+    const { z } = require("zod");
+    const schema = z.object({ projectId: z.number() });
+
+    expect(schema.safeParse({ projectId: 1 }).success).toBe(true);
+    expect(schema.safeParse({ projectId: "abc" }).success).toBe(false);
+    expect(schema.safeParse({}).success).toBe(false);
+  });
+
+  it("should validate renameProject input", () => {
+    const { z } = require("zod");
+    const schema = z.object({
+      projectId: z.number(),
+      title: z.string().min(1).max(255),
+    });
+
+    expect(schema.safeParse({ projectId: 1, title: "اسم جديد" }).success).toBe(true);
+    expect(schema.safeParse({ projectId: 1, title: "" }).success).toBe(false);
+    expect(schema.safeParse({ title: "بدون معرف" }).success).toBe(false);
+  });
+
+  it("should support project status values", () => {
+    const { z } = require("zod");
+    const statusSchema = z.enum(["draft", "in_progress", "completed"]);
+
+    expect(statusSchema.safeParse("draft").success).toBe(true);
+    expect(statusSchema.safeParse("in_progress").success).toBe(true);
+    expect(statusSchema.safeParse("completed").success).toBe(true);
+    expect(statusSchema.safeParse("unknown").success).toBe(false);
   });
 });

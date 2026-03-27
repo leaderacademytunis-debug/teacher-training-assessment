@@ -2,17 +2,21 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { invokeLLM } from "../_core/llm";
+import { getDb } from "../db";
+import { studioProjects } from "../../drizzle/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 /**
  * Ultimate Studio Router
- * Provides the "Page Extractor" endpoint that reads a specific page
- * from a PDF URL using LLM Vision and returns the extracted text.
+ * Provides:
+ * - Page text extraction via LLM Vision
+ * - Quick scenario generation
+ * - Project save/load/list/delete for auto-save
  */
 
 export const ultimateStudioRouter = router({
   /**
    * Extract text from a specific PDF page using LLM Vision
-   * The frontend renders the page to a canvas, converts to base64, and sends it here.
    */
   extractPageText: protectedProcedure
     .input(z.object({
@@ -75,7 +79,6 @@ export const ultimateStudioRouter = router({
 
   /**
    * Quick scenario generation optimized for the pipeline flow
-   * Takes extracted text and generates a structured scenario in one step
    */
   quickScenario: protectedProcedure
     .input(z.object({
@@ -154,5 +157,196 @@ ${langInstruction}
       } catch {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحليل السيناريو" });
       }
+    }),
+
+  // =================== PROJECT SAVE/LOAD ===================
+
+  /**
+   * Save or update a project (auto-save or manual save)
+   */
+  saveProject: protectedProcedure
+    .input(z.object({
+      projectId: z.number().optional(), // If provided, update existing
+      title: z.string().min(1).max(255),
+      pdfUrl: z.string().optional(),
+      pdfFileName: z.string().optional(),
+      currentPage: z.number().optional(),
+      extractedText: z.string().optional(),
+      scriptContent: z.string().optional(),
+      scenarioData: z.any().optional(),
+      visualPromptsData: z.any().optional(),
+      voiceoverData: z.any().optional(),
+      generatedImages: z.any().optional(),
+      generatedAudios: z.any().optional(),
+      status: z.enum(["draft", "in_progress", "completed"]).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متوفرة" });
+
+      const userId = ctx.user!.id;
+
+      if (input.projectId) {
+        // Update existing project
+        const [existing] = await db
+          .select({ id: studioProjects.id })
+          .from(studioProjects)
+          .where(and(
+            eq(studioProjects.id, input.projectId),
+            eq(studioProjects.userId, userId),
+          ))
+          .limit(1);
+
+        if (!existing) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        }
+
+        await db.update(studioProjects)
+          .set({
+            title: input.title,
+            pdfUrl: input.pdfUrl ?? null,
+            pdfFileName: input.pdfFileName ?? null,
+            currentPage: input.currentPage ?? 1,
+            extractedText: input.extractedText ?? null,
+            scriptContent: input.scriptContent ?? null,
+            scenarioData: input.scenarioData ?? null,
+            visualPromptsData: input.visualPromptsData ?? null,
+            voiceoverData: input.voiceoverData ?? null,
+            generatedImages: input.generatedImages ?? null,
+            generatedAudios: input.generatedAudios ?? null,
+            status: input.status ?? "in_progress",
+          })
+          .where(eq(studioProjects.id, input.projectId));
+
+        return { id: input.projectId, saved: true };
+      } else {
+        // Create new project
+        const [result] = await db.insert(studioProjects).values({
+          userId,
+          title: input.title,
+          studioType: "ultimate_studio",
+          pdfUrl: input.pdfUrl ?? null,
+          pdfFileName: input.pdfFileName ?? null,
+          currentPage: input.currentPage ?? 1,
+          extractedText: input.extractedText ?? null,
+          scriptContent: input.scriptContent ?? null,
+          scenarioData: input.scenarioData ?? null,
+          visualPromptsData: input.visualPromptsData ?? null,
+          voiceoverData: input.voiceoverData ?? null,
+          generatedImages: input.generatedImages ?? null,
+          generatedAudios: input.generatedAudios ?? null,
+          status: input.status ?? "draft",
+        });
+
+        return { id: result.insertId, saved: true };
+      }
+    }),
+
+  /**
+   * List all projects for the current user (Ultimate Studio only)
+   */
+  listProjects: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      const userId = ctx.user!.id;
+      const projects = await db
+        .select({
+          id: studioProjects.id,
+          title: studioProjects.title,
+          pdfFileName: studioProjects.pdfFileName,
+          status: studioProjects.status,
+          studioType: studioProjects.studioType,
+          createdAt: studioProjects.createdAt,
+          updatedAt: studioProjects.updatedAt,
+        })
+        .from(studioProjects)
+        .where(and(
+          eq(studioProjects.userId, userId),
+          eq(studioProjects.studioType, "ultimate_studio"),
+        ))
+        .orderBy(desc(studioProjects.updatedAt))
+        .limit(50);
+
+      return projects;
+    }),
+
+  /**
+   * Load a specific project with all data
+   */
+  loadProject: protectedProcedure
+    .input(z.object({ projectId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متوفرة" });
+
+      const userId = ctx.user!.id;
+      const [project] = await db
+        .select()
+        .from(studioProjects)
+        .where(and(
+          eq(studioProjects.id, input.projectId),
+          eq(studioProjects.userId, userId),
+        ))
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+      }
+
+      return project;
+    }),
+
+  /**
+   * Delete a project
+   */
+  deleteProject: protectedProcedure
+    .input(z.object({ projectId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متوفرة" });
+
+      const userId = ctx.user!.id;
+      const [existing] = await db
+        .select({ id: studioProjects.id })
+        .from(studioProjects)
+        .where(and(
+          eq(studioProjects.id, input.projectId),
+          eq(studioProjects.userId, userId),
+        ))
+        .limit(1);
+
+      if (!existing) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+      }
+
+      await db.delete(studioProjects)
+        .where(eq(studioProjects.id, input.projectId));
+
+      return { deleted: true };
+    }),
+
+  /**
+   * Rename a project
+   */
+  renameProject: protectedProcedure
+    .input(z.object({
+      projectId: z.number(),
+      title: z.string().min(1).max(255),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متوفرة" });
+
+      const userId = ctx.user!.id;
+      await db.update(studioProjects)
+        .set({ title: input.title })
+        .where(and(
+          eq(studioProjects.id, input.projectId),
+          eq(studioProjects.userId, userId),
+        ));
+
+      return { renamed: true };
     }),
 });

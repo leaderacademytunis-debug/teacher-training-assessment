@@ -488,9 +488,16 @@ export default function CourseDetail() {
                         bg: 'linear-gradient(135deg, #9333EA, #DB2777)',
                         name: isAr ? 'المخرج الذكي' : 'AI Director',
                         desc: isAr ? 'مشاهد فيديو سينمائية' : 'Vidéos cinématiques',
-                        badge: isAr ? 'إنتاج فيديو متقدم' : 'Production avancée',
-                        badgeColor: 'bg-rose-100 text-rose-700'
-                      }, {
+                         badge: isAr ? 'إنتاج فيديو متقدم' : 'Production avancée',
+                         badgeColor: 'bg-rose-100 text-rose-700'
+                       }, {
+                         icon: <Film className="w-7 h-7 text-white" />,
+                         bg: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                         name: 'Ultimate Studio',
+                         desc: isAr ? 'من الكتاب إلى الفيديو' : 'Du manuel au vidéo',
+                         badge: isAr ? 'جديد' : 'Nouveau',
+                         badgeColor: 'bg-amber-100 text-amber-700'
+                       }, {
                         icon: <Coins className="w-7 h-7 text-white" />,
                         bg: 'linear-gradient(135deg, #10B981, #059669)',
                         name: isAr ? 'نقاط ليدر' : 'Leader Points',
@@ -611,6 +618,26 @@ export default function CourseDetail() {
                           </p>
                           <Badge className="mt-3 bg-rose-100 text-rose-700 border-0 text-xs">
                             {isAr ? "إنتاج فيديو متقدم" : "Production vidéo avancée"}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </Link>
+
+                    {/* Ultimate Studio */}
+                    <Link href="/ultimate-studio">
+                      <Card className="group cursor-pointer border-2 border-transparent hover:border-amber-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                        <CardContent className="p-5 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}>
+                            <Film className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {isAr ? "Ultimate Studio" : "Ultimate Studio"}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {isAr ? "من الكتاب المدرسي إلى الفيديو التعليمي في شاشة واحدة" : "Du manuel au vidéo éducatif en un seul écran"}
+                          </p>
+                          <Badge className="mt-3 bg-amber-100 text-amber-700 border-0 text-xs">
+                            {isAr ? "جديد - الأداة الشاملة" : "Nouveau - Outil complet"}
                           </Badge>
                         </CardContent>
                       </Card>

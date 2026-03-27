@@ -2675,8 +2675,9 @@ export type InsertTextbookExcerpt = typeof textbookExcerpts.$inferInsert;
 
 
 /**
- * Studio Projects - Saves complete Edu-Studio storyboard projects
+ * Studio Projects - Saves complete Edu-Studio & Ultimate Studio projects
  * Stores scenario, visual prompts, voiceover data, generated image URLs, and audio URLs
+ * Also supports Ultimate Studio: PDF source, extracted text, and full pipeline data
  */
 export const studioProjects = mysqlTable("studio_projects", {
   id: int("id").autoincrement().primaryKey(),
@@ -2686,11 +2687,19 @@ export const studioProjects = mysqlTable("studio_projects", {
   title: varchar("title", { length: 255 }).notNull(),
   summary: text("summary"),
   status: mysqlEnum("status", ["draft", "in_progress", "completed"]).default("draft").notNull(),
+  studioType: mysqlEnum("studio_type", ["edu_studio", "ultimate_studio"]).default("edu_studio").notNull(),
   
   // Source reference
   referenceText: mediumtext("reference_text"),
   sourceBookId: varchar("source_book_id", { length: 100 }),
   sourceBookTitle: varchar("source_book_title", { length: 255 }),
+  
+  // Ultimate Studio: PDF source data
+  pdfUrl: text("pdf_url"),
+  pdfFileName: varchar("pdf_file_name", { length: 255 }),
+  currentPage: int("current_page").default(1),
+  extractedText: mediumtext("extracted_text"),
+  scriptContent: mediumtext("script_content"),
   
   // Generation settings
   numberOfScenes: int("number_of_scenes").default(4),
@@ -2791,3 +2800,4 @@ export const pointsTransactions = mysqlTable("points_transactions", {
 });
 export type PointsTransactionRow = typeof pointsTransactions.$inferSelect;
 export type InsertPointsTransaction = typeof pointsTransactions.$inferInsert;
+

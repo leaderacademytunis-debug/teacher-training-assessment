@@ -14711,7 +14711,7 @@ ${input.videoDescription ? "- وصف الفيديو: " + input.videoDescription 
         }
         const totalEvaluations = evaluations.length;
         const averageScore = Math.round(evaluations.reduce((sum, e) => sum + e.totalScore, 0) / totalEvaluations);
-        const bestScore = Math.max(...evaluations.map(e => e.totalScore));
+        const bestScore = Math.max(...evaluations.map((e: any) => e.totalScore));
         const latestScore = evaluations[0].totalScore;
         const improvement = evaluations.length >= 2 ? evaluations[0].totalScore - evaluations[evaluations.length - 1].totalScore : 0;
         const averages = {
@@ -14983,7 +14983,7 @@ Respond in valid JSON with exactly these fields:
       const certsWithNames = certs.map((c: any) => ({ ...c, courseName: courseNameMap[c.courseId] || '\u0634\u0647\u0627\u062f\u0629' }));
       // Get recent activity (last 10 items across types)
       const recentSheets = await database.select({ id: pedagogicalSheets.id, subject: pedagogicalSheets.subject, lessonTitle: pedagogicalSheets.lessonTitle, createdAt: pedagogicalSheets.createdAt }).from(pedagogicalSheets).where(eq(pedagogicalSheets.createdBy, ctx.user.id)).orderBy(desc(pedagogicalSheets.createdAt)).limit(5);
-      const recentExams = await database.select({ id: teacherExams.id, subject: teacherExams.subject, title: teacherExams.title, createdAt: teacherExams.createdAt }).from(teacherExams).where(eq(teacherExams.createdBy, ctx.user.id)).orderBy(desc(teacherExams.createdAt)).limit(5);
+      const recentExams = await database.select({ id: teacherExams.id, subject: teacherExams.subject, title: teacherExams.examTitle, createdAt: teacherExams.createdAt }).from(teacherExams).where(eq(teacherExams.createdBy, ctx.user.id)).orderBy(desc(teacherExams.createdAt)).limit(5);
       const recentImages = await database.select({ id: generatedImages.id, prompt: generatedImages.prompt, createdAt: generatedImages.createdAt }).from(generatedImages).where(eq(generatedImages.userId, ctx.user.id)).orderBy(desc(generatedImages.createdAt)).limit(3);
       // Merge and sort recent activity
       const recentActivity = [

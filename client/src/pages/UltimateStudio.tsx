@@ -1,16 +1,18 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   BookOpen, Wand2, FileText, Image, Mic, ChevronDown, ChevronUp,
   Upload, Loader2, Copy, Play, Pause, Download, ArrowRight,
   Sparkles, Eye, Volume2, Check, RefreshCw, ZoomIn, ZoomOut,
-  ChevronLeft, ChevronRight, Film,
+  ChevronLeft, ChevronRight, Film, Save, FolderOpen, Trash2,
+  PenLine, Clock, MoreVertical, Plus,
 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -41,6 +43,16 @@ type PipelineStep = "script" | "vision" | "voice";
 export default function UltimateStudio() {
   const { user } = useAuth();
 
+  // ═══ Project State ═══
+  const [projectId, setProjectId] = useState<number | null>(null);
+  const [projectTitle, setProjectTitle] = useState("مشروع جديد");
+  const [showProjectsDialog, setShowProjectsDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [renameText, setRenameText] = useState("");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   // ═══ Column 1: Source State ═══
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,13 +80,121 @@ export default function UltimateStudio() {
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
   const audioRefs = useRef<Record<number, HTMLAudioElement>>({});
 
-  // ═══ tRPC Mutations ═══
+  // ═══ tRPC Mutations & Queries ═══
   const extractMutation = trpc.ultimateStudio.extractPageText.useMutation();
   const scenarioMutation = trpc.ultimateStudio.quickScenario.useMutation();
   const imageMutation = trpc.eduStudio.generateSceneImage.useMutation();
   const audioMutation = trpc.eduStudio.generateSceneAudio.useMutation();
   const cloneQuery = trpc.voiceCloning.getMyVoiceClone.useQuery();
   const cloneTTSMutation = trpc.voiceCloning.generateWithClonedVoice.useMutation();
+
+  // Project management
+  const saveMutation = trpc.ultimateStudio.saveProject.useMutation();
+  const projectsQuery = trpc.ultimateStudio.listProjects.useQuery();
+  const deleteMutation = trpc.ultimateStudio.deleteProject.useMutation();
+  const renameMutation = trpc.ultimateStudio.renameProject.useMutation();
+  const [loadingProjectId, setLoadingProjectId] = useState<number | null>(null);
+  const loadProjectQuery = trpc.ultimateStudio.loadProject.useQuery(
+    { projectId: loadingProjectId! },
+    { enabled: loadingProjectId !== null }
+  );
+
+  // ═══ Handle project loading ═══
+  useEffect(() => {
+    if (loadProjectQuery.data && loadingProjectId !== null) {
+      loadProjectData(loadProjectQuery.data);
+      setLoadingProjectId(null);
+    }
+  }, [loadProjectQuery.data, loadingProjectId]);
+
+  // ═══ Auto-Save Logic ═══
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const saveProject = useCallback(async (silent = false) => {
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      const result = await saveMutation.mutateAsync({
+        projectId: projectId ?? undefined,
+        title: projectTitle || "مشروع بدون عنوان",
+        pdfFileName: fileName || undefined,
+        currentPage,
+        extractedText: extractedText || undefined,
+        scriptContent: extractedText || undefined,
+        scenarioData: scenario?.scenes || undefined,
+        status: scenario ? "in_progress" : "draft",
+      });
+      if (!projectId && result.id) {
+        setProjectId(result.id);
+      }
+      setLastSavedAt(new Date());
+      setHasUnsavedChanges(false);
+      if (!silent) toast.success("تم حفظ المشروع");
+    } catch {
+      if (!silent) toast.error("فشل في حفظ المشروع");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user, projectId, projectTitle, fileName, currentPage, extractedText, scenario, saveMutation]);
+
+  // Mark changes as unsaved when state changes
+  useEffect(() => {
+    if (extractedText || scenario) {
+      setHasUnsavedChanges(true);
+    }
+  }, [extractedText, scenario]);
+
+  // Auto-save every 30 seconds when there are unsaved changes
+  useEffect(() => {
+    if (hasUnsavedChanges && user) {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = setTimeout(() => {
+        saveProject(true);
+      }, 30000);
+    }
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [hasUnsavedChanges, user, saveProject]);
+
+  // ═══ Load Project ═══
+  const loadProjectData = (project: any) => {
+    setProjectId(project.id);
+    setProjectTitle(project.title);
+    setFileName(project.pdfFileName || "");
+    setCurrentPage(project.currentPage || 1);
+    setPageInput(String(project.currentPage || 1));
+    setExtractedText(project.extractedText || project.scriptContent || "");
+    if (project.scenarioData && Array.isArray(project.scenarioData)) {
+      setScenario({
+        title: project.title,
+        summary: project.summary || "",
+        scenes: project.scenarioData as SceneData[],
+      });
+    }
+    setHasUnsavedChanges(false);
+    setLastSavedAt(project.updatedAt ? new Date(project.updatedAt) : null);
+    setShowProjectsDialog(false);
+    toast.success(`تم تحميل المشروع "${project.title}"`);
+  };
+
+  // ═══ New Project ═══
+  const startNewProject = () => {
+    setProjectId(null);
+    setProjectTitle("مشروع جديد");
+    setPdfDoc(null);
+    setCurrentPage(1);
+    setTotalPages(0);
+    setFileName("");
+    setPageInput("1");
+    setExtractedText("");
+    setScenario(null);
+    setActiveStep("script");
+    setHasUnsavedChanges(false);
+    setLastSavedAt(null);
+    setShowProjectsDialog(false);
+    toast.info("مشروع جديد");
+  };
 
   // ═══ PDF Loading ═══
   const loadPDF = async (file: File) => {
@@ -86,6 +206,9 @@ export default function UltimateStudio() {
       setCurrentPage(1);
       setPageInput("1");
       setFileName(file.name);
+      if (projectTitle === "مشروع جديد") {
+        setProjectTitle(file.name.replace(".pdf", ""));
+      }
       toast.success(`تم تحميل "${file.name}" (${doc.numPages} صفحة)`);
     } catch {
       toast.error("فشل في تحميل ملف PDF");
@@ -234,7 +357,6 @@ export default function UltimateStudio() {
       audioRefs.current[sceneIdx]?.pause();
       setPlayingAudio(null);
     } else {
-      // Stop any playing audio
       Object.values(audioRefs.current).forEach(a => a?.pause());
       if (!audioRefs.current[sceneIdx]) {
         audioRefs.current[sceneIdx] = new Audio(url);
@@ -270,11 +392,60 @@ export default function UltimateStudio() {
               <Film className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white">Ultimate Studio</h1>
-              <p className="text-xs text-white/50">الكتاب ← السيناريو ← الفيديو</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold text-white">Ultimate Studio</h1>
+                <span className="text-xs text-white/40">|</span>
+                <span className="text-sm text-amber-400 font-bold truncate max-w-[200px]">{projectTitle}</span>
+                {hasUnsavedChanges && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title="تغييرات غير محفوظة" />}
+              </div>
+              <div className="flex items-center gap-2 text-[10px] text-white/40">
+                <span>الكتاب ← السيناريو ← الفيديو</span>
+                {lastSavedAt && (
+                  <>
+                    <span>|</span>
+                    <Clock className="w-3 h-3" />
+                    <span>آخر حفظ: {lastSavedAt.toLocaleTimeString("ar-TN", { hour: "2-digit", minute: "2-digit" })}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* New Project */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 text-white hover:bg-white/10"
+              onClick={startNewProject}
+            >
+              <Plus className="w-4 h-4 ml-1" /> جديد
+            </Button>
+
+            {/* Open Project */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-white/20 text-white hover:bg-white/10"
+              onClick={() => {
+                projectsQuery.refetch();
+                setShowProjectsDialog(true);
+              }}
+            >
+              <FolderOpen className="w-4 h-4 ml-1" /> مشاريعي
+            </Button>
+
+            {/* Save */}
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => saveProject(false)}
+              disabled={isSaving}
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Save className="w-4 h-4 ml-1" />}
+              حفظ
+            </Button>
+
+            {/* Export */}
             {scenario && (
               <Button
                 variant="outline"
@@ -294,7 +465,7 @@ export default function UltimateStudio() {
                   toast.success("تم تصدير خطة العمل");
                 }}
               >
-                <Download className="w-4 h-4 ml-1" /> تصدير خطة العمل
+                <Download className="w-4 h-4 ml-1" /> تصدير
               </Button>
             )}
             <span className="text-xs text-white/40">مرحباً {user?.name?.split(" ")[0]}</span>
@@ -782,6 +953,78 @@ export default function UltimateStudio() {
           </div>
         </div>
       </div>
+
+      {/* ═══ Projects Dialog ═══ */}
+      <Dialog open={showProjectsDialog} onOpenChange={setShowProjectsDialog}>
+        <DialogContent className="bg-slate-900 border-white/10 text-white max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <FolderOpen className="w-5 h-5 text-amber-400" />
+              مشاريعي المحفوظة
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[400px] overflow-auto">
+            {projectsQuery.isLoading ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto text-white/30" />
+                <p className="text-xs text-white/30 mt-2">جاري التحميل...</p>
+              </div>
+            ) : projectsQuery.data && projectsQuery.data.length > 0 ? (
+              projectsQuery.data.map((p: any) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-all group cursor-pointer"
+                  onClick={() => {
+                    setLoadingProjectId(p.id);
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                    <Film className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{p.title}</p>
+                    <div className="flex items-center gap-2 text-[10px] text-white/40">
+                      {p.pdfFileName && <span>{p.pdfFileName}</span>}
+                      <span>{p.status === "draft" ? "مسودة" : p.status === "in_progress" ? "قيد العمل" : "مكتمل"}</span>
+                      <span>{new Date(p.updatedAt).toLocaleDateString("ar-TN")}</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-red-400/50 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (confirm("هل تريد حذف هذا المشروع؟")) {
+                        try {
+                          await deleteMutation.mutateAsync({ projectId: p.id });
+                          projectsQuery.refetch();
+                          toast.success("تم حذف المشروع");
+                        } catch {
+                          toast.error("فشل في حذف المشروع");
+                        }
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <FolderOpen className="w-10 h-10 text-white/10 mx-auto mb-2" />
+                <p className="text-sm text-white/30">لا توجد مشاريع محفوظة بعد</p>
+                <p className="text-xs text-white/20 mt-1">ابدأ مشروعاً جديداً واحفظه</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="border-white/20 text-white" onClick={() => setShowProjectsDialog(false)}>
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
