@@ -87,7 +87,7 @@ const ReferenceContentManager = lazy(() => import("@/pages/ReferenceContentManag
 const RoleSelection = lazy(() => import("@/pages/RoleSelection"));
 const TeacherDashboard = lazy(() => import("@/pages/TeacherDashboard"));
 const SchoolDashboard = lazy(() => import("@/pages/SchoolDashboard"));
-const NameCorrectionManager = lazy(() => import("@/pages/NameCorrectionManager"));
+const TextbooksLibrary = lazy(() => import("@/pages/TextbooksLibrary"));
 const TextbookViewer = lazy(() => import("@/pages/TextbookViewer"));
 
 function PageLoader() {
@@ -173,11 +173,11 @@ function Router() {
         <Route path="/select-role" component={RoleSelection} />
         <Route path="/teacher-dashboard" component={TeacherDashboard} />
         <Route path="/school-dashboard" component={SchoolDashboard} />
-        <Route path="/admin/name-correction" component={NameCorrectionManager} />
-        <Route path="/textbook-viewer" component={TextbookViewer} />
         <Route path="/video-evaluator" component={VideoEvaluator} />
         <Route path="/about" component={About} />
         <Route path="/prompt-lab" component={PromptLab} />
+        <Route path="/library" component={TextbooksLibrary} />
+        <Route path="/textbook-viewer" component={TextbookViewer} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>

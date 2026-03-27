@@ -7,46 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowRight, Plus, Pencil, Trash2, Database, BookOpen, ChevronLeft, ChevronRight, Filter, Loader2, X } from "lucide-react";
+import { ArrowRight, Plus, Pencil, Trash2, Database, BookOpen, Download, Upload, ChevronLeft, ChevronRight, Search, Filter, Loader2 } from "lucide-react";
 import { Link } from "wouter";
-
-interface ActivityForm {
-  activityName: string;
-  objet: string;
-  objectifSpecifique: string;
-  objectif: string;
-  etapes: string[];
-  remarques: string;
-  duration: string;
-}
-
-const EMPTY_ACTIVITY: ActivityForm = {
-  activityName: "",
-  objet: "",
-  objectifSpecifique: "",
-  objectif: "",
-  etapes: [],
-  remarques: "",
-  duration: "",
-};
-
-const ACTIVITY_COLORS = [
-  { bg: "bg-amber-50", border: "border-amber-100", text: "text-amber-700", icon: "text-amber-600" },
-  { bg: "bg-emerald-50", border: "border-emerald-100", text: "text-emerald-700", icon: "text-emerald-600" },
-  { bg: "bg-sky-50", border: "border-sky-100", text: "text-sky-700", icon: "text-sky-600" },
-  { bg: "bg-purple-50", border: "border-purple-100", text: "text-purple-700", icon: "text-purple-600" },
-  { bg: "bg-rose-50", border: "border-rose-100", text: "text-rose-700", icon: "text-rose-600" },
-];
 
 export default function ReferenceContentManager() {
   const { user, loading } = useAuth();
   const trpcUtils = trpc.useUtils();
 
   // Filters
-  const [filterNiveau, setFilterNiveau] = useState<string>("all");
   const [filterUnite, setFilterUnite] = useState<string>("all");
   const [filterModule, setFilterModule] = useState<string>("all");
   const [page, setPage] = useState(0);
@@ -59,26 +30,33 @@ export default function ReferenceContentManager() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Form state
-  const [formMeta, setFormMeta] = useState({
+  const [form, setForm] = useState({
     uniteNumber: 1,
     moduleNumber: 1,
     journeeNumber: 1,
     niveau: "6ème année",
-    sousTheme: "",
+    commOraleObjet: "",
+    commOraleObjectif: "",
+    commOraleRemarques: "",
+    lectureObjet: "",
+    lectureObjectif: "",
+    lectureRemarques: "",
+    grammaireType: "Grammaire" as "Grammaire" | "Conjugaison" | "Orthographe",
+    grammaireObjet: "",
+    grammaireObjectif: "",
+    grammaireRemarques: "",
     isOfficial: true,
     source: "Programme officiel tunisien",
     notes: "",
   });
-  const [formActivities, setFormActivities] = useState<ActivityForm[]>([{ ...EMPTY_ACTIVITY }]);
 
   // Queries
   const listInput = useMemo(() => ({
-    niveau: filterNiveau !== "all" ? filterNiveau : undefined,
     uniteNumber: filterUnite !== "all" ? parseInt(filterUnite) : undefined,
     moduleNumber: filterModule !== "all" ? parseInt(filterModule) : undefined,
     limit: LIMIT,
     offset: page * LIMIT,
-  }), [filterNiveau, filterUnite, filterModule, page]);
+  }), [filterUnite, filterModule, page]);
 
   const { data: listData, isLoading: isListLoading } = trpc.referenceContent.list.useQuery(listInput);
   const { data: stats } = trpc.referenceContent.getStats.useQuery();
@@ -92,7 +70,9 @@ export default function ReferenceContentManager() {
       setIsCreateOpen(false);
       resetForm();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      toast.error(err.message);
+    },
   });
 
   const updateMutation = trpc.referenceContent.update.useMutation({
@@ -101,7 +81,9 @@ export default function ReferenceContentManager() {
       trpcUtils.referenceContent.list.invalidate();
       setEditingItem(null);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      toast.error(err.message);
+    },
   });
 
   const deleteMutation = trpc.referenceContent.delete.useMutation({
@@ -114,85 +96,72 @@ export default function ReferenceContentManager() {
     },
   });
 
+  const seedMutation = trpc.referenceContent.seedData.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.message);
+      trpcUtils.referenceContent.list.invalidate();
+      trpcUtils.referenceContent.getStats.invalidate();
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
   const resetForm = () => {
-    setFormMeta({
+    setForm({
       uniteNumber: 1, moduleNumber: 1, journeeNumber: 1, niveau: "6ème année",
-      sousTheme: "", isOfficial: true, source: "Programme officiel tunisien", notes: "",
+      commOraleObjet: "", commOraleObjectif: "", commOraleRemarques: "",
+      lectureObjet: "", lectureObjectif: "", lectureRemarques: "",
+      grammaireType: "Grammaire", grammaireObjet: "", grammaireObjectif: "", grammaireRemarques: "",
+      isOfficial: true, source: "Programme officiel tunisien", notes: "",
     });
-    setFormActivities([{ ...EMPTY_ACTIVITY }]);
   };
 
   const openEditDialog = (item: any) => {
     setEditingItem(item);
-    setFormMeta({
+    setForm({
       uniteNumber: item.uniteNumber,
       moduleNumber: item.moduleNumber,
       journeeNumber: item.journeeNumber,
       niveau: item.niveau,
-      sousTheme: item.sousTheme || "",
+      commOraleObjet: item.commOraleObjet || "",
+      commOraleObjectif: item.commOraleObjectif || "",
+      commOraleRemarques: item.commOraleRemarques || "",
+      lectureObjet: item.lectureObjet || "",
+      lectureObjectif: item.lectureObjectif || "",
+      lectureRemarques: item.lectureRemarques || "",
+      grammaireType: item.grammaireType || "Grammaire",
+      grammaireObjet: item.grammaireObjet || "",
+      grammaireObjectif: item.grammaireObjectif || "",
+      grammaireRemarques: item.grammaireRemarques || "",
       isOfficial: item.isOfficial ?? true,
       source: item.source || "Programme officiel tunisien",
       notes: item.notes || "",
     });
-    const acts = (item.activities || []).map((a: any) => ({
-      activityName: a.activityName || "",
-      objet: a.objet || "",
-      objectifSpecifique: a.objectifSpecifique || "",
-      objectif: a.objectif || "",
-      etapes: a.etapes || [],
-      remarques: a.remarques || "",
-      duration: a.duration || "",
-    }));
-    setFormActivities(acts.length > 0 ? acts : [{ ...EMPTY_ACTIVITY }]);
-  };
-
-  const addActivity = () => {
-    setFormActivities(prev => [...prev, { ...EMPTY_ACTIVITY }]);
-  };
-
-  const removeActivity = (index: number) => {
-    setFormActivities(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateActivity = (index: number, field: keyof ActivityForm, value: any) => {
-    setFormActivities(prev => prev.map((a, i) => i === index ? { ...a, [field]: value } : a));
   };
 
   const handleSubmit = () => {
-    // Clean activities - remove empty optional fields
-    const cleanActivities = formActivities.map(a => {
-      const clean: any = {
-        activityName: a.activityName,
-        objet: a.objet,
-        objectif: a.objectif,
-        etapes: a.etapes.filter(e => e.trim()),
-      };
-      if (a.objectifSpecifique?.trim()) clean.objectifSpecifique = a.objectifSpecifique;
-      if (a.remarques?.trim()) clean.remarques = a.remarques;
-      if (a.duration?.trim()) clean.duration = a.duration;
-      return clean;
-    });
-
     if (editingItem) {
       updateMutation.mutate({
         id: editingItem.id,
-        sousTheme: formMeta.sousTheme || undefined,
-        activities: cleanActivities,
-        isOfficial: formMeta.isOfficial,
-        source: formMeta.source,
-        notes: formMeta.notes || undefined,
+        commOraleObjet: form.commOraleObjet,
+        commOraleObjectif: form.commOraleObjectif,
+        commOraleRemarques: form.commOraleRemarques,
+        lectureObjet: form.lectureObjet,
+        lectureObjectif: form.lectureObjectif,
+        lectureRemarques: form.lectureRemarques,
+        grammaireType: form.grammaireType,
+        grammaireObjet: form.grammaireObjet,
+        grammaireObjectif: form.grammaireObjectif,
+        grammaireRemarques: form.grammaireRemarques,
+        isOfficial: form.isOfficial,
+        source: form.source,
+        notes: form.notes,
       });
     } else {
-      createMutation.mutate({
-        ...formMeta,
-        sousTheme: formMeta.sousTheme || undefined,
-        activities: cleanActivities,
-        notes: formMeta.notes || undefined,
-      });
+      createMutation.mutate(form);
     }
   };
-
-  const is3to5 = formMeta.niveau === "3ème année" || formMeta.niveau === "4ème année" || formMeta.niveau === "5ème année";
 
   if (loading) {
     return (
@@ -235,7 +204,7 @@ export default function ReferenceContentManager() {
             <div className="text-left">
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 <Database className="h-7 w-7" />
-                قاعدة المحتوى المرجعي (Smart Autofill)
+                قاعدة المحتوى المرجعي
               </h1>
               <p className="text-blue-100 text-sm mt-1">
                 Base de données du contenu de référence — Programme officiel tunisien
@@ -256,8 +225,8 @@ export default function ReferenceContentManager() {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-indigo-600">{stats?.totalNiveaux || 0}</div>
-              <div className="text-sm text-muted-foreground">مستويات دراسية</div>
+              <div className="text-3xl font-bold text-indigo-600">{stats?.totalUnites || 0}</div>
+              <div className="text-sm text-muted-foreground">وحدات تعلمية</div>
             </CardContent>
           </Card>
           <Card>
@@ -267,9 +236,23 @@ export default function ReferenceContentManager() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-green-600">{stats?.totalUnites || 0}</div>
-              <div className="text-sm text-muted-foreground">وحدات تعلمية</div>
+            <CardContent className="p-4">
+              <Button
+                onClick={() => seedMutation.mutate()}
+                disabled={seedMutation.isPending || (stats?.totalEntries || 0) > 0}
+                className="w-full"
+                variant={(stats?.totalEntries || 0) > 0 ? "outline" : "default"}
+              >
+                {seedMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                ) : (
+                  <Download className="h-4 w-4 ml-2" />
+                )}
+                {(stats?.totalEntries || 0) > 0 ? "البيانات موجودة" : "تحميل البيانات الأولية"}
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                U1-M1/M2 + U2-M3/M4 (20 يوم)
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -282,20 +265,8 @@ export default function ReferenceContentManager() {
                 <Filter className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">تصفية:</span>
               </div>
-              <Select value={filterNiveau} onValueChange={(v) => { setFilterNiveau(v); setPage(0); }}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="المستوى" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">كل المستويات</SelectItem>
-                  <SelectItem value="3ème année">3ème année</SelectItem>
-                  <SelectItem value="4ème année">4ème année</SelectItem>
-                  <SelectItem value="5ème année">5ème année</SelectItem>
-                  <SelectItem value="6ème année">6ème année</SelectItem>
-                </SelectContent>
-              </Select>
               <Select value={filterUnite} onValueChange={(v) => { setFilterUnite(v); setPage(0); }}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="الوحدة" />
                 </SelectTrigger>
                 <SelectContent>
@@ -306,7 +277,7 @@ export default function ReferenceContentManager() {
                 </SelectContent>
               </Select>
               <Select value={filterModule} onValueChange={(v) => { setFilterModule(v); setPage(0); }}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="الوحدة الفرعية" />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,73 +307,82 @@ export default function ReferenceContentManager() {
               <Database className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
               <h3 className="text-lg font-semibold mb-2">لا توجد بيانات مرجعية</h3>
               <p className="text-muted-foreground mb-4">
-                اضغط على "إضافة محتوى جديد" لإضافة المحتوى الرسمي
+                اضغط على "تحميل البيانات الأولية" لإضافة المحتوى الرسمي للوحدات 1-4
               </p>
+              <Button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
+                {seedMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Download className="h-4 w-4 ml-2" />}
+                تحميل البيانات الأولية
+              </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {listData.items.map((item: any) => {
-              const activities = item.activities || [];
-              return (
-                <Card key={item.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(item)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { setDeletingId(item.id); setIsDeleteConfirmOpen(true); }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+            {listData.items.map((item: any) => (
+              <Card key={item.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => openEditDialog(item)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { setDeletingId(item.id); setIsDeleteConfirmOpen(true); }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          Unité {item.uniteNumber}
+                        </Badge>
+                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+                          Module {item.moduleNumber}
+                        </Badge>
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          Journée {item.journeeNumber}
+                        </Badge>
+                        {item.isOfficial && (
+                          <Badge className="bg-green-100 text-green-700 border-green-200">رسمي</Badge>
+                        )}
                       </div>
-                      <div className="text-left">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                            {item.niveau}
-                          </Badge>
-                          <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
-                            U{item.uniteNumber} / M{item.moduleNumber}
-                          </Badge>
-                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                            J{item.journeeNumber}
-                          </Badge>
-                          {item.sousTheme && (
-                            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                              {item.sousTheme}
-                            </Badge>
-                          )}
-                          {item.isOfficial && (
-                            <Badge className="bg-green-100 text-green-700 border-green-200">رسمي</Badge>
-                          )}
-                          <Badge variant="secondary">{activities.length} أنشطة</Badge>
-                        </div>
+                      <p className="text-xs text-muted-foreground">{item.niveau}</p>
+                    </div>
+                  </div>
+
+                  {/* 3 Activities Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3" dir="ltr">
+                    {/* Communication orale */}
+                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                      <div className="flex items-center gap-1 mb-2">
+                        <BookOpen className="h-3.5 w-3.5 text-amber-600" />
+                        <span className="text-xs font-bold text-amber-700">Communication orale (35 mn)</span>
                       </div>
+                      <p className="text-xs text-amber-900 font-medium mb-1">{item.commOraleObjet}</p>
+                      <p className="text-xs text-amber-700 line-clamp-2">{item.commOraleObjectif}</p>
                     </div>
 
-                    {/* Activities Summary */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3" dir="ltr">
-                      {activities.map((act: any, idx: number) => {
-                        const color = ACTIVITY_COLORS[idx % ACTIVITY_COLORS.length];
-                        return (
-                          <div key={idx} className={`${color.bg} rounded-lg p-3 border ${color.border}`}>
-                            <div className="flex items-center gap-1 mb-2">
-                              <BookOpen className={`h-3.5 w-3.5 ${color.icon}`} />
-                              <span className={`text-xs font-bold ${color.text}`}>
-                                {act.activityName}
-                                {act.duration && ` (${act.duration})`}
-                              </span>
-                            </div>
-                            <p className="text-xs font-medium mb-1 line-clamp-1">{act.objet}</p>
-                            <p className="text-xs opacity-75 line-clamp-2">{act.objectif}</p>
-                          </div>
-                        );
-                      })}
+                    {/* Lecture */}
+                    <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
+                      <div className="flex items-center gap-1 mb-2">
+                        <BookOpen className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="text-xs font-bold text-emerald-700">Lecture (45 mn)</span>
+                      </div>
+                      <p className="text-xs text-emerald-900 font-medium mb-1">{item.lectureObjet}</p>
+                      <p className="text-xs text-emerald-700 line-clamp-2">{item.lectureObjectif}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+
+                    {/* Grammaire/Conjugaison/Orthographe */}
+                    <div className="bg-sky-50 rounded-lg p-3 border border-sky-100">
+                      <div className="flex items-center gap-1 mb-2">
+                        <BookOpen className="h-3.5 w-3.5 text-sky-600" />
+                        <span className="text-xs font-bold text-sky-700">{item.grammaireType} (35 mn)</span>
+                      </div>
+                      <p className="text-xs text-sky-900 font-medium mb-1">{item.grammaireObjet}</p>
+                      <p className="text-xs text-sky-700 line-clamp-2">{item.grammaireObjectif}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -426,7 +406,7 @@ export default function ReferenceContentManager() {
       <Dialog open={isCreateOpen || !!editingItem} onOpenChange={(open) => {
         if (!open) { setIsCreateOpen(false); setEditingItem(null); resetForm(); }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">
               {editingItem ? "تعديل المحتوى المرجعي" : "إضافة محتوى مرجعي جديد"}
@@ -435,22 +415,10 @@ export default function ReferenceContentManager() {
 
           <div className="space-y-6 py-4">
             {/* Identifiers */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <div>
-                <Label>Niveau</Label>
-                <Select value={formMeta.niveau} onValueChange={(v) => setFormMeta(f => ({ ...f, niveau: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3ème année">3ème année</SelectItem>
-                    <SelectItem value="4ème année">4ème année</SelectItem>
-                    <SelectItem value="5ème année">5ème année</SelectItem>
-                    <SelectItem value="6ème année">6ème année</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid grid-cols-4 gap-3">
               <div>
                 <Label>Unité</Label>
-                <Select value={String(formMeta.uniteNumber)} onValueChange={(v) => setFormMeta(f => ({ ...f, uniteNumber: parseInt(v) }))}>
+                <Select value={String(form.uniteNumber)} onValueChange={(v) => setForm(f => ({ ...f, uniteNumber: parseInt(v) }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6,7,8].map(n => (
@@ -461,7 +429,7 @@ export default function ReferenceContentManager() {
               </div>
               <div>
                 <Label>Module</Label>
-                <Select value={String(formMeta.moduleNumber)} onValueChange={(v) => setFormMeta(f => ({ ...f, moduleNumber: parseInt(v) }))}>
+                <Select value={String(form.moduleNumber)} onValueChange={(v) => setForm(f => ({ ...f, moduleNumber: parseInt(v) }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {[1,2,3,4,5,6,7,8].map(n => (
@@ -472,128 +440,96 @@ export default function ReferenceContentManager() {
               </div>
               <div>
                 <Label>Journée</Label>
-                <Select value={String(formMeta.journeeNumber)} onValueChange={(v) => setFormMeta(f => ({ ...f, journeeNumber: parseInt(v) }))}>
+                <Select value={String(form.journeeNumber)} onValueChange={(v) => setForm(f => ({ ...f, journeeNumber: parseInt(v) }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {[1,2,3,4,5].map(n => (
-                      <SelectItem key={n} value={String(n)}>J{n}</SelectItem>
+                    {[1,2,3,4,5,6,7,8].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              {is3to5 && (
-                <div>
-                  <Label>Sous-thème</Label>
-                  <Input value={formMeta.sousTheme} onChange={(e) => setFormMeta(f => ({ ...f, sousTheme: e.target.value }))} dir="ltr" placeholder="Ex: Vive l'école" />
-                </div>
-              )}
+              <div>
+                <Label>Niveau</Label>
+                <Select value={form.niveau} onValueChange={(v) => setForm(f => ({ ...f, niveau: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6ème année">6ème année</SelectItem>
+                    <SelectItem value="5ème année">5ème année</SelectItem>
+                    <SelectItem value="4ème année">4ème année</SelectItem>
+                    <SelectItem value="3ème année">3ème année</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Activities */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Button type="button" variant="outline" size="sm" onClick={addActivity} className="gap-1">
-                  <Plus className="h-4 w-4" />
-                  إضافة نشاط
-                </Button>
-                <h3 className="font-bold">الأنشطة ({formActivities.length})</h3>
+            {/* Communication orale */}
+            <div className="border rounded-lg p-4 bg-amber-50/50">
+              <h3 className="font-bold text-amber-700 mb-3 text-right" dir="ltr">Communication orale (35 mn)</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label>Objet (contenu)</Label>
+                  <Input value={form.commOraleObjet} onChange={(e) => setForm(f => ({ ...f, commOraleObjet: e.target.value }))} dir="ltr" placeholder="Ex: Présentation du module et du projet d'écriture" />
+                </div>
+                <div>
+                  <Label>Objectif de la séance</Label>
+                  <Textarea value={form.commOraleObjectif} onChange={(e) => setForm(f => ({ ...f, commOraleObjectif: e.target.value }))} dir="ltr" placeholder="Ex: Communiquer en situation pour : Informer/s'informer..." rows={2} />
+                </div>
+                <div>
+                  <Label>Remarques</Label>
+                  <Input value={form.commOraleRemarques} onChange={(e) => setForm(f => ({ ...f, commOraleRemarques: e.target.value }))} dir="ltr" placeholder="Remarques optionnelles" />
+                </div>
               </div>
+            </div>
 
-              {formActivities.map((act, idx) => {
-                const color = ACTIVITY_COLORS[idx % ACTIVITY_COLORS.length];
-                return (
-                  <div key={idx} className={`border rounded-lg p-4 ${color.bg}/50 relative`}>
-                    {formActivities.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-2 left-2 h-6 w-6 p-0 text-destructive"
-                        onClick={() => removeActivity(idx)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <h4 className={`font-bold ${color.text} mb-3 text-right`}>
-                      النشاط {idx + 1}
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <Label>Nom de l'activité</Label>
-                        <Input
-                          value={act.activityName}
-                          onChange={(e) => updateActivity(idx, "activityName", e.target.value)}
-                          dir="ltr"
-                          placeholder="Ex: Communication orale"
-                        />
-                      </div>
-                      <div>
-                        <Label>Objet (contenu)</Label>
-                        <Input
-                          value={act.objet}
-                          onChange={(e) => updateActivity(idx, "objet", e.target.value)}
-                          dir="ltr"
-                          placeholder="Ex: Présenter / Se présenter"
-                        />
-                      </div>
-                      {is3to5 && (
-                        <div>
-                          <Label>Objectifs spécifiques</Label>
-                          <Textarea
-                            value={act.objectifSpecifique}
-                            onChange={(e) => updateActivity(idx, "objectifSpecifique", e.target.value)}
-                            dir="ltr"
-                            placeholder="Ex: Discriminer auditivement les phonèmes-graphèmes"
-                            rows={2}
-                          />
-                        </div>
-                      )}
-                      <div>
-                        <Label>Objectif de la séance</Label>
-                        <Textarea
-                          value={act.objectif}
-                          onChange={(e) => updateActivity(idx, "objectif", e.target.value)}
-                          dir="ltr"
-                          placeholder="Ex: L'élève serait capable de..."
-                          rows={2}
-                        />
-                      </div>
-                      <div>
-                        <Label>Étapes (une par ligne)</Label>
-                        <Textarea
-                          value={act.etapes.join("\n")}
-                          onChange={(e) => updateActivity(idx, "etapes", e.target.value.split("\n"))}
-                          dir="ltr"
-                          placeholder={"Exploration\nApprentissage systématique\nIntégration\nÉvaluation"}
-                          rows={3}
-                        />
-                      </div>
-                      {formMeta.niveau === "6ème année" && (
-                        <>
-                          <div>
-                            <Label>Durée</Label>
-                            <Input
-                              value={act.duration}
-                              onChange={(e) => updateActivity(idx, "duration", e.target.value)}
-                              dir="ltr"
-                              placeholder="Ex: 35 mn"
-                            />
-                          </div>
-                          <div>
-                            <Label>Remarques</Label>
-                            <Input
-                              value={act.remarques}
-                              onChange={(e) => updateActivity(idx, "remarques", e.target.value)}
-                              dir="ltr"
-                              placeholder="Remarques optionnelles"
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Lecture */}
+            <div className="border rounded-lg p-4 bg-emerald-50/50">
+              <h3 className="font-bold text-emerald-700 mb-3 text-right" dir="ltr">Lecture (45 mn)</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label>Objet (contenu)</Label>
+                  <Input value={form.lectureObjet} onChange={(e) => setForm(f => ({ ...f, lectureObjet: e.target.value }))} dir="ltr" placeholder="Ex: Apprentie comédienne" />
+                </div>
+                <div>
+                  <Label>Objectif de la séance</Label>
+                  <Textarea value={form.lectureObjectif} onChange={(e) => setForm(f => ({ ...f, lectureObjectif: e.target.value }))} dir="ltr" placeholder="Ex: L'élève serait capable de lire de manière expressive..." rows={2} />
+                </div>
+                <div>
+                  <Label>Remarques</Label>
+                  <Input value={form.lectureRemarques} onChange={(e) => setForm(f => ({ ...f, lectureRemarques: e.target.value }))} dir="ltr" placeholder="Remarques optionnelles" />
+                </div>
+              </div>
+            </div>
+
+            {/* Grammaire/Conjugaison/Orthographe */}
+            <div className="border rounded-lg p-4 bg-sky-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <Select value={form.grammaireType} onValueChange={(v: any) => setForm(f => ({ ...f, grammaireType: v }))}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Grammaire">Grammaire</SelectItem>
+                    <SelectItem value="Conjugaison">Conjugaison</SelectItem>
+                    <SelectItem value="Orthographe">Orthographe</SelectItem>
+                  </SelectContent>
+                </Select>
+                <h3 className="font-bold text-sky-700" dir="ltr">{form.grammaireType} (35 mn)</h3>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label>Objet (contenu)</Label>
+                  <Input value={form.grammaireObjet} onChange={(e) => setForm(f => ({ ...f, grammaireObjet: e.target.value }))} dir="ltr" placeholder="Ex: Les déterminants / les noms / les pronoms personnels" />
+                </div>
+                <div>
+                  <Label>Objectif de la séance</Label>
+                  <Textarea value={form.grammaireObjectif} onChange={(e) => setForm(f => ({ ...f, grammaireObjectif: e.target.value }))} dir="ltr" placeholder="Ex: Reconnaître et utiliser les déterminants..." rows={2} />
+                </div>
+                <div>
+                  <Label>Remarques</Label>
+                  <Input value={form.grammaireRemarques} onChange={(e) => setForm(f => ({ ...f, grammaireRemarques: e.target.value }))} dir="ltr" placeholder="Remarques optionnelles" />
+                </div>
+              </div>
             </div>
 
             {/* Metadata */}
@@ -602,11 +538,11 @@ export default function ReferenceContentManager() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>المصدر</Label>
-                  <Input value={formMeta.source} onChange={(e) => setFormMeta(f => ({ ...f, source: e.target.value }))} placeholder="Programme officiel tunisien" />
+                  <Input value={form.source} onChange={(e) => setForm(f => ({ ...f, source: e.target.value }))} placeholder="Programme officiel tunisien" />
                 </div>
                 <div>
                   <Label>ملاحظات</Label>
-                  <Input value={formMeta.notes} onChange={(e) => setFormMeta(f => ({ ...f, notes: e.target.value }))} placeholder="ملاحظات إضافية" />
+                  <Input value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="ملاحظات إضافية" />
                 </div>
               </div>
             </div>

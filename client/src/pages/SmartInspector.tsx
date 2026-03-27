@@ -195,7 +195,7 @@ export default function SmartInspector() {
             <Link href="/">
               <div className="flex items-center gap-3 cursor-pointer">
                 <img
-                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663310693302/7KYbbDR94nK6ykUvdjLGsp/logo_navbar_74c3be1f.png"
+                  src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663310693302/sfeDbyveKFJjGBLQ.png"
                   alt="Leader Academy"
                   className="h-9 w-auto"
                 />

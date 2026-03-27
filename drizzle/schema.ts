@@ -177,61 +177,10 @@ export const certificates = mysqlTable("certificates", {
   certificateNumber: varchar("certificateNumber", { length: 50 }).notNull().unique(),
   issuedAt: timestamp("issuedAt").defaultNow().notNull(),
   pdfUrl: text("pdfUrl"),
-  correctedName: text("correctedName"), // Corrected participant name (overrides user name)
-  lastRegeneratedAt: timestamp("lastRegeneratedAt"), // When the certificate was last regenerated
 });
 
 export type Certificate = typeof certificates.$inferSelect;
 export type InsertCertificate = typeof certificates.$inferInsert;
-
-/**
- * Name Edit History table - tracks all name corrections for audit trail
- */
-export const nameEditHistory = mysqlTable("name_edit_history", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(), // The participant whose name was corrected
-  editedBy: int("editedBy").notNull(), // The admin who made the correction
-  previousFirstNameAr: varchar("previousFirstNameAr", { length: 100 }),
-  previousLastNameAr: varchar("previousLastNameAr", { length: 100 }),
-  previousFirstNameFr: varchar("previousFirstNameFr", { length: 100 }),
-  previousLastNameFr: varchar("previousLastNameFr", { length: 100 }),
-  newFirstNameAr: varchar("newFirstNameAr", { length: 100 }),
-  newLastNameAr: varchar("newLastNameAr", { length: 100 }),
-  newFirstNameFr: varchar("newFirstNameFr", { length: 100 }),
-  newLastNameFr: varchar("newLastNameFr", { length: 100 }),
-  reason: text("reason"), // Reason for the correction
-  certificatesRegenerated: int("certificatesRegenerated").default(0), // Number of certificates regenerated
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type NameEditHistory = typeof nameEditHistory.$inferSelect;
-export type InsertNameEditHistory = typeof nameEditHistory.$inferInsert;
-
-/**
- * Name Correction Requests table - participant-initiated name correction requests
- */
-export const nameCorrectionRequests = mysqlTable("name_correction_requests", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(), // The participant requesting correction
-  currentFirstNameAr: varchar("currentFirstNameAr", { length: 100 }),
-  currentLastNameAr: varchar("currentLastNameAr", { length: 100 }),
-  currentFirstNameFr: varchar("currentFirstNameFr", { length: 100 }),
-  currentLastNameFr: varchar("currentLastNameFr", { length: 100 }),
-  requestedFirstNameAr: varchar("requestedFirstNameAr", { length: 100 }),
-  requestedLastNameAr: varchar("requestedLastNameAr", { length: 100 }),
-  requestedFirstNameFr: varchar("requestedFirstNameFr", { length: 100 }),
-  requestedLastNameFr: varchar("requestedLastNameFr", { length: 100 }),
-  reason: text("reason"), // Reason for the correction request
-  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
-  reviewedBy: int("reviewedBy"), // Admin who reviewed the request
-  reviewNote: text("reviewNote"), // Admin note on approval/rejection
-  reviewedAt: timestamp("reviewedAt"), // When the request was reviewed
-  certificatesRegenerated: int("certificatesRegenerated").default(0),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type NameCorrectionRequest = typeof nameCorrectionRequests.$inferSelect;
-export type InsertNameCorrectionRequest = typeof nameCorrectionRequests.$inferInsert;
 
 /**
  * Videos table - stores course videos
@@ -2628,15 +2577,11 @@ export const repartitionJournaliere = mysqlTable("repartition_journaliere", {
   dateFrom: varchar("date_from", { length: 50 }),
   dateTo: varchar("date_to", { length: 50 }),
   
-  // Sub-theme for 3ème-5ème année header
-  sousTheme: varchar("sous_theme", { length: 255 }),
-  
   // Activity rows (JSON structure for each activity)
   activities: json("activities").$type<{
     activityName: string;
     duration: string;
     objet: string;
-    objectifSpecifique: string;
     objectif: string;
     etapes: string[];
     remarques: string;
@@ -2658,38 +2603,39 @@ export type RepartitionJournaliereRow = typeof repartitionJournaliere.$inferSele
 export type InsertRepartitionJournaliere = typeof repartitionJournaliere.$inferInsert;
 
 
-// ===== REFERENCE CONTENT DATABASE (Smart Autofill) =====
-// Stores official Tunisian curriculum content for each Niveau/Unité/Module/Journée
-// Uses flexible JSON activities array to support all grade levels (3ème-6ème)
-// Each record = one complete day's activities for a specific grade/unit/module/day
+// ===== REFERENCE CONTENT DATABASE =====
+// Stores official Tunisian curriculum content for each Unité/Module/Journée
 export const referenceContent = mysqlTable("reference_content", {
   id: int("id").autoincrement().primaryKey(),
   
-  // Composite key: Niveau + Unité + Module + Journée
-  niveau: varchar("niveau", { length: 50 }).notNull(), // "3ème année", "4ème année", "5ème année", "6ème année"
+  // Identifiers
   uniteNumber: int("unite_number").notNull(),
   moduleNumber: int("module_number").notNull(),
   journeeNumber: int("journee_number").notNull(),
+  niveau: varchar("niveau", { length: 50 }).default("6ème année").notNull(),
   
-  // Sous-thème (only for 3ème-5ème)
-  sousTheme: varchar("sous_theme", { length: 255 }),
+  // Communication orale content
+  commOraleObjet: text("comm_orale_objet"),
+  commOraleObjectif: text("comm_orale_objectif"),
+  commOraleRemarques: text("comm_orale_remarques"),
   
-  // Activities array stored as JSON
-  // Each activity: { activityName, objet, objectifSpecifique?, objectif, etapes[], remarques?, duration? }
-  activities: json("activities").$type<Array<{
-    activityName: string;
-    objet: string;
-    objectifSpecifique?: string; // Only for 3ème-5ème
-    objectif: string;
-    etapes: string[];
-    remarques?: string; // Only for 6ème
-    duration?: string; // Only for 6ème
-  }>>().notNull(),
+  // Lecture content
+  lectureObjet: text("lecture_objet"),
+  lectureObjectif: text("lecture_objectif"),
+  lectureRemarques: text("lecture_remarques"),
+  
+  // Grammar/Conjugation/Spelling content
+  grammaireType: mysqlEnum("grammaire_type", ["Grammaire", "Conjugaison", "Orthographe"]).default("Grammaire").notNull(),
+  grammaireObjet: text("grammaire_objet"),
+  grammaireObjectif: text("grammaire_objectif"),
+  grammaireRemarques: text("grammaire_remarques"),
   
   // Metadata
   isOfficial: boolean("is_official").default(true).notNull(),
   source: varchar("source", { length: 255 }).default("Programme officiel tunisien"),
   notes: text("notes"),
+  
+  // Who added/modified
   addedBy: int("added_by"),
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -2697,3 +2643,32 @@ export const referenceContent = mysqlTable("reference_content", {
 });
 export type ReferenceContentRow = typeof referenceContent.$inferSelect;
 export type InsertReferenceContent = typeof referenceContent.$inferInsert;
+
+
+/**
+ * Textbook Excerpts - أرشيف المقتطفات من الكتب المدرسية
+ * يحفظ النصوص المقتطعة من الكتب المدرسية للعودة إليها لاحقاً
+ */
+export const textbookExcerpts = mysqlTable("textbook_excerpts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  
+  // Extracted content
+  content: text("content").notNull(),
+  
+  // Source info
+  sourceFileName: varchar("source_file_name", { length: 255 }),
+  sourcePageNumber: int("source_page_number"),
+  bookId: varchar("book_id", { length: 100 }),
+  bookTitle: varchar("book_title", { length: 255 }),
+  
+  // User notes
+  title: varchar("title", { length: 255 }),
+  notes: text("notes"),
+  tags: text("tags"), // comma-separated tags
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TextbookExcerptRow = typeof textbookExcerpts.$inferSelect;
+export type InsertTextbookExcerpt = typeof textbookExcerpts.$inferInsert;

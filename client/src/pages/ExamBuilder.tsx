@@ -4,6 +4,7 @@ import ImageOverlayEditor from "@/components/ImageOverlayEditor";
 import EducationalImageLibrary from "@/components/EducationalImageLibrary";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useExtractionStore } from "@/stores/extractionStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -299,6 +300,10 @@ export default function ExamBuilder() {
   const [totalScore, setTotalScore] = useState(20);
   const [topics, setTopics] = useState("");
   const [additionalInstructions, setAdditionalInstructions] = useState("");
+
+  // Zustand - extracted_payload from textbook viewer
+  const { extracted_payload: libraryPayload, sourceInfo: librarySource } = useExtractionStore();
+  const [libraryPayloadApplied, setLibraryPayloadApplied] = useState(false);
   const [examImages, setExamImages] = useState<Array<{ url: string; caption?: string }>>([]);
   const [generatingImages, setGeneratingImages] = useState(false);
 
@@ -370,6 +375,19 @@ export default function ExamBuilder() {
   useEffect(() => {
     if (userSchoolLogo && !schoolLogo) setSchoolLogo(userSchoolLogo);
   }, [userSchoolLogo]);
+
+  // Auto-fill from Library extracted_payload
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("from") === "library" && libraryPayload && !libraryPayloadApplied) {
+      setTopics(libraryPayload);
+      setLibraryPayloadApplied(true);
+      toast.success(
+        `تم تعبئة المحاور من المكتبة${librarySource?.fileName ? ` (من ${librarySource.fileName})` : ""}`,
+        { duration: 5000 }
+      );
+    }
+  }, [libraryPayload, libraryPayloadApplied, librarySource]);
 
   // Show loading spinner while permissions are loading
   if (permLoading) {

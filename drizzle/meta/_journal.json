@@ -530,29 +530,8 @@
     {
       "idx": 75,
       "version": "5",
-      "when": 1774550861673,
-      "tag": "0075_shallow_black_widow",
-      "breakpoints": true
-    },
-    {
-      "idx": 76,
-      "version": "5",
-      "when": 1774554906322,
-      "tag": "0076_slim_valeria_richards",
-      "breakpoints": true
-    },
-    {
-      "idx": 77,
-      "version": "5",
-      "when": 1774563200549,
-      "tag": "0077_chemical_zarek",
-      "breakpoints": true
-    },
-    {
-      "idx": 78,
-      "version": "5",
-      "when": 1774564743688,
-      "tag": "0078_round_mysterio",
+      "when": 1774569761360,
+      "tag": "0075_lucky_wendell_rand",
       "breakpoints": true
     }
   ]

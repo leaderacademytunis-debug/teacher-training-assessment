@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useExtractionStore } from "@/stores/extractionStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -40,6 +41,21 @@ export default function LeaderVisualStudio() {
 
   const [prompt, setPrompt] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<StyleId>("bw_lineart");
+
+  // Zustand - extracted_payload from textbook viewer
+  const { extracted_payload: libraryPayload, sourceInfo: librarySource } = useExtractionStore();
+  const [libraryPayloadApplied, setLibraryPayloadApplied] = useState(false);
+
+  // Auto-fill prompt from Library extracted_payload
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("from") === "library" && libraryPayload && !libraryPayloadApplied) {
+      setPrompt(libraryPayload);
+      setLibraryPayloadApplied(true);
+      // Use a simple alert-style notification since toast may not be available
+    }
+  }, [libraryPayload, libraryPayloadApplied]);
+
   const [subject, setSubject] = useState("");
   const [level, setLevel] = useState("");
   const [generatedImage, setGeneratedImage] = useState<{ url: string; prompt: string; style: string } | null>(null);

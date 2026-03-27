@@ -3095,114 +3095,17 @@
 - [x] اختبار والتحقق من PWA (25 اختبار - نجحت جميعها)
 - [x] حفظ checkpoint (version: 2a24b7c0)
 
-## تحديث الشعار الرسمي لـ Leader Academy
-- [x] استخراج الشعار من ملف PDF
-- [x] إنشاء أيقونات PWA بأحجام متعددة من الشعار الجديد (10 أحجام + favicon)
-- [x] تحديث الشعار في الـ navbar وجميع الصفحات (Navbar, Home, SmartInspector, SEOHead)
-- [x] تحديث الـ favicon (16x16, 32x32, ICO)
-- [x] تحديث manifest.json بالأيقونات الجديدة
-- [x] حفظ checkpoint (version: b434a0ee)
-
-## مولّد Répartition Journalière (دفتر إعداد الدروس اليومي)
-- [x] تحليل 7 نماذج مرجعية واستخراج الهيكلة الدقيقة لكل مستوى
-- [x] توثيق القواعد الصارمة والقوالب لكل مستوى دراسي
-- [x] تحديث backend مع دعم جميع المستويات (3ème-6ème) وجميع الأيام (J1-J5)
-- [x] إضافة أنشطة خاصة بكل مستوى (Mise en train, Étude de graphies, P.E.L, Écriture, Auto dictée, Projet)
-- [x] تحديث واجهة المستخدم مع نموذج تكيفي حسب المستوى واليوم
-- [x] إضافة تصدير DOCX بتنسيق رسمي مطابق للقوالب
-- [x] كتابة اختبارات والتحقق (34 اختبار - نجحت جميعها)
-- [x] حفظ checkpoint
-
-## نظام التعبئة التلقائية الذكي (Smart Autofill System)
-- [x] تحليل ملفات DOCX المرجعية واستخراج المحتوى الدقيق لـ U1M1 J1-J5 (4ème و 6ème)
-- [x] تصميم وتنفيذ schema قاعدة البيانات المرجعية (referenceContent) - JSON مرن
-- [x] تغذية قاعدة البيانات بمحتوى الوحدة الأولى من الملفات الرسمية (seedData endpoint)
-- [x] بناء API خلفي لجلب المحتوى المرجعي (getByKey, checkAvailability) + AI Fallback
-- [x] تحديث واجهة المستخدم مع التعبئة التلقائية والحقول القابلة للتعديل
-- [x] كتابة اختبارات والتحقق من النظام الكامل (96 اختبار - نجحت جميعها)
-- [x] حفظ checkpoint
-
-## تصحيح P.E.L = Pratique Écrite de la Langue
-- [x] تحديث تعريف P.E.L في backend (Pratique Écrite de la Langue: grammaire, conjugaison, orthographe)
-- [x] تحديث واجهة المستخدم لعرض P.E.L بالتعريف الصحيح
-- [x] تحديث بيانات البذر (seed data) لتتطابق مع النموذج الرسمي
-- [x] تحديث الاختبارات والتحقق (96 اختبار - نجحت جميعها)
-- [x] حفظ checkpoint
-
-## توسيع عدد الأيام من 5 إلى 8 (Journée 1-8)
-- [x] تحديث القائمة المنسدلة في الواجهة الأمامية لعرض 8 أيام
-- [x] إضافة تكوين الأنشطة لليوم 6 و7 و8 للسنة الرابعة (3ème-5ème)
-- [x] إضافة تكوين الأنشطة لليوم 6 و7 و8 للسنة السادسة
-- [x] تحديث الاختبارات (102 اختبار - نجحت جميعها)
-- [x] حفظ checkpoint
-
-## تحليل الدليل المرجعي الرسمي للسنة الرابعة (guide_maitre_4ieme)
-- [x] تحليل PDF واستخراج الهيكلة الدقيقة لكل يوم J1-J8 (مرحلتان: Phase1 M1-M4 / Phase2 M5-M10)
-- [x] مقارنة الأنشطة المستخرجة مع التكوين الحالي وتصحيح J2,J6,J7,J8
-- [x] تحديث تكوين الأنشطة في backend لمطابقة الدليل الرسمي + إضافة Phase1/Phase2
-- [x] تحديث الاختبارات (102 اختبار - نجحت جميعها)
-- [x] حفظ checkpoint
-
-## تحليل الأدلة المرجعية الرسمية (5ème و 6ème)
-- [x] تحليل دليل السنة الخامسة (Guide Méthodologique CNP) - استخراج J1-J8 (Modules impairs/pairs)
-- [x] تحليل دليل السنة السادسة (Un Pas de Plus... Vers le Collège) - استخراج J1-J8 (Phase1/Phase2)
-- [x] إنشاء تكوينات منفصلة: ACTIVITIES_4EME (Phase1/2) + ACTIVITIES_5EME (Impairs/Pairs) + ACTIVITIES_6EME (Phase1/2)
-- [x] تحديث getActivitiesForGrade لدعم 3 تكوينات منفصلة
-- [x] إضافة أنشطة جديدة للواجهة (Grammaire, Conjugaison, Lecture suivie, Lecture-action, etc.)
-- [x] تحديث الاختبارات (106 اختبار - نجحت جميعها)
-- [x] حفظ checkpoint
-
-## تحليل الدليل المرجعي الرسمي للسنة الثالثة (guide_maitre_3ieme)
-- [x] تحليل PDF واستخراج الهيكلة الدقيقة لكل يوم J1-J8 (8 أيام بأنشطة مختلفة)
-- [x] إنشاء تكوين منفصل ACTIVITIES_3EME (Communication orale, Poème/chant, Phonétique, Copie, etc.)
-- [x] تحديث getActivitiesForGrade لدعم 4 تكوينات (3ème, 4ème, 5ème, 6ème)
-- [x] إضافة أنشطة جديدة للواجهة (Phonétique, Copie, Initiation à la production, Vocabulaire, Abécédaire, Chrono-syllabes)
-- [x] تحديث الاختبارات (55 اختبار لملف repartitionJournaliere.test.ts - نجحت جميعها)
-- [x] حفظ checkpoint
-
-## ميزة تصحيح اسم المشارك وإعادة إصدار الشهادة
-- [x] تحليل نظام الشهادات الحالي (schema, generation, routes)
-- [x] إضافة حقول تصحيح الاسم (correctedName, lastRegeneratedAt) في schema الشهادات
-- [x] إضافة جدول سجل التعديلات (name_edit_history) مع 14 حقل
-- [x] إنشاء endpoint خلفي لتعديل اسم المشارك (correctParticipantName)
-- [x] إنشاء endpoint للبحث عن المشاركين (searchUsersForCorrection)
-- [x] إنشاء endpoint لعرض بيانات المشارك مع شهاداته (getUserForNameCorrection)
-- [x] إنشاء endpoint لسجل التعديلات (getNameEditHistory)
-- [x] إعادة توليد الشهادة بالاسم المصحح مع الحفاظ على رقم الشهادة وتاريخ الإصدار
-- [x] بناء صفحة مستقلة لتصحيح الأسماء (/admin/name-correction)
-- [x] إضافة قسم تصحيح الأسماء في لوحة التحكم AdminDashboardV2
-- [x] كتابة 17 اختبار vitest (جميعها ناجحة)
-- [x] حفظ checkpoint
-
-## ميزة طلب تصحيح الاسم من طرف المشارك (مع موافقة المدير)
-- [x] إضافة جدول name_correction_requests في schema (16 حقل)
-- [x] إنشاء endpoints خلفية: submitCorrectionRequest, myCorrectionRequests, listCorrectionRequests, reviewCorrectionRequest
-- [x] إضافة زر "طلب تصحيح الاسم" في صفحة شهاداتي (MyCertificates)
-- [x] بناء نموذج طلب التصحيح (الاسم الجديد + السبب) مع عرض حالة الطلبات
-- [x] إضافة قسم "طلبات المشاركين" في لوحة التحكم (CorrectionRequestsPanel)
-- [x] إشعار المدير عند وصول طلب جديد (notifyOwner)
-- [x] إشعار المشارك عند الموافقة/الرفض (إشعار داخلي)
-- [x] إعادة إصدار الشهادة تلقائياً بعد الموافقة مع تحديث اسم المستخدم
-- [x] كتابة 30 اختبار vitest (جميعها ناجحة)
-- [x] حفظ checkpoint
-
-## تبديل التاريخ بالمدة في شهادة دورة الفرنسية
-- [x] البحث عن كود توليد الشهادة وتحديد مكان عرض التاريخ
-- [x] تعديل القالب لعرض "Durée : 12 heures" بدل "Date : de XX au XX"
-- [x] إضافة courseDuration في CertificateData وتمريرها في 4 مواضع لتوليد الشهادات
-- [x] حفظ checkpoint
-
-## إصلاح خطأ: No certificate content found for course: تأهيل مدرّسي الفرنسية
-- [x] إصلاح مطابقة اسم الدورة (مسافة زائدة في اسم الدورة بقاعدة البيانات) - إضافة trim() في getCertificateContent
-- [x] حفظ checkpoint
-
-## النظام البيئي المتصل - العصب المركزي والمكتبة التفاعلية
+## المكتبة التفاعلية وأزرار التوجيه الذكي (Connected Ecosystem - Step 2)
 - [x] تثبيت Zustand و pdfjs-dist
-- [x] إنشاء Global State (extracted_payload) باستخدام Zustand (extractionStore.ts)
-- [x] بناء عارض PDF بنظام Split-Screen (60% عارض / 40% مساحة عمل)
-- [x] برمجة طبقة Canvas Snipping Tool شفافة فوق العارض (مع تظليل ومقابض زوايا)
-- [x] تنفيذ OCR Logic عبر LLM Vision (textbookOCR router)
-- [x] عرض النص المستخرج في Textarea قابل للتعديل + تحديث extracted_payload
-- [x] إضافة Route /textbook-viewer
-- [x] كتابة 9 اختبارات vitest (جميعها ناجحة)
+- [x] إنشاء Zustand Store (extracted_payload)
+- [x] بناء عارض PDF بنظام Split-Screen + Canvas Snipping Tool
+- [x] تنفيذ OCR Logic عبر LLM Vision
+- [x] إضافة Route /textbook-viewer و /library
+- [x] بناء واجهة المكتبة (/library) مع شبكة الكتب
+- [x] إضافة أزرار التوجيه السحرية (Action Routing Buttons)
+- [x] ربط RepartitionJournaliere بـ extracted_payload
+- [x] ربط ExamBuilder بـ extracted_payload
+- [x] ربط LeaderVisualStudio بـ extracted_payload
+- [x] إضافة زر "حفظ في أرشيفي" مع قاعدة بيانات (textbook_excerpts table + textbookArchive router)
+- [x] كتابة 13 اختبار vitest (جميعها ناجحة)
 - [ ] حفظ checkpoint

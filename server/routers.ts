@@ -10,12 +10,12 @@ import { progressEvaluatorRouter } from "./routers/progressEvaluator";
 import { studentDashboardRouter } from "./routers/studentDashboard";
 import { repartitionJournaliereRouter } from "./routers/repartitionJournaliere";
 import { referenceContentRouter } from "./routers/referenceContent";
-import { textbookOCRRouter } from "./routers/textbookOCR";
+import { textbookArchiveRouter } from "./routers/textbookArchive";
 import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { getDb } from "./db";
-import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, submissionComments, videoEvaluations, generatedImages, conversations, courses, savedEvaluations, nameCorrectionRequests, nameEditHistory } from "../drizzle/schema";
+import { infographics, mindMaps, referenceDocuments, sharedEvaluations, paymentRequests, servicePermissions, aiActivityLog, digitizedDocuments, teacherPortfolios, curriculumPlans, curriculumTopics, teacherCurriculumProgress, gradingSessions, studentSubmissions, marketplaceItems, marketplaceRatings, marketplaceDownloads, users, notifications, pedagogicalSheets, teacherExams, aiSuggestions, savedDramaScripts, peerReviewComments, aiVideoTeasers, connectionRequests, goldenSamples, certificates, partnerSchools, jobPostings, careerConversations, careerMessages, profileAnalytics, digitalTasks, jobApplications, smartMatchNotifications, batches, batchMembers, batchFeatureAccess, assignments, submissions, submissionComments, videoEvaluations, generatedImages, conversations, courses, savedEvaluations } from "../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, inArray, avg, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificatePDF } from "./certificates";
@@ -37,7 +37,7 @@ export const appRouter = router({
   studentDashboard: studentDashboardRouter,
   repartitionJournaliere: repartitionJournaliereRouter,
   referenceContent: referenceContentRouter,
-  textbookOCR: textbookOCRRouter,
+  textbookArchive: textbookArchiveRouter,
   
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -707,7 +707,6 @@ export const appRouter = router({
           score: attempt.score || 0,
           certificateNumber,
           idCardNumber: ctx.user.idCardNumber || undefined,
-          courseDuration: course.duration || undefined,
         });
 
         // Save certificate record
@@ -857,7 +856,6 @@ export const appRouter = router({
           score: avgScore,
           certificateNumber,
           idCardNumber: ctx.user.idCardNumber || undefined,
-          courseDuration: cumulativeCourse.duration || undefined,
         });
 
         // Save certificate record (without examAttemptId since it's cumulative)
@@ -919,281 +917,6 @@ export const appRouter = router({
           missingCourses,
           completedCount: completedCourses.size,
           requiredCount: requiredCourses.length
-        };
-      }),
-
-    // ===== NAME CORRECTION REQUESTS (Participant-facing) =====
-
-    // Submit a name correction request
-    submitCorrectionRequest: protectedProcedure
-      .input(z.object({
-        requestedFirstNameAr: z.string().optional(),
-        requestedLastNameAr: z.string().optional(),
-        requestedFirstNameFr: z.string().optional(),
-        requestedLastNameFr: z.string().optional(),
-        reason: z.string().min(1, "يرجى ذكر سبب التصحيح"),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const database = (await getDb())!;
-
-        // Check if there's already a pending request
-        const [pendingRequest] = await database.select()
-          .from(nameCorrectionRequests)
-          .where(and(
-            eq(nameCorrectionRequests.userId, ctx.user.id),
-            eq(nameCorrectionRequests.status, "pending")
-          ))
-          .limit(1);
-
-        if (pendingRequest) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "لديك طلب تصحيح قيد المراجعة. يرجى انتظار الرد على الطلب السابق."
-          });
-        }
-
-        await database.insert(nameCorrectionRequests).values({
-          userId: ctx.user.id,
-          currentFirstNameAr: ctx.user.firstNameAr || null,
-          currentLastNameAr: ctx.user.lastNameAr || null,
-          currentFirstNameFr: ctx.user.firstNameFr || null,
-          currentLastNameFr: ctx.user.lastNameFr || null,
-          requestedFirstNameAr: input.requestedFirstNameAr || ctx.user.firstNameAr || null,
-          requestedLastNameAr: input.requestedLastNameAr || ctx.user.lastNameAr || null,
-          requestedFirstNameFr: input.requestedFirstNameFr || ctx.user.firstNameFr || null,
-          requestedLastNameFr: input.requestedLastNameFr || ctx.user.lastNameFr || null,
-          reason: input.reason,
-        });
-
-        // Notify admin
-        try {
-          const { notifyOwner } = await import("./_core/notification");
-          const requestedName = `${input.requestedFirstNameAr || ''} ${input.requestedLastNameAr || ''}`.trim();
-          const currentName = `${ctx.user.firstNameAr || ''} ${ctx.user.lastNameAr || ''}`.trim();
-          await notifyOwner({
-            title: "طلب تصحيح اسم جديد",
-            content: `طلب ${currentName || ctx.user.email} تصحيح اسمه إلى: ${requestedName}. السبب: ${input.reason}`,
-          });
-        } catch (e) {
-          console.error("[NameCorrection] Failed to notify owner:", e);
-        }
-
-        return { success: true, message: "تم إرسال طلب التصحيح بنجاح. سيتم مراجعته من قبل الإدارة." };
-      }),
-
-    // Get my correction requests
-    myCorrectionRequests: protectedProcedure
-      .query(async ({ ctx }) => {
-        const database = (await getDb())!;
-        const requests = await database.select()
-          .from(nameCorrectionRequests)
-          .where(eq(nameCorrectionRequests.userId, ctx.user.id))
-          .orderBy(desc(nameCorrectionRequests.createdAt));
-        return requests;
-      }),
-
-    // Admin: list all pending correction requests
-    listCorrectionRequests: staffProcedure
-      .input(z.object({
-        status: z.enum(["pending", "approved", "rejected", "all"]).default("pending"),
-      }))
-      .query(async ({ input }) => {
-        const database = (await getDb())!;
-        let query = database.select({
-          id: nameCorrectionRequests.id,
-          userId: nameCorrectionRequests.userId,
-          currentFirstNameAr: nameCorrectionRequests.currentFirstNameAr,
-          currentLastNameAr: nameCorrectionRequests.currentLastNameAr,
-          currentFirstNameFr: nameCorrectionRequests.currentFirstNameFr,
-          currentLastNameFr: nameCorrectionRequests.currentLastNameFr,
-          requestedFirstNameAr: nameCorrectionRequests.requestedFirstNameAr,
-          requestedLastNameAr: nameCorrectionRequests.requestedLastNameAr,
-          requestedFirstNameFr: nameCorrectionRequests.requestedFirstNameFr,
-          requestedLastNameFr: nameCorrectionRequests.requestedLastNameFr,
-          reason: nameCorrectionRequests.reason,
-          status: nameCorrectionRequests.status,
-          reviewNote: nameCorrectionRequests.reviewNote,
-          certificatesRegenerated: nameCorrectionRequests.certificatesRegenerated,
-          createdAt: nameCorrectionRequests.createdAt,
-          reviewedAt: nameCorrectionRequests.reviewedAt,
-          userName: users.name,
-          userEmail: users.email,
-        }).from(nameCorrectionRequests)
-          .leftJoin(users, eq(nameCorrectionRequests.userId, users.id))
-          .orderBy(desc(nameCorrectionRequests.createdAt));
-
-        if (input.status !== "all") {
-          const results = await database.select({
-            id: nameCorrectionRequests.id,
-            userId: nameCorrectionRequests.userId,
-            currentFirstNameAr: nameCorrectionRequests.currentFirstNameAr,
-            currentLastNameAr: nameCorrectionRequests.currentLastNameAr,
-            currentFirstNameFr: nameCorrectionRequests.currentFirstNameFr,
-            currentLastNameFr: nameCorrectionRequests.currentLastNameFr,
-            requestedFirstNameAr: nameCorrectionRequests.requestedFirstNameAr,
-            requestedLastNameAr: nameCorrectionRequests.requestedLastNameAr,
-            requestedFirstNameFr: nameCorrectionRequests.requestedFirstNameFr,
-            requestedLastNameFr: nameCorrectionRequests.requestedLastNameFr,
-            reason: nameCorrectionRequests.reason,
-            status: nameCorrectionRequests.status,
-            reviewNote: nameCorrectionRequests.reviewNote,
-            certificatesRegenerated: nameCorrectionRequests.certificatesRegenerated,
-            createdAt: nameCorrectionRequests.createdAt,
-            reviewedAt: nameCorrectionRequests.reviewedAt,
-            userName: users.name,
-            userEmail: users.email,
-          }).from(nameCorrectionRequests)
-            .leftJoin(users, eq(nameCorrectionRequests.userId, users.id))
-            .where(eq(nameCorrectionRequests.status, input.status))
-            .orderBy(desc(nameCorrectionRequests.createdAt));
-          return results;
-        }
-
-        return await query;
-      }),
-
-    // Admin: approve or reject a correction request
-    reviewCorrectionRequest: staffProcedure
-      .input(z.object({
-        requestId: z.number(),
-        action: z.enum(["approve", "reject"]),
-        reviewNote: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const database = (await getDb())!;
-
-        const [request] = await database.select()
-          .from(nameCorrectionRequests)
-          .where(eq(nameCorrectionRequests.id, input.requestId))
-          .limit(1);
-
-        if (!request) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "الطلب غير موجود" });
-        }
-
-        if (request.status !== "pending") {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "هذا الطلب تمت مراجعته مسبقاً" });
-        }
-
-        let regeneratedCount = 0;
-
-        if (input.action === "approve") {
-          // Get user
-          const [user] = await database.select().from(users).where(eq(users.id, request.userId));
-          if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "المستخدم غير موجود" });
-
-          // Save edit history
-          await database.insert(nameEditHistory).values({
-            userId: request.userId,
-            editedBy: ctx.user.id,
-            previousFirstNameAr: user.firstNameAr || null,
-            previousLastNameAr: user.lastNameAr || null,
-            previousFirstNameFr: user.firstNameFr || null,
-            previousLastNameFr: user.lastNameFr || null,
-            newFirstNameAr: request.requestedFirstNameAr || user.firstNameAr || null,
-            newLastNameAr: request.requestedLastNameAr || user.lastNameAr || null,
-            newFirstNameFr: request.requestedFirstNameFr || user.firstNameFr || null,
-            newLastNameFr: request.requestedLastNameFr || user.lastNameFr || null,
-            reason: `طلب من المشارك: ${request.reason || ''}`,
-            certificatesRegenerated: 0,
-          });
-
-          // Update user name
-          const updateData: Record<string, any> = {};
-          if (request.requestedFirstNameAr) updateData.firstNameAr = request.requestedFirstNameAr;
-          if (request.requestedLastNameAr) updateData.lastNameAr = request.requestedLastNameAr;
-          if (request.requestedFirstNameFr) updateData.firstNameFr = request.requestedFirstNameFr;
-          if (request.requestedLastNameFr) updateData.lastNameFr = request.requestedLastNameFr;
-
-          if (Object.keys(updateData).length > 0) {
-            await database.update(users).set(updateData).where(eq(users.id, request.userId));
-          }
-
-          // Regenerate certificates
-          const userCerts = await database.select().from(certificates).where(eq(certificates.userId, request.userId));
-          const newFirstNameAr = request.requestedFirstNameAr || user.firstNameAr || '';
-          const newLastNameAr = request.requestedLastNameAr || user.lastNameAr || '';
-          const correctedFullName = `${newFirstNameAr} ${newLastNameAr}`.trim();
-
-          for (const cert of userCerts) {
-            try {
-              const [course] = await database.select().from(courses).where(eq(courses.id, cert.courseId));
-              if (!course) continue;
-
-              const { url } = await generateCertificatePDF({
-                participantName: correctedFullName || user.name || "المشارك",
-                courseName: course.titleAr,
-                courseType: course.category,
-                completionDate: cert.issuedAt || new Date(),
-                score: 0,
-                certificateNumber: cert.certificateNumber,
-                courseDuration: course.duration || undefined,
-              });
-
-              await database.update(certificates).set({
-                pdfUrl: url,
-                correctedName: correctedFullName,
-                lastRegeneratedAt: new Date(),
-              }).where(eq(certificates.id, cert.id));
-
-              regeneratedCount++;
-            } catch (error) {
-              console.error(`Failed to regenerate certificate ${cert.certificateNumber}:`, error);
-            }
-          }
-
-          // Update edit history with regeneration count
-          const [lastEdit] = await database.select().from(nameEditHistory)
-            .where(and(
-              eq(nameEditHistory.userId, request.userId),
-              eq(nameEditHistory.editedBy, ctx.user.id),
-            ))
-            .orderBy(desc(nameEditHistory.createdAt))
-            .limit(1);
-          if (lastEdit) {
-            await database.update(nameEditHistory).set({ certificatesRegenerated: regeneratedCount }).where(eq(nameEditHistory.id, lastEdit.id));
-          }
-
-          // Notify participant
-          try {
-            await database.insert(notifications).values({
-              userId: request.userId,
-              titleAr: "تم قبول طلب تصحيح الاسم",
-              messageAr: `تم قبول طلب تصحيح اسمك إلى "${correctedFullName}". ${regeneratedCount > 0 ? `تم إعادة إصدار ${regeneratedCount} شهادة بالاسم الجديد.` : ''}`,
-              type: "success",
-            });
-          } catch (e) {
-            console.error("[NameCorrection] Failed to send notification:", e);
-          }
-        } else {
-          // Notify participant of rejection
-          try {
-            await database.insert(notifications).values({
-              userId: request.userId,
-              titleAr: "تم رفض طلب تصحيح الاسم",
-              messageAr: `تم رفض طلب تصحيح اسمك.${input.reviewNote ? ` السبب: ${input.reviewNote}` : ''} يمكنك إرسال طلب جديد.`,
-              type: "warning",
-            });
-          } catch (e) {
-            console.error("[NameCorrection] Failed to send rejection notification:", e);
-          }
-        }
-
-        // Update request status
-        await database.update(nameCorrectionRequests).set({
-          status: input.action === "approve" ? "approved" : "rejected",
-          reviewedBy: ctx.user.id,
-          reviewNote: input.reviewNote || null,
-          reviewedAt: new Date(),
-          certificatesRegenerated: regeneratedCount,
-        }).where(eq(nameCorrectionRequests.id, input.requestId));
-
-        return {
-          success: true,
-          regeneratedCount,
-          message: input.action === "approve"
-            ? `تم قبول الطلب وإعادة إصدار ${regeneratedCount} شهادة`
-            : "تم رفض الطلب",
         };
       }),
   }),
