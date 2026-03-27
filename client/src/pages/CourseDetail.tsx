@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getLoginUrl } from "@/const";
 
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
@@ -390,137 +391,252 @@ export default function CourseDetail() {
               </div>
             )}
 
-            {/* AI Tools Section - Only for Video AI course participants */}
-            {isApproved && course && (course.id === 30001 || course.category === 'digital_teacher_ai') && (
+            {/* AI Tools Section - Visible to all, locked for non-approved */}
+            {course && (course.id === 30001 || course.category === 'digital_teacher_ai') && (
               <div>
                 <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2" style={{ fontFamily: 'Almarai, Cairo, sans-serif' }}>
                   <Wand2 className="w-5 h-5 text-purple-600" />
                   {isAr ? "أدوات الذكاء الاصطناعي الحصرية" : "Outils IA exclusifs"}
+                  {!isApproved && (
+                    <Badge className="bg-amber-100 text-amber-700 border-0 text-xs animate-pulse">
+                      <Lock className="w-3 h-3 ml-1" />
+                      {isAr ? "حصري للمشاركين" : "Réservé aux participants"}
+                    </Badge>
+                  )}
                 </h2>
                 <p className="text-gray-500 text-sm mb-4">
                   {isAr ? "أدوات متقدمة متاحة حصرياً لمشاركي هذه الدورة لإنشاء محتوى تعليمي احترافي" : "Outils avancés exclusifs aux participants de ce cours"}
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-                  {/* Edu-Studio */}
-                  <Link href="/edu-studio">
-                    <Card className="group cursor-pointer border-2 border-transparent hover:border-purple-300 rounded-2xl transition-all hover:shadow-lg h-full">
-                      <CardContent className="p-5 text-center">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #7C3AED, #4F46E5)' }}>
-                          <Clapperboard className="w-7 h-7 text-white" />
-                        </div>
-                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                          {isAr ? "Edu-Studio" : "Edu-Studio"}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {isAr ? "استوديو إنتاج الفيديوهات التعليمية بالذكاء الاصطناعي" : "Studio de production vidéo éducative IA"}
-                        </p>
-                        <Badge className="mt-3 bg-purple-100 text-purple-700 border-0 text-xs">
-                          {isAr ? "سيناريو + صور + صوت" : "Scénario + Images + Audio"}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
 
-                  {/* My Digital Voice */}
-                  <Link href="/my-voice">
-                    <Card className="group cursor-pointer border-2 border-transparent hover:border-orange-300 rounded-2xl transition-all hover:shadow-lg h-full">
-                      <CardContent className="p-5 text-center">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)' }}>
-                          <Mic className="w-7 h-7 text-white" />
+                {/* Locked overlay for non-approved users */}
+                {!isApproved && (
+                  <div className="relative mb-4">
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl" style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(6px)' }}>
+                      <div className="text-center p-6 max-w-md">
+                        <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, #7C3AED, #F59E0B)' }}>
+                          <Lock className="w-10 h-10 text-white" />
                         </div>
-                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                          {isAr ? "صوتي الرقمي" : "Ma voix numérique"}
+                        <h3 className="text-xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                          {isAr ? "سجّل في الدورة لفتح 6 أدوات ذكاء اصطناعي" : "Inscrivez-vous pour débloquer 6 outils IA"}
                         </h3>
-                        <p className="text-xs text-gray-500">
-                          {isAr ? "استنسخ صوتك واستخدمه في التعليق الصوتي لدروسك" : "Clonez votre voix pour vos cours"}
+                        <p className="text-sm text-gray-600 mb-4">
+                          {isAr 
+                            ? "استوديو إنتاج فيديو، استنساخ صوتي، مُقيِّم فيديو، محسّن أوامر، مخرج ذكي، و100 نقطة مجانية!"
+                            : "Studio vidéo, clonage vocal, évaluateur vidéo, prompt lab, réalisateur IA et 100 points gratuits !"}
                         </p>
-                        <Badge className="mt-3 bg-orange-100 text-orange-700 border-0 text-xs">
-                          {isAr ? "ميزة حصرية" : "Exclusif"}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                          {!user ? (
+                            <a href={getLoginUrl()}>
+                              <Button className="bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white rounded-xl px-8 py-3 text-base font-bold shadow-lg">
+                                <Sparkles className="w-5 h-5 ml-2" />
+                                {isAr ? "سجّل الدخول وانضم الآن" : "Connectez-vous et inscrivez-vous"}
+                              </Button>
+                            </a>
+                          ) : (
+                            <Button 
+                              className="bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white rounded-xl px-8 py-3 text-base font-bold shadow-lg"
+                              onClick={() => {
+                                const enrollBtn = document.querySelector('[data-enroll-btn]') as HTMLElement;
+                                if (enrollBtn) enrollBtn.click();
+                                else window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                            >
+                              <Sparkles className="w-5 h-5 ml-2" />
+                              {isAr ? "سجّل في الدورة الآن" : "Inscrivez-vous maintenant"}
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500">
+                          <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500" /> {isAr ? "6 أدوات AI" : "6 outils IA"}</span>
+                          <span className="flex items-center gap-1"><Coins className="w-3 h-3 text-green-500" /> {isAr ? "100 نقطة مجانية" : "100 pts gratuits"}</span>
+                          <span className="flex items-center gap-1"><Mic className="w-3 h-3 text-orange-500" /> {isAr ? "استنساخ صوتي" : "Clonage vocal"}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Blurred tools grid behind overlay */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 pointer-events-none select-none" style={{ filter: 'blur(5px)', opacity: 0.6 }}>
+                      {[{
+                        icon: <Clapperboard className="w-7 h-7 text-white" />,
+                        bg: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
+                        name: isAr ? 'Edu-Studio' : 'Edu-Studio',
+                        desc: isAr ? 'استوديو إنتاج الفيديوهات التعليمية' : 'Studio de production vidéo',
+                        badge: isAr ? 'سيناريو + صور + صوت' : 'Scénario + Images + Audio',
+                        badgeColor: 'bg-purple-100 text-purple-700'
+                      }, {
+                        icon: <Mic className="w-7 h-7 text-white" />,
+                        bg: 'linear-gradient(135deg, #F59E0B, #EF4444)',
+                        name: isAr ? 'صوتي الرقمي' : 'Ma voix numérique',
+                        desc: isAr ? 'استنسخ صوتك لدروسك' : 'Clonez votre voix',
+                        badge: isAr ? 'ميزة حصرية' : 'Exclusif',
+                        badgeColor: 'bg-orange-100 text-orange-700'
+                      }, {
+                        icon: <MonitorPlay className="w-7 h-7 text-white" />,
+                        bg: 'linear-gradient(135deg, #1A237E, #0D47A1)',
+                        name: isAr ? 'مُقيِّم الفيديو' : 'Évaluateur Vidéo',
+                        desc: isAr ? 'تقييم فيديوهاتك التعليمية' : 'Évaluez vos vidéos',
+                        badge: isAr ? 'وكيل ذكاء اصطناعي' : 'Agent IA',
+                        badgeColor: 'bg-indigo-100 text-indigo-700'
+                      }, {
+                        icon: <PenTool className="w-7 h-7 text-white" />,
+                        bg: 'linear-gradient(135deg, #0891B2, #06B6D4)',
+                        name: isAr ? 'محسّن الأوامر' : 'Prompt Lab',
+                        desc: isAr ? 'حسّن أوامرك للذكاء الاصطناعي' : 'Améliorez vos prompts',
+                        badge: isAr ? 'هندسة الأوامر' : 'Prompt Engineering',
+                        badgeColor: 'bg-cyan-100 text-cyan-700'
+                      }, {
+                        icon: <Camera className="w-7 h-7 text-white" />,
+                        bg: 'linear-gradient(135deg, #9333EA, #DB2777)',
+                        name: isAr ? 'المخرج الذكي' : 'AI Director',
+                        desc: isAr ? 'مشاهد فيديو سينمائية' : 'Vidéos cinématiques',
+                        badge: isAr ? 'إنتاج فيديو متقدم' : 'Production avancée',
+                        badgeColor: 'bg-rose-100 text-rose-700'
+                      }, {
+                        icon: <Coins className="w-7 h-7 text-white" />,
+                        bg: 'linear-gradient(135deg, #10B981, #059669)',
+                        name: isAr ? 'نقاط ليدر' : 'Leader Points',
+                        desc: isAr ? 'رصيدك من النقاط' : 'Votre solde de points',
+                        badge: isAr ? '100 نقطة مجانية' : '100 points gratuits',
+                        badgeColor: 'bg-green-100 text-green-700'
+                      }].map((tool, i) => (
+                        <Card key={i} className="border-2 border-gray-200 rounded-2xl h-full">
+                          <CardContent className="p-5 text-center">
+                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ background: tool.bg }}>
+                              {tool.icon}
+                            </div>
+                            <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>{tool.name}</h3>
+                            <p className="text-xs text-gray-500">{tool.desc}</p>
+                            <Badge className={`mt-3 border-0 text-xs ${tool.badgeColor}`}>{tool.badge}</Badge>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                  {/* Video Evaluator */}
-                  <Link href="/video-evaluator">
-                    <Card className="group cursor-pointer border-2 border-transparent hover:border-indigo-300 rounded-2xl transition-all hover:shadow-lg h-full">
-                      <CardContent className="p-5 text-center">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #1A237E, #0D47A1)' }}>
-                          <MonitorPlay className="w-7 h-7 text-white" />
-                        </div>
-                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                          {isAr ? "مُقيِّم الفيديو" : "Évaluateur Vidéo"}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {isAr ? "وكيل ذكاء اصطناعي لتقييم فيديوهاتك التعليمية" : "Agent IA pour évaluer vos vidéos"}
-                        </p>
-                        <Badge className="mt-3 bg-indigo-100 text-indigo-700 border-0 text-xs">
-                          {isAr ? "وكيل ذكاء اصطناعي" : "Agent IA"}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                {/* Unlocked tools for approved participants */}
+                {isApproved && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                    {/* Edu-Studio */}
+                    <Link href="/edu-studio">
+                      <Card className="group cursor-pointer border-2 border-transparent hover:border-purple-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                        <CardContent className="p-5 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #7C3AED, #4F46E5)' }}>
+                            <Clapperboard className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {isAr ? "Edu-Studio" : "Edu-Studio"}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {isAr ? "استوديو إنتاج الفيديوهات التعليمية بالذكاء الاصطناعي" : "Studio de production vidéo éducative IA"}
+                          </p>
+                          <Badge className="mt-3 bg-purple-100 text-purple-700 border-0 text-xs">
+                            {isAr ? "سيناريو + صور + صوت" : "Scénario + Images + Audio"}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </Link>
 
-                  {/* Prompt Lab */}
-                  <Link href="/prompt-lab">
-                    <Card className="group cursor-pointer border-2 border-transparent hover:border-cyan-300 rounded-2xl transition-all hover:shadow-lg h-full">
-                      <CardContent className="p-5 text-center">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #0891B2, #06B6D4)' }}>
-                          <PenTool className="w-7 h-7 text-white" />
-                        </div>
-                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                          {isAr ? "محسّن الأوامر" : "Prompt Lab"}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {isAr ? "حسّن أوامرك للذكاء الاصطناعي واحصل على نتائج أفضل" : "Améliorez vos prompts IA"}
-                        </p>
-                        <Badge className="mt-3 bg-cyan-100 text-cyan-700 border-0 text-xs">
-                          {isAr ? "هندسة الأوامر" : "Prompt Engineering"}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                    {/* My Digital Voice */}
+                    <Link href="/my-voice">
+                      <Card className="group cursor-pointer border-2 border-transparent hover:border-orange-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                        <CardContent className="p-5 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #F59E0B, #EF4444)' }}>
+                            <Mic className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {isAr ? "صوتي الرقمي" : "Ma voix numérique"}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {isAr ? "استنسخ صوتك واستخدمه في التعليق الصوتي لدروسك" : "Clonez votre voix pour vos cours"}
+                          </p>
+                          <Badge className="mt-3 bg-orange-100 text-orange-700 border-0 text-xs">
+                            {isAr ? "ميزة حصرية" : "Exclusif"}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </Link>
 
-                  {/* AI Director */}
-                  <Link href="/visual-studio">
-                    <Card className="group cursor-pointer border-2 border-transparent hover:border-rose-300 rounded-2xl transition-all hover:shadow-lg h-full">
-                      <CardContent className="p-5 text-center">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #9333EA, #DB2777)' }}>
-                          <Camera className="w-7 h-7 text-white" />
-                        </div>
-                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                          {isAr ? "المخرج الذكي" : "AI Director"}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {isAr ? "حوّل دروسك إلى مشاهد فيديو سينمائية بالذكاء الاصطناعي" : "Transformez vos cours en vidéos cinématiques IA"}
-                        </p>
-                        <Badge className="mt-3 bg-rose-100 text-rose-700 border-0 text-xs">
-                          {isAr ? "إنتاج فيديو متقدم" : "Production vidéo avancée"}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                    {/* Video Evaluator */}
+                    <Link href="/video-evaluator">
+                      <Card className="group cursor-pointer border-2 border-transparent hover:border-indigo-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                        <CardContent className="p-5 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #1A237E, #0D47A1)' }}>
+                            <MonitorPlay className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {isAr ? "مُقيِّم الفيديو" : "Évaluateur Vidéo"}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {isAr ? "وكيل ذكاء اصطناعي لتقييم فيديوهاتك التعليمية" : "Agent IA pour évaluer vos vidéos"}
+                          </p>
+                          <Badge className="mt-3 bg-indigo-100 text-indigo-700 border-0 text-xs">
+                            {isAr ? "وكيل ذكاء اصطناعي" : "Agent IA"}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </Link>
 
-                  {/* My Points */}
-                  <Link href="/my-points">
-                    <Card className="group cursor-pointer border-2 border-transparent hover:border-green-300 rounded-2xl transition-all hover:shadow-lg h-full">
-                      <CardContent className="p-5 text-center">
-                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}>
-                          <Coins className="w-7 h-7 text-white" />
-                        </div>
-                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
-                          {isAr ? "نقاط ليدر" : "Leader Points"}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {isAr ? "رصيدك من النقاط لاستخدام أدوات الذكاء الاصطناعي" : "Votre solde de points pour les outils IA"}
-                        </p>
-                        <Badge className="mt-3 bg-green-100 text-green-700 border-0 text-xs">
-                          {isAr ? "100 نقطة مجانية" : "100 points gratuits"}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </div>
+                    {/* Prompt Lab */}
+                    <Link href="/prompt-lab">
+                      <Card className="group cursor-pointer border-2 border-transparent hover:border-cyan-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                        <CardContent className="p-5 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #0891B2, #06B6D4)' }}>
+                            <PenTool className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {isAr ? "محسّن الأوامر" : "Prompt Lab"}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {isAr ? "حسّن أوامرك للذكاء الاصطناعي واحصل على نتائج أفضل" : "Améliorez vos prompts IA"}
+                          </p>
+                          <Badge className="mt-3 bg-cyan-100 text-cyan-700 border-0 text-xs">
+                            {isAr ? "هندسة الأوامر" : "Prompt Engineering"}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </Link>
+
+                    {/* AI Director */}
+                    <Link href="/visual-studio">
+                      <Card className="group cursor-pointer border-2 border-transparent hover:border-rose-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                        <CardContent className="p-5 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #9333EA, #DB2777)' }}>
+                            <Camera className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {isAr ? "المخرج الذكي" : "AI Director"}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {isAr ? "حوّل دروسك إلى مشاهد فيديو سينمائية بالذكاء الاصطناعي" : "Transformez vos cours en vidéos cinématiques IA"}
+                          </p>
+                          <Badge className="mt-3 bg-rose-100 text-rose-700 border-0 text-xs">
+                            {isAr ? "إنتاج فيديو متقدم" : "Production vidéo avancée"}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </Link>
+
+                    {/* My Points */}
+                    <Link href="/my-points">
+                      <Card className="group cursor-pointer border-2 border-transparent hover:border-green-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                        <CardContent className="p-5 text-center">
+                          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}>
+                            <Coins className="w-7 h-7 text-white" />
+                          </div>
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                            {isAr ? "نقاط ليدر" : "Leader Points"}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {isAr ? "رصيدك من النقاط لاستخدام أدوات الذكاء الاصطناعي" : "Votre solde de points pour les outils IA"}
+                          </p>
+                          <Badge className="mt-3 bg-green-100 text-green-700 border-0 text-xs">
+                            {isAr ? "100 نقطة مجانية" : "100 points gratuits"}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 
