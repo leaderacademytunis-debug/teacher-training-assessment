@@ -351,7 +351,7 @@ export default function TextbookViewer() {
                 </button>
 
                 <button
-                  onClick={() => navigate("/visual-studio?from=library")}
+                  onClick={() => navigate("/edu-studio?from=library")}
                   className="flex items-center gap-2 p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 hover:bg-purple-100 hover:border-purple-300 transition-all group text-right"
                 >
                   <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">

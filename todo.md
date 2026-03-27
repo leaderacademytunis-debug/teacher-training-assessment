@@ -3108,4 +3108,18 @@
 - [x] ربط LeaderVisualStudio بـ extracted_payload
 - [x] إضافة زر "حفظ في أرشيفي" مع قاعدة بيانات (textbook_excerpts table + textbookArchive router)
 - [x] كتابة 13 اختبار vitest (جميعها ناجحة)
+- [x] حفظ checkpoint (version: 30695d83)
+
+## محرك Edu-Studio للإنتاج المرئي (Connected Ecosystem - Step 3)
+- [x] تحليل صفحة LeaderVisualStudio و AIDirectorAssistant الحالية
+- [x] إنشاء 3 endpoints خلفية (generateScenario, generateVisualPrompts, generateVoiceover) في eduStudio.ts
+- [x] إعادة بناء واجهة EduStudioEngine بنظام Split-Screen Pipeline
+- [x] بناء لوحة الستوري بورد (Scene Cards) على اليسار 60%
+- [x] بناء محرك التوليد المتسلسل على اليمين 40% (أزرار متسلسلة لا يفتح الثاني إلا بعد إكمال الأول)
+- [x] استقبال extracted_payload تلقائياً من Zustand Store
+- [x] إضافة أزرار "نسخ" بارزة لكل حقل (Visual Prompt + Voiceover)
+- [x] إضافة صفحة تصدير PDF لخطة الإنتاج (EduStudioExport)
+- [x] إضافة Routes: /edu-studio و /edu-studio-export
+- [x] تحديث زر التوجيه في TextbookViewer ليشير إلى /edu-studio
+- [x] كتابة 15 اختبار vitest (جميعها ناجحة)
 - [ ] حفظ checkpoint

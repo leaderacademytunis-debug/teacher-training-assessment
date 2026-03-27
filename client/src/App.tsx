@@ -89,6 +89,8 @@ const TeacherDashboard = lazy(() => import("@/pages/TeacherDashboard"));
 const SchoolDashboard = lazy(() => import("@/pages/SchoolDashboard"));
 const TextbooksLibrary = lazy(() => import("@/pages/TextbooksLibrary"));
 const TextbookViewer = lazy(() => import("@/pages/TextbookViewer"));
+const EduStudioEngine = lazy(() => import("@/pages/EduStudioEngine"));
+const EduStudioExport = lazy(() => import("@/pages/EduStudioExport"));
 
 function PageLoader() {
   return (
@@ -178,6 +180,8 @@ function Router() {
         <Route path="/prompt-lab" component={PromptLab} />
         <Route path="/library" component={TextbooksLibrary} />
         <Route path="/textbook-viewer" component={TextbookViewer} />
+        <Route path="/edu-studio" component={EduStudioEngine} />
+        <Route path="/edu-studio-export" component={EduStudioExport} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>
