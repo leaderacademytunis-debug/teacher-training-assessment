@@ -7,7 +7,7 @@ import {
   BookOpen, Loader2, ArrowRight, FileText, Clock, Video, Lock, Film, Sparkles,
   CheckCircle2, Users, Star, Calendar, Tag, Package, ChevronLeft, GraduationCap,
   Award, Target, Zap, MessageSquare, Send, Quote, ThumbsUp, CreditCard, Upload,
-  Phone, Banknote, Wallet, Mic, Coins, Clapperboard, Wand2, PenTool, MonitorPlay
+  Phone, Banknote, Wallet, Mic, Coins, Clapperboard, Wand2, PenTool, MonitorPlay, Camera
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -476,6 +476,26 @@ export default function CourseDetail() {
                         </p>
                         <Badge className="mt-3 bg-cyan-100 text-cyan-700 border-0 text-xs">
                           {isAr ? "هندسة الأوامر" : "Prompt Engineering"}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  </Link>
+
+                  {/* AI Director */}
+                  <Link href="/visual-studio">
+                    <Card className="group cursor-pointer border-2 border-transparent hover:border-rose-300 rounded-2xl transition-all hover:shadow-lg h-full">
+                      <CardContent className="p-5 text-center">
+                        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 transition-transform group-hover:scale-110" style={{ background: 'linear-gradient(135deg, #9333EA, #DB2777)' }}>
+                          <Camera className="w-7 h-7 text-white" />
+                        </div>
+                        <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Cairo, sans-serif' }}>
+                          {isAr ? "المخرج الذكي" : "AI Director"}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {isAr ? "حوّل دروسك إلى مشاهد فيديو سينمائية بالذكاء الاصطناعي" : "Transformez vos cours en vidéos cinématiques IA"}
+                        </p>
+                        <Badge className="mt-3 bg-rose-100 text-rose-700 border-0 text-xs">
+                          {isAr ? "إنتاج فيديو متقدم" : "Production vidéo avancée"}
                         </Badge>
                       </CardContent>
                     </Card>
