@@ -1,0 +1,170 @@
+{
+  "query": "DESCRIBE courses;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute DESCRIBE courses;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "titleAr",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "descriptionAr",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "category",
+      "Type": "enum('primary_teachers','arabic_teachers','science_teachers','french_teachers','preschool_facilitators','special_needs_companions','digital_teacher_ai','bundle')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "duration",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "isActive",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "1",
+      "Extra": ""
+    },
+    {
+      "Field": "createdBy",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    },
+    {
+      "Field": "axes",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "batchNumber",
+      "Type": "varchar(100)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "descriptionShortAr",
+      "Type": "varchar(500)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "coverImageUrl",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "price",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "originalPrice",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "isBundle",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "bundleCourseIds",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "schedule",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "isFeatured",
+      "Type": "tinyint(1)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    },
+    {
+      "Field": "sortOrder",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "0",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\ntitleAr\tvarchar(255)\tNO\t\tNULL\t\ndescriptionAr\ttext\tYES\t\tNULL\t\ncategory\tenum('primary_teachers','arabic_teachers','science_teachers','french_teachers','preschool_facilitators','special_needs_companions','digital_teacher_ai','bundle')\tNO\t\tNULL\t\nduration\tint\tYES\t\tNULL\t\nisActive\ttinyint(1)\tNO\t\t1\t\ncreatedBy\tint\tNO\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\naxes\ttext\tYES\t\tNULL\t\nbatchNumber\tvarchar(100)\tYES\t\tNULL\t\ndescriptionShortAr\tvarchar(500)\tYES\t\tNULL\t\ncoverImageUrl\ttext\tYES\t\tNULL\t\nprice\tint\tYES\t\t0\t\noriginalPrice\tint\tYES\t\tNULL\t\nisBundle\ttinyint(1)\tNO\t\t0\t\nbundleCourseIds\ttext\tYES\t\tNULL\t\nschedule\tvarchar(255)\tYES\t\tNULL\t\nisFeatured\ttinyint(1)\tNO\t\t0\t\nsortOrder\tint\tYES\t\t0\t\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

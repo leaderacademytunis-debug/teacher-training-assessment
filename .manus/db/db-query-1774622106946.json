@@ -1,0 +1,18 @@
+{
+  "query": "SELECT e.id, e.userId, e.courseId, e.status, u.name, u.role FROM enrollments e JOIN users u ON e.userId = u.id WHERE e.courseId = 30001 AND u.role = 'admin';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT e.id, e.userId, e.courseId, e.status, u.name, u.role FROM enrollments e JOIN users u ON e.userId = u.id WHERE e.courseId = 30001 AND u.role = 'admin';",
+  "rows": [
+    {
+      "id": "600001",
+      "userId": "1",
+      "courseId": "30001",
+      "status": "approved",
+      "name": "Ali Saadallah",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tcourseId\tstatus\tname\trole\n600001\t1\t30001\tapproved\tAli Saadallah\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

@@ -3185,3 +3185,8 @@
 - [x] التحقق: اشتراك Creator، 21 صوت متاح، IVC مفعّل، 4/110000 حرف مستخدم
 - [x] إعادة تشغيل الخادم لتطبيق المفتاح الجديد
 - [x] حفظ checkpoint
+
+## إصلاح: أدوات AI لا تظهر في صفحة الدورة /courses/30001
+- [x] التحقق من شرط عرض أدوات AI في CourseDetail.tsx (كان يبحث عن course.slug غير موجود)
+- [x] إصلاح الشرط ليعتمد على course.id === 30001 || course.category === 'digital_teacher_ai'
+- [x] حفظ checkpoint

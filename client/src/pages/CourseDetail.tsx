@@ -391,7 +391,7 @@ export default function CourseDetail() {
             )}
 
             {/* AI Tools Section - Only for Video AI course participants */}
-            {isApproved && course && (course.slug === 'digital_teacher_ai' || course.slug === 'digital_teacher_ai ') && (
+            {isApproved && course && (course.id === 30001 || course.category === 'digital_teacher_ai') && (
               <div>
                 <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2" style={{ fontFamily: 'Almarai, Cairo, sans-serif' }}>
                   <Wand2 className="w-5 h-5 text-purple-600" />
