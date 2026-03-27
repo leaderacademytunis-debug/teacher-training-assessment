@@ -522,8 +522,9 @@ export const adminControlRouter = router({
       .from(servicePermissions)
       .where(
         or(
+          eq(servicePermissions.tier, "starter"),
           eq(servicePermissions.tier, "pro"),
-          eq(servicePermissions.tier, "premium")
+          eq(servicePermissions.tier, "vip")
         )
       );
 
@@ -670,15 +671,15 @@ export const adminControlRouter = router({
       const tier = perm?.tier || "free";
 
       // Check tier access
-      if (tier === "free" && !toolConfig.freeAccess) {
+      if ((tier === "free" || tier === "starter") && !toolConfig.freeAccess) {
         return { allowed: false, remaining: 0, limit: 0, message: "يتطلب اشتراك Pro أو أعلى" };
       }
 
       // Get limit for this tier
       let limit = 0;
-      if (tier === "free") limit = toolConfig.freeLimitPerMonth;
+      if (tier === "free" || tier === "starter") limit = toolConfig.freeLimitPerMonth;
       else if (tier === "pro") limit = toolConfig.proLimitPerMonth;
-      else if (tier === "premium") limit = toolConfig.premiumLimitPerMonth;
+      else if (tier === "vip") limit = toolConfig.premiumLimitPerMonth;
 
       // 0 means unlimited
       if (limit === 0) {
@@ -957,7 +958,7 @@ export const adminControlRouter = router({
         isVisible: z.boolean().optional(),
         isEnabled: z.boolean().optional(),
         requiresAuth: z.boolean().optional(),
-        requiredTier: z.enum(["free", "pro", "premium"]).optional(),
+        requiredTier: z.enum(["free", "starter", "pro", "vip"]).optional(),
         sortOrder: z.number().optional(),
         badgeText: z.string().nullable().optional(),
         badgeColor: z.string().nullable().optional(),
@@ -994,7 +995,7 @@ export const adminControlRouter = router({
         externalUrl: z.string().optional(),
         customContent: z.string().optional(),
         requiresAuth: z.boolean().default(false),
-        requiredTier: z.enum(["free", "pro", "premium"]).default("free"),
+        requiredTier: z.enum(["free", "starter", "pro", "vip"]).default("free"),
         isVisible: z.boolean().default(true),
         badgeText: z.string().optional(),
         badgeColor: z.string().optional(),

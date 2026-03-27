@@ -12,8 +12,9 @@ import {
   Upload, Loader2, Copy, Play, Pause, Download, ArrowRight,
   Sparkles, Eye, Volume2, Check, RefreshCw, ZoomIn, ZoomOut,
   ChevronLeft, ChevronRight, Film, Save, FolderOpen, Trash2,
-  PenLine, Clock, MoreVertical, Plus, Clapperboard, X,
+  PenLine, Clock, MoreVertical, Plus, Clapperboard, X, Crown, Lock,
 } from "lucide-react";
+import { Link } from "wouter";
 import * as pdfjsLib from "pdfjs-dist";
 import { renderVideo, downloadBlob, isWasmSupported, type RenderProgress, type SceneData as VideoSceneData, type BrandingOptions } from "@/lib/videoRenderer";
 
@@ -456,6 +457,11 @@ export default function UltimateStudio() {
 
   const hasClonedVoice = cloneQuery.data?.status === "ready";
 
+  // ─── Paywall State ───
+  const { data: permissions } = trpc.adminDashboard.getMyPermissions.useQuery(undefined, { enabled: !!user });
+  const isVIP = permissions?.tier === "vip";
+  const [showPaywall, setShowPaywall] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" dir="rtl">
       {/* ═══ Top Bar ═══ */}
@@ -852,9 +858,20 @@ export default function UltimateStudio() {
                               أصوات AI
                             </button>
                             <button
-                              className={`flex-1 p-2 rounded-lg border text-xs font-bold transition-all ${voiceMode === "clone" ? "bg-amber-500/20 border-amber-500/40 text-amber-400" : "bg-white/5 border-white/10 text-white/50"} ${!hasClonedVoice ? "opacity-50" : ""}`}
-                              onClick={() => hasClonedVoice ? setVoiceMode("clone") : toast.error("أنشئ بصمتك الصوتية أولاً في /my-voice")}
+                              className={`flex-1 p-2 rounded-lg border text-xs font-bold transition-all relative ${voiceMode === "clone" ? "bg-amber-500/20 border-amber-500/40 text-amber-400" : "bg-white/5 border-white/10 text-white/50"} ${!isVIP ? "" : !hasClonedVoice ? "opacity-50" : ""}`}
+                              onClick={() => {
+                                if (!isVIP) {
+                                  setShowPaywall(true);
+                                  return;
+                                }
+                                if (!hasClonedVoice) {
+                                  toast.error("أنشئ بصمتك الصوتية أولاً في /my-voice");
+                                  return;
+                                }
+                                setVoiceMode("clone");
+                              }}
                             >
+                              {!isVIP && <Crown className="w-3 h-3 absolute top-1 left-1 text-amber-400" />}
                               <Mic className="w-4 h-4 mx-auto mb-1" />
                               صوتي المستنسخ
                             </button>
@@ -1194,6 +1211,73 @@ export default function UltimateStudio() {
               إغلاق
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ VIP Paywall Modal ═══ */}
+      <Dialog open={showPaywall} onOpenChange={setShowPaywall}>
+        <DialogContent className="max-w-md bg-gradient-to-b from-slate-900 to-slate-950 border-amber-500/30" dir="rtl">
+          <div className="text-center space-y-5 py-4">
+            {/* Crown icon */}
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/30">
+              <Crown className="w-10 h-10 text-white" />
+            </div>
+
+            {/* Title */}
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                ميزة سحرية حصرية
+              </h2>
+              <p className="text-amber-300 font-semibold text-lg">
+                باقة المعلم الرقمي VIP
+              </p>
+            </div>
+
+            {/* Description */}
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-right">
+              <p className="text-slate-300 text-sm leading-relaxed">
+                هل تريد أن تتحدث الفيديوهات التعليمية <strong className="text-amber-400">بصوتك الحقيقي</strong>؟
+                ميزة استنساخ الصوت بالذكاء الاصطناعي متاحة حصرياً في باقة VIP.
+                قم بالترقية الآن واجعل دروسك تنبض بالحياة!
+              </p>
+            </div>
+
+            {/* VIP Features */}
+            <div className="text-right space-y-2">
+              <p className="text-xs text-slate-500 font-bold">ما ستحصل عليه:</p>
+              {[
+                "استنساخ صوتك بالذكاء الاصطناعي 🎤",
+                "استخدام غير محدود لجميع الأدوات",
+                "تصدير فيديو MP4 احترافي بصوتك",
+                "دعم ذو أولوية عبر واتساب",
+              ].map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-slate-300">{f}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="space-y-3 pt-2">
+              <Link href="/pricing">
+                <Button
+                  className="w-full h-12 bg-gradient-to-l from-amber-500 via-yellow-500 to-amber-500 text-white font-bold text-base shadow-lg shadow-amber-500/20 hover:opacity-90"
+                  onClick={() => setShowPaywall(false)}
+                >
+                  <Crown className="w-5 h-5 ml-2" />
+                  ترقية إلى VIP الآن
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                className="w-full text-slate-500 hover:text-slate-300"
+                onClick={() => setShowPaywall(false)}
+              >
+                ربما لاحقاً
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

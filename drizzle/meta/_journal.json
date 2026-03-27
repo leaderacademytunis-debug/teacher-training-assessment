@@ -554,6 +554,13 @@
       "when": 1774631024097,
       "tag": "0078_workable_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "5",
+      "when": 1774648161758,
+      "tag": "0079_useful_nomad",
+      "breakpoints": true
     }
   ]
 }

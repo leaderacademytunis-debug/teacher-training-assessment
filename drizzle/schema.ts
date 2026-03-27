@@ -816,9 +816,17 @@ export const servicePermissions = mysqlTable("service_permissions", {
   accessCoursePedagogy: boolean("access_course_pedagogy").default(false).notNull(),
   accessFullBundle: boolean("access_full_bundle").default(false).notNull(),
   
+  // VIP-exclusive features
+  accessVoiceClone: boolean("access_voice_clone").default(false).notNull(),
+  accessUltimateStudioFull: boolean("access_ultimate_studio_full").default(false).notNull(),
+  accessPrioritySupport: boolean("access_priority_support").default(false).notNull(),
+  
   // Subscription details
-  tier: mysqlEnum("tier", ["free", "pro", "premium"]).default("free").notNull(),
+  tier: mysqlEnum("tier", ["free", "starter", "pro", "vip"]).default("free").notNull(),
   expiresAt: timestamp("expiresAt"),
+  activatedAt: timestamp("activatedAt"),
+  activatedBy: int("activatedBy"), // admin who activated
+  paymentMethod: varchar("paymentMethod", { length: 50 }), // bank_transfer, d17, flouci, konnect, whatsapp
   
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

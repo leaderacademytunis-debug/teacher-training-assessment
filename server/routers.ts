@@ -5773,27 +5773,31 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
       accessCourseAi: z.boolean(),
       accessCoursePedagogy: z.boolean(),
       accessFullBundle: z.boolean(),
-      tier: z.enum(["free", "pro", "premium"]).default("free"),
-    })).mutation(async ({ input }) => {
+      accessVoiceClone: z.boolean().optional().default(false),
+      accessUltimateStudioFull: z.boolean().optional().default(false),
+      accessPrioritySupport: z.boolean().optional().default(false),
+      tier: z.enum(["free", "starter", "pro", "vip"]).default("free"),
+      paymentMethod: z.string().optional(),
+    })).mutation(async ({ input, ctx }) => {
       const database = (await getDb())!;
       const existing = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, input.userId)).limit(1);
+      const updateData = {
+        accessEdugpt: input.accessEdugpt,
+        accessCourseAi: input.accessCourseAi,
+        accessCoursePedagogy: input.accessCoursePedagogy,
+        accessFullBundle: input.accessFullBundle,
+        accessVoiceClone: input.accessVoiceClone ?? false,
+        accessUltimateStudioFull: input.accessUltimateStudioFull ?? false,
+        accessPrioritySupport: input.accessPrioritySupport ?? false,
+        tier: input.tier,
+        activatedAt: new Date(),
+        activatedBy: ctx.user.id,
+        paymentMethod: input.paymentMethod,
+      };
       if (existing.length > 0) {
-        await database.update(servicePermissions).set({
-          accessEdugpt: input.accessEdugpt,
-          accessCourseAi: input.accessCourseAi,
-          accessCoursePedagogy: input.accessCoursePedagogy,
-          accessFullBundle: input.accessFullBundle,
-          tier: input.tier,
-        }).where(eq(servicePermissions.userId, input.userId));
+        await database.update(servicePermissions).set(updateData).where(eq(servicePermissions.userId, input.userId));
       } else {
-        await database.insert(servicePermissions).values({
-          userId: input.userId,
-          accessEdugpt: input.accessEdugpt,
-          accessCourseAi: input.accessCourseAi,
-          accessCoursePedagogy: input.accessCoursePedagogy,
-          accessFullBundle: input.accessFullBundle,
-          tier: input.tier,
-        });
+        await database.insert(servicePermissions).values({ userId: input.userId, ...updateData });
       }
       return { success: true };
     }),
@@ -5840,15 +5844,17 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
       accessCourseAi: z.boolean().default(false),
       accessCoursePedagogy: z.boolean().default(false),
       accessFullBundle: z.boolean().default(false),
+      accessVoiceClone: z.boolean().optional().default(false),
+      accessUltimateStudioFull: z.boolean().optional().default(false),
+      accessPrioritySupport: z.boolean().optional().default(false),
+      tier: z.enum(["free", "starter", "pro", "vip"]).optional(),
       adminNote: z.string().optional(),
     })).mutation(async ({ ctx, input }) => {
       const database = (await getDb())!;
       const { users, notifications } = await import("../drizzle/schema");
-      // Get the payment request
       const [request] = await database.select().from(paymentRequests).where(eq(paymentRequests.id, input.requestId)).limit(1);
       if (!request) throw new TRPCError({ code: "NOT_FOUND", message: "طلب الدفع غير موجود" });
       if (request.status !== "pending") throw new TRPCError({ code: "BAD_REQUEST", message: "تم معالجة هذا الطلب مسبقاً" });
-      // Update payment request
       await database.update(paymentRequests).set({
         status: "approved",
         reviewedBy: ctx.user.id,
@@ -5859,35 +5865,43 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
           access_course_ai: input.accessCourseAi,
           access_course_pedagogy: input.accessCoursePedagogy,
           access_full_bundle: input.accessFullBundle,
+          access_voice_clone: input.accessVoiceClone,
+          access_ultimate_studio_full: input.accessUltimateStudioFull,
         },
       }).where(eq(paymentRequests.id, input.requestId));
-      // Update or create service permissions
       const existing = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, request.userId)).limit(1);
-      const tier = input.accessFullBundle ? "premium" : (input.accessEdugpt ? "pro" : "free");
+      // Auto-detect tier if not provided
+      const tier = input.tier || (input.accessVoiceClone ? "vip" : input.accessFullBundle ? "pro" : input.accessEdugpt ? "starter" : "free");
+      const permData = {
+        accessEdugpt: input.accessEdugpt,
+        accessCourseAi: input.accessCourseAi,
+        accessCoursePedagogy: input.accessCoursePedagogy,
+        accessFullBundle: input.accessFullBundle,
+        accessVoiceClone: input.accessVoiceClone ?? false,
+        accessUltimateStudioFull: input.accessUltimateStudioFull ?? false,
+        accessPrioritySupport: input.accessPrioritySupport ?? false,
+        tier: tier as "free" | "starter" | "pro" | "vip",
+        activatedAt: new Date(),
+        activatedBy: ctx.user.id,
+        paymentMethod: request.paymentMethod,
+      };
       if (existing.length > 0) {
         await database.update(servicePermissions).set({
+          ...permData,
           accessEdugpt: input.accessEdugpt || existing[0].accessEdugpt,
           accessCourseAi: input.accessCourseAi || existing[0].accessCourseAi,
           accessCoursePedagogy: input.accessCoursePedagogy || existing[0].accessCoursePedagogy,
           accessFullBundle: input.accessFullBundle || existing[0].accessFullBundle,
-          tier: tier as "free" | "pro" | "premium",
         }).where(eq(servicePermissions.userId, request.userId));
       } else {
-        await database.insert(servicePermissions).values({
-          userId: request.userId,
-          accessEdugpt: input.accessEdugpt,
-          accessCourseAi: input.accessCourseAi,
-          accessCoursePedagogy: input.accessCoursePedagogy,
-          accessFullBundle: input.accessFullBundle,
-          tier: tier as "free" | "pro" | "premium",
-        });
+        await database.insert(servicePermissions).values({ userId: request.userId, ...permData });
       }
-      // Send notification to user
       const serviceNames = [];
       if (input.accessEdugpt) serviceNames.push("EDUGPT PRO");
       if (input.accessCourseAi) serviceNames.push("دورة الذكاء الاصطناعي");
       if (input.accessCoursePedagogy) serviceNames.push("دورة البيداغوجيا");
       if (input.accessFullBundle) serviceNames.push("الباقة الكاملة");
+      if (input.accessVoiceClone) serviceNames.push("استنساخ الصوت (VIP)");
       await database.insert(notifications).values({
         userId: request.userId,
         titleAr: "تم تفعيل خدمتك بنجاح! \u2705",
@@ -6090,7 +6104,7 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
     getMyPermissions: protectedProcedure.query(async ({ ctx }) => {
       const database = (await getDb())!;
       const perms = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, ctx.user.id)).limit(1);
-      return perms[0] || { accessEdugpt: false, accessCourseAi: false, accessCoursePedagogy: false, accessFullBundle: false, tier: "free" };
+      return perms[0] || { accessEdugpt: false, accessCourseAi: false, accessCoursePedagogy: false, accessFullBundle: false, accessVoiceClone: false, accessUltimateStudioFull: false, accessPrioritySupport: false, tier: "free" as const };
     }),
 
     // --- Pricing Plans CRUD (Admin) ---
@@ -6154,7 +6168,7 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
     // --- Bulk Activation (up to 500 emails) ---
     bulkActivate: adminProcedure.input(z.object({
       emails: z.array(z.string().email()).max(500),
-      tier: z.enum(["pro", "premium"]).default("pro"),
+      tier: z.enum(["starter", "pro", "vip"]).default("pro"),
       accessEdugpt: z.boolean().default(true),
       accessCourseAi: z.boolean().default(false),
       accessCoursePedagogy: z.boolean().default(false),

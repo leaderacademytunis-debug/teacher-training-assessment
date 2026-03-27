@@ -3281,4 +3281,40 @@
 - [x] إضافة تحقق crossOriginIsolated مع إعادة تحميل تلقائية
 - [x] تحسين رسائل الخطأ التفصيلية
 - [x] تحسين fetchFileData مع fallback
+- [x] حفظ checkpoint
+
+## بوابة الاشتراكات (Pricing & Paywall)
+### قاعدة البيانات
+- [x] تحديث جدول servicePermissions بباقات جديدة (starter/pro/vip)
+- [x] إضافة حقول voiceCloneAccess و whatsapp
+- [x] تشغيل db:push
+
+### Backend
+- [x] تحديث subscription router مع endpoints
+- [x] endpoint: الحصول على الباقة الحالية (getMyPermissions)
+- [x] endpoint: إنشاء طلب اشتراك (بنكي/واتساب)
+- [x] endpoint: تفعيل اشتراك من الأدمن (updateUserPermissions + approvePayment)
+- [x] endpoint: webhook جاهز للدفع التلقائي (Flouci/Konnect)
+- [x] endpoint: قائمة طلبات الاشتراك للأدمن
+
+### صفحة الباقات /pricing
+- [x] تصميم 3 بطاقات: المبادر، المحترف، VIP
+- [x] شارة "الأكثر طلباً" على باقة المحترف
+- [x] تصميم ذهبي/مميز لباقة VIP مع تاج
+- [x] جدول مقارنة الميزات التفصيلي
+- [x] نافذة الدفع: تحويل بنكي + D17 + واتساب
+- [x] إضافة الصفحة في App.tsx والتنقل
+
+### جدار الدفع الذكي (Smart Paywall)
+- [x] Modal ترقية في Ultimate Studio عند اختيار الصوت المستنسخ
+- [x] تحقق من subscription_tier قبل الميزات المحظورة
+- [x] تزامن فوري للباقة بعد التفعيل (بدون إعادة تسجيل)
+
+### لوحة الأدمن
+- [x] صفحة إدارة الاشتراكات في لوحة التحكم (موجودة مسبقاً)
+- [x] تفعيل/إلغاء اشتراكات المستخدمين
+- [x] عرض طلبات الدفع المعلقة
+
+### اختبارات
+- [x] كتابة اختبارات vitest (28 اختبار ناجح)
 - [ ] حفظ checkpoint
