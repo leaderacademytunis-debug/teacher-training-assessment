@@ -94,6 +94,7 @@ const EduStudioExport = lazy(() => import("@/pages/EduStudioExport"));
 const MyStudioProjects = lazy(() => import("@/pages/MyStudioProjects"));
 const MyDigitalVoice = lazy(() => import("@/pages/MyDigitalVoice"));
 const MyPoints = lazy(() => import("@/pages/MyPoints"));
+const AIToolsHub = lazy(() => import("@/pages/AIToolsHub"));
 
 function PageLoader() {
   return (
@@ -188,6 +189,7 @@ function Router() {
         <Route path="/my-studio-projects" component={MyStudioProjects} />
         <Route path="/my-voice" component={MyDigitalVoice} />
         <Route path="/my-points" component={MyPoints} />
+        <Route path="/ai-hub" component={AIToolsHub} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>

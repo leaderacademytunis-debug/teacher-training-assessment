@@ -182,10 +182,15 @@ export default function UnifiedNavbar() {
                             );
                           })}
                         </div>
-                        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
-                          <Link href="/teacher-tools">
+                        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 flex gap-2">
+                          <Link href="/teacher-tools" className="flex-1">
                             <button className="w-full text-center text-sm font-bold text-[#FF6D00] hover:text-orange-700 transition-colors">
                               {t("عرض جميع الأدوات →", "Voir tous les outils →", "View all tools →")}
+                            </button>
+                          </Link>
+                          <Link href="/ai-hub" className="flex-1">
+                            <button className="w-full text-center text-sm font-bold text-[#1A237E] hover:text-blue-700 transition-colors">
+                              {t("مركز الأدوات 🧠", "Centre des outils 🧠", "Tools Hub 🧠")}
                             </button>
                           </Link>
                         </div>
