@@ -533,6 +533,13 @@
       "when": 1774569761360,
       "tag": "0075_lucky_wendell_rand",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "5",
+      "when": 1774573439439,
+      "tag": "0076_chemical_thunderbolt",
+      "breakpoints": true
     }
   ]
 }

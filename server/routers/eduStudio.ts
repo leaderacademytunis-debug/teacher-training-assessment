@@ -2,13 +2,22 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { invokeLLM } from "../_core/llm";
+import { generateImage } from "../_core/imageGeneration";
+import { ENV } from "../_core/env";
+import { storagePut } from "../storage";
+import { getDb } from "../db";
+import { studioProjects } from "../../drizzle/schema";
+import { eq, desc, and } from "drizzle-orm";
 
 /**
  * Edu-Studio Engine Router
- * Converts educational text into a complete video production plan:
+ * Complete video production pipeline:
  * 1. Generate scenario (split text into scenes)
- * 2. Generate visual prompts (cinematic English prompts for each scene)
+ * 2. Generate visual prompts (cinematic English prompts)
  * 3. Generate voiceover directives (spoken text + performance directions)
+ * 4. Generate actual images from visual prompts
+ * 5. Generate TTS audio from voiceover text
+ * 6. Save/load/manage studio projects
  */
 
 export const eduStudioRouter = router({
@@ -88,14 +97,14 @@ export const eduStudioRouter = router({
         },
       });
 
-      const rawContent1 = response.choices?.[0]?.message?.content;
-      if (!rawContent1) {
+      const rawContent = response.choices?.[0]?.message?.content;
+      if (!rawContent) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في توليد السيناريو" });
       }
 
       try {
-        const content1 = typeof rawContent1 === "string" ? rawContent1 : JSON.stringify(rawContent1);
-        return JSON.parse(content1);
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+        return JSON.parse(content);
       } catch {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحليل نتيجة السيناريو" });
       }
@@ -207,7 +216,7 @@ Respond in JSON format only:
     }),
 
   /**
-   * Step 3: Generate Voiceover Directives - Extract spoken text with performance directions
+   * Step 3: Generate Voiceover Directives
    */
   generateVoiceover: protectedProcedure
     .input(z.object({
@@ -302,16 +311,274 @@ Respond in JSON format only:
         },
       });
 
-      const rawContent3 = response.choices?.[0]?.message?.content;
-      if (!rawContent3) {
+      const rawContent = response.choices?.[0]?.message?.content;
+      if (!rawContent) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في توليد أوامر الصوت" });
       }
 
       try {
-        const content3 = typeof rawContent3 === "string" ? rawContent3 : JSON.stringify(rawContent3);
-        return JSON.parse(content3);
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+        return JSON.parse(content);
       } catch {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحليل أوامر الصوت" });
       }
+    }),
+
+  /**
+   * Step 4: Generate Image for a scene using the visual prompt
+   */
+  generateSceneImage: protectedProcedure
+    .input(z.object({
+      sceneNumber: z.number(),
+      visualPrompt: z.string().min(5),
+    }))
+    .mutation(async ({ input }) => {
+      const { sceneNumber, visualPrompt } = input;
+
+      try {
+        const result = await generateImage({
+          prompt: visualPrompt,
+        });
+
+        return {
+          sceneNumber,
+          imageUrl: result.url || "",
+          success: true,
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `فشل في توليد صورة المشهد ${sceneNumber}: ${error?.message || "خطأ غير معروف"}`,
+        });
+      }
+    }),
+
+  /**
+   * Step 5: Generate TTS Audio for a scene voiceover
+   * Uses the Forge API's OpenAI-compatible TTS endpoint
+   */
+  generateSceneAudio: protectedProcedure
+    .input(z.object({
+      sceneNumber: z.number(),
+      spokenText: z.string().min(5),
+      voice: z.enum(["alloy", "echo", "fable", "onyx", "nova", "shimmer"]).optional().default("nova"),
+      speed: z.number().min(0.5).max(2.0).optional().default(1.0),
+    }))
+    .mutation(async ({ input }) => {
+      const { sceneNumber, spokenText, voice, speed } = input;
+
+      if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "خدمة تحويل النص إلى صوت غير مهيأة",
+        });
+      }
+
+      try {
+        const baseUrl = ENV.forgeApiUrl.endsWith("/")
+          ? ENV.forgeApiUrl
+          : `${ENV.forgeApiUrl}/`;
+        const fullUrl = new URL("v1/audio/speech", baseUrl).toString();
+
+        const response = await fetch(fullUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${ENV.forgeApiKey}`,
+          },
+          body: JSON.stringify({
+            model: "tts-1",
+            input: spokenText,
+            voice: voice,
+            speed: speed,
+            response_format: "mp3",
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => "");
+          throw new Error(`TTS request failed (${response.status}): ${errorText}`);
+        }
+
+        // Get audio as buffer
+        const audioBuffer = Buffer.from(await response.arrayBuffer());
+
+        // Upload to S3
+        const randomSuffix = Math.random().toString(36).substring(2, 10);
+        const fileKey = `edu-studio/audio/scene-${sceneNumber}-${Date.now()}-${randomSuffix}.mp3`;
+        const { url } = await storagePut(fileKey, audioBuffer, "audio/mpeg");
+
+        return {
+          sceneNumber,
+          audioUrl: url,
+          success: true,
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `فشل في توليد صوت المشهد ${sceneNumber}: ${error?.message || "خطأ غير معروف"}`,
+        });
+      }
+    }),
+
+  /**
+   * Save a studio project to the database
+   */
+  saveProject: protectedProcedure
+    .input(z.object({
+      id: z.number().optional(), // If provided, update existing project
+      title: z.string().min(1),
+      summary: z.string().optional(),
+      referenceText: z.string().optional(),
+      sourceBookId: z.string().optional(),
+      sourceBookTitle: z.string().optional(),
+      numberOfScenes: z.number().optional(),
+      visualStyle: z.string().optional(),
+      voiceLanguage: z.string().optional(),
+      voiceTone: z.string().optional(),
+      scenarioData: z.any().optional(),
+      visualPromptsData: z.any().optional(),
+      voiceoverData: z.any().optional(),
+      generatedImages: z.any().optional(),
+      generatedAudios: z.any().optional(),
+      status: z.enum(["draft", "in_progress", "completed"]).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const userId = ctx.user.id;
+
+      if (input.id) {
+        // Update existing project
+        const existing = await db.select().from(studioProjects)
+          .where(and(eq(studioProjects.id, input.id), eq(studioProjects.userId, userId)))
+          .limit(1);
+
+        if (!existing.length) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+        }
+
+        await db.update(studioProjects)
+          .set({
+            title: input.title,
+            summary: input.summary || null,
+            referenceText: input.referenceText || null,
+            sourceBookId: input.sourceBookId || null,
+            sourceBookTitle: input.sourceBookTitle || null,
+            numberOfScenes: input.numberOfScenes || null,
+            visualStyle: input.visualStyle || null,
+            voiceLanguage: input.voiceLanguage || null,
+            voiceTone: input.voiceTone || null,
+            scenarioData: input.scenarioData || null,
+            visualPromptsData: input.visualPromptsData || null,
+            voiceoverData: input.voiceoverData || null,
+            generatedImages: input.generatedImages || null,
+            generatedAudios: input.generatedAudios || null,
+            status: input.status || "in_progress",
+          })
+          .where(eq(studioProjects.id, input.id));
+
+        return { id: input.id, message: "تم تحديث المشروع بنجاح" };
+      } else {
+        // Create new project
+        const result = await db.insert(studioProjects).values({
+          userId,
+          title: input.title,
+          summary: input.summary || null,
+          referenceText: input.referenceText || null,
+          sourceBookId: input.sourceBookId || null,
+          sourceBookTitle: input.sourceBookTitle || null,
+          numberOfScenes: input.numberOfScenes || null,
+          visualStyle: input.visualStyle || null,
+          voiceLanguage: input.voiceLanguage || null,
+          voiceTone: input.voiceTone || null,
+          scenarioData: input.scenarioData || null,
+          visualPromptsData: input.visualPromptsData || null,
+          voiceoverData: input.voiceoverData || null,
+          generatedImages: input.generatedImages || null,
+          generatedAudios: input.generatedAudios || null,
+          status: input.status || "draft",
+        });
+
+        return { id: result[0].insertId, message: "تم حفظ المشروع بنجاح" };
+      }
+    }),
+
+  /**
+   * List user's studio projects
+   */
+  listProjects: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(50).optional().default(20),
+      offset: z.number().min(0).optional().default(0),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const userId = ctx.user.id;
+
+      const projects = await db.select({
+        id: studioProjects.id,
+        title: studioProjects.title,
+        summary: studioProjects.summary,
+        status: studioProjects.status,
+        numberOfScenes: studioProjects.numberOfScenes,
+        visualStyle: studioProjects.visualStyle,
+        thumbnailUrl: studioProjects.thumbnailUrl,
+        sourceBookTitle: studioProjects.sourceBookTitle,
+        createdAt: studioProjects.createdAt,
+        updatedAt: studioProjects.updatedAt,
+      })
+        .from(studioProjects)
+        .where(eq(studioProjects.userId, userId))
+        .orderBy(desc(studioProjects.updatedAt))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      return projects;
+    }),
+
+  /**
+   * Get a single studio project with full data
+   */
+  getProject: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const userId = ctx.user.id;
+
+      const project = await db.select().from(studioProjects)
+        .where(and(eq(studioProjects.id, input.id), eq(studioProjects.userId, userId)))
+        .limit(1);
+
+      if (!project.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+      }
+
+      return project[0];
+    }),
+
+  /**
+   * Delete a studio project
+   */
+  deleteProject: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const userId = ctx.user.id;
+
+      const existing = await db.select().from(studioProjects)
+        .where(and(eq(studioProjects.id, input.id), eq(studioProjects.userId, userId)))
+        .limit(1);
+
+      if (!existing.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "المشروع غير موجود" });
+      }
+
+      await db.delete(studioProjects).where(eq(studioProjects.id, input.id));
+
+      return { success: true, message: "تم حذف المشروع بنجاح" };
     }),
 });

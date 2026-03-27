@@ -1,0 +1,23 @@
+CREATE TABLE `studio_projects` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`user_id` int NOT NULL,
+	`title` varchar(255) NOT NULL,
+	`summary` text,
+	`status` enum('draft','in_progress','completed') NOT NULL DEFAULT 'draft',
+	`reference_text` mediumtext,
+	`source_book_id` varchar(100),
+	`source_book_title` varchar(255),
+	`number_of_scenes` int DEFAULT 4,
+	`visual_style` varchar(50) DEFAULT '3d_animation',
+	`voice_language` varchar(10) DEFAULT 'ar',
+	`voice_tone` varchar(50) DEFAULT 'enthusiastic',
+	`scenario_data` json,
+	`visual_prompts_data` json,
+	`voiceover_data` json,
+	`generated_images` json,
+	`generated_audios` json,
+	`thumbnail_url` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `studio_projects_id` PRIMARY KEY(`id`)
+);

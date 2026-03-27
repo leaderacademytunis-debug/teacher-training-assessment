@@ -3122,4 +3122,16 @@
 - [x] إضافة Routes: /edu-studio و /edu-studio-export
 - [x] تحديث زر التوجيه في TextbookViewer ليشير إلى /edu-studio
 - [x] كتابة 15 اختبار vitest (جميعها ناجحة)
+- [x] حفظ checkpoint (version: feb3dce9)
+
+## Edu-Studio: توليد الوسائط الفعلي وأرشفة المشاريع (Connected Ecosystem - Step 4)
+- [x] إنشاء جدول studio_projects في قاعدة البيانات (14 حقل)
+- [x] إنشاء endpoint لتوليد الصور (generateSceneImage عبر Image Generation API)
+- [x] إنشاء endpoint لتحويل النص إلى صوت (generateSceneAudio عبر OpenAI TTS)
+- [x] إنشاء endpoints لحفظ/تحميل/حذف المشاريع (saveProject, getProject, listProjects, deleteProject)
+- [x] إضافة زر "توليد الصورة" في كل بطاقة مشهد مع Thumbnail + تكبير + تحميل
+- [x] إضافة زر "توليد الصوت" في كل بطاقة مشهد مع Audio Player + تحميل MP3
+- [x] إضافة زر "حفظ المشروع" في أعلى الشاشة
+- [x] بناء صفحة "مشاريعي" (/my-studio-projects) مع بحث وحذف وفتح مشاريع
+- [x] كتابة 15 اختبار vitest (جميعها ناجحة)
 - [ ] حفظ checkpoint

@@ -2672,3 +2672,46 @@ export const textbookExcerpts = mysqlTable("textbook_excerpts", {
 });
 export type TextbookExcerptRow = typeof textbookExcerpts.$inferSelect;
 export type InsertTextbookExcerpt = typeof textbookExcerpts.$inferInsert;
+
+
+/**
+ * Studio Projects - Saves complete Edu-Studio storyboard projects
+ * Stores scenario, visual prompts, voiceover data, generated image URLs, and audio URLs
+ */
+export const studioProjects = mysqlTable("studio_projects", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  
+  // Project metadata
+  title: varchar("title", { length: 255 }).notNull(),
+  summary: text("summary"),
+  status: mysqlEnum("status", ["draft", "in_progress", "completed"]).default("draft").notNull(),
+  
+  // Source reference
+  referenceText: mediumtext("reference_text"),
+  sourceBookId: varchar("source_book_id", { length: 100 }),
+  sourceBookTitle: varchar("source_book_title", { length: 255 }),
+  
+  // Generation settings
+  numberOfScenes: int("number_of_scenes").default(4),
+  visualStyle: varchar("visual_style", { length: 50 }).default("3d_animation"),
+  voiceLanguage: varchar("voice_language", { length: 10 }).default("ar"),
+  voiceTone: varchar("voice_tone", { length: 50 }).default("enthusiastic"),
+  
+  // Complete storyboard data (JSON)
+  scenarioData: json("scenario_data"), // Array of scene objects
+  visualPromptsData: json("visual_prompts_data"), // Array of visual prompt objects
+  voiceoverData: json("voiceover_data"), // Array of voiceover objects
+  
+  // Generated media URLs (JSON arrays)
+  generatedImages: json("generated_images"), // { sceneNumber: number, imageUrl: string }[]
+  generatedAudios: json("generated_audios"), // { sceneNumber: number, audioUrl: string }[]
+  
+  // Thumbnail for project listing
+  thumbnailUrl: text("thumbnail_url"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StudioProjectRow = typeof studioProjects.$inferSelect;
+export type InsertStudioProject = typeof studioProjects.$inferInsert;
