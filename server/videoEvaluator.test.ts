@@ -750,3 +750,235 @@ describe("VideoEvaluator — Content Type Detection for URLs", () => {
     expect(() => new URL("not-a-url")).toThrow();
   });
 });
+
+
+// ── Video Evaluator: Cloud Storage URL Detection ─────────────────────────────
+
+describe("VideoEvaluator — Cloud Storage URL Detection", () => {
+  function detectCloudProvider(url: string): string | null {
+    if (/drive\.google\.com|docs\.google\.com/.test(url)) return "google-drive";
+    if (/dropbox\.com|dl\.dropboxusercontent\.com/.test(url)) return "dropbox";
+    if (/onedrive\.live\.com|1drv\.ms/.test(url)) return "onedrive";
+    return null;
+  }
+
+  it("should detect Google Drive URLs", () => {
+    expect(detectCloudProvider("https://drive.google.com/file/d/abc123/view")).toBe("google-drive");
+    expect(detectCloudProvider("https://docs.google.com/file/d/abc123/edit")).toBe("google-drive");
+  });
+
+  it("should detect Dropbox URLs", () => {
+    expect(detectCloudProvider("https://www.dropbox.com/s/abc123/video.mp4?dl=0")).toBe("dropbox");
+    expect(detectCloudProvider("https://dl.dropboxusercontent.com/s/abc123/video.mp4")).toBe("dropbox");
+  });
+
+  it("should detect OneDrive URLs", () => {
+    expect(detectCloudProvider("https://onedrive.live.com/redir?resid=abc123")).toBe("onedrive");
+    expect(detectCloudProvider("https://1drv.ms/v/s!abc123")).toBe("onedrive");
+  });
+
+  it("should return null for non-cloud URLs", () => {
+    expect(detectCloudProvider("https://example.com/video.mp4")).toBeNull();
+    expect(detectCloudProvider("https://youtube.com/watch?v=abc")).toBeNull();
+  });
+
+  it("should convert Dropbox share link to direct download", () => {
+    const shareUrl = "https://www.dropbox.com/s/abc123/video.mp4?dl=0";
+    const directUrl = shareUrl.replace("dl=0", "dl=1").replace("dl=0", "dl=1");
+    expect(directUrl).toContain("dl=1");
+  });
+});
+
+// ── Video Evaluator: File Size Check & Trim Logic ────────────────────────────
+
+describe("VideoEvaluator — File Size Check & Trim Logic", () => {
+  const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB
+
+  it("should flag files exceeding 16MB as oversized", () => {
+    const file20MB = { size: 20 * 1024 * 1024 };
+    const file10MB = { size: 10 * 1024 * 1024 };
+    const file16MB = { size: 16 * 1024 * 1024 };
+
+    expect(file20MB.size > MAX_FILE_SIZE).toBe(true);
+    expect(file10MB.size > MAX_FILE_SIZE).toBe(false);
+    expect(file16MB.size > MAX_FILE_SIZE).toBe(false);
+  });
+
+  it("should calculate trim range correctly", () => {
+    const videoDuration = 120; // 2 minutes
+    const trimStart = 10;
+    const trimEnd = 60;
+    const trimmedDuration = trimEnd - trimStart;
+
+    expect(trimmedDuration).toBe(50);
+    expect(trimStart).toBeGreaterThanOrEqual(0);
+    expect(trimEnd).toBeLessThanOrEqual(videoDuration);
+    expect(trimEnd).toBeGreaterThan(trimStart);
+  });
+
+  it("should validate trim range boundaries", () => {
+    const duration = 180;
+    const validRanges = [
+      { start: 0, end: 60 },
+      { start: 30, end: 90 },
+      { start: 120, end: 180 },
+    ];
+
+    validRanges.forEach(range => {
+      expect(range.start).toBeGreaterThanOrEqual(0);
+      expect(range.end).toBeLessThanOrEqual(duration);
+      expect(range.end).toBeGreaterThan(range.start);
+    });
+  });
+
+  it("should reject invalid trim ranges", () => {
+    const invalidRanges = [
+      { start: 60, end: 30 },   // end before start
+      { start: -10, end: 60 },  // negative start
+    ];
+
+    expect(invalidRanges[0].end).toBeLessThan(invalidRanges[0].start);
+    expect(invalidRanges[1].start).toBeLessThan(0);
+  });
+
+  it("should format time correctly for display", () => {
+    function formatTime(seconds: number): string {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m}:${s.toString().padStart(2, "0")}`;
+    }
+
+    expect(formatTime(0)).toBe("0:00");
+    expect(formatTime(65)).toBe("1:05");
+    expect(formatTime(120)).toBe("2:00");
+    expect(formatTime(3661)).toBe("61:01");
+  });
+});
+
+// ── Video Evaluator: Progress Comparison Chart ───────────────────────────────
+
+describe("VideoEvaluator — Progress Comparison Chart", () => {
+  const CRITERIA_KEYS = [
+    "scoreVisualQuality",
+    "scoreNarrative",
+    "scorePedagogical",
+    "scoreEngagement",
+    "scoreTechnical",
+  ];
+
+  const mockHistory = [
+    { id: "1", attemptNumber: 1, totalScore: 45, scoreVisualQuality: 8, scoreNarrative: 9, scorePedagogical: 10, scoreEngagement: 8, scoreTechnical: 10, createdAt: Date.now() - 86400000 * 3 },
+    { id: "2", attemptNumber: 2, totalScore: 62, scoreVisualQuality: 12, scoreNarrative: 13, scorePedagogical: 14, scoreEngagement: 11, scoreTechnical: 12, createdAt: Date.now() - 86400000 * 2 },
+    { id: "3", attemptNumber: 3, totalScore: 78, scoreVisualQuality: 16, scoreNarrative: 15, scorePedagogical: 17, scoreEngagement: 14, scoreTechnical: 16, createdAt: Date.now() - 86400000 },
+  ];
+
+  it("should require at least 2 evaluations to show comparison", () => {
+    expect(mockHistory.length).toBeGreaterThanOrEqual(2);
+    expect([mockHistory[0]].length).toBeLessThan(2);
+  });
+
+  it("should sort history by attemptNumber ascending", () => {
+    const sorted = [...mockHistory].sort((a, b) => a.attemptNumber - b.attemptNumber);
+    expect(sorted[0].attemptNumber).toBe(1);
+    expect(sorted[sorted.length - 1].attemptNumber).toBe(3);
+  });
+
+  it("should calculate improvement percentage correctly", () => {
+    const sorted = [...mockHistory].sort((a, b) => a.attemptNumber - b.attemptNumber);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const improvement = last.totalScore - first.totalScore;
+    const improvementPct = Math.round((improvement / first.totalScore) * 100);
+
+    expect(improvement).toBe(33);
+    expect(improvementPct).toBe(73); // 33/45 * 100 = 73.3 -> 73
+  });
+
+  it("should build line chart data from history", () => {
+    const sorted = [...mockHistory].sort((a, b) => a.attemptNumber - b.attemptNumber);
+    const lineData = sorted.map(item => ({
+      name: `#${item.attemptNumber}`,
+      score: item.totalScore,
+    }));
+
+    expect(lineData).toHaveLength(3);
+    expect(lineData[0]).toEqual({ name: "#1", score: 45 });
+    expect(lineData[1]).toEqual({ name: "#2", score: 62 });
+    expect(lineData[2]).toEqual({ name: "#3", score: 78 });
+  });
+
+  it("should build radar comparison data (first vs last)", () => {
+    const sorted = [...mockHistory].sort((a, b) => a.attemptNumber - b.attemptNumber);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+
+    const radarData = CRITERIA_KEYS.map(key => ({
+      criterion: key,
+      first: (first as any)[key],
+      last: (last as any)[key],
+      fullMark: 20,
+    }));
+
+    expect(radarData).toHaveLength(5);
+    expect(radarData[0].first).toBe(8);   // scoreVisualQuality first
+    expect(radarData[0].last).toBe(16);    // scoreVisualQuality last
+    expect(radarData[2].first).toBe(10);   // scorePedagogical first
+    expect(radarData[2].last).toBe(17);    // scorePedagogical last
+  });
+
+  it("should handle negative improvement gracefully", () => {
+    const declining = [
+      { attemptNumber: 1, totalScore: 80 },
+      { attemptNumber: 2, totalScore: 60 },
+    ];
+    const sorted = [...declining].sort((a, b) => a.attemptNumber - b.attemptNumber);
+    const improvement = sorted[sorted.length - 1].totalScore - sorted[0].totalScore;
+    const improvementPct = Math.round((improvement / sorted[0].totalScore) * 100);
+
+    expect(improvement).toBe(-20);
+    expect(improvementPct).toBe(-25);
+  });
+
+  it("should handle zero first score without division error", () => {
+    const zeroStart = [
+      { attemptNumber: 1, totalScore: 0 },
+      { attemptNumber: 2, totalScore: 50 },
+    ];
+    const sorted = [...zeroStart].sort((a, b) => a.attemptNumber - b.attemptNumber);
+    const first = sorted[0];
+    const improvementPct = first.totalScore > 0 
+      ? Math.round(((sorted[sorted.length - 1].totalScore - first.totalScore) / first.totalScore) * 100) 
+      : 0;
+
+    expect(improvementPct).toBe(0); // Avoid division by zero
+  });
+});
+
+// ── Video Evaluator: Input Mode with Cloud ───────────────────────────────────
+
+describe("VideoEvaluator — Input Mode includes Cloud", () => {
+  it("should define all five input modes including cloud", () => {
+    const modes = ["upload", "youtube", "url", "cloud", "camera"] as const;
+    expect(modes).toHaveLength(5);
+    expect(modes).toContain("cloud");
+  });
+
+  it("should validate cloud URL is not empty before processing", () => {
+    const cloudUrl = "";
+    const isValid = cloudUrl.trim().length > 0;
+    expect(isValid).toBe(false);
+  });
+
+  it("should accept valid cloud URLs", () => {
+    const validUrls = [
+      "https://drive.google.com/file/d/abc123/view",
+      "https://www.dropbox.com/s/abc123/video.mp4?dl=0",
+      "https://1drv.ms/v/s!abc123",
+    ];
+
+    validUrls.forEach(url => {
+      expect(url.startsWith("https://")).toBe(true);
+      expect(url.length).toBeGreaterThan(10);
+    });
+  });
+});

@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from "react";
-import { Loader2, Paperclip, X, Image as ImageIcon, Video, FileText, File, Film, Target, BarChart3, History, ChevronLeft, Star, TrendingUp, Award, Eye, BookOpen, Zap, Wrench, Upload, Copy, RefreshCw, ChevronRight, Sparkles, Globe, Youtube, Camera, Link2, Play, CheckCircle2 } from "lucide-react";
+import { Loader2, Paperclip, X, Image as ImageIcon, Video, FileText, File, Film, Target, BarChart3, History, ChevronLeft, Star, TrendingUp, Award, Eye, BookOpen, Zap, Wrench, Upload, Copy, RefreshCw, ChevronRight, Sparkles, Globe, Youtube, Camera, Link2, Play, CheckCircle2, Cloud, Scissors, LineChart as LineChartIcon, AlertTriangle } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
 import ToolPageHeader from "@/components/ToolPageHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getToolTranslations } from "@/lib/toolTranslations";
@@ -8,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, Tooltip } from "recharts";
+
 
 const VIDEO_EVALUATOR_GRADIENT = "linear-gradient(135deg, #1A237E, #0D47A1, #01579B)";
 
@@ -200,7 +201,7 @@ const VideoEvaluator = () => {
               fillOpacity={0.2}
               strokeWidth={2}
             />
-            <Tooltip
+            <RechartsTooltip
               formatter={(value: number) => [`${value}/20`, t("الدرجة", "Score", "Score")]}
               contentStyle={{ fontFamily: "Cairo, sans-serif", direction: isRTL ? "rtl" : "ltr" }}
             />
@@ -272,12 +273,18 @@ const VideoEvaluator = () => {
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<any | null>(null);
 
   // Multi-input source state
-  const [inputMode, setInputMode] = useState<"upload" | "youtube" | "url" | "camera">("upload");
+  const [inputMode, setInputMode] = useState<"upload" | "youtube" | "url" | "camera" | "cloud">("upload");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [directUrl, setDirectUrl] = useState("");
   const [youtubeData, setYoutubeData] = useState<{ videoId: string; title: string; author: string; thumbnailUrl: string; embedUrl: string } | null>(null);
   const [directUrlData, setDirectUrlData] = useState<{ fileUrl: string; contentType: string; size: number } | null>(null);
   const [isProcessingUrl, setIsProcessingUrl] = useState(false);
+  const [cloudUrl, setCloudUrl] = useState("");
+  const [cloudData, setCloudData] = useState<{ fileUrl: string; provider: string; fileName: string } | null>(null);
+  const [showTrimmer, setShowTrimmer] = useState(false);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(100);
+  const [oversizedFile, setOversizedFile] = useState<AttachedFile | null>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -313,6 +320,14 @@ const VideoEvaluator = () => {
       }
       return newFile;
     });
+    // Check for oversized video files (>16MB)
+    const MAX_SIZE = 16 * 1024 * 1024; // 16MB
+    const oversized = newFiles.find(f => f.size > MAX_SIZE && f.type.startsWith("video/"));
+    if (oversized) {
+      setOversizedFile(oversized);
+      setShowTrimmer(true);
+      // Still add the file but show the warning
+    }
     setAttachedFiles(prev => [...prev, ...newFiles]);
   };
 
@@ -356,14 +371,13 @@ const VideoEvaluator = () => {
       fileUrls = [youtubeData.thumbnailUrl];
     } else if (inputMode === "url" && directUrlData) {
       fileUrls = [directUrlData.fileUrl];
+    } else if (inputMode === "cloud" && cloudData) {
+      fileUrls = [cloudData.fileUrl];
     } else if (inputMode === "camera" && recordedBlob) {
-      // Convert recorded blob to a File and upload via the same presigned URL flow
       const file = new File([recordedBlob], "camera-recording.webm", { type: "video/webm" });
       const cameraFile: AttachedFile = { name: file.name, size: file.size, type: file.type, file };
-      // Temporarily set attachedFiles to upload the recording
       const savedFiles = [...attachedFiles];
       setAttachedFiles([cameraFile]);
-      // Need to wait for state update - use direct upload instead
       try {
         const presigned = await trpc.general.getPresignedUrl.mutate({ fileName: file.name, fileType: file.type });
         const response = await fetch(presigned.url, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
@@ -381,6 +395,8 @@ const VideoEvaluator = () => {
     let enrichedDescription = videoDescription;
     if (inputMode === "youtube" && youtubeData) {
       enrichedDescription = `[فيديو يوتيوب: ${youtubeData.title} - ${youtubeData.author}] ${videoDescription}`;
+    } else if (inputMode === "cloud" && cloudData) {
+      enrichedDescription = `[${cloudData.provider}: ${cloudData.fileName}] ${videoDescription}`;
     }
 
     evaluateVideo({
@@ -473,6 +489,55 @@ const VideoEvaluator = () => {
     }
   };
 
+  // Process cloud storage URL (Google Drive / Dropbox)
+  const handleProcessCloudUrl = async () => {
+    if (!cloudUrl.trim()) return;
+    setIsProcessingUrl(true);
+    try {
+      let downloadUrl = cloudUrl.trim();
+      let provider = "";
+      let fileName = "";
+
+      // Google Drive: convert share link to direct download
+      const gdriveMatch = downloadUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+      const gdriveMatch2 = downloadUrl.match(/drive\.google\.com\/open\?id=([^&]+)/);
+      const fileId = gdriveMatch?.[1] || gdriveMatch2?.[1];
+      if (fileId) {
+        downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        provider = "Google Drive";
+        fileName = `drive-video-${fileId.slice(0, 8)}`;
+      }
+
+      // Dropbox: convert share link to direct download
+      if (downloadUrl.includes("dropbox.com")) {
+        downloadUrl = downloadUrl.replace("dl=0", "dl=1").replace("www.dropbox.com", "dl.dropboxusercontent.com");
+        provider = "Dropbox";
+        const parts = downloadUrl.split("/");
+        fileName = parts[parts.length - 1]?.split("?")[0] || "dropbox-video";
+      }
+
+      // OneDrive: convert share link
+      if (downloadUrl.includes("1drv.ms") || downloadUrl.includes("onedrive.live.com")) {
+        downloadUrl = downloadUrl.replace("redir", "download");
+        provider = "OneDrive";
+        fileName = "onedrive-video";
+      }
+
+      if (!provider) {
+        toast.error(t("الرجاء لصق رابط من Google Drive أو Dropbox أو OneDrive", "Veuillez coller un lien Google Drive, Dropbox ou OneDrive", "Please paste a Google Drive, Dropbox, or OneDrive link"));
+        setIsProcessingUrl(false);
+        return;
+      }
+
+      setCloudData({ fileUrl: downloadUrl, provider, fileName });
+      toast.success(t(`تم التعرف على رابط ${provider}!`, `Lien ${provider} reconnu!`, `${provider} link recognized!`));
+    } catch (e: any) {
+      toast.error(e.message || t("فشل في معالجة رابط التخزين السحابي", "Échec du traitement du lien cloud", "Failed to process cloud link"));
+    } finally {
+      setIsProcessingUrl(false);
+    }
+  };
+
   // Process direct URL
   const handleProcessDirectUrl = async () => {
     if (!directUrl.trim()) return;
@@ -548,10 +613,14 @@ const VideoEvaluator = () => {
     setAttachedFiles([]);
     setYoutubeUrl("");
     setDirectUrl("");
+    setCloudUrl("");
     setYoutubeData(null);
     setDirectUrlData(null);
+    setCloudData(null);
     setRecordedBlob(null);
     setRecordedPreviewUrl(null);
+    setOversizedFile(null);
+    setShowTrimmer(false);
     stopCamera();
   };
 
@@ -729,11 +798,12 @@ const VideoEvaluator = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Input mode tabs */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {[
                     { mode: "upload" as const, icon: Upload, label: t("رفع ملف", "Importer", "Upload"), color: "#3b82f6" },
                     { mode: "youtube" as const, icon: Youtube, label: t("يوتيوب", "YouTube", "YouTube"), color: "#ef4444" },
                     { mode: "url" as const, icon: Globe, label: t("رابط مباشر", "Lien Direct", "Direct URL"), color: "#10b981" },
+                    { mode: "cloud" as const, icon: Cloud, label: t("تخزين سحابي", "Cloud", "Cloud Storage"), color: "#f97316" },
                     { mode: "camera" as const, icon: Camera, label: t("كاميرا", "Caméra", "Camera"), color: "#8b5cf6" },
                   ].map(({ mode, icon: Icon, label, color }) => (
                     <button
@@ -788,6 +858,79 @@ const VideoEvaluator = () => {
                         <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="mt-2">
                           <Paperclip className={`w-4 h-4 ${isRTL ? "ml-1" : "mr-1"}`} /> {t("إضافة ملف آخر", "Ajouter un autre", "Add another")}
                         </Button>
+                      </div>
+                    )}
+                    {/* Oversized file warning */}
+                    {showTrimmer && oversizedFile && (
+                      <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-3">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <h4 className="text-sm font-bold text-amber-800">{t("حجم الفيديو يتجاوز 16MB", "La vid\u00e9o d\u00e9passe 16 Mo", "Video exceeds 16MB")}</h4>
+                            <p className="text-xs text-amber-700 mt-1">
+                              {t(
+                                `حجم الملف (${formatFileSize(oversizedFile.size)}) يتجاوز الحد الأقصى. يمكنك قص مقطع محدد أو المتابعة باستخدام صور من الفيديو بدلاً.`,
+                                `Le fichier (${formatFileSize(oversizedFile.size)}) d\u00e9passe la limite. Vous pouvez couper un extrait ou utiliser des captures d'\u00e9cran.`,
+                                `File size (${formatFileSize(oversizedFile.size)}) exceeds the limit. You can trim a clip or use screenshots instead.`
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs text-gray-600">
+                            <span>{t("بداية المقطع", "D\u00e9but", "Clip Start")}: {trimStart}%</span>
+                            <span>{t("نهاية المقطع", "Fin", "Clip End")}: {trimEnd}%</span>
+                          </div>
+                          <div className="flex gap-2 items-center">
+                            <Scissors className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                            <input
+                              type="range"
+                              min={0}
+                              max={90}
+                              value={trimStart}
+                              onChange={(e) => setTrimStart(Math.min(Number(e.target.value), trimEnd - 10))}
+                              className="flex-1 accent-amber-500 h-2"
+                            />
+                            <input
+                              type="range"
+                              min={10}
+                              max={100}
+                              value={trimEnd}
+                              onChange={(e) => setTrimEnd(Math.max(Number(e.target.value), trimStart + 10))}
+                              className="flex-1 accent-amber-500 h-2"
+                            />
+                          </div>
+                          <p className="text-xs text-amber-600 text-center">
+                            {t(
+                              `سيتم استخدام ${trimEnd - trimStart}% من الفيديو (≈ ${formatFileSize(oversizedFile.size * (trimEnd - trimStart) / 100)})`,
+                              `${trimEnd - trimStart}% de la vid\u00e9o sera utilis\u00e9 (\u2248 ${formatFileSize(oversizedFile.size * (trimEnd - trimStart) / 100)})`,
+                              `${trimEnd - trimStart}% of video will be used (\u2248 ${formatFileSize(oversizedFile.size * (trimEnd - trimStart) / 100)})`
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                            onClick={() => {
+                              toast.info(t("سيتم إرسال الفيديو مع تحديد المقطع المختار", "La vid\u00e9o sera envoy\u00e9e avec l'extrait s\u00e9lectionn\u00e9", "Video will be sent with the selected clip"));
+                              setShowTrimmer(false);
+                            }}
+                          >
+                            <Scissors className="w-3.5 h-3.5" />
+                            {t("قص ومتابعة", "Couper et continuer", "Trim & Continue")}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setShowTrimmer(false);
+                              setOversizedFile(null);
+                            }}
+                          >
+                            {t("متابعة بدون قص", "Continuer sans couper", "Continue without trimming")}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </>
@@ -872,6 +1015,54 @@ const VideoEvaluator = () => {
                       </div>
                     )}
                     <p className="text-xs text-gray-400">{t("يدعم روابط مباشرة لملفات MP4, WebM, أو صور من الفيديو", "Supporte les liens directs vers MP4, WebM ou captures d'écran", "Supports direct links to MP4, WebM, or video screenshots")}</p>
+                  </div>
+                )}
+
+                {/* Cloud Storage Mode */}
+                {inputMode === "cloud" && (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Cloud className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400`} />
+                        <input
+                          type="url"
+                          value={cloudUrl}
+                          onChange={(e) => { setCloudUrl(e.target.value); setCloudData(null); }}
+                          placeholder={t("الصق رابط Google Drive أو Dropbox هنا...", "Collez le lien Google Drive ou Dropbox ici...", "Paste Google Drive or Dropbox link here...")}
+                          className={`w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-background`}
+                          dir="ltr"
+                        />
+                      </div>
+                      <Button
+                        onClick={handleProcessCloudUrl}
+                        disabled={!cloudUrl.trim() || isProcessingUrl}
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-4"
+                      >
+                        {isProcessingUrl ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    {cloudData && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-medium text-green-700">{t("تم التعرف على الرابط", "Lien reconnu", "Link recognized")}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-sm">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cloudData.provider === 'Google Drive' ? 'bg-blue-100' : cloudData.provider === 'Dropbox' ? 'bg-blue-100' : 'bg-sky-100'}`}>
+                            <Cloud className={`w-4 h-4 ${cloudData.provider === 'Google Drive' ? 'text-blue-600' : cloudData.provider === 'Dropbox' ? 'text-blue-500' : 'text-sky-600'}`} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-700">{cloudData.provider}</p>
+                            <p className="text-xs text-gray-500">{cloudData.fileName}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Google Drive</span>
+                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Dropbox</span>
+                      <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span> OneDrive</span>
+                    </div>
                   </div>
                 )}
 
@@ -1067,6 +1258,104 @@ const VideoEvaluator = () => {
         {/* === TAB: HISTORY === */}
         {activeTab === "history" && (
           <div className="max-w-4xl mx-auto space-y-4">
+            {/* Progress Analysis Charts */}
+            {history && history.length >= 2 && (() => {
+              const sorted = [...history].sort((a, b) => a.attemptNumber - b.attemptNumber);
+              const first = sorted[0];
+              const last = sorted[sorted.length - 1];
+              const improvement = last.totalScore - first.totalScore;
+              const improvementPct = first.totalScore > 0 ? Math.round((improvement / first.totalScore) * 100) : 0;
+
+              const lineData = sorted.map(item => ({
+                name: `#${item.attemptNumber}`,
+                score: item.totalScore,
+              }));
+
+              const comparisonRadarData = CRITERIA_CONFIG.map(c => ({
+                criterion: c.shortLabel,
+                first: (first as any)[c.key] || 0,
+                last: (last as any)[c.key] || 0,
+                fullMark: 20,
+              }));
+
+              return (
+                <Card className="shadow-sm border-t-4 border-t-indigo-500">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2" style={{ color: "#1A237E", fontFamily: "Cairo, sans-serif" }}>
+                      <TrendingUp className="w-5 h-5" />
+                      {t("تحليل التقدم", "Analyse de Progression", "Progress Analysis")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Improvement Summary */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-4 bg-blue-50 rounded-xl">
+                        <p className="text-xs text-gray-500 mb-1">{t("أول تقييم", "1er Score", "First Score")}</p>
+                        <p className="text-2xl font-bold text-blue-600">{first.totalScore}</p>
+                      </div>
+                      <div className="text-center p-4 bg-green-50 rounded-xl">
+                        <p className="text-xs text-gray-500 mb-1">{t("آخر تقييم", "Dernier Score", "Latest Score")}</p>
+                        <p className="text-2xl font-bold text-green-600">{last.totalScore}</p>
+                      </div>
+                      <div className={`text-center p-4 rounded-xl ${improvement >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
+                        <p className="text-xs text-gray-500 mb-1">{t("نسبة التحسن", "Amélioration", "Improvement")}</p>
+                        <p className={`text-2xl font-bold ${improvement >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {improvement >= 0 ? '+' : ''}{improvementPct}%
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Line Chart - Score Evolution */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2" style={{ fontFamily: "Cairo, sans-serif" }}>
+                          <LineChartIcon className="w-4 h-4 text-indigo-500" />
+                          {t("تطور النتيجة الإجمالية", "Évolution du Score", "Score Evolution")}
+                        </h4>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <LineChart data={lineData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                            <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                            <RechartsTooltip
+                              contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: '12px' }}
+                              formatter={(value: number) => [`${value}/100`, t("النتيجة", "Score", "Score")]}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="score"
+                              stroke="#4f46e5"
+                              strokeWidth={3}
+                              dot={{ fill: '#4f46e5', strokeWidth: 2, r: 5 }}
+                              activeDot={{ r: 7, fill: '#4f46e5' }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Radar Chart - First vs Last Comparison */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2" style={{ fontFamily: "Cairo, sans-serif" }}>
+                          <BarChart3 className="w-4 h-4 text-indigo-500" />
+                          {t("مقارنة المعايير: أول ↔ آخر", "Critères: 1er \u2194 Dernier", "Criteria: First \u2194 Last")}
+                        </h4>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <RadarChart data={comparisonRadarData}>
+                            <PolarGrid stroke="#e5e7eb" />
+                            <PolarAngleAxis dataKey="criterion" tick={{ fontSize: 11 }} />
+                            <PolarRadiusAxis angle={90} domain={[0, 20]} tick={{ fontSize: 10 }} />
+                            <Radar name={t("أول تقييم", "1er", "First")} dataKey="first" stroke="#ef4444" fill="#ef4444" fillOpacity={0.15} strokeWidth={2} />
+                            <Radar name={t("آخر تقييم", "Dernier", "Last")} dataKey="last" stroke="#10b981" fill="#10b981" fillOpacity={0.15} strokeWidth={2} />
+                            <Legend wrapperStyle={{ fontSize: '12px' }} />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-gray-600" style={{ fontFamily: "Cairo, sans-serif" }}>
