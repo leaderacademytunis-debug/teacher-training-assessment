@@ -11,11 +11,13 @@ import {
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
   Megaphone, Settings, ScanLine, FileCheck, Store, Navigation, MapPin, Play, Target, Clock, Theater, Building2, Briefcase, FileText, Film,
   Quote, Heart, Phone, Mail, ExternalLink, ChevronRight, Send, HeartHandshake,
+  Timer, Calculator, HelpCircle, ChevronUp, Mic, Video, CheckCircle, TrendingUp, Minus,
+  Crown, Rocket,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import { Link, useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ChatAssistant } from "@/components/ChatAssistant";
 import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
@@ -574,6 +576,623 @@ function NewsletterSection() {
   );
 }
 
+// ============ CRO SECTION 1: KILLER FEATURES ============
+function KillerFeaturesSection({ t }: { t: (ar: string, fr: string, en: string) => string }) {
+  const KILLER_FEATURES = [
+    {
+      icon: Bot,
+      titleAr: "تحضير الدروس في 3 دقائق",
+      titleFr: "Pr\u00e9parez vos cours en 3 minutes",
+      titleEn: "Prepare Lessons in 3 Minutes",
+      descAr: "بدل ساعات التحضير المرهقة، EDUGPT ينشئ لك جذاذة درس كاملة متوافقة مع المنهج التونسي الرسمي في ثوانٍ معدودة. اكتب الموضوع فقط واحصل على خطة درس جاهزة للطباعة.",
+      descFr: "Au lieu d'heures de pr\u00e9paration, EDUGPT cr\u00e9e une fiche de cours compl\u00e8te conforme au programme tunisien en quelques secondes.",
+      descEn: "Instead of hours of preparation, EDUGPT creates a complete lesson plan aligned with the Tunisian curriculum in seconds.",
+      beforeAr: "قبل: 2 ساعة تحضير",
+      beforeFr: "Avant: 2h de pr\u00e9paration",
+      beforeEn: "Before: 2h preparation",
+      afterAr: "بعد: 3 دقائق فقط",
+      afterFr: "Apr\u00e8s: 3 minutes seulement",
+      afterEn: "After: Just 3 minutes",
+      gradient: "from-blue-600 to-indigo-700",
+      accentColor: "#1A237E",
+      href: "/assistant",
+    },
+    {
+      icon: Film,
+      titleAr: "استوديو فيديو تعليمي احترافي",
+      titleFr: "Studio vid\u00e9o \u00e9ducatif professionnel",
+      titleEn: "Professional Educational Video Studio",
+      descAr: "حوّل أي درس PDF إلى فيديو تعليمي احترافي بدقة 1080p مع صور AI وصوت طبيعي وهوية بصرية Leader Academy. كل ذلك من متصفحك دون أي برنامج إضافي.",
+      descFr: "Transformez n'importe quel cours PDF en vid\u00e9o \u00e9ducative professionnelle 1080p avec images IA et voix naturelle.",
+      descEn: "Transform any PDF lesson into a professional 1080p educational video with AI images and natural voice.",
+      beforeAr: "قبل: تكلفة إنتاج 500+ دينار",
+      beforeFr: "Avant: Co\u00fbt de production 500+ TND",
+      beforeEn: "Before: Production cost 500+ TND",
+      afterAr: "بعد: مجاناً مع الاشتراك",
+      afterFr: "Apr\u00e8s: Gratuit avec l'abonnement",
+      afterEn: "After: Free with subscription",
+      gradient: "from-purple-600 to-pink-600",
+      accentColor: "#9333EA",
+      href: "/ultimate-studio",
+    },
+    {
+      icon: Mic,
+      titleAr: "استنسخ صوتك بالذكاء الاصطناعي",
+      titleFr: "Clonez votre voix avec l'IA",
+      titleEn: "Clone Your Voice with AI",
+      descAr: "تقنية حصرية: سجّل 30 ثانية من صوتك واحصل على نسخة رقمية تتحدث بصوتك الحقيقي في كل فيديوهاتك التعليمية. تلاميذك سيسمعون صوت أستاذهم الحقيقي!",
+      descFr: "Technologie exclusive: enregistrez 30 secondes de votre voix et obtenez un clone num\u00e9rique pour toutes vos vid\u00e9os.",
+      descEn: "Exclusive technology: record 30 seconds of your voice and get a digital clone for all your educational videos.",
+      beforeAr: "قبل: صوت آلي بارد",
+      beforeFr: "Avant: Voix robotique froide",
+      beforeEn: "Before: Cold robotic voice",
+      afterAr: "بعد: صوتك الحقيقي في كل فيديو",
+      afterFr: "Apr\u00e8s: Votre vraie voix dans chaque vid\u00e9o",
+      afterEn: "After: Your real voice in every video",
+      gradient: "from-orange-500 to-red-500",
+      accentColor: "#FF6D00",
+      href: "/pricing",
+      badge: { ar: "VIP حصري", fr: "VIP Exclusif", en: "VIP Exclusive" },
+    },
+  ];
+
+  return (
+    <section className="py-24 lg:py-28 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F0F4FF 100%)" }}>
+      {/* Decorative */}
+      <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, #1A237E, transparent 70%)" }} />
+      <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #FF6D00, transparent 70%)" }} />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" dir="rtl">
+        {/* Section Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold mb-6" style={{ background: "linear-gradient(135deg, rgba(255,109,0,0.1), rgba(255,143,0,0.06))", color: "#FF6D00", border: "1px solid rgba(255,109,0,0.15)" }}>
+            <Zap className="w-4 h-4" />
+            <span>{t("لماذا يختارنا +5000 مدرّس؟", "Pourquoi +5000 enseignants nous choisissent ?", "Why +5000 Teachers Choose Us?")}</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-5 leading-tight" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+            {t(
+              "3 أسلحة سرية تغيّر حياتك المهنية",
+              "3 armes secr\u00e8tes qui changent votre carri\u00e8re",
+              "3 Secret Weapons That Change Your Career"
+            )}
+          </h2>
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed">
+            {t(
+              "ليست مجرد أدوات... بل ثورة حقيقية في طريقة تحضيرك وتدريسك",
+              "Pas de simples outils... une v\u00e9ritable r\u00e9volution dans votre enseignement",
+              "Not just tools... a real revolution in your teaching"
+            )}
+          </p>
+        </div>
+
+        {/* 3 Feature Cards */}
+        <div className="space-y-8">
+          {KILLER_FEATURES.map((feature, i) => {
+            const Icon = feature.icon;
+            const isEven = i % 2 === 1;
+            return (
+              <Link key={i} href={feature.href}>
+                <div className={`group relative bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 cursor-pointer`}>
+                  {/* Badge */}
+                  {feature.badge && (
+                    <div className="absolute top-4 left-4 rtl:left-auto rtl:right-4 z-10">
+                      <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-white shadow-lg animate-pulse-glow" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
+                        <Crown className="w-3.5 h-3.5" />
+                        {t(feature.badge.ar, feature.badge.fr, feature.badge.en)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className={`grid grid-cols-1 lg:grid-cols-5 gap-0 ${isEven ? 'lg:flex-row-reverse' : ''}`}>
+                    {/* Content Side (3 cols) */}
+                    <div className={`lg:col-span-3 p-8 lg:p-12 flex flex-col justify-center ${isEven ? 'lg:order-2' : 'lg:order-1'}`}>
+                      {/* Icon + Title */}
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br ${feature.gradient} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                          <Icon className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="text-2xl lg:text-3xl font-black leading-tight group-hover:text-[#FF6D00] transition-colors duration-300" style={{ color: "#1A237E", fontFamily: "'Cairo', sans-serif" }}>
+                          {t(feature.titleAr, feature.titleFr, feature.titleEn)}
+                        </h3>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-gray-500 text-base lg:text-lg leading-relaxed mb-6" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+                        {t(feature.descAr, feature.descFr, feature.descEn)}
+                      </p>
+
+                      {/* Before/After comparison */}
+                      <div className="flex flex-wrap gap-4 mb-6">
+                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl" style={{ background: "rgba(239,68,68,0.06)" }}>
+                          <X className="w-4 h-4 text-red-500" />
+                          <span className="text-sm font-semibold text-red-600 line-through">{t(feature.beforeAr, feature.beforeFr, feature.beforeEn)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl" style={{ background: "rgba(34,197,94,0.06)" }}>
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-sm font-bold text-green-600">{t(feature.afterAr, feature.afterFr, feature.afterEn)}</span>
+                        </div>
+                      </div>
+
+                      {/* CTA */}
+                      <div className="flex items-center gap-2 text-sm font-bold transition-all duration-200 group-hover:gap-3" style={{ color: "#FF6D00" }}>
+                        <span>{t("جرّب الآن مجاناً", "Essayez maintenant gratuitement", "Try Now for Free")}</span>
+                        <ArrowLeft className="w-4 h-4 rtl:rotate-180 group-hover:-translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+
+                    {/* Visual Side (2 cols) */}
+                    <div className={`lg:col-span-2 relative overflow-hidden ${isEven ? 'lg:order-1' : 'lg:order-2'}`} style={{ minHeight: "280px" }}>
+                      <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-[0.06]`} />
+                      <div className="absolute inset-0 flex items-center justify-center p-8">
+                        <div className="relative">
+                          {/* Large icon background */}
+                          <div className={`w-40 h-40 lg:w-48 lg:h-48 rounded-3xl flex items-center justify-center bg-gradient-to-br ${feature.gradient} shadow-2xl group-hover:scale-105 transition-transform duration-500`} style={{ boxShadow: `0 20px 60px ${feature.accentColor}30` }}>
+                            <Icon className="w-20 h-20 lg:w-24 lg:h-24 text-white opacity-90" />
+                          </div>
+                          {/* Floating stat badge */}
+                          <div className="absolute -bottom-4 -right-4 bg-white rounded-xl px-4 py-2 shadow-lg border border-gray-100" style={{ animation: "float 5s ease-in-out infinite" }}>
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="w-4 h-4 text-green-500" />
+                              <span className="text-sm font-bold" style={{ color: "#1A237E" }}>
+                                {i === 0 ? t("توفير 90% من الوقت", "90% de temps gagn\u00e9", "90% time saved") : i === 1 ? t("فيديو 1080p", "Vid\u00e9o 1080p", "1080p Video") : t("صوتك الحقيقي", "Votre vraie voix", "Your real voice")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============ CRO SECTION 2: TIME SAVINGS CALCULATOR ============
+function TimeSavingsCalculator({ t }: { t: (ar: string, fr: string, en: string) => string }) {
+  const [hoursPerWeek, setHoursPerWeek] = useState(15);
+  const savedHours = Math.round(hoursPerWeek * 0.85);
+  const savedPerMonth = savedHours * 4;
+  const savedPerYear = savedPerMonth * 9; // 9 months school year
+  const moneySaved = Math.round(savedPerYear * 8); // ~8 TND per hour
+
+  return (
+    <section className="py-24 lg:py-28 relative overflow-hidden" dir="rtl" style={{ background: "linear-gradient(135deg, #0D1B5E 0%, #1A237E 50%, #1565C0 100%)" }}>
+      {/* Decorative */}
+      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 25% 50%, #FF6D00 0%, transparent 50%), radial-gradient(circle at 75% 50%, #42A5F5 0%, transparent 50%)" }} />
+      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold mb-6" style={{ background: "rgba(255,255,255,0.12)", color: "#fbbf24", border: "1px solid rgba(255,255,255,0.15)" }}>
+            <Calculator className="w-4 h-4" />
+            <span>{t("احسب توفيرك الحقيقي", "Calculez vos \u00e9conomies r\u00e9elles", "Calculate Your Real Savings")}</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mb-5 leading-tight" style={{ fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+            {t(
+              "كم ساعة تضيع أسبوعياً في التحضير؟",
+              "Combien d'heures perdez-vous par semaine ?",
+              "How Many Hours Do You Waste Weekly?"
+            )}
+          </h2>
+          <p className="text-blue-200 text-lg max-w-2xl mx-auto">
+            {t(
+              "حرّك المؤشر واكتشف كم ستوفّر مع Leader Academy",
+              "D\u00e9placez le curseur et d\u00e9couvrez vos \u00e9conomies avec Leader Academy",
+              "Move the slider and discover your savings with Leader Academy"
+            )}
+          </p>
+        </div>
+
+        {/* Calculator Card */}
+        <div className="max-w-4xl mx-auto">
+          <div className="rounded-3xl p-8 lg:p-10" style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.12)" }}>
+            {/* Slider */}
+            <div className="mb-10">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-white font-bold text-lg" style={{ fontFamily: "'Cairo', sans-serif" }}>
+                  {t("ساعات التحضير الأسبوعية الحالية", "Heures de pr\u00e9paration hebdomadaires", "Current Weekly Prep Hours")}
+                </label>
+                <span className="text-3xl font-black" style={{ color: "#fbbf24" }}>{hoursPerWeek} {t("ساعة", "heures", "hours")}</span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="30"
+                value={hoursPerWeek}
+                onChange={(e) => setHoursPerWeek(Number(e.target.value))}
+                className="w-full h-3 rounded-full appearance-none cursor-pointer"
+                style={{
+                  background: `linear-gradient(to left, #FF6D00 0%, #FF6D00 ${((hoursPerWeek - 5) / 25) * 100}%, rgba(255,255,255,0.15) ${((hoursPerWeek - 5) / 25) * 100}%, rgba(255,255,255,0.15) 100%)`,
+                  accentColor: "#FF6D00",
+                }}
+              />
+              <div className="flex justify-between text-xs text-blue-300 mt-2">
+                <span>5 {t("ساعات", "heures", "hours")}</span>
+                <span>30 {t("ساعة", "heures", "hours")}</span>
+              </div>
+            </div>
+
+            {/* Results Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              {[
+                { value: savedHours, unit: t("ساعة/أسبوع", "h/semaine", "h/week"), label: t("توفير أسبوعي", "\u00c9conomie hebdo", "Weekly Savings"), color: "#4CAF50" },
+                { value: savedPerMonth, unit: t("ساعة/شهر", "h/mois", "h/month"), label: t("توفير شهري", "\u00c9conomie mensuelle", "Monthly Savings"), color: "#fbbf24" },
+                { value: savedPerYear, unit: t("ساعة/سنة", "h/an", "h/year"), label: t("توفير سنوي", "\u00c9conomie annuelle", "Yearly Savings"), color: "#FF6D00" },
+                { value: moneySaved, unit: "TND", label: t("قيمة الوقت الموفّر", "Valeur du temps", "Time Value Saved"), color: "#E91E63" },
+              ].map((stat, i) => (
+                <div key={i} className="text-center p-5 rounded-2xl" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <p className="text-4xl lg:text-5xl font-black mb-1" style={{ color: stat.color, fontFamily: "'Cairo', sans-serif" }}>{stat.value}</p>
+                  <p className="text-white text-sm font-semibold">{stat.unit}</p>
+                  <p className="text-blue-300 text-xs mt-1">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Comparison bar */}
+            <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.05)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-white font-bold text-sm">{t("بدون Leader Academy", "Sans Leader Academy", "Without Leader Academy")}</span>
+                <span className="text-red-400 font-bold">{hoursPerWeek} {t("ساعة", "h", "h")}</span>
+              </div>
+              <div className="h-4 rounded-full overflow-hidden mb-4" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="h-full rounded-full bg-red-500 transition-all duration-500" style={{ width: "100%" }} />
+              </div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-white font-bold text-sm">{t("مع Leader Academy", "Avec Leader Academy", "With Leader Academy")}</span>
+                <span className="font-bold" style={{ color: "#4CAF50" }}>{hoursPerWeek - savedHours} {t("ساعة", "h", "h")}</span>
+              </div>
+              <div className="h-4 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((hoursPerWeek - savedHours) / hoursPerWeek) * 100}%`, background: "linear-gradient(90deg, #4CAF50, #66BB6A)" }} />
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="text-center mt-8">
+              <Link href="/pricing">
+                <button className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl text-white font-bold text-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 8px 32px rgba(255,109,0,0.4)" }}>
+                  <Sparkles className="w-5 h-5" />
+                  {t("ابدأ التوفير الآن", "Commencez \u00e0 \u00e9conomiser", "Start Saving Now")}
+                </button>
+              </Link>
+              <p className="text-blue-300 text-sm mt-4">
+                {t("ابدأ مجاناً • لا حاجة لبطاقة بنكية", "Commencez gratuitement \u2022 Pas de carte bancaire requise", "Start free \u2022 No credit card required")}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============ CRO SECTION 3: FAQ ============
+function FAQSection({ t }: { t: (ar: string, fr: string, en: string) => string }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const FAQ_ITEMS = [
+    {
+      qAr: "هل المحتوى متوافق مع البرامج الرسمية التونسية؟",
+      qFr: "Le contenu est-il conforme aux programmes officiels tunisiens ?",
+      qEn: "Is the content aligned with official Tunisian programs?",
+      aAr: "نعم 100%. جميع أدواتنا مصممة خصيصاً وفق المنهج التربوي التونسي الرسمي (البرامج الرسمية 2024-2026). كل جذاذة وكل اختبار يتبع هيكل السند والتعليمة مع معايير التقييم (مع1، مع2، مع3) وجدول إسناد الأعداد الرسمي.",
+      aFr: "Oui, \u00e0 100%. Tous nos outils sont con\u00e7us sp\u00e9cifiquement selon le programme \u00e9ducatif tunisien officiel (2024-2026).",
+      aEn: "Yes, 100%. All our tools are specifically designed according to the official Tunisian educational curriculum (2024-2026).",
+    },
+    {
+      qAr: "كيف يمكنني الدفع؟ هل D17 متاح؟",
+      qFr: "Comment puis-je payer ? D17 est-il disponible ?",
+      qEn: "How can I pay? Is D17 available?",
+      aAr: "نعم! نقبل الدفع عبر D17 (البريد التونسي)، التحويل البنكي، أو واتساب. بعد الدفع، يتم تفعيل حسابك خلال ساعة واحدة كحد أقصى. قريباً سنضيف الدفع الآلي عبر Flouci وKonnect.",
+      aFr: "Oui ! Nous acceptons D17 (Poste Tunisienne), virement bancaire ou WhatsApp. Activation en 1h maximum.",
+      aEn: "Yes! We accept D17 (Tunisian Post), bank transfer, or WhatsApp. Account activated within 1 hour maximum.",
+    },
+    {
+      qAr: "هل يمكنني تجربة الأدوات قبل الاشتراك؟",
+      qFr: "Puis-je essayer les outils avant de m'abonner ?",
+      qEn: "Can I try the tools before subscribing?",
+      aAr: "بالطبع! عدة أدوات متاحة مجاناً بدون اشتراك مثل مختبر هندسة الأوامر (Prompt Lab) ومقيّم الفيديو. كما يمكنك تجربة EDUGPT والأدوات الأخرى بعدد محدود من الاستخدامات المجانية.",
+      aFr: "Bien s\u00fbr ! Plusieurs outils sont gratuits comme le Prompt Lab et l'\u00e9valuateur vid\u00e9o. Vous pouvez aussi essayer EDUGPT avec des utilisations gratuites limit\u00e9es.",
+      aEn: "Of course! Several tools are free like Prompt Lab and Video Evaluator. You can also try EDUGPT with limited free uses.",
+    },
+    {
+      qAr: "هل استنساخ الصوت آمن وقانوني؟",
+      qFr: "Le clonage vocal est-il s\u00fbr et l\u00e9gal ?",
+      qEn: "Is voice cloning safe and legal?",
+      aAr: "نعم تماماً. نستخدم تقنية ElevenLabs المعتمدة عالمياً. صوتك المستنسخ يُستخدم فقط في فيديوهاتك التعليمية ولا يُشارك مع أي طرف ثالث. أنت تملك حقوق صوتك الرقمي بالكامل.",
+      aFr: "Oui, absolument. Nous utilisons la technologie ElevenLabs certifi\u00e9e mondialement. Votre voix clon\u00e9e n'est utilis\u00e9e que dans vos vid\u00e9os.",
+      aEn: "Yes, absolutely. We use globally certified ElevenLabs technology. Your cloned voice is only used in your educational videos.",
+    },
+    {
+      qAr: "هل يمكنني إلغاء الاشتراك في أي وقت؟",
+      qFr: "Puis-je annuler mon abonnement \u00e0 tout moment ?",
+      qEn: "Can I cancel my subscription anytime?",
+      aAr: "نعم، يمكنك إلغاء اشتراكك في أي وقت دون أي رسوم إضافية. ستستمر في الاستفادة من الخدمات حتى نهاية فترة الاشتراك المدفوعة.",
+      aFr: "Oui, vous pouvez annuler \u00e0 tout moment sans frais suppl\u00e9mentaires. Vous continuez \u00e0 b\u00e9n\u00e9ficier des services jusqu'\u00e0 la fin de la p\u00e9riode pay\u00e9e.",
+      aEn: "Yes, you can cancel anytime without additional fees. You continue to benefit from services until the end of the paid period.",
+    },
+    {
+      qAr: "هل أحتاج خبرة تقنية لاستخدام الأدوات؟",
+      qFr: "Ai-je besoin d'exp\u00e9rience technique pour utiliser les outils ?",
+      qEn: "Do I need technical experience to use the tools?",
+      aAr: "لا أبداً! صممنا جميع الأدوات لتكون بسيطة وسهلة الاستخدام. فقط اكتب ما تريد باللغة العربية أو الفرنسية والذكاء الاصطناعي يتكفل بالباقي. كما نوفر دورات تدريبية مجانية لمساعدتك.",
+      aFr: "Pas du tout ! Tous les outils sont simples et intuitifs. \u00c9crivez ce que vous voulez en arabe ou fran\u00e7ais et l'IA s'occupe du reste.",
+      aEn: "Not at all! All tools are simple and intuitive. Just write what you want in Arabic or French and AI handles the rest.",
+    },
+  ];
+
+  return (
+    <section className="py-24 lg:py-28 bg-white" dir="rtl">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold mb-6" style={{ background: "rgba(26,35,126,0.06)", color: "#1A237E" }}>
+            <HelpCircle className="w-4 h-4" />
+            <span>{t("أسئلة شائعة", "Questions fr\u00e9quentes", "Frequently Asked Questions")}</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-5 leading-tight" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+            {t("كل ما تريد معرفته", "Tout ce que vous devez savoir", "Everything You Need to Know")}
+          </h2>
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+            {t(
+              "إجابات واضحة على أكثر الأسئلة شيوعاً من المدرسين التونسيين",
+              "R\u00e9ponses claires aux questions les plus fr\u00e9quentes des enseignants tunisiens",
+              "Clear answers to the most common questions from Tunisian teachers"
+            )}
+          </p>
+        </div>
+
+        {/* FAQ Accordion */}
+        <div className="space-y-3">
+          {FAQ_ITEMS.map((item, i) => {
+            const isOpen = openIndex === i;
+            return (
+              <div
+                key={i}
+                className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+                  isOpen ? "border-[#1A237E]/20 shadow-lg" : "border-gray-100 hover:border-gray-200 hover:shadow-sm"
+                }`}
+                style={{ background: isOpen ? "linear-gradient(135deg, rgba(26,35,126,0.02), rgba(21,101,192,0.01))" : "white" }}
+              >
+                <button
+                  onClick={() => setOpenIndex(isOpen ? null : i)}
+                  className="w-full flex items-center justify-between p-6 text-right"
+                >
+                  <span className="font-bold text-base lg:text-lg flex-1 ml-4" style={{ color: isOpen ? "#1A237E" : "#374151", fontFamily: "'Cairo', sans-serif" }}>
+                    {t(item.qAr, item.qFr, item.qEn)}
+                  </span>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${isOpen ? "rotate-180" : ""}`} style={{ background: isOpen ? "linear-gradient(135deg, #1A237E, #1565C0)" : "rgba(26,35,126,0.06)" }}>
+                    <ChevronDown className={`w-5 h-5 transition-colors ${isOpen ? "text-white" : "text-gray-400"}`} />
+                  </div>
+                </button>
+                {isOpen && (
+                  <div className="px-6 pb-6 animate-fade-in-up">
+                    <div className="h-px mb-4" style={{ background: "linear-gradient(90deg, transparent, rgba(26,35,126,0.1), transparent)" }} />
+                    <p className="text-gray-600 text-base leading-relaxed" style={{ fontFamily: "'Almarai', 'Cairo', sans-serif" }}>
+                      {t(item.aAr, item.aFr, item.aEn)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Still have questions? */}
+        <div className="text-center mt-12 p-8 rounded-2xl" style={{ background: "rgba(26,35,126,0.03)" }}>
+          <p className="text-gray-600 font-semibold mb-4" style={{ fontFamily: "'Cairo', sans-serif" }}>
+            {t("لم تجد إجابتك؟", "Vous n'avez pas trouv\u00e9 votre r\u00e9ponse ?", "Didn't find your answer?")}
+          </p>
+          <a href="https://wa.me/21652339339" target="_blank" rel="noopener noreferrer">
+            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold transition-all hover:scale-105" style={{ background: "#25D366" }}>
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              {t("تواصل معنا عبر واتساب", "Contactez-nous via WhatsApp", "Contact us via WhatsApp")}
+            </button>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ============ CRO SECTION 4: MINI PRICING ============
+function MiniPricingSection({ t }: { t: (ar: string, fr: string, en: string) => string }) {
+  const MINI_TIERS = [
+    {
+      id: "starter",
+      nameAr: "المبادر",
+      nameFr: "Starter",
+      nameEn: "Starter",
+      price: 49,
+      oldPrice: 79,
+      descAr: "للمعلم الذي يريد البدء",
+      descFr: "Pour d\u00e9buter",
+      descEn: "To get started",
+      color: "#059669",
+      gradient: "from-emerald-500 to-emerald-600",
+      icon: Rocket,
+      highlights: [
+        { ar: "EDUGPT (20 استخدام/شهر)", fr: "EDUGPT (20/mois)", en: "EDUGPT (20/month)" },
+        { ar: "منشئ الاختبارات (10/شهر)", fr: "Cr\u00e9ateur d'examens (10/mois)", en: "Exam Builder (10/month)" },
+        { ar: "الاستوديو البصري (5 صور)", fr: "Studio visuel (5 images)", en: "Visual Studio (5 images)" },
+      ],
+    },
+    {
+      id: "pro",
+      nameAr: "المحترف",
+      nameFr: "Professionnel",
+      nameEn: "Professional",
+      price: 149,
+      oldPrice: 199,
+      descAr: "للمعلم المحترف",
+      descFr: "Pour le professionnel",
+      descEn: "For the professional",
+      color: "#1A237E",
+      gradient: "from-blue-600 to-indigo-700",
+      icon: Brain,
+      popular: true,
+      highlights: [
+        { ar: "جميع أدوات AI بلا قيود يومية", fr: "Tous les outils IA sans limites", en: "All AI tools unlimited daily" },
+        { ar: "Ultimate Studio + فيديو MP4", fr: "Ultimate Studio + vid\u00e9o MP4", en: "Ultimate Studio + MP4 video" },
+        { ar: "100 استخدام EDUGPT/شهر", fr: "100 utilisations EDUGPT/mois", en: "100 EDUGPT uses/month" },
+      ],
+    },
+    {
+      id: "vip",
+      nameAr: "المعلم الرقمي VIP",
+      nameFr: "Digital Teacher VIP",
+      nameEn: "Digital Teacher VIP",
+      price: 299,
+      oldPrice: 450,
+      descAr: "الباقة الملكية الكاملة",
+      descFr: "Le pack royal complet",
+      descEn: "The complete royal package",
+      color: "#FF6D00",
+      gradient: "from-amber-500 via-orange-500 to-red-500",
+      icon: Crown,
+      highlights: [
+        { ar: "استنساخ صوتك بالذكاء الاصطناعي", fr: "Clonage vocal IA", en: "AI Voice Cloning" },
+        { ar: "استخدام غير محدود لكل شيء", fr: "Utilisation illimit\u00e9e", en: "Unlimited everything" },
+        { ar: "دعم أولوية + وصول مبكر", fr: "Support prioritaire + acc\u00e8s anticipé", en: "Priority support + early access" },
+      ],
+    },
+  ];
+
+  return (
+    <section className="py-24 lg:py-28 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%)" }} dir="rtl">
+      {/* Decorative */}
+      <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #1A237E, transparent)" }} />
+      <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #FF6D00, transparent)" }} />
+
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold mb-6" style={{ background: "rgba(255,109,0,0.08)", color: "#FF6D00", border: "1px solid rgba(255,109,0,0.12)" }}>
+            <Crown className="w-4 h-4" />
+            <span>{t("عرض خاص لفترة محدودة", "Offre sp\u00e9ciale limit\u00e9e", "Limited Time Offer")}</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-5 leading-tight" style={{ color: "#1A237E", fontFamily: "'Cairo', 'Almarai', sans-serif" }}>
+            {t("اختر باقتك وابدأ اليوم", "Choisissez votre forfait", "Choose Your Plan Today")}
+          </h2>
+          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+            {t(
+              "استثمر في مستقبلك المهني — كل باقة تدفع ثمنها من أول أسبوع استخدام",
+              "Investissez dans votre avenir — chaque forfait se rentabilise d\u00e8s la premi\u00e8re semaine",
+              "Invest in your future — every plan pays for itself from the first week"
+            )}
+          </p>
+        </div>
+
+        {/* Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+          {MINI_TIERS.map((tier, i) => {
+            const Icon = tier.icon;
+            const isPopular = tier.popular;
+            return (
+              <div
+                key={tier.id}
+                className={`relative rounded-3xl p-1 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                  isPopular ? "shadow-xl" : "shadow-lg"
+                }`}
+                style={{
+                  background: isPopular
+                    ? "linear-gradient(135deg, #1A237E, #FF6D00)"
+                    : "linear-gradient(135deg, #E8EAF6, #F3F4F6)",
+                }}
+              >
+                {/* Popular badge */}
+                {isPopular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                    <span className="inline-flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-lg" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      {t("الأكثر طلباً", "Le plus populaire", "Most Popular")}
+                    </span>
+                  </div>
+                )}
+
+                <div className="bg-white rounded-[22px] p-7 h-full flex flex-col">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${tier.gradient} shadow-md`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-lg" style={{ color: "#1A237E", fontFamily: "'Cairo', sans-serif" }}>
+                        {t(tier.nameAr, tier.nameFr, tier.nameEn)}
+                      </h3>
+                      <p className="text-gray-400 text-xs">{t(tier.descAr, tier.descFr, tier.descEn)}</p>
+                    </div>
+                  </div>
+
+                  {/* Price */}
+                  <div className="mb-5">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black" style={{ color: tier.color }}>{tier.price}</span>
+                      <span className="text-gray-400 text-sm font-semibold">TND/{t("شهر", "mois", "month")}</span>
+                    </div>
+                    <span className="text-sm text-red-400 line-through">{tier.oldPrice} TND</span>
+                    <span className="text-xs font-bold mr-2 px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.1)", color: "#059669" }}>
+                      -{Math.round(((tier.oldPrice - tier.price) / tier.oldPrice) * 100)}%
+                    </span>
+                  </div>
+
+                  {/* Highlights */}
+                  <div className="space-y-3 mb-6 flex-1">
+                    {tier.highlights.map((h, j) => (
+                      <div key={j} className="flex items-center gap-2.5">
+                        <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" style={{ color: tier.color }} />
+                        <span className="text-sm text-gray-600 font-medium">{t(h.ar, h.fr, h.en)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* CTA Button */}
+                  <Link href="/pricing">
+                    <button
+                      className={`w-full py-3.5 rounded-xl font-bold text-base transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
+                        isPopular ? "text-white" : "text-white"
+                      }`}
+                      style={{
+                        background: isPopular
+                          ? "linear-gradient(135deg, #FF6D00, #FF8F00)"
+                          : `linear-gradient(135deg, ${tier.color}, ${tier.color}CC)`,
+                        boxShadow: isPopular ? "0 6px 24px rgba(255,109,0,0.3)" : undefined,
+                      }}
+                    >
+                      {t("اشترك الآن", "S'abonner maintenant", "Subscribe Now")}
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Trust bar */}
+        <div className="flex flex-wrap justify-center items-center gap-6 mt-10 text-gray-400 text-sm">
+          <span className="flex items-center gap-2"><Shield className="w-4 h-4" />{t("دفع آمن 100%", "Paiement s\u00e9curis\u00e9 100%", "100% Secure Payment")}</span>
+          <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4" />{t("إلغاء في أي وقت", "Annulation \u00e0 tout moment", "Cancel Anytime")}</span>
+          <span className="flex items-center gap-2"><Zap className="w-4 h-4" />{t("تفعيل فوري", "Activation instantan\u00e9e", "Instant Activation")}</span>
+        </div>
+
+        {/* Full comparison link */}
+        <div className="text-center mt-6">
+          <Link href="/pricing">
+            <button className="text-sm font-semibold hover:underline transition-colors" style={{ color: "#1A237E" }}>
+              {t("عرض جدول المقارنة الكامل", "Voir le tableau comparatif complet", "View Full Comparison Table")} →
+            </button>
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Admin Console Dropdown for desktop nav
 function AdminConsoleDropdown({ language, t, location, isAdmin }: { language: AppLanguage; t: (ar: string, fr: string, en: string) => string; location: string; isAdmin: boolean }) {
   const pendingCountQuery = trpc.adminPartners.pendingCount.useQuery(undefined, { refetchInterval: 30000, enabled: isAdmin });
@@ -1057,6 +1676,18 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ===== 3 KILLER FEATURES SECTION (CRO) ===== */}
+      <KillerFeaturesSection t={t} />
+
+      {/* ===== TIME SAVINGS CALCULATOR (CRO) ===== */}
+      <TimeSavingsCalculator t={t} />
+
+      {/* ===== FAQ SECTION (CRO) ===== */}
+      <FAQSection t={t} />
+
+      {/* ===== MINI PRICING SECTION (CRO) ===== */}
+      <MiniPricingSection t={t} />
 
       {/* ===== PROGRAMS SECTION ===== */}
       <section id="programs" className="py-24 bg-white">
