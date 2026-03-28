@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles, BookOpen, ClipboardCheck, Copy, RefreshCw, Printer, Calendar, GripVertical, Upload } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
@@ -561,30 +561,113 @@ export default function EduGPTAssistantEnhanced() {
     filterTag: filterTag || undefined,
   });
 
-  const sendMessage = trpc.assistant.chat.useMutation({
-    onSuccess: async (response: { message: string }) => {
-      const newMessages = [
-        ...messages,
-        { role: "assistant" as const, content: response.message, timestamp: Date.now() },
-      ];
-      setMessages(newMessages);
+  // Streaming ref to accumulate content across chunks
+  const streamingContentRef = useRef("");
+  const [streamingContent, setStreamingContent] = useState("");
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Streaming send function using SSE
+  const sendStreamingMessage = useCallback(async (msgs: Message[], opts?: { subject?: string; level?: string; teachingLanguage?: string }) => {
+    setIsLoading(true);
+    streamingContentRef.current = "";
+    setStreamingContent("");
+
+    // Add empty assistant message placeholder
+    const placeholderMsg: Message = { role: "assistant", content: "", timestamp: Date.now() };
+    const withPlaceholder = [...msgs, placeholderMsg];
+    setMessages(withPlaceholder);
+
+    try {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      const response = await fetch("/api/assistant/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: msgs,
+          subject: opts?.subject,
+          level: opts?.level,
+          teachingLanguage: opts?.teachingLanguage,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No reader");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === "data: [DONE]") continue;
+          if (!trimmed.startsWith("data: ")) continue;
+
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+            if (data.error) {
+              toast.error(data.error);
+              continue;
+            }
+            if (data.content) {
+              streamingContentRef.current += data.content;
+              setStreamingContent(streamingContentRef.current);
+              // Update the last message in-place
+              setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last && last.role === "assistant") {
+                  updated[updated.length - 1] = { ...last, content: streamingContentRef.current };
+                }
+                return updated;
+              });
+            }
+          } catch {
+            // Skip malformed JSON
+          }
+        }
+      }
+
+      // Finalize: update the last message with complete content
+      const finalContent = streamingContentRef.current;
+      const finalMessages = [...msgs, { role: "assistant" as const, content: finalContent, timestamp: Date.now() }];
+      setMessages(finalMessages);
       setIsLoading(false);
+      setStreamingContent("");
+      streamingContentRef.current = "";
+      abortControllerRef.current = null;
 
       // Auto-save conversation
-      await saveCurrentConversation(newMessages);
+      await saveCurrentConversation(finalMessages);
 
-      // Detect serious lead interest in user messages
-      const lastUserMsg = [...messages].reverse().find(m => m.role === "user");
+      // Detect lead interest
+      const lastUserMsg = [...msgs].reverse().find(m => m.role === "user");
       if (lastUserMsg) {
         detectAndNotifyLead(lastUserMsg.content, currentConversationId ?? undefined);
       }
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
+      if (error.name === "AbortError") return;
+      console.error("Streaming error:", error);
       toast.error(t.toastConnectionError);
-      console.error(error);
       setIsLoading(false);
-    },
-  });
+      setStreamingContent("");
+      streamingContentRef.current = "";
+      abortControllerRef.current = null;
+    }
+  }, [currentConversationId, t]);
 
   const saveConversationMutation = trpc.assistant.saveConversation.useMutation({
     onSuccess: (data) => {
@@ -666,7 +749,7 @@ export default function EduGPTAssistantEnhanced() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   // Generate conversation title from first message
   const generateTitle = (firstMessage: string): string => {
@@ -922,14 +1005,12 @@ export default function EduGPTAssistantEnhanced() {
     // Remove all messages after the last user message
     const trimmedMessages = messages.slice(0, actualIndex + 1);
     setMessages(trimmedMessages);
-    setIsLoading(true);
-    sendMessage.mutate({
-      messages: trimmedMessages,
+    sendStreamingMessage(trimmedMessages, {
       subject: selectedSubject || undefined,
       level: selectedLevel || undefined,
       teachingLanguage: teachingLanguage || undefined,
     });
-  }, [messages, isLoading, selectedSubject, selectedLevel, teachingLanguage]);
+  }, [messages, isLoading, selectedSubject, selectedLevel, teachingLanguage, sendStreamingMessage]);
 
   // Send message with file analysis
   const handleSend = async () => {
@@ -1011,8 +1092,7 @@ export default function EduGPTAssistantEnhanced() {
       setInput("");
       setAttachedFiles([]);
 
-      sendMessage.mutate({
-        messages: newMessages,
+      await sendStreamingMessage(newMessages, {
         subject: selectedSubject || undefined,
         level: selectedLevel || undefined,
         teachingLanguage: teachingLanguage || undefined,
@@ -1773,7 +1853,7 @@ export default function EduGPTAssistantEnhanced() {
             );
           })}
 
-          {isLoading && (
+          {isLoading && !streamingContent && (
             <div className="flex items-end gap-2 justify-end flex-row-reverse">
               <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-blue-100 text-blue-600">
                 🤖

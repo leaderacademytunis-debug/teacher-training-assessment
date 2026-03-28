@@ -4,6 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { streamChatHandler } from "../streamChat";
 // Google Classroom integration removed - using internal batch management
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -46,6 +47,9 @@ async function startServer() {
   });
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // Streaming chat endpoint for EduGPT assistant
+  app.post("/api/assistant/stream", streamChatHandler);
 
   // tRPC API
   app.use(
