@@ -96,6 +96,7 @@ const MyDigitalVoice = lazy(() => import("@/pages/MyDigitalVoice"));
 const MyPoints = lazy(() => import("@/pages/MyPoints"));
 const AIToolsHub = lazy(() => import("@/pages/AIToolsHub"));
 const UltimateStudio = lazy(() => import("@/pages/UltimateStudio"));
+const CourseToolkit = lazy(() => import("@/pages/CourseToolkit"));
 
 function PageLoader() {
   return (
@@ -192,6 +193,7 @@ function Router() {
         <Route path="/my-points" component={MyPoints} />
         <Route path="/ai-hub" component={AIToolsHub} />
         <Route path="/ultimate-studio" component={UltimateStudio} />
+        <Route path="/course-toolkit" component={CourseToolkit} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>

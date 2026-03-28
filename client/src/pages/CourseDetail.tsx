@@ -664,6 +664,19 @@ export default function CourseDetail() {
                     </Link>
                   </div>
                 )}
+
+                {/* Course Toolkit Button */}
+                {isApproved && (
+                  <div className="mt-6">
+                    <Link href="/course-toolkit">
+                      <Button className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl py-4 text-base font-bold shadow-lg">
+                        <BookOpen className="w-5 h-5 me-2" />
+                        {isAr ? "افتح صندوق أدوات الدورة — دليل شامل لكل أداة" : "Ouvrir la boîte à outils du cours — Guide complet"}
+                        <ArrowRight className={`w-5 h-5 ms-2 ${isAr ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
 
