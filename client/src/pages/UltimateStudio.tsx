@@ -531,36 +531,60 @@ export default function UltimateStudio() {
   const handleGenerateAudio = async (sceneIdx: number) => {
     if (!scenario) return;
     const scene = scenario.scenes[sceneIdx];
-    setGeneratingAudioIdx(sceneIdx);
-    try {
-      let audioUrl: string;
-      if (voiceMode === "clone" && cloneQuery.data?.id) {
-        const result = await cloneTTSMutation.mutateAsync({
-          text: scene.spokenText,
-          voiceCloneId: cloneQuery.data.id,
-          sceneIndex: sceneIdx,
-        });
-        audioUrl = result.audioUrl;
-      } else {
-        const result = await audioMutation.mutateAsync({
-          sceneNumber: scene.sceneNumber,
-          spokenText: scene.spokenText,
-          voice: selectedVoice as any,
-        });
-        audioUrl = result.audioUrl;
-      }
-      setScenario(prev => {
-        if (!prev) return prev;
-        const updated = { ...prev, scenes: [...prev.scenes] };
-        updated.scenes[sceneIdx] = { ...updated.scenes[sceneIdx], audioUrl };
-        return updated;
-      });
-      toast.success(`${us.generateAudio} - ${us.sceneLabel} ${scene.sceneNumber}`);
-    } catch {
-      toast.error(`${us.sceneLabel} ${scene.sceneNumber} - ${us.scenarioFailed}`);
-    } finally {
-      setGeneratingAudioIdx(null);
+
+    // Validate spokenText before sending
+    if (!scene.spokenText || scene.spokenText.trim().length < 5) {
+      toast.error(`${us.sceneLabel} ${scene.sceneNumber} - ${us.audioTextTooShort}`);
+      return;
     }
+
+    setGeneratingAudioIdx(sceneIdx);
+    const maxRetries = 2;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          toast.info(`${us.sceneLabel} ${scene.sceneNumber} - ${us.audioRetrying} (${attempt}/${maxRetries})`);
+          await new Promise(r => setTimeout(r, 1500 * attempt));
+        }
+
+        let audioUrl: string;
+        if (voiceMode === "clone" && cloneQuery.data?.id) {
+          const result = await cloneTTSMutation.mutateAsync({
+            text: scene.spokenText,
+            voiceCloneId: cloneQuery.data.id,
+            sceneIndex: sceneIdx,
+          });
+          audioUrl = result.audioUrl;
+        } else {
+          const result = await audioMutation.mutateAsync({
+            sceneNumber: scene.sceneNumber,
+            spokenText: scene.spokenText,
+            voice: selectedVoice as any,
+          });
+          audioUrl = result.audioUrl;
+        }
+        setScenario(prev => {
+          if (!prev) return prev;
+          const updated = { ...prev, scenes: [...prev.scenes] };
+          updated.scenes[sceneIdx] = { ...updated.scenes[sceneIdx], audioUrl };
+          return updated;
+        });
+        if (attempt > 0) {
+          toast.success(`${us.sceneLabel} ${scene.sceneNumber} - ${us.audioRetrySuccess}`);
+        } else {
+          toast.success(`${us.generateAudio} - ${us.sceneLabel} ${scene.sceneNumber}`);
+        }
+        setGeneratingAudioIdx(null);
+        return;
+      } catch (err: any) {
+        if (attempt === maxRetries) {
+          const errorMsg = err?.message || err?.data?.message || "";
+          toast.error(`${us.sceneLabel} ${scene.sceneNumber} - ${us.audioGenerationFailed}${errorMsg ? `: ${errorMsg}` : ""}`);
+        }
+      }
+    }
+    setGeneratingAudioIdx(null);
   };
 
   // ═══ Audio Playback ═══

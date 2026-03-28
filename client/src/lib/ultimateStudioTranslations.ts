@@ -90,6 +90,10 @@ const translations = {
     regenerateAudio: "إعادة التوليد",
     generateAudio: "توليد الصوت",
     completeStep1Voice: "أكمل الخطوة 1 أولاً",
+    audioGenerationFailed: "فشل في توليد الصوت",
+    audioTextTooShort: "نص التعليق الصوتي قصير جداً (أقل من 5 أحرف)",
+    audioRetrying: "إعادة المحاولة...",
+    audioRetrySuccess: "نجحت إعادة المحاولة",
 
     // ─── Column 3: Storyboard ───
     storyboardTitle: "شاشة العرض النهائية",
@@ -300,6 +304,10 @@ const translations = {
     regenerateAudio: "Régénérer",
     generateAudio: "Générer l'audio",
     completeStep1Voice: "Complétez d'abord l'étape 1",
+    audioGenerationFailed: "Échec de la génération audio",
+    audioTextTooShort: "Le texte de narration est trop court (moins de 5 caractères)",
+    audioRetrying: "Nouvelle tentative...",
+    audioRetrySuccess: "La nouvelle tentative a réussi",
 
     // ─── Column 3: Storyboard ───
     storyboardTitle: "Écran de prévisualisation finale",
@@ -510,6 +518,10 @@ const translations = {
     regenerateAudio: "Regenerate",
     generateAudio: "Generate Audio",
     completeStep1Voice: "Complete Step 1 first",
+    audioGenerationFailed: "Audio generation failed",
+    audioTextTooShort: "Narration text is too short (less than 5 characters)",
+    audioRetrying: "Retrying...",
+    audioRetrySuccess: "Retry succeeded",
 
     // ─── Column 3: Storyboard ───
     storyboardTitle: "Final Preview Screen",

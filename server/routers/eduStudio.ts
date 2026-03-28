@@ -370,55 +370,87 @@ Respond in JSON format only:
       if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "خدمة تحويل النص إلى صوت غير مهيأة",
+          message: "\u062e\u062f\u0645\u0629 \u062a\u062d\u0648\u064a\u0644 \u0627\u0644\u0646\u0635 \u0625\u0644\u0649 \u0635\u0648\u062a \u063a\u064a\u0631 \u0645\u0647\u064a\u0623\u0629",
         });
       }
 
-      try {
-        const baseUrl = ENV.forgeApiUrl.endsWith("/")
-          ? ENV.forgeApiUrl
-          : `${ENV.forgeApiUrl}/`;
-        const fullUrl = new URL("v1/audio/speech", baseUrl).toString();
+      const baseUrl = ENV.forgeApiUrl.endsWith("/")
+        ? ENV.forgeApiUrl
+        : `${ENV.forgeApiUrl}/`;
+      const fullUrl = new URL("v1/audio/speech", baseUrl).toString();
 
-        const response = await fetch(fullUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${ENV.forgeApiKey}`,
-          },
-          body: JSON.stringify({
-            model: "tts-1",
-            input: spokenText,
-            voice: voice,
-            speed: speed,
-            response_format: "mp3",
-          }),
-        });
+      // Truncate very long text to avoid TTS API limits
+      const truncatedText = spokenText.length > 4500 ? spokenText.slice(0, 4500) + "..." : spokenText;
 
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => "");
-          throw new Error(`TTS request failed (${response.status}): ${errorText}`);
+      // Retry logic: up to 3 attempts with exponential backoff
+      const maxRetries = 2;
+      let lastError: any = null;
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          if (attempt > 0) {
+            await new Promise(r => setTimeout(r, 2000 * attempt));
+            console.log(`[TTS] Retry attempt ${attempt}/${maxRetries} for scene ${sceneNumber}`);
+          }
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+          const response = await fetch(fullUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${ENV.forgeApiKey}`,
+            },
+            body: JSON.stringify({
+              model: "tts-1",
+              input: truncatedText,
+              voice: voice,
+              speed: speed,
+              response_format: "mp3",
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => "");
+            if ((response.status === 429 || response.status >= 500) && attempt < maxRetries) {
+              lastError = new Error(`TTS error (${response.status}): ${errorText}`);
+              continue;
+            }
+            throw new Error(`TTS request failed (${response.status}): ${errorText}`);
+          }
+
+          const audioBuffer = Buffer.from(await response.arrayBuffer());
+
+          if (audioBuffer.length < 100) {
+            if (attempt < maxRetries) {
+              lastError = new Error("TTS returned empty audio");
+              continue;
+            }
+            throw new Error("TTS returned empty audio buffer");
+          }
+
+          const randomSuffix = Math.random().toString(36).substring(2, 10);
+          const fileKey = `edu-studio/audio/scene-${sceneNumber}-${Date.now()}-${randomSuffix}.mp3`;
+          const { url } = await storagePut(fileKey, audioBuffer, "audio/mpeg");
+
+          return { sceneNumber, audioUrl: url, success: true };
+        } catch (error: any) {
+          lastError = error;
+          if (error?.name === "AbortError") {
+            lastError = new Error("TTS request timed out after 60s");
+          }
+          if (attempt === maxRetries) break;
         }
-
-        // Get audio as buffer
-        const audioBuffer = Buffer.from(await response.arrayBuffer());
-
-        // Upload to S3
-        const randomSuffix = Math.random().toString(36).substring(2, 10);
-        const fileKey = `edu-studio/audio/scene-${sceneNumber}-${Date.now()}-${randomSuffix}.mp3`;
-        const { url } = await storagePut(fileKey, audioBuffer, "audio/mpeg");
-
-        return {
-          sceneNumber,
-          audioUrl: url,
-          success: true,
-        };
-      } catch (error: any) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: `فشل في توليد صوت المشهد ${sceneNumber}: ${error?.message || "خطأ غير معروف"}`,
-        });
       }
+
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `\u0641\u0634\u0644 \u0641\u064a \u062a\u0648\u0644\u064a\u062f \u0635\u0648\u062a \u0627\u0644\u0645\u0634\u0647\u062f ${sceneNumber}: ${lastError?.message || "\u062e\u0637\u0623 \u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641"}`,
+      });
     }),
 
   /**
