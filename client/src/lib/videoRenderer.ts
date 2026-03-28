@@ -2,18 +2,32 @@
  * VideoRenderer - Client-side video rendering engine using FFmpeg.wasm
  * Merges storyboard images + audio into a single branded MP4 video
  * Features: Intro card, Outro card, Smart watermark, Resolution normalization
+ * Enhanced: Per-scene progress, Quality selector (720p/1080p), Preview mode
  * All processing happens in the user's browser (zero server cost)
  */
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
+// ─── Quality Presets ───
+export type VideoQuality = '720p' | '1080p';
+
+interface QualityConfig {
+  width: number;
+  height: number;
+  videoBitrate: string;
+  audioBitrate: string;
+  label: string;
+}
+
+export const QUALITY_PRESETS: Record<VideoQuality, QualityConfig> = {
+  '720p': { width: 1280, height: 720, videoBitrate: '2000k', audioBitrate: '128k', label: 'HD 720p' },
+  '1080p': { width: 1920, height: 1080, videoBitrate: '4000k', audioBitrate: '192k', label: 'Full HD 1080p' },
+};
+
 // ─── Constants ───
-const TARGET_WIDTH = 1920;
-const TARGET_HEIGHT = 1080;
 const INTRO_DURATION = 3;
 const OUTRO_DURATION = 3;
 const BRAND_COLOR_HEX = '#F59E0B'; // amber-500
-const BRAND_BG_HEX = '#0F172A';    // slate-900
 const WATERMARK_TEXT = 'Created via Leader Academy';
 
 export interface SceneData {
@@ -26,13 +40,17 @@ export interface SceneData {
 export interface BrandingOptions {
   lessonTitle: string;
   teacherName: string;
-  logoUrl?: string;      // Optional logo image URL
+  logoUrl?: string;
 }
 
 export interface RenderProgress {
   phase: 'loading' | 'preparing' | 'rendering' | 'finalizing' | 'done' | 'error';
   percent: number;
   message: string;
+  // Enhanced per-scene tracking
+  currentScene?: number;
+  totalScenes?: number;
+  scenePhase?: 'downloading' | 'encoding' | 'complete';
 }
 
 export type ProgressCallback = (progress: RenderProgress) => void;
@@ -82,26 +100,21 @@ async function loadFFmpeg(onProgress?: ProgressCallback): Promise<FFmpeg> {
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      // Use the ESM single-threaded core (no SharedArrayBuffer needed)
       const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
       const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-
       await ffmpeg.load({ coreURL, wasmURL });
-      break; // Success - exit retry loop
+      break;
     } catch (loadError: any) {
       console.error(`[FFmpeg] Load attempt ${attempt + 1} failed:`, loadError);
-
       if (attempt < maxRetries) {
         onProgress?.({
           phase: 'loading',
           percent: 5,
           message: `إعادة المحاولة... (${attempt + 2}/${maxRetries + 1})`,
         });
-        await new Promise(r => setTimeout(r, 1500)); // Wait before retry
+        await new Promise(r => setTimeout(r, 1500));
         continue;
       }
-
-      // Final attempt failed
       if (loadError.message?.includes('SharedArrayBuffer') || loadError.message?.includes('cross-origin')) {
         throw new Error('CROSS_ORIGIN_ISOLATION');
       }
@@ -123,14 +136,12 @@ async function loadFFmpeg(onProgress?: ProgressCallback): Promise<FFmpeg> {
 
 /**
  * Fetch a remote file as Uint8Array with CORS handling
- * In cross-origin isolated context, we need to handle CORS carefully
  */
 async function fetchFileData(url: string): Promise<Uint8Array> {
   try {
     const data = await fetchFile(url);
     return new Uint8Array(data);
   } catch (fetchError) {
-    // Fallback: try fetching with no-cors mode and converting
     console.warn('[VideoRenderer] fetchFile failed, trying direct fetch:', fetchError);
     const response = await fetch(url, { mode: 'cors' });
     if (!response.ok) throw new Error(`Failed to fetch: ${url}`);
@@ -162,170 +173,131 @@ async function getAudioDuration(audioData: Uint8Array): Promise<number> {
 
 /**
  * Generate a branded card image (intro or outro) using Canvas API
- * Returns PNG data as Uint8Array
  */
 function generateCardImage(options: {
   type: 'intro' | 'outro';
   lessonTitle: string;
   teacherName: string;
+  width: number;
+  height: number;
 }): Uint8Array {
+  const { width, height } = options;
   const canvas = document.createElement('canvas');
-  canvas.width = TARGET_WIDTH;
-  canvas.height = TARGET_HEIGHT;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d')!;
 
   // Background gradient
-  const gradient = ctx.createLinearGradient(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
-  gradient.addColorStop(0, '#0F172A');   // slate-900
-  gradient.addColorStop(0.5, '#1E293B'); // slate-800
-  gradient.addColorStop(1, '#0F172A');   // slate-900
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, '#0F172A');
+  gradient.addColorStop(0.5, '#1E293B');
+  gradient.addColorStop(1, '#0F172A');
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+  ctx.fillRect(0, 0, width, height);
 
-  // Decorative elements - subtle grid pattern
+  // Decorative grid
   ctx.strokeStyle = 'rgba(245, 158, 11, 0.05)';
   ctx.lineWidth = 1;
-  for (let x = 0; x < TARGET_WIDTH; x += 60) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, TARGET_HEIGHT);
-    ctx.stroke();
+  for (let x = 0; x < width; x += 60) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
   }
-  for (let y = 0; y < TARGET_HEIGHT; y += 60) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(TARGET_WIDTH, y);
-    ctx.stroke();
+  for (let y = 0; y < height; y += 60) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
   }
 
-  // Decorative corner accents
-  const accentSize = 120;
+  // Corner accents
+  const accentSize = Math.round(120 * (width / 1920));
   ctx.strokeStyle = BRAND_COLOR_HEX;
   ctx.lineWidth = 3;
-  // Top-left
-  ctx.beginPath();
-  ctx.moveTo(40, 40 + accentSize);
-  ctx.lineTo(40, 40);
-  ctx.lineTo(40 + accentSize, 40);
-  ctx.stroke();
-  // Top-right
-  ctx.beginPath();
-  ctx.moveTo(TARGET_WIDTH - 40 - accentSize, 40);
-  ctx.lineTo(TARGET_WIDTH - 40, 40);
-  ctx.lineTo(TARGET_WIDTH - 40, 40 + accentSize);
-  ctx.stroke();
-  // Bottom-left
-  ctx.beginPath();
-  ctx.moveTo(40, TARGET_HEIGHT - 40 - accentSize);
-  ctx.lineTo(40, TARGET_HEIGHT - 40);
-  ctx.lineTo(40 + accentSize, TARGET_HEIGHT - 40);
-  ctx.stroke();
-  // Bottom-right
-  ctx.beginPath();
-  ctx.moveTo(TARGET_WIDTH - 40 - accentSize, TARGET_HEIGHT - 40);
-  ctx.lineTo(TARGET_WIDTH - 40, TARGET_HEIGHT - 40);
-  ctx.lineTo(TARGET_WIDTH - 40, TARGET_HEIGHT - 40 - accentSize);
-  ctx.stroke();
+  const m = 40;
+  ctx.beginPath(); ctx.moveTo(m, m + accentSize); ctx.lineTo(m, m); ctx.lineTo(m + accentSize, m); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(width - m - accentSize, m); ctx.lineTo(width - m, m); ctx.lineTo(width - m, m + accentSize); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(m, height - m - accentSize); ctx.lineTo(m, height - m); ctx.lineTo(m + accentSize, height - m); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(width - m - accentSize, height - m); ctx.lineTo(width - m, height - m); ctx.lineTo(width - m, height - m - accentSize); ctx.stroke();
 
-  // Central glowing circle
-  const centerX = TARGET_WIDTH / 2;
-  const centerY = TARGET_HEIGHT / 2 - 40;
+  // Central glow
+  const centerX = width / 2;
+  const centerY = height / 2 - 40;
   const glowGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 300);
   glowGradient.addColorStop(0, 'rgba(245, 158, 11, 0.12)');
   glowGradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
   ctx.fillStyle = glowGradient;
-  ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+  ctx.fillRect(0, 0, width, height);
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  if (options.type === 'intro') {
-    // ─── INTRO CARD ───
-    // Small top label
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.7)';
-    ctx.font = 'bold 28px Arial, sans-serif';
-    ctx.fillText('🎬 Leader Academy Presents', centerX, TARGET_HEIGHT * 0.25);
+  const scale = width / 1920; // Scale factor for different resolutions
 
-    // Horizontal divider line
+  if (options.type === 'intro') {
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.7)';
+    ctx.font = `bold ${Math.round(28 * scale)}px Arial, sans-serif`;
+    ctx.fillText('🎬 Leader Academy Presents', centerX, height * 0.25);
+
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(centerX - 300, TARGET_HEIGHT * 0.32);
-    ctx.lineTo(centerX + 300, TARGET_HEIGHT * 0.32);
+    ctx.moveTo(centerX - 300 * scale, height * 0.32);
+    ctx.lineTo(centerX + 300 * scale, height * 0.32);
     ctx.stroke();
 
-    // Lesson title (main text)
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 64px Arial, sans-serif';
-    // Word wrap for long titles
-    const titleLines = wrapText(ctx, options.lessonTitle, TARGET_WIDTH - 200, 64);
-    const titleStartY = TARGET_HEIGHT * 0.45 - ((titleLines.length - 1) * 40);
+    ctx.font = `bold ${Math.round(64 * scale)}px Arial, sans-serif`;
+    const titleLines = wrapText(ctx, options.lessonTitle, width - 200, Math.round(64 * scale));
+    const titleStartY = height * 0.45 - ((titleLines.length - 1) * 40 * scale);
     titleLines.forEach((line, i) => {
-      ctx.fillText(line, centerX, titleStartY + i * 80);
+      ctx.fillText(line, centerX, titleStartY + i * 80 * scale);
     });
 
-    // Divider
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(centerX - 200, TARGET_HEIGHT * 0.62);
-    ctx.lineTo(centerX + 200, TARGET_HEIGHT * 0.62);
+    ctx.moveTo(centerX - 200 * scale, height * 0.62);
+    ctx.lineTo(centerX + 200 * scale, height * 0.62);
     ctx.stroke();
 
-    // Teacher name
     ctx.fillStyle = BRAND_COLOR_HEX;
-    ctx.font = 'bold 36px Arial, sans-serif';
-    ctx.fillText(`إعداد الأستاذ: ${options.teacherName}`, centerX, TARGET_HEIGHT * 0.72);
+    ctx.font = `bold ${Math.round(36 * scale)}px Arial, sans-serif`;
+    ctx.fillText(`إعداد الأستاذ: ${options.teacherName}`, centerX, height * 0.72);
 
-    // Bottom branding
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.font = '24px Arial, sans-serif';
-    ctx.fillText('leaderacademy.school', centerX, TARGET_HEIGHT * 0.88);
-
+    ctx.font = `${Math.round(24 * scale)}px Arial, sans-serif`;
+    ctx.fillText('leaderacademy.school', centerX, height * 0.88);
   } else {
-    // ─── OUTRO CARD ───
-    // Academy logo text
     ctx.fillStyle = BRAND_COLOR_HEX;
-    ctx.font = 'bold 72px Arial, sans-serif';
-    ctx.fillText('Leader Academy', centerX, TARGET_HEIGHT * 0.30);
+    ctx.font = `bold ${Math.round(72 * scale)}px Arial, sans-serif`;
+    ctx.fillText('Leader Academy', centerX, height * 0.30);
 
-    // Tagline
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.font = '32px Arial, sans-serif';
-    ctx.fillText('نحو تعليم رقمي متميز', centerX, TARGET_HEIGHT * 0.40);
+    ctx.font = `${Math.round(32 * scale)}px Arial, sans-serif`;
+    ctx.fillText('نحو تعليم رقمي متميز', centerX, height * 0.40);
 
-    // Divider
     ctx.strokeStyle = BRAND_COLOR_HEX;
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(centerX - 150, TARGET_HEIGHT * 0.47);
-    ctx.lineTo(centerX + 150, TARGET_HEIGHT * 0.47);
+    ctx.moveTo(centerX - 150 * scale, height * 0.47);
+    ctx.lineTo(centerX + 150 * scale, height * 0.47);
     ctx.stroke();
 
-    // Main motivational text
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 40px Arial, sans-serif';
-    const outroLines = wrapText(ctx, 'صُنع هذا الدرس السحري باستخدام الذكاء الاصطناعي', TARGET_WIDTH - 200, 40);
+    ctx.font = `bold ${Math.round(40 * scale)}px Arial, sans-serif`;
+    const outroLines = wrapText(ctx, 'صُنع هذا الدرس السحري باستخدام الذكاء الاصطناعي', width - 200, Math.round(40 * scale));
     outroLines.forEach((line, i) => {
-      ctx.fillText(line, centerX, TARGET_HEIGHT * 0.57 + i * 55);
+      ctx.fillText(line, centerX, height * 0.57 + i * 55 * scale);
     });
 
-    // Sparkle emoji decoration
-    ctx.font = '48px Arial, sans-serif';
-    ctx.fillText('✨ 🤖 ✨', centerX, TARGET_HEIGHT * 0.72);
+    ctx.font = `${Math.round(48 * scale)}px Arial, sans-serif`;
+    ctx.fillText('✨ 🤖 ✨', centerX, height * 0.72);
 
-    // Website URL
     ctx.fillStyle = BRAND_COLOR_HEX;
-    ctx.font = 'bold 36px Arial, sans-serif';
-    ctx.fillText('leaderacademy.school', centerX, TARGET_HEIGHT * 0.82);
+    ctx.font = `bold ${Math.round(36 * scale)}px Arial, sans-serif`;
+    ctx.fillText('leaderacademy.school', centerX, height * 0.82);
 
-    // Bottom credit
     ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.font = '22px Arial, sans-serif';
-    ctx.fillText('Powered by AI • Made for Tunisian Teachers', centerX, TARGET_HEIGHT * 0.92);
+    ctx.font = `${Math.round(22 * scale)}px Arial, sans-serif`;
+    ctx.fillText('Powered by AI • Made for Tunisian Teachers', centerX, height * 0.92);
   }
 
-  // Convert canvas to PNG data
   const dataUrl = canvas.toDataURL('image/png');
   const binaryStr = atob(dataUrl.split(',')[1]);
   const bytes = new Uint8Array(binaryStr.length);
@@ -355,7 +327,6 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number,
   }
   if (currentLine) lines.push(currentLine);
 
-  // If text is too long, reduce and try again (max 4 lines)
   if (lines.length > 4) {
     return lines.slice(0, 4).map((l, i) => i === 3 ? l.substring(0, 40) + '...' : l);
   }
@@ -365,21 +336,21 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number,
 
 /**
  * Build the FFmpeg filter for watermark text overlay
- * Uses drawtext filter for a persistent semi-transparent watermark
  */
 function buildWatermarkFilter(): string {
-  // Escape special characters for FFmpeg drawtext
   const escapedText = WATERMARK_TEXT.replace(/'/g, "'\\''").replace(/:/g, '\\:');
   return `drawtext=text='${escapedText}':fontsize=22:fontcolor=white@0.25:x=w-tw-30:y=h-th-20:font=Arial`;
 }
 
 /**
  * Main render function: takes scenes + branding and produces a branded MP4 blob
+ * Now supports quality selection and enhanced per-scene progress
  */
 export async function renderVideo(
   scenes: SceneData[],
   onProgress?: ProgressCallback,
-  branding?: BrandingOptions
+  branding?: BrandingOptions,
+  quality: VideoQuality = '1080p'
 ): Promise<Blob> {
   if (!isWasmSupported()) {
     throw new Error('WASM_NOT_SUPPORTED');
@@ -389,18 +360,18 @@ export async function renderVideo(
     throw new Error('NO_SCENES');
   }
 
+  const qConfig = QUALITY_PRESETS[quality];
+  const TARGET_WIDTH = qConfig.width;
+  const TARGET_HEIGHT = qConfig.height;
+
   const ffmpeg = await loadFFmpeg(onProgress);
   const hasBranding = !!branding;
+  const totalScenes = scenes.length;
 
-  // Total steps: intro + scenes * 3 (fetch img, fetch audio, render) + outro + concat + cleanup
-  const totalSteps = (hasBranding ? 2 : 0) + scenes.length * 3 + 2;
-  let currentStep = 0;
-
-  const updateProgress = (phase: RenderProgress['phase'], message: string) => {
-    currentStep++;
-    const percent = Math.min(15 + Math.round((currentStep / totalSteps) * 80), 95);
-    onProgress?.({ phase, percent, message });
-  };
+  // Progress calculation:
+  // Loading: 0-15%, Preparing (intro/outro): 15-25%, Scenes: 25-85%, Concat+Finalize: 85-100%
+  const sceneProgressRange = 60; // 25% to 85%
+  const perSceneRange = sceneProgressRange / totalScenes;
 
   try {
     // ═══ Phase 1: Generate Intro & Outro Cards ═══
@@ -409,28 +380,28 @@ export async function renderVideo(
         phase: 'preparing',
         percent: 16,
         message: 'جاري إنشاء شاشة البداية...',
+        totalScenes,
       });
 
-      // Generate intro card
       const introImage = generateCardImage({
         type: 'intro',
         lessonTitle: branding!.lessonTitle,
         teacherName: branding!.teacherName,
+        width: TARGET_WIDTH,
+        height: TARGET_HEIGHT,
       });
       await ffmpeg.writeFile('intro_card.png', introImage);
 
-      // Generate silent audio for intro (3 seconds)
       await ffmpeg.exec([
         '-f', 'lavfi',
         '-i', `anullsrc=r=44100:cl=stereo`,
         '-t', String(INTRO_DURATION),
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', qConfig.audioBitrate,
         '-y',
         'intro_silence.aac',
       ]);
 
-      // Create intro video clip
       await ffmpeg.exec([
         '-loop', '1',
         '-i', 'intro_card.png',
@@ -438,7 +409,7 @@ export async function renderVideo(
         '-c:v', 'libx264',
         '-tune', 'stillimage',
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', qConfig.audioBitrate,
         '-pix_fmt', 'yuv420p',
         '-vf', `scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=0F172A,fade=t=in:st=0:d=0.8,fade=t=out:st=${INTRO_DURATION - 0.5}:d=0.5`,
         '-t', String(INTRO_DURATION),
@@ -447,23 +418,22 @@ export async function renderVideo(
         'clip_intro.mp4',
       ]);
 
-      updateProgress('preparing', 'تم إنشاء شاشة البداية');
-
-      // Generate outro card
       onProgress?.({
         phase: 'preparing',
         percent: 20,
         message: 'جاري إنشاء شاشة النهاية...',
+        totalScenes,
       });
 
       const outroImage = generateCardImage({
         type: 'outro',
         lessonTitle: branding!.lessonTitle,
         teacherName: branding!.teacherName,
+        width: TARGET_WIDTH,
+        height: TARGET_HEIGHT,
       });
       await ffmpeg.writeFile('outro_card.png', outroImage);
 
-      // Create outro video clip
       await ffmpeg.exec([
         '-loop', '1',
         '-i', 'outro_card.png',
@@ -471,7 +441,7 @@ export async function renderVideo(
         '-c:v', 'libx264',
         '-tune', 'stillimage',
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', qConfig.audioBitrate,
         '-pix_fmt', 'yuv420p',
         '-vf', `scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=0F172A,fade=t=in:st=0:d=0.5,fade=t=out:st=${OUTRO_DURATION - 0.5}:d=0.5`,
         '-t', String(OUTRO_DURATION),
@@ -480,57 +450,66 @@ export async function renderVideo(
         'clip_outro.mp4',
       ]);
 
-      updateProgress('preparing', 'تم إنشاء شاشة النهاية');
+      onProgress?.({
+        phase: 'preparing',
+        percent: 25,
+        message: 'تم إنشاء شاشات البداية والنهاية',
+        totalScenes,
+      });
     }
 
-    // ═══ Phase 2: Prepare Scene Assets ═══
-    onProgress?.({
-      phase: 'preparing',
-      percent: 25,
-      message: 'جاري تحضير ملفات المشاهد...',
-    });
-
+    // ═══ Phase 2: Process Each Scene (Download + Encode) ═══
     const sceneDurations: number[] = [];
+    const watermarkFilter = hasBranding ? `,${buildWatermarkFilter()}` : '';
 
     for (let i = 0; i < scenes.length; i++) {
       const scene = scenes[i];
       const sceneIdx = i + 1;
+      const sceneBasePercent = 25 + (i * perSceneRange);
 
-      // Fetch image
-      updateProgress('preparing', `جاري تحميل صورة المشهد ${sceneIdx}/${scenes.length}...`);
+      // Sub-step 1: Download image (33% of scene range)
+      onProgress?.({
+        phase: 'rendering',
+        percent: Math.round(sceneBasePercent),
+        message: `المشهد ${sceneIdx}/${totalScenes}: تحميل الصورة...`,
+        currentScene: sceneIdx,
+        totalScenes,
+        scenePhase: 'downloading',
+      });
+
       const imageData = await fetchFileData(scene.imageUrl);
       await ffmpeg.writeFile(`scene_${sceneIdx}.jpg`, imageData);
 
-      // Fetch audio
-      updateProgress('preparing', `جاري تحميل صوت المشهد ${sceneIdx}/${scenes.length}...`);
+      // Sub-step 2: Download audio (66% of scene range)
+      onProgress?.({
+        phase: 'rendering',
+        percent: Math.round(sceneBasePercent + perSceneRange * 0.33),
+        message: `المشهد ${sceneIdx}/${totalScenes}: تحميل الصوت...`,
+        currentScene: sceneIdx,
+        totalScenes,
+        scenePhase: 'downloading',
+      });
+
       const audioData = await fetchFileData(scene.audioUrl);
       await ffmpeg.writeFile(`scene_${sceneIdx}.mp3`, audioData);
 
-      // Get audio duration
       const duration = scene.duration || await getAudioDuration(audioData);
       sceneDurations.push(duration);
-    }
 
-    // ═══ Phase 3: Render Each Scene with Normalization + Watermark ═══
-    onProgress?.({
-      phase: 'rendering',
-      percent: 45,
-      message: 'جاري دمج المشاهد...',
-    });
-
-    const watermarkFilter = hasBranding ? `,${buildWatermarkFilter()}` : '';
-
-    for (let i = 0; i < scenes.length; i++) {
-      const sceneIdx = i + 1;
-      const duration = sceneDurations[i];
-
-      updateProgress('rendering', `جاري إنشاء فيديو المشهد ${sceneIdx}/${scenes.length}...`);
+      // Sub-step 3: Encode scene video (100% of scene range)
+      onProgress?.({
+        phase: 'rendering',
+        percent: Math.round(sceneBasePercent + perSceneRange * 0.66),
+        message: `المشهد ${sceneIdx}/${totalScenes}: دمج الصورة والصوت...`,
+        currentScene: sceneIdx,
+        totalScenes,
+        scenePhase: 'encoding',
+      });
 
       const fadeInDuration = Math.min(0.5, duration * 0.1);
       const fadeOutStart = Math.max(0, duration - 0.5);
       const fadeOutDuration = Math.min(0.5, duration * 0.1);
 
-      // Scale to 1920x1080 (pad with black if aspect ratio differs) + fade + watermark
       const videoFilter = [
         `scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease`,
         `pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=0F172A`,
@@ -545,7 +524,7 @@ export async function renderVideo(
         '-c:v', 'libx264',
         '-tune', 'stillimage',
         '-c:a', 'aac',
-        '-b:a', '192k',
+        '-b:a', qConfig.audioBitrate,
         '-pix_fmt', 'yuv420p',
         '-vf', videoFilter,
         '-t', String(Math.ceil(duration)),
@@ -553,13 +532,24 @@ export async function renderVideo(
         '-y',
         `clip_${sceneIdx}.mp4`,
       ]);
+
+      // Scene complete
+      onProgress?.({
+        phase: 'rendering',
+        percent: Math.round(sceneBasePercent + perSceneRange),
+        message: `المشهد ${sceneIdx}/${totalScenes}: تم ✓`,
+        currentScene: sceneIdx,
+        totalScenes,
+        scenePhase: 'complete',
+      });
     }
 
-    // ═══ Phase 4: Concatenate All Clips (intro + scenes + outro) ═══
+    // ═══ Phase 3: Concatenate All Clips ═══
     onProgress?.({
       phase: 'finalizing',
-      percent: 85,
+      percent: 88,
       message: 'جاري تجميع الفيديو النهائي...',
+      totalScenes,
     });
 
     let concatContent = '';
@@ -583,11 +573,12 @@ export async function renderVideo(
       'final_output.mp4',
     ]);
 
-    // ═══ Phase 5: Read Output & Cleanup ═══
+    // ═══ Phase 4: Read Output & Cleanup ═══
     onProgress?.({
       phase: 'finalizing',
       percent: 95,
       message: 'جاري إنهاء الفيديو...',
+      totalScenes,
     });
 
     const outputData = await ffmpeg.readFile('final_output.mp4');
@@ -610,6 +601,7 @@ export async function renderVideo(
       phase: 'done',
       percent: 100,
       message: 'تم إنشاء الفيديو بنجاح!',
+      totalScenes,
     });
 
     return blob;

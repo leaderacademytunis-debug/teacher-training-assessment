@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import * as pdfjsLib from "pdfjs-dist";
-import { renderVideo, downloadBlob, isWasmSupported, type RenderProgress, type SceneData as VideoSceneData, type BrandingOptions } from "@/lib/videoRenderer";
+import { renderVideo, downloadBlob, isWasmSupported, type RenderProgress, type SceneData as VideoSceneData, type BrandingOptions, type VideoQuality, QUALITY_PRESETS } from "@/lib/videoRenderer";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs`;
 
@@ -589,6 +589,11 @@ export default function UltimateStudio() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<RenderProgress | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [showExportSettings, setShowExportSettings] = useState(false);
+  const [videoQuality, setVideoQuality] = useState<VideoQuality>('1080p');
+  const [videoPreviewBlob, setVideoPreviewBlob] = useState<Blob | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
 
   // Check if all scenes have both image and audio (ready for video export)
   const canExportVideo = useMemo(() => {
@@ -596,22 +601,38 @@ export default function UltimateStudio() {
     return scenario.scenes.every(s => s.imageUrl && s.audioUrl);
   }, [scenario]);
 
-  // ═══ Export Video (FFmpeg.wasm in browser) ═══
-  const handleExportVideo = async () => {
-    if (!scenario || !canExportVideo) return;
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+    };
+  }, [videoPreviewUrl]);
 
-    // Check WASM support
+  // Open export settings dialog instead of directly exporting
+  const handleExportVideoClick = () => {
+    if (!scenario || !canExportVideo) return;
     if (!isWasmSupported()) {
       toast.error(us.wasmNotSupported);
       return;
     }
+    setShowExportSettings(true);
+  };
 
-    // Note: We use single-threaded FFmpeg.wasm (ESM core) which does NOT require
-    // SharedArrayBuffer or crossOriginIsolated. No reload needed.
+  // ═══ Export Video (FFmpeg.wasm in browser) ═══
+  const handleExportVideo = async () => {
+    if (!scenario || !canExportVideo) return;
 
+    setShowExportSettings(false);
     setIsExporting(true);
     setExportError(null);
     setExportProgress({ phase: 'loading', percent: 0, message: us.videoExportPreparing });
+
+    // Cleanup previous preview
+    if (videoPreviewUrl) {
+      URL.revokeObjectURL(videoPreviewUrl);
+      setVideoPreviewUrl(null);
+    }
+    setVideoPreviewBlob(null);
 
     try {
       const videoScenes: VideoSceneData[] = scenario.scenes.map(s => ({
@@ -621,7 +642,6 @@ export default function UltimateStudio() {
         duration: s.duration,
       }));
 
-      // Build branding options from current scenario and user
       const brandingOpts: BrandingOptions = {
         lessonTitle: scenario.title || us.studioTitle,
         teacherName: user?.name || us.greeting,
@@ -629,12 +649,14 @@ export default function UltimateStudio() {
 
       const blob = await renderVideo(videoScenes, (progress) => {
         setExportProgress(progress);
-      }, brandingOpts);
+      }, brandingOpts, videoQuality);
 
-      // Auto-download
-      const filename = `Leader-${scenario.title || 'Lesson'}-Video.mp4`;
-      downloadBlob(blob, filename);
-      toast.success(us.videoExportSuccess);
+      // Show preview instead of auto-downloading
+      const previewUrl = URL.createObjectURL(blob);
+      setVideoPreviewBlob(blob);
+      setVideoPreviewUrl(previewUrl);
+      setShowVideoPreview(true);
+      toast.success(us.videoPreviewReady);
     } catch (err: any) {
       console.error('[VideoExport]', err);
       const errMsg = err.message || '';
@@ -643,7 +665,6 @@ export default function UltimateStudio() {
       } else if (errMsg === 'NO_SCENES') {
         setExportError(us.completeStep1First);
       } else if (errMsg === 'CROSS_ORIGIN_ISOLATION') {
-        // Single-threaded mode should work without isolation, but if it still fails:
         setExportError(us.ffmpegLoadFailed + ' - ' + (us.videoTryChrome || 'Please try using Chrome on desktop.'));
       } else if (errMsg.startsWith('FFMPEG_LOAD_FAILED')) {
         setExportError(us.ffmpegLoadFailed + ' - ' + (us.videoTryChrome || 'Please try using Chrome on desktop.'));
@@ -655,6 +676,26 @@ export default function UltimateStudio() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  // Download from preview
+  const handleDownloadFromPreview = () => {
+    if (!videoPreviewBlob || !scenario) return;
+    const filename = `Leader-${scenario.title || 'Lesson'}-Video-${videoQuality}.mp4`;
+    downloadBlob(videoPreviewBlob, filename);
+    toast.success(us.videoExportSuccess);
+  };
+
+  // Close preview and cleanup
+  const handleClosePreview = () => {
+    setShowVideoPreview(false);
+    // Keep blob in memory for potential re-download
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   // ═══ Pipeline Step Config ═══
@@ -777,7 +818,7 @@ export default function UltimateStudio() {
                   ? "bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/20 animate-pulse hover:animate-none"
                   : "bg-white/10 text-white/30 cursor-not-allowed"
                 }`}
-                onClick={handleExportVideo}
+                onClick={handleExportVideoClick}
                 disabled={!canExportVideo || isExporting}
                 title={!canExportVideo ? us.exportVideoDisabledTooltip : us.exportVideoTooltip}
               >
@@ -1469,7 +1510,7 @@ export default function UltimateStudio() {
                   <Button
                     size="sm"
                     className="h-7 text-[10px] sm:text-[11px] bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/20"
-                    onClick={handleExportVideo}
+                    onClick={handleExportVideoClick}
                     disabled={isExporting}
                   >
                     <Clapperboard className="w-3.5 h-3.5 sm:me-1" /> <span className="hidden sm:inline">{us.exportMP4}</span>
@@ -1610,7 +1651,67 @@ export default function UltimateStudio() {
         </div>
       </div>
 
-      {/* ═══ Video Export Overlay ═══ */}
+      {/* ═══ Export Settings Dialog ═══ */}
+      <Dialog open={showExportSettings} onOpenChange={setShowExportSettings}>
+        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border-white/10 text-white max-w-sm" dir={isRTL ? "rtl" : "ltr"}>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Clapperboard className="w-5 h-5 text-amber-400" />
+              {us.videoExportSettings}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Quality Selector */}
+            <div>
+              <label className="text-sm font-bold text-white/80 mb-2 block">{us.videoQualityLabel}</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['720p', '1080p'] as VideoQuality[]).map((q) => (
+                  <button
+                    key={q}
+                    className={`p-3 rounded-xl border-2 transition-all text-start ${
+                      videoQuality === q
+                        ? 'border-amber-500 bg-amber-500/10'
+                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                    }`}
+                    onClick={() => setVideoQuality(q)}
+                  >
+                    <div className="text-sm font-bold text-white">{q === '720p' ? us.videoQuality720 : us.videoQuality1080}</div>
+                    <div className="text-[10px] text-white/40 mt-1">{QUALITY_PRESETS[q].width}×{QUALITY_PRESETS[q].height}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-white/30 mt-2">{us.videoQualityNote}</p>
+            </div>
+
+            {/* Scene count info */}
+            {scenario && (
+              <div className="flex items-center gap-2 text-sm text-white/60 bg-white/5 rounded-lg p-3">
+                <Film className="w-4 h-4 text-amber-400" />
+                <span>{scenario.scenes.length} {us.scenarioScenes}</span>
+                <span className="text-white/20">|</span>
+                <span>{QUALITY_PRESETS[videoQuality].label}</span>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="border-white/20 text-white"
+              onClick={() => setShowExportSettings(false)}
+            >
+              {us.videoExportClose}
+            </Button>
+            <Button
+              className="bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold"
+              onClick={handleExportVideo}
+            >
+              <Clapperboard className="w-4 h-4 me-1" /> {us.videoStartExport}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ Video Export Progress Overlay ═══ */}
       {(isExporting || exportError) && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center" dir={isRTL ? "rtl" : "ltr"}>
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
@@ -1639,7 +1740,7 @@ export default function UltimateStudio() {
                 </div>
               </div>
             ) : (
-              /* Progress State */
+              /* Enhanced Progress State with Per-Scene Tracking */
               <div className="text-center">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center mx-auto mb-6 relative">
                   <Clapperboard className="w-10 h-10 text-amber-400 animate-pulse" />
@@ -1648,21 +1749,64 @@ export default function UltimateStudio() {
                   </div>
                 </div>
                 <h3 className="text-lg font-bold text-white mb-1">{us.videoExportProgress}</h3>
-                <p className="text-sm text-amber-400/80 mb-6">{exportProgress?.message || us.videoExportPreparing}</p>
+                <p className="text-sm text-amber-400/80 mb-4">{exportProgress?.message || us.videoExportPreparing}</p>
 
-                {/* Progress Bar */}
-                <div className="relative w-full h-4 bg-white/5 rounded-full overflow-hidden mb-3 border border-white/10">
+                {/* Main Progress Bar */}
+                <div className="relative w-full h-5 bg-white/5 rounded-full overflow-hidden mb-3 border border-white/10">
                   <div
-                    className="absolute inset-y-0 end-0 bg-gradient-to-l from-amber-500 to-orange-500 rounded-full transition-all duration-500 ease-out"
+                    className="absolute inset-y-0 start-0 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${exportProgress?.percent || 0}%` }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-white drop-shadow">{exportProgress?.percent || 0}%</span>
+                    <span className="text-xs font-bold text-white drop-shadow">{exportProgress?.percent || 0}%</span>
                   </div>
                 </div>
 
+                {/* Per-Scene Progress Indicators */}
+                {exportProgress?.totalScenes && exportProgress.totalScenes > 0 && (
+                  <div className="mt-4 space-y-1.5">
+                    {Array.from({ length: exportProgress.totalScenes }, (_, i) => {
+                      const sceneNum = i + 1;
+                      const currentScene = exportProgress.currentScene || 0;
+                      const isActive = sceneNum === currentScene;
+                      const isComplete = sceneNum < currentScene || (sceneNum === currentScene && exportProgress.scenePhase === 'complete');
+                      const isPending = sceneNum > currentScene;
+
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-[11px]">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold transition-all ${
+                            isComplete ? 'bg-green-500 text-white' :
+                            isActive ? 'bg-amber-500 text-white animate-pulse' :
+                            'bg-white/10 text-white/30'
+                          }`}>
+                            {isComplete ? '✓' : sceneNum}
+                          </div>
+                          <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-500 ${
+                              isComplete ? 'w-full bg-green-500' :
+                              isActive && exportProgress.scenePhase === 'downloading' ? 'w-1/3 bg-amber-500' :
+                              isActive && exportProgress.scenePhase === 'encoding' ? 'w-2/3 bg-amber-500' :
+                              'w-0'
+                            }`} />
+                          </div>
+                          <span className={`min-w-[60px] text-end text-[10px] ${
+                            isComplete ? 'text-green-400' :
+                            isActive ? 'text-amber-400' :
+                            'text-white/20'
+                          }`}>
+                            {isComplete ? us.videoSceneComplete :
+                             isActive && exportProgress.scenePhase === 'downloading' ? us.videoSceneDownloading :
+                             isActive && exportProgress.scenePhase === 'encoding' ? us.videoSceneEncoding :
+                             `${us.sceneLabel} ${sceneNum}`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Phase indicator */}
-                <div className="flex items-center justify-center gap-4 text-[10px] text-white/40">
+                <div className="flex items-center justify-center gap-3 text-[10px] text-white/40 mt-4">
                   <span className={exportProgress?.phase === 'loading' ? 'text-amber-400 font-bold' : ''}>{us.videoExportPhaseLoading}</span>
                   <span>→</span>
                   <span className={exportProgress?.phase === 'preparing' ? 'text-amber-400 font-bold' : ''}>{us.videoExportPhasePreparing}</span>
@@ -1672,9 +1816,86 @@ export default function UltimateStudio() {
                   <span className={exportProgress?.phase === 'finalizing' ? 'text-amber-400 font-bold' : ''}>{us.videoExportPhaseFinalizing}</span>
                 </div>
 
-                <p className="text-[10px] text-white/20 mt-6">{us.videoExportLocalNote}</p>
+                <p className="text-[10px] text-white/20 mt-4">{us.videoExportLocalNote}</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Video Preview Modal ═══ */}
+      {showVideoPreview && videoPreviewUrl && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center" dir={isRTL ? "rtl" : "ltr"}>
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Eye className="w-5 h-5 text-amber-400" />
+                {us.videoPreviewTitle}
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white/40 hover:text-white"
+                onClick={handleClosePreview}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Video Player */}
+            <div className="rounded-xl overflow-hidden bg-black mb-4">
+              <video
+                src={videoPreviewUrl}
+                controls
+                autoPlay
+                className="w-full max-h-[50vh] object-contain"
+              />
+            </div>
+
+            {/* Video Info */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-white/5 rounded-lg p-3 text-center">
+                <p className="text-[10px] text-white/40">{us.videoPreviewFileSize}</p>
+                <p className="text-sm font-bold text-white">{videoPreviewBlob ? formatFileSize(videoPreviewBlob.size) : '--'}</p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3 text-center">
+                <p className="text-[10px] text-white/40">{us.videoPreviewDuration}</p>
+                <p className="text-sm font-bold text-white">
+                  {scenario ? `~${scenario.scenes.reduce((sum, s) => sum + (s.duration || 5), 6)}s` : '--'}
+                </p>
+              </div>
+              <div className="bg-white/5 rounded-lg p-3 text-center">
+                <p className="text-[10px] text-white/40">{us.videoPreviewQuality}</p>
+                <p className="text-sm font-bold text-amber-400">{QUALITY_PRESETS[videoQuality].label}</p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                className="flex-1 bg-gradient-to-l from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold h-12"
+                onClick={handleDownloadFromPreview}
+              >
+                <Download className="w-5 h-5 me-2" /> {us.videoPreviewDownload}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
+                onClick={() => {
+                  handleClosePreview();
+                  setShowExportSettings(true);
+                }}
+              >
+                <RefreshCw className="w-4 h-4 me-1" /> {us.videoPreviewRegenerate}
+              </Button>
+              <Button
+                variant="ghost"
+                className="text-white/40 hover:text-white"
+                onClick={handleClosePreview}
+              >
+                {us.videoPreviewClose}
+              </Button>
+            </div>
           </div>
         </div>
       )}
