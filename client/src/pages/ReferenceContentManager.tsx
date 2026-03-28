@@ -12,8 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ArrowRight, Plus, Pencil, Trash2, Database, BookOpen, Download, Upload, ChevronLeft, ChevronRight, Search, Filter, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import useI18n from "@/i18n";
+
 
 export default function ReferenceContentManager() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading } = useAuth();
   const trpcUtils = trpc.useUtils();
 
@@ -196,12 +199,12 @@ export default function ReferenceContentManager() {
             <div className="flex items-center gap-3">
               <Link href="/repartition-journaliere">
                 <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
-                  <ArrowRight className="h-4 w-4 ml-1" />
+                  <ArrowRight className="h-4 w-4 ms-1" />
                   العودة للتوزيع اليومي
                 </Button>
               </Link>
             </div>
-            <div className="text-left">
+            <div className="text-start">
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 <Database className="h-7 w-7" />
                 قاعدة المحتوى المرجعي
@@ -244,9 +247,9 @@ export default function ReferenceContentManager() {
                 variant={(stats?.totalEntries || 0) > 0 ? "outline" : "default"}
               >
                 {seedMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  <Loader2 className="h-4 w-4 animate-spin ms-2" />
                 ) : (
-                  <Download className="h-4 w-4 ml-2" />
+                  <Download className="h-4 w-4 ms-2" />
                 )}
                 {(stats?.totalEntries || 0) > 0 ? "البيانات موجودة" : "تحميل البيانات الأولية"}
               </Button>
@@ -310,7 +313,7 @@ export default function ReferenceContentManager() {
                 اضغط على "تحميل البيانات الأولية" لإضافة المحتوى الرسمي للوحدات 1-4
               </p>
               <Button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}>
-                {seedMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Download className="h-4 w-4 ml-2" />}
+                {seedMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : <Download className="h-4 w-4 ms-2" />}
                 تحميل البيانات الأولية
               </Button>
             </CardContent>
@@ -329,7 +332,7 @@ export default function ReferenceContentManager() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="text-left">
+                    <div className="text-start">
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                           Unité {item.uniteNumber}
@@ -408,7 +411,7 @@ export default function ReferenceContentManager() {
       }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right">
+            <DialogTitle className="text-end">
               {editingItem ? "تعديل المحتوى المرجعي" : "إضافة محتوى مرجعي جديد"}
             </DialogTitle>
           </DialogHeader>
@@ -465,7 +468,7 @@ export default function ReferenceContentManager() {
 
             {/* Communication orale */}
             <div className="border rounded-lg p-4 bg-amber-50/50">
-              <h3 className="font-bold text-amber-700 mb-3 text-right" dir="ltr">Communication orale (35 mn)</h3>
+              <h3 className="font-bold text-amber-700 mb-3 text-end" dir="ltr">Communication orale (35 mn)</h3>
               <div className="space-y-3">
                 <div>
                   <Label>Objet (contenu)</Label>
@@ -484,7 +487,7 @@ export default function ReferenceContentManager() {
 
             {/* Lecture */}
             <div className="border rounded-lg p-4 bg-emerald-50/50">
-              <h3 className="font-bold text-emerald-700 mb-3 text-right" dir="ltr">Lecture (45 mn)</h3>
+              <h3 className="font-bold text-emerald-700 mb-3 text-end" dir="ltr">Lecture (45 mn)</h3>
               <div className="space-y-3">
                 <div>
                   <Label>Objet (contenu)</Label>
@@ -553,7 +556,7 @@ export default function ReferenceContentManager() {
               إلغاء
             </Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
-              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin ms-2" />}
               {editingItem ? "حفظ التعديلات" : "إضافة"}
             </Button>
           </DialogFooter>
@@ -570,7 +573,7 @@ export default function ReferenceContentManager() {
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>إلغاء</Button>
             <Button variant="destructive" onClick={() => deletingId && deleteMutation.mutate({ id: deletingId })} disabled={deleteMutation.isPending}>
-              {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ms-2" />}
               حذف
             </Button>
           </DialogFooter>

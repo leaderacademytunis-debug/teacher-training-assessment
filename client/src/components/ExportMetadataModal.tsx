@@ -135,12 +135,12 @@ export function ExportMetadataModal({
         dir="rtl"
         style={{ fontFamily: "'Cairo', 'Amiri', sans-serif" }}
       >
-        <DialogHeader className="text-right">
-          <DialogTitle className="flex items-center gap-2 text-right text-lg">
+        <DialogHeader className="text-end">
+          <DialogTitle className="flex items-center gap-2 text-end text-lg">
             <FormatIcon className={`h-5 w-5 ${formatColor}`} />
             تصدير المذكرة البيداغوجية — {formatLabel}
           </DialogTitle>
-          <DialogDescription className="text-right text-sm text-muted-foreground">
+          <DialogDescription className="text-end text-sm text-muted-foreground">
             أدخل بيانات المعلم والمدرسة لتضمينها في ترويسة الوثيقة المُصدَّرة.
           </DialogDescription>
         </DialogHeader>
@@ -239,7 +239,7 @@ export function ExportMetadataModal({
               placeholder="مثال: المدرسة الابتدائية الحبيب بورقيبة"
               value={schoolName}
               onChange={(e) => setSchoolName(e.target.value)}
-              className="text-right"
+              className="text-end"
               dir="rtl"
             />
           </div>
@@ -255,7 +255,7 @@ export function ExportMetadataModal({
               placeholder="مثال: أ. محمد بن علي"
               value={teacherName}
               onChange={(e) => setTeacherName(e.target.value)}
-              className="text-right"
+              className="text-end"
               dir="rtl"
             />
           </div>
@@ -271,14 +271,14 @@ export function ExportMetadataModal({
               type="date"
               value={exportDate}
               onChange={(e) => setExportDate(e.target.value)}
-              className="text-right"
+              className="text-end"
               dir="ltr"
             />
           </div>
         </div>
 
         {/* Note: fields are optional */}
-        <p className="text-xs text-muted-foreground text-right">
+        <p className="text-xs text-muted-foreground text-end">
           * جميع الحقول اختيارية — يمكنك التصدير مباشرة دون ملء البيانات.
         </p>
 

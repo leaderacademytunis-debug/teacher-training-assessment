@@ -28,6 +28,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
+import useI18n from "@/i18n";
+
 
 const APP_STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   sent: { label: "مُرسل", variant: "secondary" },
@@ -39,6 +41,7 @@ const APP_STATUS_MAP: Record<string, { label: string; variant: "default" | "seco
 };
 
 export default function SchoolDashboard() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
@@ -142,12 +145,12 @@ export default function SchoolDashboard() {
                 <TabsTrigger value="jobs" className="gap-2">
                   <Briefcase className="w-4 h-4" />
                   الوظائف
-                  {jobs.length > 0 && <Badge variant="secondary" className="text-xs mr-1">{jobs.length}</Badge>}
+                  {jobs.length > 0 && <Badge variant="secondary" className="text-xs me-1">{jobs.length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="applications" className="gap-2">
                   <Users className="w-4 h-4" />
                   الطلبات
-                  {applications.length > 0 && <Badge variant="secondary" className="text-xs mr-1">{applications.length}</Badge>}
+                  {applications.length > 0 && <Badge variant="secondary" className="text-xs me-1">{applications.length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="talent" className="gap-2">
                   <Search className="w-4 h-4" />
@@ -482,14 +485,14 @@ function FunnelStep({ label, count, total, color }: {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div className="flex items-center gap-3">
-      <div className="w-24 text-sm text-gray-600 text-left">{label}</div>
+      <div className="w-24 text-sm text-gray-600 text-start">{label}</div>
       <div className="flex-1">
         <div className="h-6 bg-gray-100 rounded-full overflow-hidden relative">
           <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
           <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">{count}</span>
         </div>
       </div>
-      <span className="text-xs text-gray-400 w-10 text-left">{pct}%</span>
+      <span className="text-xs text-gray-400 w-10 text-start">{pct}%</span>
     </div>
   );
 }

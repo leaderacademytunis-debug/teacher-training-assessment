@@ -6,8 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, Search, Award, Calendar, User, BookOpen, Trophy } from "lucide-react";
 import { Link } from "wouter";
+import useI18n from "@/i18n";
+
 
 export default function VerifyCertificate() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [certificateNumber, setCertificateNumber] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -63,7 +66,7 @@ export default function VerifyCertificate() {
                     placeholder="أدخل رقم الشهادة (مثال: CERT-2024-001)"
                     value={certificateNumber}
                     onChange={(e) => setCertificateNumber(e.target.value)}
-                    className="text-lg h-14 text-right"
+                    className="text-lg h-14 text-end"
                     dir="ltr"
                   />
                   <Button 

@@ -66,7 +66,7 @@ export function PromptEngineeringGuide({ open, onOpenChange }: PromptEngineering
             </CardHeader>
             <CardContent className="space-y-4">
               {/* مثال 1 */}
-              <div className="border-r-4 border-green-500 pr-4 bg-green-50 p-3 rounded">
+              <div className="border-e-4 border-green-500 pe-4 bg-green-50 p-3 rounded">
                 <p className="font-semibold text-green-800 mb-2">✅ مثال جيد:</p>
                 <p className="text-sm mb-2">
                   "أنشئ مذكرة بيداغوجية لدرس الرياضيات للسنة الثالثة ابتدائي حول موضوع 'الأعداد العشرية' 
@@ -79,7 +79,7 @@ export function PromptEngineeringGuide({ open, onOpenChange }: PromptEngineering
               </div>
 
               {/* مثال 2 */}
-              <div className="border-r-4 border-red-500 pr-4 bg-red-50 p-3 rounded">
+              <div className="border-e-4 border-red-500 pe-4 bg-red-50 p-3 rounded">
                 <p className="font-semibold text-red-800 mb-2">❌ مثال ضعيف:</p>
                 <p className="text-sm mb-2">
                   "أريد مذكرة عن الرياضيات"
@@ -90,7 +90,7 @@ export function PromptEngineeringGuide({ open, onOpenChange }: PromptEngineering
               </div>
 
               {/* مثال 3 */}
-              <div className="border-r-4 border-green-500 pr-4 bg-green-50 p-3 rounded">
+              <div className="border-e-4 border-green-500 pe-4 bg-green-50 p-3 rounded">
                 <p className="font-semibold text-green-800 mb-2">✅ مثال ممتاز للأهداف:</p>
                 <p className="text-sm">
                   "الأهداف التعليمية: أن يتمكن المتعلم من التعرف على الأعداد العشرية (معرفي)، 

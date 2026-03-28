@@ -11,8 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Upload, FileText, Copy, CheckCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import useI18n from "@/i18n";
+
 
 export default function ImportExam() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [courseId, setCourseId] = useState<string>("");
   const [textInput, setTextInput] = useState("");
   const [fileContent, setFileContent] = useState("");
@@ -133,11 +136,11 @@ export default function ImportExam() {
       <Tabs defaultValue="paste" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="paste">
-            <Copy className="ml-2 h-4 w-4" />
+            <Copy className="ms-2 h-4 w-4" />
             نسخ ولصق
           </TabsTrigger>
           <TabsTrigger value="file">
-            <Upload className="ml-2 h-4 w-4" />
+            <Upload className="ms-2 h-4 w-4" />
             رفع ملف
           </TabsTrigger>
         </TabsList>
@@ -183,7 +186,7 @@ export default function ImportExam() {
                   <>جاري الاستيراد...</>
                 ) : (
                   <>
-                    <CheckCircle className="ml-2 h-4 w-4" />
+                    <CheckCircle className="ms-2 h-4 w-4" />
                     استيراد الأسئلة
                   </>
                 )}
@@ -218,7 +221,7 @@ export default function ImportExam() {
                 />
                 {fileName && (
                   <p className="text-sm text-muted-foreground mt-2">
-                    <FileText className="inline ml-1 h-4 w-4" />
+                    <FileText className="inline ms-1 h-4 w-4" />
                     {fileName}
                   </p>
                 )}
@@ -233,7 +236,7 @@ export default function ImportExam() {
                   <>جاري الاستيراد...</>
                 ) : (
                   <>
-                    <CheckCircle className="ml-2 h-4 w-4" />
+                    <CheckCircle className="ms-2 h-4 w-4" />
                     استيراد من الملف
                   </>
                 )}

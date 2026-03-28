@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, CheckCircle2, XCircle, Users, LogIn, ArrowRight, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 export default function JoinBatch() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const params = useParams<{ code: string }>();
   const [, navigate] = useLocation();
@@ -137,7 +140,7 @@ export default function JoinBatch() {
               </p>
               <a href={getLoginUrl(`/join/${inviteCode}`)}>
                 <Button className="w-full">
-                  <LogIn className="h-4 w-4 ml-2" />
+                  <LogIn className="h-4 w-4 ms-2" />
                   تسجيل الدخول للانضمام
                 </Button>
               </a>
@@ -171,7 +174,7 @@ export default function JoinBatch() {
                 الرئيسية
               </Button>
               <Button onClick={() => navigate("/my-assignments")}>
-                <ArrowRight className="h-4 w-4 ml-1" />
+                <ArrowRight className="h-4 w-4 ms-1" />
                 واجباتي
               </Button>
             </div>

@@ -15,6 +15,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import useI18n from "@/i18n";
+
 
 function NoteCircle({ note }: { note: number }) {
   const pct = (note / 20) * 100;
@@ -65,6 +67,7 @@ function appreciationColor(app: string) {
 }
 
 export default function SharedEvaluationView() {
+  const { t, lang, isRTL, dir } = useI18n();
   const params = useParams<{ token: string }>();
   const token = params.token;
 
@@ -143,7 +146,7 @@ export default function SharedEvaluationView() {
           <div className="bg-gradient-to-r from-violet-600 to-purple-700 p-6 text-white">
             <div className="flex flex-col sm:flex-row items-center gap-6">
               <NoteCircle note={noteGlobale} />
-              <div className="text-center sm:text-right">
+              <div className="text-center sm:text-end">
                 <p className="text-violet-200 text-sm mb-1">النتيجة الإجمالية</p>
                 <h2 className="text-3xl font-bold mb-2">{noteGlobale} / 20</h2>
                 <Badge className={`text-sm px-3 py-1 border ${appreciationColor(data.appreciation)}`}>

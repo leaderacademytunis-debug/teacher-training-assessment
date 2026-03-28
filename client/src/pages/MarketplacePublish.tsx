@@ -20,6 +20,8 @@ import {
   FileText, Tag, CheckCircle, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 const CONTENT_TYPES = [
   { value: "lesson_plan", label: "جذاذة درس" },
@@ -50,6 +52,7 @@ const DIFFICULTIES = [
 ];
 
 export default function MarketplacePublish() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
 

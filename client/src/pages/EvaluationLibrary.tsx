@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
+import useI18n from "@/i18n";
+
 
 interface EvalItem {
   id: number;
@@ -48,6 +50,7 @@ const EVAL_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function EvaluationLibrary() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
@@ -167,7 +170,7 @@ export default function EvaluationLibrary() {
             <BookMarked className="w-5 h-5 text-amber-600" />
             <h1 className="text-lg font-bold text-gray-800">مكتبة التقييمات</h1>
           </div>
-          <Badge variant="outline" className="mr-auto border-amber-300 text-amber-700 text-xs">
+          <Badge variant="outline" className="me-auto border-amber-300 text-amber-700 text-xs">
             {filtered.length} ورقة تقييم
           </Badge>
           <Button
@@ -175,7 +178,7 @@ export default function EvaluationLibrary() {
             onClick={() => navigate("/annual-plan")}
             className="bg-amber-600 hover:bg-amber-700 text-white text-xs"
           >
-            <Plus className="w-3.5 h-3.5 ml-1" />
+            <Plus className="w-3.5 h-3.5 ms-1" />
             توليد تقييم جديد
           </Button>
         </div>
@@ -189,12 +192,12 @@ export default function EvaluationLibrary() {
               {/* بحث */}
               <div className="flex-1 min-w-48">
                 <div className="relative">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     placeholder="بحث بالعنوان أو المادة أو المدرس..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="pr-9 text-sm"
+                    className="pe-9 text-sm"
                   />
                 </div>
               </div>
@@ -257,7 +260,7 @@ export default function EvaluationLibrary() {
                   }}
                   className="text-gray-500 hover:text-gray-700 text-xs"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 ml-1" />
+                  <RotateCcw className="w-3.5 h-3.5 ms-1" />
                   إعادة تعيين
                 </Button>
               )}
@@ -269,7 +272,7 @@ export default function EvaluationLibrary() {
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-            <span className="mr-3 text-gray-500">جاري تحميل المكتبة...</span>
+            <span className="me-3 text-gray-500">جاري تحميل المكتبة...</span>
           </div>
         ) : error ? (
           <Card className="border-red-200 bg-red-50">
@@ -294,7 +297,7 @@ export default function EvaluationLibrary() {
                   onClick={() => navigate("/annual-plan")}
                   className="bg-amber-600 hover:bg-amber-700 text-white"
                 >
-                  <Plus className="w-4 h-4 ml-2" />
+                  <Plus className="w-4 h-4 ms-2" />
                   توليد أول تقييم
                 </Button>
               )}
@@ -381,7 +384,7 @@ export default function EvaluationLibrary() {
                         onClick={() => handleView(item)}
                         className="border-amber-300 text-amber-700 hover:bg-amber-50 h-8 px-3 text-xs"
                       >
-                        <Eye className="w-3.5 h-3.5 ml-1" />
+                        <Eye className="w-3.5 h-3.5 ms-1" />
                         عرض
                       </Button>
 
@@ -396,7 +399,7 @@ export default function EvaluationLibrary() {
                         {exportWordMutation.isPending ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <Download className="w-3.5 h-3.5 ml-1" />
+                          <Download className="w-3.5 h-3.5 ms-1" />
                         )}
                         Word
                       </Button>
@@ -418,7 +421,7 @@ export default function EvaluationLibrary() {
                         className="border-orange-300 text-orange-700 hover:bg-orange-50 h-8 px-3 text-xs"
                         title="نشر في السوق"
                       >
-                        <Store className="w-3.5 h-3.5 ml-1" />
+                        <Store className="w-3.5 h-3.5 ms-1" />
                         نشر
                       </Button>
 
@@ -450,7 +453,7 @@ export default function EvaluationLibrary() {
                               className="bg-red-600 hover:bg-red-700 text-white"
                             >
                               {deleteMutation.isPending && deletingId === item.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                                <Loader2 className="w-4 h-4 animate-spin ms-2" />
                               ) : null}
                               حذف نهائياً
                             </AlertDialogAction>

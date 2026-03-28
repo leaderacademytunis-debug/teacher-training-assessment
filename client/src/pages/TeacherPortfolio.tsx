@@ -19,6 +19,8 @@ import {
   Inbox, ShieldCheck, Sparkles, Link2, Users,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import useI18n from "@/i18n";
+
 
 // ===== RADAR CHART COMPONENT (SVG) =====
 function RadarChart({ data, size = 280 }: { data: Record<string, number>; size?: number }) {
@@ -123,6 +125,7 @@ function StatCard({ icon: Icon, label, value, color, bgColor }: {
 
 // ===== MAIN COMPONENT =====
 export default function TeacherPortfolio() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -256,7 +259,7 @@ export default function TeacherPortfolio() {
           <div className="flex items-center gap-2 mb-6">
             <Link href="/">
               <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
-                <ChevronLeft className="w-4 h-4 ml-1" />
+                <ChevronLeft className="w-4 h-4 ms-1" />
                 الرئيسية
               </Button>
             </Link>
@@ -295,14 +298,14 @@ export default function TeacherPortfolio() {
               <Button variant="outline" size="sm"
                 className="bg-white/10 border-white/30 text-white hover:bg-white/20"
                 onClick={() => setIsEditing(!isEditing)}>
-                <Edit3 className="w-4 h-4 ml-1" />
+                <Edit3 className="w-4 h-4 ms-1" />
                 تعديل
               </Button>
               <Button variant="outline" size="sm"
                 className="bg-white/10 border-white/30 text-white hover:bg-white/20"
                 onClick={() => exportPDF.mutate()}
                 disabled={exportPDF.isPending}>
-                {exportPDF.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : <Download className="w-4 h-4 ml-1" />}
+                {exportPDF.isPending ? <Loader2 className="w-4 h-4 animate-spin ms-1" /> : <Download className="w-4 h-4 ms-1" />}
                 تصدير PDF
               </Button>
             </div>
@@ -354,7 +357,7 @@ export default function TeacherPortfolio() {
                 <Button variant="outline" onClick={() => setIsEditing(false)}>إلغاء</Button>
                 <Button onClick={handleSaveProfile} disabled={updateProfile.isPending}
                   className="bg-blue-600 hover:bg-blue-700">
-                  {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-1" /> : null}
+                  {updateProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin ms-1" /> : null}
                   حفظ التعديلات
                 </Button>
               </div>
@@ -416,8 +419,8 @@ export default function TeacherPortfolio() {
                 <Target className="w-5 h-5 text-blue-600" />
                 مخطط رادار المهارات
                 {skillRadarQuery.data && (
-                  <Badge variant="outline" className="mr-auto text-xs">
-                    <Zap className="w-3 h-3 ml-1" />
+                  <Badge variant="outline" className="me-auto text-xs">
+                    <Zap className="w-3 h-3 ms-1" />
                     {skillRadarQuery.data.level} • {skillRadarQuery.data.totalScore} نقطة
                   </Badge>
                 )}
@@ -434,7 +437,7 @@ export default function TeacherPortfolio() {
                     {Object.entries(skillRadarQuery.data.documentTypeBreakdown).map(([type, count]) => (
                       <div key={type} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-xs">
                         <span className="font-medium text-gray-700">{type}</span>
-                        <Badge variant="secondary" className="mr-auto text-xs">{count as number}</Badge>
+                        <Badge variant="secondary" className="me-auto text-xs">{count as number}</Badge>
                       </div>
                     ))}
                   </div>
@@ -501,7 +504,7 @@ export default function TeacherPortfolio() {
                   <p className="text-sm">لا توجد شهادات بعد</p>
                   <Link href="/my-courses">
                     <Button variant="link" size="sm" className="mt-2">
-                      استكشف الدورات <ArrowRight className="w-3 h-3 mr-1" />
+                      استكشف الدورات <ArrowRight className="w-3 h-3 me-1" />
                     </Button>
                   </Link>
                 </div>
@@ -523,7 +526,7 @@ export default function TeacherPortfolio() {
               </CardTitle>
               <Select value={contribFilter} onValueChange={(v) => setContribFilter(v as typeof contribFilter)}>
                 <SelectTrigger className="w-40 h-8 text-xs">
-                  <Filter className="w-3 h-3 ml-1" />
+                  <Filter className="w-3 h-3 ms-1" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

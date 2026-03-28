@@ -213,7 +213,7 @@ export function PreviewSuggestionDialog({
               <Input
                 value={formData.schoolYear}
                 onChange={(e) => setFormData({ ...formData, schoolYear: e.target.value })}
-                className="text-right"
+                className="text-end"
               />
             </div>
             <div>
@@ -221,7 +221,7 @@ export function PreviewSuggestionDialog({
               <Input
                 value={educationLevelMap[formData.educationLevel]}
                 disabled
-                className="text-right bg-gray-50"
+                className="text-end bg-gray-50"
               />
             </div>
             <div>
@@ -229,7 +229,7 @@ export function PreviewSuggestionDialog({
               <Input
                 value={formData.grade}
                 onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
-                className="text-right"
+                className="text-end"
               />
             </div>
             <div>
@@ -237,7 +237,7 @@ export function PreviewSuggestionDialog({
               <Input
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="text-right"
+                className="text-end"
               />
             </div>
           </div>
@@ -247,7 +247,7 @@ export function PreviewSuggestionDialog({
             <Input
               value={formData.lessonTitle}
               onChange={(e) => setFormData({ ...formData, lessonTitle: e.target.value })}
-              className="text-right"
+              className="text-end"
             />
           </div>
 
@@ -257,7 +257,7 @@ export function PreviewSuggestionDialog({
               type="number"
               value={formData.duration || ""}
               onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || undefined })}
-              className="text-right"
+              className="text-end"
             />
           </div>
 
@@ -267,7 +267,7 @@ export function PreviewSuggestionDialog({
             <Textarea
               value={formData.lessonObjectives || ""}
               onChange={(e) => setFormData({ ...formData, lessonObjectives: e.target.value })}
-              className="min-h-[100px] text-right"
+              className="min-h-[100px] text-end"
             />
           </div>
 
@@ -276,7 +276,7 @@ export function PreviewSuggestionDialog({
             <Textarea
               value={formData.materials || ""}
               onChange={(e) => setFormData({ ...formData, materials: e.target.value })}
-              className="min-h-[80px] text-right"
+              className="min-h-[80px] text-end"
             />
           </div>
 
@@ -285,7 +285,7 @@ export function PreviewSuggestionDialog({
             <Textarea
               value={formData.introduction || ""}
               onChange={(e) => setFormData({ ...formData, introduction: e.target.value })}
-              className="min-h-[100px] text-right"
+              className="min-h-[100px] text-end"
             />
           </div>
 
@@ -294,7 +294,7 @@ export function PreviewSuggestionDialog({
             <Textarea
               value={formData.mainActivitiesText || ""}
               onChange={(e) => setFormData({ ...formData, mainActivitiesText: e.target.value })}
-              className="min-h-[120px] text-right"
+              className="min-h-[120px] text-end"
             />
           </div>
 
@@ -303,7 +303,7 @@ export function PreviewSuggestionDialog({
             <Textarea
               value={formData.conclusion || ""}
               onChange={(e) => setFormData({ ...formData, conclusion: e.target.value })}
-              className="min-h-[100px] text-right"
+              className="min-h-[100px] text-end"
             />
           </div>
 
@@ -312,7 +312,7 @@ export function PreviewSuggestionDialog({
             <Textarea
               value={formData.evaluation || ""}
               onChange={(e) => setFormData({ ...formData, evaluation: e.target.value })}
-              className="min-h-[100px] text-right"
+              className="min-h-[100px] text-end"
             />
           </div>
         </div>
@@ -345,7 +345,7 @@ export function PreviewSuggestionDialog({
             placeholder="ملاحظات إضافية (اختياري)..."
             value={ratingComment}
             onChange={(e) => setRatingComment(e.target.value)}
-            className="mt-3 text-right"
+            className="mt-3 text-end"
             rows={2}
           />
         </div>

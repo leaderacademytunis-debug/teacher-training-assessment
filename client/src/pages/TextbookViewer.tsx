@@ -13,11 +13,14 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import * as pdfjsLib from "pdfjs-dist";
+import useI18n from "@/i18n";
+
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs`;
 
 export default function TextbookViewer() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, navigate] = useLocation();
 
   // Zustand global state
@@ -257,7 +260,7 @@ export default function TextbookViewer() {
       {/* Main Content */}
       <div className="flex h-[calc(100vh-64px)]">
         {/* Left Panel - Workspace (40%) */}
-        <div className={`${isFullscreen ? "hidden" : "w-[40%]"} flex flex-col border-l border-slate-200 bg-white`}>
+        <div className={`${isFullscreen ? "hidden" : "w-[40%]"} flex flex-col border-s border-slate-200 bg-white`}>
           {/* Workspace Header */}
           <div className="p-3 border-b border-slate-200 bg-slate-50">
             <div className="flex items-center justify-between">
@@ -339,7 +342,7 @@ export default function TextbookViewer() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => navigate("/repartition-journaliere?from=library")}
-                  className="flex items-center gap-2 p-2.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:border-blue-300 transition-all group text-right"
+                  className="flex items-center gap-2 p-2.5 rounded-xl border border-blue-200 bg-blue-50/50 hover:bg-blue-100 hover:border-blue-300 transition-all group text-end"
                 >
                   <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <CalendarDays className="w-4 h-4 text-white" />
@@ -352,7 +355,7 @@ export default function TextbookViewer() {
 
                 <button
                   onClick={() => navigate("/edu-studio?from=library")}
-                  className="flex items-center gap-2 p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 hover:bg-purple-100 hover:border-purple-300 transition-all group text-right"
+                  className="flex items-center gap-2 p-2.5 rounded-xl border border-purple-200 bg-purple-50/50 hover:bg-purple-100 hover:border-purple-300 transition-all group text-end"
                 >
                   <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <Clapperboard className="w-4 h-4 text-white" />
@@ -365,7 +368,7 @@ export default function TextbookViewer() {
 
                 <button
                   onClick={() => navigate("/exam-builder?from=library")}
-                  className="flex items-center gap-2 p-2.5 rounded-xl border border-green-200 bg-green-50/50 hover:bg-green-100 hover:border-green-300 transition-all group text-right"
+                  className="flex items-center gap-2 p-2.5 rounded-xl border border-green-200 bg-green-50/50 hover:bg-green-100 hover:border-green-300 transition-all group text-end"
                 >
                   <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <HelpCircle className="w-4 h-4 text-white" />
@@ -378,7 +381,7 @@ export default function TextbookViewer() {
 
                 <button
                   onClick={handleArchiveSave}
-                  className="flex items-center gap-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-100 hover:border-amber-300 transition-all group text-right"
+                  className="flex items-center gap-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-100 hover:border-amber-300 transition-all group text-end"
                 >
                   <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <Archive className="w-4 h-4 text-white" />
@@ -469,7 +472,7 @@ export default function TextbookViewer() {
                 <canvas ref={canvasRef} className="block" />
                 <canvas
                   ref={overlayRef}
-                  className="absolute top-0 left-0 w-full h-full"
+                  className="absolute top-0 start-0 w-full h-full"
                   style={{ cursor: isSnipping ? "crosshair" : "default" }}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}

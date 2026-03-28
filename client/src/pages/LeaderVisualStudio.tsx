@@ -228,19 +228,19 @@ export default function LeaderVisualStudio() {
           <div className="lg:col-span-2 space-y-4">
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 sm:p-5">
-                <label className={`block text-sm font-bold text-gray-700 mb-2 ${isRTL ? "text-right" : "text-left"}`}>
+                <label className={`block text-sm font-bold text-gray-700 mb-2 ${isRTL ? "text-end" : "text-start"}`}>
                   {t("صف الصورة التي تريدها لدرسك", "Décrivez l'image que vous voulez pour votre cours", "Describe the image you want for your lesson")}
                 </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder={t("مثال: رسم توضيحي لأجزاء النبتة مع الجذور والساق والأوراق والزهرة...", "Ex: Illustration des parties d'une plante avec racines, tige, feuilles et fleur...", "Ex: Illustration of plant parts with roots, stem, leaves, and flower...")}
-                  className={`w-full border rounded-xl p-3 text-sm min-h-[100px] resize-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 ${isRTL ? "text-right" : "text-left"}`}
+                  className={`w-full border rounded-xl p-3 text-sm min-h-[100px] resize-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 ${isRTL ? "text-end" : "text-start"}`}
                   dir={isRTL ? "rtl" : "ltr"}
                 />
 
                 <div className="mt-3">
-                  <p className={`text-xs text-gray-500 mb-2 ${isRTL ? "text-right" : "text-left"}`}>{t("اقتراحات سريعة:", "Suggestions rapides:", "Quick prompts:")}</p>
+                  <p className={`text-xs text-gray-500 mb-2 ${isRTL ? "text-end" : "text-start"}`}>{t("اقتراحات سريعة:", "Suggestions rapides:", "Quick prompts:")}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {quickPrompts.map((qp, i) => (
                       <button
@@ -258,14 +258,14 @@ export default function LeaderVisualStudio() {
 
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 sm:p-5">
-                <p className={`text-sm font-bold text-gray-700 mb-3 ${isRTL ? "text-right" : "text-left"}`}>{t("السياق (اختياري)", "Contexte (optionnel)", "Context (optional)")}</p>
+                <p className={`text-sm font-bold text-gray-700 mb-3 ${isRTL ? "text-end" : "text-start"}`}>{t("السياق (اختياري)", "Contexte (optionnel)", "Context (optional)")}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-gray-500">{tt.subject}</label>
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className={`w-full border rounded-lg p-2 text-sm mt-1 ${isRTL ? "text-right" : "text-left"}`}
+                      className={`w-full border rounded-lg p-2 text-sm mt-1 ${isRTL ? "text-end" : "text-start"}`}
                     >
                       <option value="">{t("اختر المادة", "Choisir la matière", "Select subject")}</option>
                       <option value="عربية">{t("عربية", "Arabe", "Arabic")}</option>
@@ -283,7 +283,7 @@ export default function LeaderVisualStudio() {
                     <select
                       value={level}
                       onChange={(e) => setLevel(e.target.value)}
-                      className={`w-full border rounded-lg p-2 text-sm mt-1 ${isRTL ? "text-right" : "text-left"}`}
+                      className={`w-full border rounded-lg p-2 text-sm mt-1 ${isRTL ? "text-end" : "text-start"}`}
                     >
                       <option value="">{t("اختر المستوى", "Choisir le niveau", "Select level")}</option>
                       <option value="السنة الأولى">{t("السنة الأولى", "1ère année", "1st Year")}</option>
@@ -300,7 +300,7 @@ export default function LeaderVisualStudio() {
 
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 sm:p-5">
-                <p className={`text-sm font-bold text-gray-700 mb-3 ${isRTL ? "text-right" : "text-left"}`}>{t("نمط الصورة", "Style d'image", "Image Style")}</p>
+                <p className={`text-sm font-bold text-gray-700 mb-3 ${isRTL ? "text-end" : "text-start"}`}>{t("نمط الصورة", "Style d'image", "Image Style")}</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {STYLES.map((style) => {
                     const Icon = style.icon;
@@ -316,7 +316,7 @@ export default function LeaderVisualStudio() {
                         }`}
                       >
                         {style.default && (
-                          <span className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full`}>
+                          <span className={`absolute -top-2 ${isRTL ? '-start-2' : '-end-2'} text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full`}>
                             {t("مُوصى", "Recommandé", "Recommended")}
                           </span>
                         )}
@@ -340,12 +340,12 @@ export default function LeaderVisualStudio() {
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'} animate-spin`} />
+                  <Loader2 className={`w-5 h-5 ${isRTL ? 'ms-2' : 'me-2'} animate-spin`} />
                   {t("جارٍ التوليد... (10-20 ثانية)", "Génération... (10-20s)", "Generating... (10-20s)")}
                 </>
               ) : (
                 <>
-                  <Sparkles className={`w-5 h-5 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  <Sparkles className={`w-5 h-5 ${isRTL ? 'ms-2' : 'me-2'}`} />
                   {t("توليد الصورة", "Générer l'image", "Generate Image")}
                 </>
               )}
@@ -355,7 +355,7 @@ export default function LeaderVisualStudio() {
               variant="outline"
               className="h-12 px-4 rounded-xl border-teal-300 text-teal-700 hover:bg-teal-50"
             >
-              <Library className={`w-5 h-5 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+              <Library className={`w-5 h-5 ${isRTL ? 'ms-1' : 'me-1'}`} />
               {tt.library}
             </Button>
             </div>
@@ -386,7 +386,7 @@ export default function LeaderVisualStudio() {
                       onClick={() => handleDownload(generatedImage.url)}
                       className="text-xs h-7"
                     >
-                      <Download className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      <Download className={`w-3 h-3 ${isRTL ? 'ms-1' : 'me-1'}`} />
                       {tt.download}
                     </Button>
                     <Button
@@ -397,9 +397,9 @@ export default function LeaderVisualStudio() {
                       className="text-xs h-7"
                     >
                       {isRemovingBg ? (
-                        <Loader2 className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'} animate-spin`} />
+                        <Loader2 className={`w-3 h-3 ${isRTL ? 'ms-1' : 'me-1'} animate-spin`} />
                       ) : (
-                        <Eraser className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                        <Eraser className={`w-3 h-3 ${isRTL ? 'ms-1' : 'me-1'}`} />
                       )}
                       {t("إزالة الخلفية", "Enlever fond", "Remove BG")}
                     </Button>
@@ -409,7 +409,7 @@ export default function LeaderVisualStudio() {
                       onClick={() => setShowOverlayEditor(true)}
                       className="text-xs h-7"
                     >
-                      <Type className={`w-3 h-3 ${isRTL ? 'ml-1' : 'mr-1'}`} />
+                      <Type className={`w-3 h-3 ${isRTL ? 'ms-1' : 'me-1'}`} />
                       {t("تسميات عربية", "Légendes", "Labels")}
                     </Button>
                     <Button

@@ -518,12 +518,12 @@ export default function Marketplace() {
           {/* Search */}
           <div className="mt-6 flex gap-3">
             <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-300" />
+              <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-5 w-5 text-amber-300" />
               <Input
                 placeholder="ابحث عن جذاذات، اختبارات، تقييمات..."
                 value={searchQuery}
                 onChange={e => { setSearchQuery(e.target.value); setPage(0); }}
-                className="pr-10 bg-white/10 border-white/20 text-white placeholder:text-amber-200 h-12 text-lg"
+                className="pe-10 bg-white/10 border-white/20 text-white placeholder:text-amber-200 h-12 text-lg"
               />
             </div>
             <Link href="/marketplace/search">
@@ -642,7 +642,7 @@ export default function Marketplace() {
                   }`}
                 >
                   {/* Rank badge */}
-                  <div className={`absolute -top-2.5 -right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                  <div className={`absolute -top-2.5 -end-2.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                     idx === 0 ? 'bg-amber-500 text-white' :
                     idx === 1 ? 'bg-gray-400 text-white' :
                     idx === 2 ? 'bg-orange-400 text-white' : 'bg-gray-200 text-gray-600'

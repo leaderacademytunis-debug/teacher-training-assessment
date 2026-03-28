@@ -15,6 +15,8 @@ import {
   Briefcase, TrendingUp, ShieldCheck, Star, Send, CheckCircle2,
   Sparkles, Globe, Mail, Phone, Building2, UserCheck, Lock, Download,
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 // Radar Chart Component
 function RadarChart({ data, size = 280 }: { data: Record<string, number>; size?: number }) {
@@ -213,6 +215,7 @@ const itemTypeLabels: Record<string, string> = {
 };
 
 export default function TeacherShowcase() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, params] = useRoute("/showcase/:slug");
   const slug = params?.slug || "";
 
@@ -284,7 +287,7 @@ export default function TeacherShowcase() {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center shadow-lg">
                       <ShieldCheck className="w-5 h-5 text-white" />
                     </div>
-                    <div className="absolute -bottom-8 right-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    <div className="absolute -bottom-8 end-0 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       شهادة Leader Academy معتمدة
                     </div>
                   </div>

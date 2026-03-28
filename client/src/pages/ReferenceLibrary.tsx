@@ -8,8 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileText, Search, Eye, Download } from "lucide-react";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 export default function ReferenceLibrary() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [educationLevel, setEducationLevel] = useState<string>("all");
   const [language, setLanguage] = useState<string>("all");
@@ -42,12 +45,12 @@ export default function ReferenceLibrary() {
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="ابحث في المراجع..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
+                className="pe-10"
               />
             </div>
             
@@ -142,7 +145,7 @@ export default function ReferenceLibrary() {
                       className="flex-1"
                       onClick={() => handlePreview(ref.id)}
                     >
-                      <Eye className="h-4 w-4 ml-2" />
+                      <Eye className="h-4 w-4 ms-2" />
                       معاينة
                     </Button>
                     <Button
@@ -154,7 +157,7 @@ export default function ReferenceLibrary() {
                         toast.success("تم فتح المرجع في نافذة جديدة");
                       }}
                     >
-                      <Download className="h-4 w-4 ml-2" />
+                      <Download className="h-4 w-4 ms-2" />
                       تحميل
                     </Button>
                   </div>

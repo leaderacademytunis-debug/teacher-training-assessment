@@ -12,6 +12,8 @@ import {
   AlertCircle, Loader2, ArrowRight, Coins, Volume2, StopCircle,
   RefreshCw, ChevronRight, Home
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const SAMPLE_TEXT_AR = `بسم الله الرحمن الرحيم. مرحباً بكم في هذا الدرس التعليمي. سنتعلم اليوم كيف نستخدم التكنولوجيا الحديثة في خدمة التعليم. إن الذكاء الاصطناعي يفتح آفاقاً جديدة أمام المعلمين والمتعلمين على حد سواء. دعونا نبدأ رحلتنا في عالم التعليم الرقمي المبتكر.`;
 
@@ -24,6 +26,7 @@ const RECOMMENDED_DURATION = 60; // recommended 60 seconds
 type RecordingState = "idle" | "recording" | "recorded" | "uploading" | "processing";
 
 export default function MyDigitalVoice() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const [recordingState, setRecordingState] = useState<RecordingState>("idle");
   const [duration, setDuration] = useState(0);
@@ -257,7 +260,7 @@ export default function MyDigitalVoice() {
           <div className="flex items-center gap-3">
             <Link href="/teacher-tools">
               <Button variant="ghost" size="sm">
-                <Home className="h-4 w-4 ml-1" />
+                <Home className="h-4 w-4 ms-1" />
                 الأدوات
               </Button>
             </Link>

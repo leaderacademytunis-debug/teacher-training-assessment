@@ -14,14 +14,8 @@ import { Link, useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
+import { LANGUAGE_OPTIONS } from "@/i18n";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
-// ===== LANGUAGE OPTIONS =====
-const LANGUAGES: { code: AppLanguage; label: string; flag: string }[] = [
-  { code: "ar", label: "العربية", flag: "🇹🇳" },
-  { code: "fr", label: "Français", flag: "🇫🇷" },
-  { code: "en", label: "English", flag: "🇬🇧" },
-];
 
 // ===== AI TOOLS under EDUGPT dropdown =====
 const AI_TOOLS: { href: string; labelAr: string; labelFr: string; labelEn: string; icon: LucideIcon; descAr: string; descFr: string; descEn: string }[] = [
@@ -156,7 +150,7 @@ export default function UnifiedNavbar() {
                       </button>
                     </Link>
                     {/* Mega dropdown */}
-                    <div className="absolute right-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50" style={{ minWidth: "360px" }}>
+                    <div className="absolute end-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50" style={{ minWidth: "360px" }}>
                       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden" dir="rtl">
                         <div className="px-4 py-3 border-b border-gray-50" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
                           <p className="text-white font-bold text-sm flex items-center gap-2">
@@ -279,23 +273,30 @@ export default function UnifiedNavbar() {
 
           {/* ===== LEFT: Action Buttons ===== */}
           <div className="flex items-center gap-2.5">
-            {/* Language switcher */}
+            {/* Smart Language Switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 px-2 py-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all">
-                  <Globe className="w-4 h-4" />
-                  <span className="text-xs">{LANGUAGES.find(l => l.code === language)?.flag}</span>
+                <button className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl border border-gray-200 text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">
+                  <span className="text-base leading-none">{LANGUAGE_OPTIONS.find(l => l.code === language)?.flag}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">{language === 'ar' ? 'AR' : language === 'fr' ? 'FR' : 'EN'}</span>
+                  <ChevronDown className="w-3 h-3 opacity-50" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36">
-                {LANGUAGES.map((lang) => (
+              <DropdownMenuContent align="end" className="w-44 p-1">
+                {LANGUAGE_OPTIONS.map((lang) => (
                   <DropdownMenuItem
                     key={lang.code}
                     onClick={() => setLanguage(lang.code)}
-                    className={`gap-2 cursor-pointer ${language === lang.code ? "bg-primary/10 font-semibold" : ""}`}
+                    className={`gap-3 cursor-pointer rounded-lg px-3 py-2.5 ${language === lang.code ? "bg-primary/10 font-bold text-primary" : "hover:bg-gray-50"}`}
                   >
-                    <span>{lang.flag}</span>
-                    <span>{lang.label}</span>
+                    <span className="text-lg leading-none">{lang.flag}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm">{lang.label}</span>
+                      <span className="text-[10px] text-gray-400 uppercase">{lang.dir === 'rtl' ? 'RTL' : 'LTR'}</span>
+                    </div>
+                    {language === lang.code && (
+                      <BadgeCheck className="w-4 h-4 text-primary ms-auto" />
+                    )}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -312,7 +313,7 @@ export default function UnifiedNavbar() {
                       className="h-9 px-4 text-xs font-bold rounded-xl text-white"
                       style={{ background: "#FF6D00" }}
                     >
-                      <UserPlus className="w-3.5 h-3.5 ml-1" />
+                      <UserPlus className="w-3.5 h-3.5 ms-1" />
                       {t("إكمال التسجيل", "Inscription", "Complete")}
                     </Button>
                   </Link>
@@ -369,7 +370,7 @@ export default function UnifiedNavbar() {
               return (
                 <Link key={item.href} href={item.href}>
                   <button
-                    className={`flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                    className={`flex items-center gap-3 w-full text-end px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
                       isActive ? "text-[#1A237E] bg-blue-50" : "text-gray-600 hover:text-[#1A237E] hover:bg-gray-50"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
@@ -393,7 +394,7 @@ export default function UnifiedNavbar() {
                   return (
                     <Link key={tool.href} href={tool.href}>
                       <button
-                        className="flex items-center gap-3 w-full text-right px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-blue-50/60 transition-colors"
+                        className="flex items-center gap-3 w-full text-end px-3 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-blue-50/60 transition-colors"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
@@ -421,7 +422,7 @@ export default function UnifiedNavbar() {
                 {user.role === "teacher" && (
                   <Link href="/teacher-dashboard">
                     <button
-                      className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                      className="flex items-center gap-3 w-full text-end px-4 py-3 rounded-xl text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <GraduationCap className="w-5 h-5 flex-shrink-0" />
@@ -432,7 +433,7 @@ export default function UnifiedNavbar() {
                 {user.role === "school" && (
                   <Link href="/school-dashboard">
                     <button
-                      className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      className="flex items-center gap-3 w-full text-end px-4 py-3 rounded-xl text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Building2 className="w-5 h-5 flex-shrink-0" />
@@ -443,7 +444,7 @@ export default function UnifiedNavbar() {
                 {user.role === "user" && (
                   <Link href="/select-role">
                     <button
-                      className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      className="flex items-center gap-3 w-full text-end px-4 py-3 rounded-xl text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Star className="w-5 h-5 flex-shrink-0" />
@@ -468,7 +469,7 @@ export default function UnifiedNavbar() {
                   }
                 }}
               >
-                <button className="flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors">
+                <button className="flex items-center gap-3 w-full text-end px-4 py-3 rounded-xl text-sm font-semibold text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors">
                   <GraduationCap className="w-4 h-4 flex-shrink-0" />
                   {t("برامجنا التدريبية", "Nos formations", "Training Programs")}
                 </button>
@@ -486,7 +487,7 @@ export default function UnifiedNavbar() {
                 return (
                   <Link key={cl.href} href={cl.href}>
                     <button
-                      className="flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 w-full text-end px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <CIcon className="w-4 h-4 flex-shrink-0" />
@@ -509,7 +510,7 @@ export default function UnifiedNavbar() {
                   return (
                     <Link key={item.href} href={item.href}>
                       <button
-                        className="flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors"
+                        className="flex items-center gap-3 w-full text-end px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-[#1A237E] hover:bg-gray-50 transition-colors"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         <CIcon className="w-4 h-4 flex-shrink-0" />
@@ -535,15 +536,15 @@ export default function UnifiedNavbar() {
             {/* Language */}
             <div className="border-t border-gray-100 my-2 pt-2">
               <div className="flex gap-2 px-4">
-                {LANGUAGES.map((lang) => (
+                {LANGUAGE_OPTIONS.map((lang) => (
                   <button
                     key={lang.code}
                     onClick={() => setLanguage(lang.code)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      language === lang.code ? "bg-blue-50 text-[#1A237E]" : "text-gray-500 hover:bg-gray-50"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                      language === lang.code ? "bg-blue-50 text-[#1A237E] ring-2 ring-blue-200 shadow-sm" : "text-gray-500 hover:bg-gray-50"
                     }`}
                   >
-                    <span>{lang.flag}</span>
+                    <span className="text-lg">{lang.flag}</span>
                     <span>{lang.label}</span>
                   </button>
                 ))}
@@ -559,7 +560,7 @@ export default function UnifiedNavbar() {
                     style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Brain className="w-4 h-4 ml-2" />
+                    <Brain className="w-4 h-4 ms-2" />
                     {t("جرّب EDUGPT", "Essayer EDUGPT", "Try EDUGPT")}
                   </Button>
                 </Link>
@@ -596,7 +597,7 @@ function MoreDropdown({ language, t, user, location, isAdmin }: { language: AppL
         {t("المزيد", "Plus", "More")}
         <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/more:rotate-180" />
       </button>
-      <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover/more:opacity-100 group-hover/more:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
+      <div className="absolute start-0 top-full pt-2 opacity-0 invisible group-hover/more:opacity-100 group-hover/more:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden" dir="rtl">
           {/* Certificates section */}
           <div className="px-4 py-2 bg-gray-50/80 border-b border-gray-100">
@@ -649,7 +650,7 @@ function MoreDropdown({ language, t, user, location, isAdmin }: { language: AppL
           {/* Pricing & Contact */}
           <div className="border-t border-gray-100 flex">
             <Link href="/pricing" className="flex-1">
-              <div className="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors text-sm font-semibold text-gray-600 border-l border-gray-100">
+              <div className="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors text-sm font-semibold text-gray-600 border-s border-gray-100">
                 <DollarSign className="w-4 h-4" />
                 {t("الأسعار", "Tarifs", "Pricing")}
               </div>
@@ -684,7 +685,7 @@ function AdminDropdown({ language, t, location, isAdmin }: { language: AppLangua
         )}
         <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover/admin:rotate-180" />
       </button>
-      <div className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "340px" }}>
+      <div className="absolute start-0 top-full pt-2 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "340px" }}>
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden" dir="rtl">
           <div className="px-4 py-3 border-b border-gray-50" style={{ background: "linear-gradient(135deg, #1A237E, #0D47A1)" }}>
             <p className="text-white font-bold text-sm flex items-center gap-2">
@@ -750,7 +751,7 @@ function AdminMobileLinks({ setMobileMenuOpen, location, language, isAdmin }: { 
         return (
           <Link key={link.href} href={link.href}>
             <button
-              className={`flex items-center gap-3 w-full text-right px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 w-full text-end px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 isActive ? "text-[#1A237E] bg-blue-50" : "text-gray-600 hover:text-[#1A237E] hover:bg-gray-50"
               }`}
               onClick={() => setMobileMenuOpen(false)}

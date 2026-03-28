@@ -345,21 +345,21 @@ export default function DramaEngine() {
 
               <div className="space-y-4">
                 <div>
-                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-right' : 'text-left'}`}>{tt.lessonTitle}</label>
+                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-end' : 'text-start'}`}>{tt.lessonTitle}</label>
                   <input type="text" value={lessonTitle} onChange={e => setLessonTitle(e.target.value)} placeholder={t("مثال: دورة حياة النبات", "Ex: Le cycle de vie d'une plante", "Ex: The life cycle of a plant")}
                     className="w-full px-4 py-2 bg-white rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-shadow" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-right' : 'text-left'}`}>{tt.subject}</label>
+                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-end' : 'text-start'}`}>{tt.subject}</label>
                     <select value={subject} onChange={e => setSubject(e.target.value)} className="w-full px-4 py-2 bg-white rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-shadow">
                       <option value="">{t("اختر المادة", "Choisir la matière", "Select Subject")}</option>
                       {subjects.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-right' : 'text-left'}`}>{tt.level}</label>
+                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-end' : 'text-start'}`}>{tt.level}</label>
                     <select value={grade} onChange={e => setGrade(e.target.value)} className="w-full px-4 py-2 bg-white rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-shadow">
                       <option value="">{t("اختر المستوى", "Choisir le niveau", "Select Level")}</option>
                       {grades.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
@@ -368,7 +368,7 @@ export default function DramaEngine() {
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-right' : 'text-left'}`}>{t("محتوى الدرس أو ملخصه", "Contenu ou résumé de la leçon", "Lesson Content or Summary")}</label>
+                  <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-end' : 'text-start'}`}>{t("محتوى الدرس أو ملخصه", "Contenu ou résumé de la leçon", "Lesson Content or Summary")}</label>
                   <textarea value={lessonContent} onChange={e => setLessonContent(e.target.value)} rows={6}
                     placeholder={t("أدخل هنا المفاهيم الأساسية للدرس، الشخصيات المقترحة، أو أي تفاصيل تريدها في المسرحية...", "Entrez ici les concepts clés de la leçon, les personnages suggérés, ou tout autre détail que vous souhaitez voir dans la pièce...", "Enter the key concepts of the lesson, suggested characters, or any other details you want in the play...")}
                     className="w-full px-4 py-2 bg-white rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-shadow"></textarea>
@@ -376,7 +376,7 @@ export default function DramaEngine() {
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div>
-                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-right' : 'text-left'}`}>{t("مدة المسرحية (دقائق)", "Durée de la pièce (minutes)", "Play Duration (minutes)")}</label>
+                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-end' : 'text-start'}`}>{t("مدة المسرحية (دقائق)", "Durée de la pièce (minutes)", "Play Duration (minutes)")}</label>
                     <div className="flex items-center gap-2">
                       <input type="range" min="5" max="30" step="5" value={duration} onChange={e => setDuration(parseInt(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600" />
@@ -384,7 +384,7 @@ export default function DramaEngine() {
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-right' : 'text-left'}`}>{t("عدد التلاميذ", "Nombre d'élèves", "Number of Students")}</label>
+                    <label className={`block text-sm font-medium text-gray-700 mb-1.5 ${isRTL ? 'text-end' : 'text-start'}`}>{t("عدد التلاميذ", "Nombre d'élèves", "Number of Students")}</label>
                     <div className="flex items-center gap-2">
                       <input type="range" min="10" max="40" step="1" value={studentCount} onChange={e => setStudentCount(parseInt(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-600" />
@@ -420,7 +420,7 @@ export default function DramaEngine() {
                       <Target className="w-4 h-4 text-green-600" />
                       {t("ماذا ستحصل عليه؟", "Qu'obtiendrez-vous?", "What will you get?")}
                     </h3>
-                    <ul className={`space-y-2 text-sm text-gray-600 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <ul className={`space-y-2 text-sm text-gray-600 ${isRTL ? 'text-end' : 'text-start'}`}>
                       <li className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-purple-500" /> {t("نص مسرحي كامل بالعربية", "Script de pièce complet en arabe", "Full play script in Arabic")}</li>
                       <li className="flex items-center gap-2"><Users className="w-3.5 h-3.5 text-blue-500" /> {t("شخصيات مع توزيع تلقائي للأدوار", "Personnages avec distribution automatique des rôles", "Characters with automatic role assignment")}</li>
                       <li className="flex items-center gap-2"><Image className="w-3.5 h-3.5 text-pink-500" /> {t("أقنعة Line Art للطباعة", "Masques Line Art à imprimer", "Line Art masks for printing")}</li>
@@ -506,7 +506,7 @@ export default function DramaEngine() {
                         {videoTeaser.frames.map((frame, idx) => (
                           <div key={idx} className="relative group">
                             <img src={frame} alt={`${t("مشهد", "Scène", "Scene")} ${idx + 1}`} className="w-full rounded-xl border border-purple-100 shadow-sm" />
-                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg">
+                            <div className="absolute bottom-2 end-2 bg-black/60 text-white text-xs px-2 py-1 rounded-lg">
                               {t("مشهد", "Scène", "Scene")} {idx + 1}
                             </div>
                           </div>
@@ -571,13 +571,13 @@ export default function DramaEngine() {
                             <div className="flex items-start gap-3">
                               <span className="w-7 h-7 rounded-full bg-green-200 text-green-800 flex items-center justify-center text-sm font-bold shrink-0">{idx + 1}</span>
                               <div className="flex-1">
-                                <p className={`font-medium text-gray-900 text-sm mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>{q.question}</p>
+                                <p className={`font-medium text-gray-900 text-sm mb-2 ${isRTL ? 'text-end' : 'text-start'}`}>{q.question}</p>
                                 <div className="flex items-center gap-3 text-xs text-gray-500">
                                   <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">{q.type === "mcq" ? t("اختيار متعدد", "Choix multiple", "Multiple Choice") : q.type === "open" ? t("سؤال مفتوح", "Question ouverte", "Open Question") : t("صح/خطأ", "Vrai/Faux", "True/False")}</span>
                                   <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">{q.criterion}</span>
                                 </div>
                                 {q.options && q.options.length > 0 && (
-                                  <div className={`mt-2 space-y-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                                  <div className={`mt-2 space-y-1 ${isRTL ? 'text-end' : 'text-start'}`}>
                                     {q.options.map((opt: string, oi: number) => (
                                       <div key={oi} className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg ${opt === q.correctAnswer ? "bg-green-100 text-green-800 font-medium" : "bg-gray-50 text-gray-600"}`}>
                                         {opt === q.correctAnswer ? <CheckCircle className="w-3.5 h-3.5" /> : <span className="w-3.5 h-3.5" />}
@@ -587,7 +587,7 @@ export default function DramaEngine() {
                                   </div>
                                 )}
                                 {!q.options && (
-                                  <p className={`mt-2 text-xs text-green-600 bg-green-50 px-3 py-1.5 rounded-lg ${isRTL ? 'text-right' : 'text-left'}`}>
+                                  <p className={`mt-2 text-xs text-green-600 bg-green-50 px-3 py-1.5 rounded-lg ${isRTL ? 'text-end' : 'text-start'}`}>
                                     <strong>{t("الإجابة المتوقعة:", "Réponse attendue:", "Expected Answer:")}</strong> {q.correctAnswer}
                                   </p>
                                 )}
@@ -668,7 +668,7 @@ export default function DramaEngine() {
                         {script.scenes[activeScene].dialogue.map((line, idx) => (
                           <div key={idx} className={`flex gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600 text-sm shrink-0">{line.character.substring(0, 2)}</div>
-                            <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                            <div className={`flex-1 ${isRTL ? 'text-end' : 'text-start'}`}>
                               <p className="font-bold text-gray-800">{line.character}</p>
                               <p className="text-gray-700">{line.line}</p>
                               {line.action && <p className="text-xs text-pink-600 italic">({line.action})</p>}
@@ -697,7 +697,7 @@ export default function DramaEngine() {
               <div className="space-y-3">
                 {libraryQuery.data.map((item: SavedScript) => (
                   <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
-                    <div className={`flex-1 ${isRTL ? 'text-right' : 'text-left'}`}>
+                    <div className={`flex-1 ${isRTL ? 'text-end' : 'text-start'}`}>
                       <div className="flex items-center gap-2">
                         <p className="font-bold text-gray-800">{item.lessonTitle}</p>
                         {item.isPublished && <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">{t("منشور", "Publié", "Published")}</span>}
@@ -736,11 +736,11 @@ export default function DramaEngine() {
             <h3 className="text-lg font-bold mb-4">{t("نشر في السوق الذهبي", "Publier sur le marché d'or", "Publish to the Golden Market")}</h3>
             <div className="space-y-4">
               <div>
-                <label className={`block text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t("عنوان المنشور", "Titre de la publication", "Post Title")}</label>
+                <label className={`block text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-end' : 'text-start'}`}>{t("عنوان المنشور", "Titre de la publication", "Post Title")}</label>
                 <input type="text" value={publishTitle} onChange={e => setPublishTitle(e.target.value)} placeholder={t("مسرحية ممتعة حول...", "Une pièce amusante sur...", "A fun play about...")} className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-300" />
               </div>
               <div>
-                <label className={`block text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-right' : 'text-left'}`}>{t("وصف قصير (اختياري)", "Description courte (optionnel)", "Short Description (optional)")}</label>
+                <label className={`block text-sm font-medium text-gray-700 mb-1 ${isRTL ? 'text-end' : 'text-start'}`}>{t("وصف قصير (اختياري)", "Description courte (optionnel)", "Short Description (optional)")}</label>
                 <textarea value={publishDesc} onChange={e => setPublishDesc(e.target.value)} rows={3} placeholder={t("اشرح ما يميز هذه المسرحية...", "Expliquez ce qui rend cette pièce spéciale...", "Explain what makes this play special...")} className="w-full px-3 py-2 bg-gray-50 rounded-lg border border-gray-300"></textarea>
               </div>
             </div>

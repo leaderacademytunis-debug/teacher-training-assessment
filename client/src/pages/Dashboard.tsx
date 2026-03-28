@@ -105,13 +105,13 @@ export default function Dashboard() {
             <div className="flex gap-3">
               <Link href="/dashboard/registrations">
                 <Button className="bg-orange-500 hover:bg-orange-600">
-                  <UserCheck className="w-4 h-4 ml-2" />
+                  <UserCheck className="w-4 h-4 ms-2" />
                   {tx.manageRegistrations}
                 </Button>
               </Link>
               <Link href="/">
                 <Button variant="outline">
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="w-4 h-4 ms-2" />
                   {tx.backHome}
                 </Button>
               </Link>

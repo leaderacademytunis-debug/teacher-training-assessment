@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MessageSquare, Send, User, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 interface SubmissionCommentsProps {
   submissionId: number;
 }
 
 export default function SubmissionComments({ submissionId }: SubmissionCommentsProps) {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
 
@@ -67,11 +70,11 @@ export default function SubmissionComments({ submissionId }: SubmissionCommentsP
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${isInstructor ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}>
                   {isInstructor ? <GraduationCap className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
                 </div>
-                <div className={`max-w-[80%] ${isInstructor ? "text-right" : "text-left"}`}>
+                <div className={`max-w-[80%] ${isInstructor ? "text-end" : "text-start"}`}>
                   <div className={`px-3 py-2 rounded-lg text-sm ${isInstructor ? "bg-blue-100 text-blue-900" : "bg-white border text-gray-900"}`}>
                     <div className="text-[10px] font-medium mb-1 opacity-70">
                       {comment.arabicName || comment.userName || comment.userEmail}
-                      {isInstructor && <span className="mr-1 text-blue-600">(المدرب)</span>}
+                      {isInstructor && <span className="me-1 text-blue-600">(المدرب)</span>}
                     </div>
                     <p className="whitespace-pre-wrap">{comment.content}</p>
                   </div>

@@ -11,6 +11,8 @@ import {
   User, Crown, Wand2, Layers, Clock, Volume2, FileText
 } from "lucide-react";
 import ArabicTTS from "@/components/ArabicTTS";
+import useI18n from "@/i18n";
+
 
 type ProjectView = "list" | "create" | "editor";
 
@@ -30,6 +32,7 @@ interface SceneData {
 }
 
 export default function AIDirectorAssistant() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
 
   const [view, setView] = useState<ProjectView>("list");
@@ -211,7 +214,7 @@ export default function AIDirectorAssistant() {
             onClick={() => setView("create")}
             className="bg-gradient-to-l from-rose-500 to-purple-600 hover:from-rose-600 hover:to-purple-700"
           >
-            <Sparkles className="w-4 h-4 ml-2" />
+            <Sparkles className="w-4 h-4 ms-2" />
             مشروع جديد
           </Button>
         </div>
@@ -237,7 +240,7 @@ export default function AIDirectorAssistant() {
                         <Film className="w-12 h-12 text-gray-300" />
                       </div>
                     )}
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 end-2">
                       <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${st.color}`}>
                         {st.label}
                       </span>
@@ -248,7 +251,7 @@ export default function AIDirectorAssistant() {
                         onClick={() => handleOpenProject(project.id)}
                         className="bg-white text-gray-800 hover:bg-gray-100"
                       >
-                        <Eye className="w-4 h-4 ml-1" />
+                        <Eye className="w-4 h-4 ms-1" />
                         فتح
                       </Button>
                     </div>
@@ -285,7 +288,7 @@ export default function AIDirectorAssistant() {
                 اكتب نص درسك وسيقوم الذكاء الاصطناعي بتقسيمه إلى 5 مشاهد سينمائية مع وصف بصري مفصّل لكل مشهد
               </p>
               <Button onClick={() => setView("create")} className="bg-gradient-to-l from-rose-500 to-purple-600">
-                <Sparkles className="w-4 h-4 ml-2" />
+                <Sparkles className="w-4 h-4 ms-2" />
                 إنشاء مشروع
               </Button>
             </CardContent>
@@ -313,7 +316,7 @@ export default function AIDirectorAssistant() {
         <Card className="border-0 shadow-lg">
           <CardContent className="p-5">
             <label className="block text-sm font-bold text-gray-700 mb-2">
-              <FileText className="w-4 h-4 inline ml-1" />
+              <FileText className="w-4 h-4 inline ms-1" />
               نص الدرس / السيناريو
             </label>
             <textarea
@@ -367,7 +370,7 @@ export default function AIDirectorAssistant() {
         <Card className="border-0 shadow-lg">
           <CardContent className="p-5">
             <p className="text-sm font-bold text-gray-700 mb-3">
-              <User className="w-4 h-4 inline ml-1" />
+              <User className="w-4 h-4 inline ms-1" />
               شخصية الفيديو (Character Consistency)
             </p>
             <p className="text-xs text-gray-500 mb-4">
@@ -378,7 +381,7 @@ export default function AIDirectorAssistant() {
                 <button
                   key={profile.id}
                   onClick={() => setCharacterProfile(profile.id as any)}
-                  className={`p-4 rounded-xl border-2 transition-all text-right ${
+                  className={`p-4 rounded-xl border-2 transition-all text-end ${
                     characterProfile === profile.id
                       ? "border-purple-500 bg-purple-50 shadow-md"
                       : "border-gray-200 hover:border-purple-300"
@@ -422,12 +425,12 @@ export default function AIDirectorAssistant() {
         >
           {generateScenesMut.isPending ? (
             <>
-              <Loader2 className="w-6 h-6 ml-2 animate-spin" />
+              <Loader2 className="w-6 h-6 ms-2 animate-spin" />
               جاري تحليل النص وإنشاء المشاهد... (15-30 ثانية)
             </>
           ) : (
             <>
-              <Clapperboard className="w-6 h-6 ml-2" />
+              <Clapperboard className="w-6 h-6 ms-2" />
               إنشاء المشاهد السينمائية
             </>
           )}
@@ -464,7 +467,7 @@ export default function AIDirectorAssistant() {
             disabled={suggestSoundtrackMut.isPending}
             className="text-xs"
           >
-            {suggestSoundtrackMut.isPending ? <Loader2 className="w-3 h-3 ml-1 animate-spin" /> : <Music className="w-3 h-3 ml-1" />}
+            {suggestSoundtrackMut.isPending ? <Loader2 className="w-3 h-3 ms-1 animate-spin" /> : <Music className="w-3 h-3 ms-1" />}
             اقتراح موسيقى
           </Button>
           <Button
@@ -473,7 +476,7 @@ export default function AIDirectorAssistant() {
             disabled={generateAllMut.isPending}
             className="text-xs bg-gradient-to-l from-rose-500 to-purple-600"
           >
-            {generateAllMut.isPending ? <Loader2 className="w-3 h-3 ml-1 animate-spin" /> : <Play className="w-3 h-3 ml-1" />}
+            {generateAllMut.isPending ? <Loader2 className="w-3 h-3 ms-1 animate-spin" /> : <Play className="w-3 h-3 ms-1" />}
             توليد الكل
           </Button>
         </div>
@@ -495,7 +498,7 @@ export default function AIDirectorAssistant() {
               <button
                 key={scene.sceneNumber}
                 onClick={() => setActiveSceneIdx(idx)}
-                className={`w-full text-right p-3 rounded-xl border-2 transition-all ${
+                className={`w-full text-end p-3 rounded-xl border-2 transition-all ${
                   activeSceneIdx === idx
                     ? "border-purple-500 bg-purple-50 shadow-md"
                     : "border-gray-200 hover:border-purple-300 bg-white"
@@ -592,7 +595,7 @@ export default function AIDirectorAssistant() {
                         </div>
                       )}
                       {/* Scene number overlay */}
-                      <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2.5 py-1 rounded-lg font-bold">
+                      <div className="absolute top-3 start-3 bg-black/60 text-white text-xs px-2.5 py-1 rounded-lg font-bold">
                         المشهد {currentScene.sceneNumber}/5
                       </div>
                       {currentScene.videoStatus === "generating" && (
@@ -637,7 +640,7 @@ export default function AIDirectorAssistant() {
                               setEditPromptText(currentScene.editedPrompt || currentScene.visualPrompt);
                             }}
                           >
-                            <Edit3 className="w-3 h-3 ml-1" />
+                            <Edit3 className="w-3 h-3 ms-1" />
                             تعديل
                           </Button>
                         ) : (
@@ -710,9 +713,9 @@ export default function AIDirectorAssistant() {
                         className="text-xs bg-gradient-to-l from-blue-500 to-cyan-500"
                       >
                         {generateImageMut.isPending ? (
-                          <Loader2 className="w-3 h-3 ml-1 animate-spin" />
+                          <Loader2 className="w-3 h-3 ms-1 animate-spin" />
                         ) : (
-                          <ImageIcon className="w-3 h-3 ml-1" />
+                          <ImageIcon className="w-3 h-3 ms-1" />
                         )}
                         {currentScene.imageUrl ? "إعادة توليد الصورة" : "توليد صورة المعاينة"}
                       </Button>
@@ -728,7 +731,7 @@ export default function AIDirectorAssistant() {
                             a.click();
                           }}
                         >
-                          <Download className="w-3 h-3 ml-1" />
+                          <Download className="w-3 h-3 ms-1" />
                           تحميل الصورة
                         </Button>
                       )}
@@ -743,7 +746,7 @@ export default function AIDirectorAssistant() {
                         onClick={() => setActiveSceneIdx(activeSceneIdx - 1)}
                         className="text-xs"
                       >
-                        <ChevronRight className="w-4 h-4 ml-1" />
+                        <ChevronRight className="w-4 h-4 ms-1" />
                         المشهد السابق
                       </Button>
                       <div className="flex gap-1">
@@ -765,7 +768,7 @@ export default function AIDirectorAssistant() {
                         className="text-xs"
                       >
                         المشهد التالي
-                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        <ChevronLeft className="w-4 h-4 me-1" />
                       </Button>
                     </div>
                   </CardContent>
@@ -792,7 +795,7 @@ export default function AIDirectorAssistant() {
                           disabled={!scenes.every((s) => s.videoStatus === "completed")}
                           onClick={() => toast.info("ميزة دمج الفيديو ستكون متاحة عند ربط API الفيديو الخارجي (Veo/Runway)")}
                         >
-                          <Film className="w-3 h-3 ml-1" />
+                          <Film className="w-3 h-3 ms-1" />
                           دمج الفيديو النهائي
                         </Button>
                       </div>
@@ -819,7 +822,7 @@ export default function AIDirectorAssistant() {
                             URL.revokeObjectURL(url);
                           }}
                         >
-                          <Download className="w-3 h-3 ml-1" />
+                          <Download className="w-3 h-3 ms-1" />
                           تحميل السيناريو
                         </Button>
                       </div>

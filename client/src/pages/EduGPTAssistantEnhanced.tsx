@@ -1058,8 +1058,8 @@ export default function EduGPTAssistantEnhanced() {
       {/* Sidebar */}
       <div className={`
         ${sidebarOpen ? "w-80 translate-x-0" : "w-0 -translate-x-full md:translate-x-0"}
-        fixed md:relative inset-y-0 right-0 z-40 md:z-auto
-        transition-all duration-300 border-l border-gray-200 bg-white flex flex-col overflow-hidden shrink-0
+        fixed md:relative inset-y-0 end-0 z-40 md:z-auto
+        transition-all duration-300 border-s border-gray-200 bg-white flex flex-col overflow-hidden shrink-0
       `}>
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
@@ -1070,17 +1070,17 @@ export default function EduGPTAssistantEnhanced() {
               className="bg-blue-600 hover:bg-blue-700"
               onClick={startNewConversation}
             >
-              <Plus className="h-4 w-4 ml-1" />
+              <Plus className="h-4 w-4 ms-1" />
               {t.newBtn}
             </Button>
           </div>
           <div className="relative">
-            <Search className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
+            <Search className="absolute end-3 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10"
+              className="pe-10"
             />
           </div>
           {/* Tag filter chips */}
@@ -1137,7 +1137,7 @@ export default function EduGPTAssistantEnhanced() {
                       className={`p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors group ${
                         currentConversationId === conv.id ? "bg-blue-50 border border-blue-200" : ""
                       } ${loadingConvId === conv.id ? "opacity-60" : ""} ${
-                        conv.isPinned ? "border-r-2 border-r-amber-400" : ""
+                        conv.isPinned ? "border-e-2 border-e-amber-400" : ""
                       }`}
                       onClick={() => editingConvId !== conv.id && loadConversation(conv)}
                     >
@@ -1194,7 +1194,7 @@ export default function EduGPTAssistantEnhanced() {
                             </Button>
                             {tagMenuConvId === conv.id && (
                               <div
-                                className="absolute left-0 top-8 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-40"
+                                className="absolute start-0 top-8 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-2 w-40"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <p className="text-xs font-semibold text-gray-500 mb-1.5 px-1">{t.tagChoose || "اختر وسماً"}</p>
@@ -1204,7 +1204,7 @@ export default function EduGPTAssistantEnhanced() {
                                   return (
                                     <button
                                       key={tag.value}
-                                      className={`w-full text-right text-xs px-2 py-1 rounded flex items-center justify-between gap-1 hover:bg-gray-50 ${
+                                      className={`w-full text-end text-xs px-2 py-1 rounded flex items-center justify-between gap-1 hover:bg-gray-50 ${
                                         isSelected ? "font-semibold" : ""
                                       }`}
                                       onClick={() => {
@@ -1304,7 +1304,7 @@ export default function EduGPTAssistantEnhanced() {
                     >
                       <span>{lang.flag}</span>
                       <span>{lang.label}</span>
-                      {globalLanguage === lang.code && <span className="mr-auto text-primary">✓</span>}
+                      {globalLanguage === lang.code && <span className="me-auto text-primary">✓</span>}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -1319,27 +1319,27 @@ export default function EduGPTAssistantEnhanced() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={exportAsPDF} disabled={messages.length === 0}>
-                    <Download className="h-4 w-4 ml-2" />
+                    <Download className="h-4 w-4 ms-2" />
                     {t.exportPdfFull}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={exportAsWord} disabled={messages.length === 0}>
-                    <Download className="h-4 w-4 ml-2" />
+                    <Download className="h-4 w-4 ms-2" />
                     {t.exportWordFull}
                   </DropdownMenuItem>
                   {hasAssistantMessage && (
                     <>
                       <div className="border-t my-1" />
                       <DropdownMenuItem onClick={exportCleanAsPDF} disabled={exportCleanPDFMutation.isPending}>
-                        {exportCleanPDFMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
+                        {exportCleanPDFMutation.isPending ? <Loader2 className="h-4 w-4 ms-2 animate-spin" /> : <Download className="h-4 w-4 ms-2" />}
                         {t.exportPdfClean}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={exportCleanAsWord} disabled={exportCleanWordMutation.isPending}>
-                        {exportCleanWordMutation.isPending ? <Loader2 className="h-4 w-4 ml-2 animate-spin" /> : <Download className="h-4 w-4 ml-2" />}
+                        {exportCleanWordMutation.isPending ? <Loader2 className="h-4 w-4 ms-2 animate-spin" /> : <Download className="h-4 w-4 ms-2" />}
                         {t.exportWordClean}
                       </DropdownMenuItem>
                       <div className="border-t my-1" />
                       <DropdownMenuItem onClick={() => setShowPrintPreview(true)}>
-                        <FileText className="h-4 w-4 ml-2" />
+                        <FileText className="h-4 w-4 ms-2" />
                         {t.exportPrintPreview}
                       </DropdownMenuItem>
                     </>
@@ -1362,7 +1362,7 @@ export default function EduGPTAssistantEnhanced() {
                   <><span className="text-blue-400 shrink-0">|</span>
                   <span className="shrink-0">{teachingLanguage === "french" ? "🇫🇷" : teachingLanguage === "english" ? "🇬🇧" : "🇹🇳"}</span></>
                 )}
-                <span className="text-blue-400 mr-1 shrink-0">• {t.changeContext}</span>
+                <span className="text-blue-400 me-1 shrink-0">• {t.changeContext}</span>
               </button>
             ) : (
               <button
@@ -1389,7 +1389,7 @@ export default function EduGPTAssistantEnhanced() {
                 </div>
                 <button
                   onClick={() => setShowContextSelector(false)}
-                  className="absolute top-4 left-4 rounded-full p-1.5 hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700"
+                  className="absolute top-4 start-4 rounded-full p-1.5 hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700"
                   aria-label="إغلاق"
                 >
                   <X className="w-5 h-5" />
@@ -1431,7 +1431,7 @@ export default function EduGPTAssistantEnhanced() {
                       <button
                         key={l}
                         onClick={() => setSelectedLevel(l)}
-                        className={`px-3 py-2 rounded-lg text-sm border text-right transition-all ${
+                        className={`px-3 py-2 rounded-lg text-sm border text-end transition-all ${
                           selectedLevel === l
                             ? "bg-green-600 text-white border-green-600 shadow-sm"
                             : "bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:text-green-600"
@@ -1626,7 +1626,7 @@ export default function EduGPTAssistantEnhanced() {
               {attachedFiles.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 pr-3"
+                  className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 pe-3"
                 >
                   {file.preview ? (
                     <img src={file.preview} alt={file.name} className="h-10 w-10 rounded object-cover" />

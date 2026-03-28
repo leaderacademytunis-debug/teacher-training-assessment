@@ -403,11 +403,11 @@ export default function EduStudioEngine() {
       {/* Image Lightbox */}
       {lightboxImage && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-8" onClick={() => setLightboxImage(null)}>
-          <button className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white" onClick={() => setLightboxImage(null)}>
+          <button className="absolute top-6 end-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white" onClick={() => setLightboxImage(null)}>
             <X className="w-6 h-6" />
           </button>
           <img src={lightboxImage} alt="Scene" className="max-w-full max-h-full rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
-          <a href={lightboxImage} download className="absolute bottom-6 right-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm" onClick={e => e.stopPropagation()}>
+          <a href={lightboxImage} download className="absolute bottom-6 end-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm" onClick={e => e.stopPropagation()}>
             <Download className="w-4 h-4" /> {t("تحميل", "Télécharger", "Download")}
           </a>
         </div>
@@ -478,7 +478,7 @@ export default function EduStudioEngine() {
       {/* Main Content - Split Screen */}
       <div className="flex h-[calc(100vh-73px)]">
         {/* LEFT: Storyboard Dashboard (60%) */}
-        <div className="w-[60%] border-r border-purple-500/10 overflow-y-auto p-6">
+        <div className="w-[60%] border-e border-purple-500/10 overflow-y-auto p-6">
           {!scenarioData ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
               <div className="w-24 h-24 rounded-full bg-purple-500/10 flex items-center justify-center mb-6">
@@ -679,7 +679,7 @@ export default function EduStudioEngine() {
                               onClick={(e) => { e.stopPropagation(); toggleAudioPlayback(card.scene.sceneNumber); }}
                               className="w-9 h-9 rounded-full bg-amber-500/30 hover:bg-amber-500/50 flex items-center justify-center text-amber-200 transition-all flex-shrink-0"
                             >
-                              {playingScene === card.scene.sceneNumber ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                              {playingScene === card.scene.sceneNumber ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ms-0.5" />}
                             </button>
                             <audio
                               ref={el => { audioRefs.current[card.scene.sceneNumber] = el; }}
@@ -762,9 +762,9 @@ export default function EduStudioEngine() {
                 </div>
                 <Button onClick={handleGenerateScenario} disabled={scenarioMut.isPending || !referenceText.trim()}
                   className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-0">
-                  {scenarioMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t("جاري التوليد...", "Génération...", "Generating...")}</>
-                    : scenarioData ? <><RotateCcw className="w-4 h-4 mr-2" />{t("إعادة التوليد", "Régénérer", "Regenerate")}</>
-                    : <><FileText className="w-4 h-4 mr-2" />{t("توليد السيناريو", "Générer le scénario", "Generate Scenario")}</>}
+                  {scenarioMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin me-2" />{t("جاري التوليد...", "Génération...", "Generating...")}</>
+                    : scenarioData ? <><RotateCcw className="w-4 h-4 me-2" />{t("إعادة التوليد", "Régénérer", "Regenerate")}</>
+                    : <><FileText className="w-4 h-4 me-2" />{t("توليد السيناريو", "Générer le scénario", "Generate Scenario")}</>}
                 </Button>
               </div>
             </Card>
@@ -781,7 +781,7 @@ export default function EduStudioEngine() {
                     <h3 className="font-semibold text-white text-sm">{t("توليد الأوامر البصرية", "Générer les prompts visuels", "Generate Visual Prompts")}</h3>
                     <p className="text-xs text-gray-500">{t("أوامر إنجليزية عالية الدقة لـ AI", "Prompts anglais HD pour IA", "High-quality English prompts")}</p>
                   </div>
-                  {!scenarioData && <Lock className="w-4 h-4 text-gray-600 ml-auto" />}
+                  {!scenarioData && <Lock className="w-4 h-4 text-gray-600 ms-auto" />}
                 </div>
                 {scenarioData && (
                   <div className="flex flex-wrap gap-1.5 mb-3">
@@ -797,9 +797,9 @@ export default function EduStudioEngine() {
                 )}
                 <Button onClick={handleGenerateVisuals} disabled={!scenarioData || visualMut.isPending}
                   className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white border-0">
-                  {visualMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t("جاري التوليد...", "Génération...", "Generating...")}</>
-                    : visualPrompts.length > 0 ? <><RotateCcw className="w-4 h-4 mr-2" />{t("إعادة التوليد", "Régénérer", "Regenerate")}</>
-                    : <><Camera className="w-4 h-4 mr-2" />{t("توليد الأوامر البصرية", "Générer les prompts visuels", "Generate Visual Prompts")}</>}
+                  {visualMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin me-2" />{t("جاري التوليد...", "Génération...", "Generating...")}</>
+                    : visualPrompts.length > 0 ? <><RotateCcw className="w-4 h-4 me-2" />{t("إعادة التوليد", "Régénérer", "Regenerate")}</>
+                    : <><Camera className="w-4 h-4 me-2" />{t("توليد الأوامر البصرية", "Générer les prompts visuels", "Generate Visual Prompts")}</>}
                 </Button>
               </div>
             </Card>
@@ -816,7 +816,7 @@ export default function EduStudioEngine() {
                     <h3 className="font-semibold text-white text-sm">{t("توليد أوامر الصوت", "Générer les scripts voix", "Generate Voiceover")}</h3>
                     <p className="text-xs text-gray-500">{t("نص منطوق مع توجيهات الأداء", "Texte parlé avec directives", "Spoken text with directions")}</p>
                   </div>
-                  {!visualPrompts.length && <Lock className="w-4 h-4 text-gray-600 ml-auto" />}
+                  {!visualPrompts.length && <Lock className="w-4 h-4 text-gray-600 ms-auto" />}
                 </div>
                 {visualPrompts.length > 0 && (
                   <div className="space-y-2 mb-3">
@@ -875,7 +875,7 @@ export default function EduStudioEngine() {
                             : "bg-white/5 text-gray-600 border-white/5 opacity-60"}`}
                         >
                           {voiceCloneQuery.data?.status === "ready" && (
-                            <span className="absolute -top-1.5 -right-1.5 flex h-3 w-3">
+                            <span className="absolute -top-1.5 -end-1.5 flex h-3 w-3">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
                             </span>
@@ -895,7 +895,7 @@ export default function EduStudioEngine() {
                           <span className="text-xs text-violet-300">
                             {t("رصيدك:", "Solde:", "Balance:")} <span className="font-bold text-amber-300">{pointsQuery.data?.balance ?? "..."}</span> {t("نقطة", "pts", "pts")}
                           </span>
-                          <Link href="/my-voice" className="mr-auto">
+                          <Link href="/my-voice" className="me-auto">
                             <span className="text-xs text-violet-400 hover:text-violet-300 underline">{t("إعدادات الصوت", "Paramètres voix", "Voice settings")}</span>
                           </Link>
                         </div>
@@ -923,9 +923,9 @@ export default function EduStudioEngine() {
                 )}
                 <Button onClick={handleGenerateVoiceover} disabled={!visualPrompts.length || voiceoverMut.isPending}
                   className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-0">
-                  {voiceoverMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{t("جاري التوليد...", "Génération...", "Generating...")}</>
-                    : voiceovers.length > 0 ? <><RotateCcw className="w-4 h-4 mr-2" />{t("إعادة التوليد", "Régénérer", "Regenerate")}</>
-                    : <><Mic className="w-4 h-4 mr-2" />{t("توليد أوامر الصوت", "Générer les scripts voix", "Generate Voiceover")}</>}
+                  {voiceoverMut.isPending ? <><Loader2 className="w-4 h-4 animate-spin me-2" />{t("جاري التوليد...", "Génération...", "Generating...")}</>
+                    : voiceovers.length > 0 ? <><RotateCcw className="w-4 h-4 me-2" />{t("إعادة التوليد", "Régénérer", "Regenerate")}</>
+                    : <><Mic className="w-4 h-4 me-2" />{t("توليد أوامر الصوت", "Générer les scripts voix", "Generate Voiceover")}</>}
                 </Button>
               </div>
             </Card>
@@ -939,7 +939,7 @@ export default function EduStudioEngine() {
                   window.open(`/edu-studio-export`, "_blank");
                 }}
                 className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white border-0 py-6" size="lg">
-                <Download className="w-5 h-5 mr-2" />
+                <Download className="w-5 h-5 me-2" />
                 {t("تحميل خطة الإنتاج (PDF)", "Télécharger le plan (PDF)", "Download Production Plan (PDF)")}
               </Button>
             )}

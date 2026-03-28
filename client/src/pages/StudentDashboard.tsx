@@ -18,6 +18,8 @@ import {
   ResponsiveContainer, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell
 } from "recharts";
+import useI18n from "@/i18n";
+
 
 const DIFFICULTY_TYPE_LABELS: Record<string, string> = {
   dyslexia: "عسر القراءة", dysgraphia: "عسر الكتابة", dyscalculia: "عسر الحساب",
@@ -37,6 +39,7 @@ const PROGRESS_LABELS: Record<string, { label: string; color: string }> = {
 const PIE_COLORS = ["#3b82f6", "#8b5cf6", "#f97316", "#eab308", "#14b8a6", "#ef4444", "#ec4899", "#6366f1"];
 
 export default function StudentDashboard() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");

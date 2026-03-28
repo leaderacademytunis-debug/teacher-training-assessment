@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Download, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 interface ParticipantPDFReportProps {
   batchId: number;
@@ -29,6 +31,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function ParticipantPDFReport({ batchId, userId, open, onOpenChange }: ParticipantPDFReportProps) {
+  const { t, lang, isRTL, dir } = useI18n();
   const [generating, setGenerating] = useState(false);
 
   const reportQuery = trpc.participantReport.getData.useQuery(
@@ -130,7 +133,7 @@ export default function ParticipantPDFReport({ batchId, userId, open, onOpenChan
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="border p-2 text-right">الواجب</th>
+                      <th className="border p-2 text-end">الواجب</th>
                       <th className="border p-2 text-center">النوع</th>
                       <th className="border p-2 text-center">الحالة</th>
                       <th className="border p-2 text-center">العلامة</th>
@@ -189,7 +192,7 @@ export default function ParticipantPDFReport({ batchId, userId, open, onOpenChan
             {/* Actions */}
             <div className="flex gap-3 justify-center">
               <Button onClick={generatePDF} disabled={generating}>
-                {generating ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Printer className="h-4 w-4 ml-2" />}
+                {generating ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : <Printer className="h-4 w-4 ms-2" />}
                 طباعة / تحميل PDF
               </Button>
             </div>

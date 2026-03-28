@@ -146,7 +146,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 left-6 h-14 w-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 z-50"
+          className="fixed bottom-6 start-6 h-14 w-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 z-50"
           size="icon"
         >
           <MessageSquare className="h-6 w-6" />
@@ -159,7 +159,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
           className={`fixed bg-background border shadow-2xl flex flex-col z-50 transition-all duration-300 ${
             isFullScreen
               ? "inset-0 md:inset-4 rounded-none md:rounded-lg"
-              : "bottom-6 left-6 w-[90vw] max-w-[600px] h-[80vh] max-h-[700px] rounded-lg"
+              : "bottom-6 start-6 w-[90vw] max-w-[600px] h-[80vh] max-h-[700px] rounded-lg"
           }`}
         >
           {/* Header */}
@@ -213,7 +213,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
                     <div className="h-14 w-14 md:h-16 md:w-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
                       <MessageSquare className="h-7 w-7 md:h-8 md:w-8 text-blue-600" />
                     </div>
-                    <div className="absolute -bottom-1 -right-1 h-5 w-5 md:h-6 md:w-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <div className="absolute -bottom-1 -end-1 h-5 w-5 md:h-6 md:w-6 rounded-full bg-emerald-500 flex items-center justify-center">
                       <Sparkles className="h-3 w-3 md:h-3.5 md:w-3.5 text-white" />
                     </div>
                   </div>
@@ -233,7 +233,7 @@ export function ChatAssistant({ externalIsOpen, onExternalOpenChange }: ChatAssi
                         <button
                           key={index}
                           onClick={() => handleQuickPrompt(item.prompt)}
-                          className={`flex items-center gap-2 p-2.5 md:p-3 rounded-xl border text-right transition-all duration-200 ${item.color} cursor-pointer group`}
+                          className={`flex items-center gap-2 p-2.5 md:p-3 rounded-xl border text-end transition-all duration-200 ${item.color} cursor-pointer group`}
                           disabled={isLoading}
                         >
                           <div className="shrink-0">

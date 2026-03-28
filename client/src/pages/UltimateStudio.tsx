@@ -582,7 +582,7 @@ export default function UltimateStudio() {
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* COLUMN 1: THE SOURCE (30%) */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="w-[30%] border-l border-white/10 flex flex-col bg-black/20">
+        <div className="w-[30%] border-s border-white/10 flex flex-col bg-black/20">
           {/* Header */}
           <div className="p-3 border-b border-white/10 bg-gradient-to-l from-amber-500/10 to-transparent">
             <div className="flex items-center gap-2 mb-2">
@@ -708,7 +708,7 @@ export default function UltimateStudio() {
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* COLUMN 2: THE PIPELINE ENGINE (30%) */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="w-[30%] border-l border-white/10 flex flex-col bg-black/10">
+        <div className="w-[30%] border-s border-white/10 flex flex-col bg-black/10">
           {/* Header */}
           <div className="p-3 border-b border-white/10 bg-gradient-to-l from-blue-500/10 to-transparent">
             <div className="flex items-center gap-2">
@@ -878,7 +878,7 @@ export default function UltimateStudio() {
                                 setVoiceMode("clone");
                               }}
                             >
-                              {!isVIP && <Crown className="w-3 h-3 absolute top-1 left-1 text-amber-400" />}
+                              {!isVIP && <Crown className="w-3 h-3 absolute top-1 start-1 text-amber-400" />}
                               <Mic className="w-4 h-4 mx-auto mb-1" />
                               {us.myClonedVoice}
                             </button>
@@ -1001,7 +1001,7 @@ export default function UltimateStudio() {
                       {scene.imageUrl ? (
                         <div className="relative rounded-lg overflow-hidden">
                           <img src={scene.imageUrl} alt={scene.title} className="w-full h-40 object-cover" />
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                          <div className="absolute bottom-0 start-0 end-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                             <p className="text-[10px] text-white/70 line-clamp-1" dir="auto">{scene.description}</p>
                           </div>
                         </div>
@@ -1113,7 +1113,7 @@ export default function UltimateStudio() {
               <div className="text-center">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center mx-auto mb-6 relative">
                   <Clapperboard className="w-10 h-10 text-amber-400 animate-pulse" />
-                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                  <div className="absolute -top-1 -end-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                     <Loader2 className="w-4 h-4 text-white animate-spin" />
                   </div>
                 </div>
@@ -1123,7 +1123,7 @@ export default function UltimateStudio() {
                 {/* Progress Bar */}
                 <div className="relative w-full h-4 bg-white/5 rounded-full overflow-hidden mb-3 border border-white/10">
                   <div
-                    className="absolute inset-y-0 right-0 bg-gradient-to-l from-amber-500 to-orange-500 rounded-full transition-all duration-500 ease-out"
+                    className="absolute inset-y-0 end-0 bg-gradient-to-l from-amber-500 to-orange-500 rounded-full transition-all duration-500 ease-out"
                     style={{ width: `${exportProgress?.percent || 0}%` }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">

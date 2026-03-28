@@ -88,7 +88,7 @@ export default function NotificationBell() {
           <Bell className="w-5 h-5" />
           {unreadCount && unreadCount > 0 && (
             <Badge 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-1 -end-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
               variant="destructive"
             >
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -106,7 +106,7 @@ export default function NotificationBell() {
               onClick={() => markAllAsRead.mutate()}
               disabled={markAllAsRead.isPending}
             >
-              <CheckCheck className="w-4 h-4 ml-1" />
+              <CheckCheck className="w-4 h-4 ms-1" />
               تحديد الكل كمقروء
             </Button>
           )}
@@ -125,11 +125,11 @@ export default function NotificationBell() {
                   <Link href={getNotificationLink(notification)}>
                     <button
                       onClick={() => handleNotificationClick(notification)}
-                      className="w-full text-right"
+                      className="w-full text-end"
                     >
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4 className="font-semibold text-sm">
-                          <span className="ml-1">{getNotificationIcon(notification.type)}</span>
+                          <span className="ms-1">{getNotificationIcon(notification.type)}</span>
                           {notification.titleAr}
                         </h4>
                         {!notification.isRead && (

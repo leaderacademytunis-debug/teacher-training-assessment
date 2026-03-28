@@ -318,7 +318,7 @@ export function LessonPlanFormEnhanced({ onClose, onSuccess }: LessonPlanFormEnh
             <Button type="submit" disabled={createPlan.isPending}>
               {createPlan.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="h-4 w-4 animate-spin me-2" />
                   جاري الإنشاء...
                 </>
               ) : (

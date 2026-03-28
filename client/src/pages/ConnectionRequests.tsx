@@ -11,6 +11,8 @@ import {
   MessageSquare, CheckCircle2, XCircle, Loader2, ArrowRight,
   Shield, Eye, EyeOff, Inbox, Send,
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pending: { label: "في الانتظار", color: "bg-amber-100 text-amber-700 border-amber-200", icon: Clock },
@@ -114,6 +116,7 @@ function ResponseDialog({ requestId, requesterName, onSuccess }: {
 }
 
 export default function ConnectionRequests() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { data: requests, isLoading } = trpc.careerHub.getMyConnectionRequests.useQuery();
 
   const pendingCount = requests?.filter((r: any) => r.status === "pending").length || 0;
@@ -182,7 +185,7 @@ export default function ConnectionRequests() {
                       <div className="flex items-center gap-3 flex-wrap">
                         <h3 className="font-bold text-gray-900">{req.requesterName}</h3>
                         <Badge variant="outline" className={config.color}>
-                          <StatusIcon className="w-3 h-3 ml-1" />
+                          <StatusIcon className="w-3 h-3 ms-1" />
                           {config.label}
                         </Badge>
                       </div>

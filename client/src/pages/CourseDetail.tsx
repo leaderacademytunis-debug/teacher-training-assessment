@@ -212,22 +212,22 @@ export default function CourseDetail() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
           
           {/* Back Button */}
-          <div className="absolute top-6 right-6 z-10">
+          <div className="absolute top-6 end-6 z-10">
             <Link href={user ? "/my-courses" : "/"}>
               <Button variant="outline" className="rounded-xl bg-white/90 backdrop-blur-sm hover:bg-white border-0 shadow-lg">
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-4 h-4 ms-2" />
                 {isAr ? "العودة" : "Retour"}
               </Button>
             </Link>
           </div>
 
           {/* Course Title on Image */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10">
+          <div className="absolute bottom-0 start-0 end-0 p-6 md:p-10">
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-wrap gap-2 mb-3">
                 {course.isBundle && (
                   <Badge className="bg-orange-500 text-white border-0 rounded-lg px-3 py-1">
-                    <Package className="w-3.5 h-3.5 ml-1" />
+                    <Package className="w-3.5 h-3.5 ms-1" />
                     {isAr ? "باقة شاملة" : "Pack complet"}
                   </Badge>
                 )}
@@ -238,7 +238,7 @@ export default function CourseDetail() {
                 )}
                 {isApproved && (
                   <Badge className="bg-green-500 text-white border-0 rounded-lg px-3 py-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 ml-1" />
+                    <CheckCircle2 className="w-3.5 h-3.5 ms-1" />
                     {isAr ? "مسجّل" : "Inscrit"}
                   </Badge>
                 )}
@@ -353,7 +353,7 @@ export default function CourseDetail() {
                 {savings > 0 && (
                   <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-center">
                     <p className="text-green-700 font-bold">
-                      <Zap className="w-4 h-4 inline ml-1" />
+                      <Zap className="w-4 h-4 inline ms-1" />
                       {isAr ? `وفّر ${savings} د.ت مع الباقة الشاملة!` : `Économisez ${savings} DT avec le pack complet!`}
                     </p>
                     <p className="text-green-600 text-sm mt-1">
@@ -384,7 +384,7 @@ export default function CourseDetail() {
                 </h2>
                 <Link href={`/courses/${courseId}/videos`}>
                   <Button size="lg" className="w-full rounded-xl bg-[#1e3a5f] hover:bg-[#15304f]">
-                    <Video className="w-5 h-5 ml-2" />
+                    <Video className="w-5 h-5 ms-2" />
                     {isAr ? `مشاهدة الفيديوهات (${videos.length} فيديو)` : `Voir les vidéos (${videos.length})`}
                   </Button>
                 </Link>
@@ -399,7 +399,7 @@ export default function CourseDetail() {
                   {isAr ? "أدوات الذكاء الاصطناعي الحصرية" : "Outils IA exclusifs"}
                   {!isApproved && (
                     <Badge className="bg-amber-100 text-amber-700 border-0 text-xs animate-pulse">
-                      <Lock className="w-3 h-3 ml-1" />
+                      <Lock className="w-3 h-3 ms-1" />
                       {isAr ? "حصري للمشاركين" : "Réservé aux participants"}
                     </Badge>
                   )}
@@ -428,7 +428,7 @@ export default function CourseDetail() {
                           {!user ? (
                             <a href={getLoginUrl()}>
                               <Button className="bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white rounded-xl px-8 py-3 text-base font-bold shadow-lg">
-                                <Sparkles className="w-5 h-5 ml-2" />
+                                <Sparkles className="w-5 h-5 ms-2" />
                                 {isAr ? "سجّل الدخول وانضم الآن" : "Connectez-vous et inscrivez-vous"}
                               </Button>
                             </a>
@@ -441,7 +441,7 @@ export default function CourseDetail() {
                                 else window.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
                             >
-                              <Sparkles className="w-5 h-5 ml-2" />
+                              <Sparkles className="w-5 h-5 ms-2" />
                               {isAr ? "سجّل في الدورة الآن" : "Inscrivez-vous maintenant"}
                             </Button>
                           )}
@@ -757,12 +757,12 @@ export default function CourseDetail() {
                     >
                       {enrollMutation.isPending ? (
                         <>
-                          <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                          <Loader2 className="w-5 h-5 ms-2 animate-spin" />
                           {isAr ? "جاري التسجيل..." : "Inscription..."}
                         </>
                       ) : (
                         <>
-                          {course.price && course.price > 0 ? <CreditCard className="w-5 h-5 ml-2" /> : <Zap className="w-5 h-5 ml-2" />}
+                          {course.price && course.price > 0 ? <CreditCard className="w-5 h-5 ms-2" /> : <Zap className="w-5 h-5 ms-2" />}
                           {isAr ? (course.price && course.price > 0 ? "سجّل وادفع الآن" : "سجّل الآن مجاناً") : (course.price && course.price > 0 ? "S'inscrire et payer" : "S'inscrire gratuitement")}
                         </>
                       )}
@@ -772,7 +772,7 @@ export default function CourseDetail() {
                   {!user && (
                     <Link href="/">
                       <Button className="w-full rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-lg py-6 font-bold" size="lg">
-                        <Zap className="w-5 h-5 ml-2" />
+                        <Zap className="w-5 h-5 ms-2" />
                         {isAr ? "سجّل دخولك للتسجيل" : "Connectez-vous pour s'inscrire"}
                       </Button>
                     </Link>
@@ -934,9 +934,9 @@ export default function CourseDetail() {
                   className="mt-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   {submitReviewMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                    <Loader2 className="w-4 h-4 animate-spin ms-2" />
                   ) : (
-                    <Send className="w-4 h-4 ml-2" />
+                    <Send className="w-4 h-4 ms-2" />
                   )}
                   {isAr ? "إرسال التقييم" : "Envoyer l'avis"}
                 </Button>
@@ -1022,11 +1022,11 @@ export default function CourseDetail() {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                       {sc.price ? (
-                        <Badge className="absolute bottom-3 left-3 bg-orange-500 text-white border-0 rounded-lg text-xs">
+                        <Badge className="absolute bottom-3 start-3 bg-orange-500 text-white border-0 rounded-lg text-xs">
                           {sc.price} {isAr ? "د.ت" : "DT"}
                         </Badge>
                       ) : (
-                        <Badge className="absolute bottom-3 left-3 bg-green-500 text-white border-0 rounded-lg text-xs">
+                        <Badge className="absolute bottom-3 start-3 bg-green-500 text-white border-0 rounded-lg text-xs">
                           {isAr ? "مجاني" : "Gratuit"}
                         </Badge>
                       )}
@@ -1066,7 +1066,7 @@ export default function CourseDetail() {
                   <p className="font-bold text-[#1e3a5f] text-sm">{course.titleAr}</p>
                   {course.schedule && <p className="text-xs text-gray-500 mt-1">{course.schedule}</p>}
                 </div>
-                <div className="text-left">
+                <div className="text-start">
                   <p className="text-xl font-bold text-orange-500">{course.price} {isAr ? "د.ت" : "DT"}</p>
                   {course.originalPrice && course.originalPrice > (course.price || 0) && (
                     <p className="text-xs text-gray-400 line-through">{course.originalPrice} {isAr ? "د.ت" : "DT"}</p>
@@ -1177,9 +1177,9 @@ export default function CourseDetail() {
               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 w-full text-white rounded-xl py-5 text-base font-bold"
             >
               {enrollMutation.isPending ? (
-                <><Loader2 className="w-5 h-5 ml-2 animate-spin" /> {isAr ? "جاري الإرسال..." : "Envoi..."}</>
+                <><Loader2 className="w-5 h-5 ms-2 animate-spin" /> {isAr ? "جاري الإرسال..." : "Envoi..."}</>
               ) : (
-                <><Send className="w-5 h-5 ml-2" /> {isAr ? "إرسال طلب التسجيل والدفع" : "Envoyer la demande"}</>
+                <><Send className="w-5 h-5 ms-2" /> {isAr ? "إرسال طلب التسجيل والدفع" : "Envoyer la demande"}</>
               )}
             </Button>
           </DialogFooter>

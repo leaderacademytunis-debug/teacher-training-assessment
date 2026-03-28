@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, XCircle, RefreshCw, Link2, Unlink, ArrowLeft, BookOpen, GraduationCap, Clock, AlertTriangle, ChevronRight, Wifi, WifiOff } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 export default function GoogleClassroomSettings() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
@@ -130,7 +133,7 @@ export default function GoogleClassroomSettings() {
           <div className="flex items-center gap-3">
             <Link href="/admin/batches">
               <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 ml-1" />
+                <ArrowLeft className="w-4 h-4 ms-1" />
                 العودة لإدارة الدفعات
               </Button>
             </Link>
@@ -199,11 +202,11 @@ export default function GoogleClassroomSettings() {
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={handleConnect} disabled={isConnecting}>
-                    <RefreshCw className={`w-4 h-4 ml-1 ${isConnecting ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`w-4 h-4 ms-1 ${isConnecting ? "animate-spin" : ""}`} />
                     إعادة الربط
                   </Button>
                   <Button variant="destructive" size="sm" onClick={handleDisconnect} disabled={disconnect.isPending}>
-                    <Unlink className="w-4 h-4 ml-1" />
+                    <Unlink className="w-4 h-4 ms-1" />
                     فصل الحساب
                   </Button>
                 </div>
@@ -232,9 +235,9 @@ export default function GoogleClassroomSettings() {
                 </div>
                 <Button onClick={handleConnect} disabled={isConnecting} className="bg-gradient-to-l from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
                   {isConnecting ? (
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                   ) : (
-                    <Link2 className="w-4 h-4 ml-2" />
+                    <Link2 className="w-4 h-4 ms-2" />
                   )}
                   ربط حساب Google
                 </Button>
@@ -365,7 +368,7 @@ function BatchMappingCard({ batch, connectionId }: { batch: any; connectionId: n
           <Badge variant="secondary" className="text-xs">{batch.tag}</Badge>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowCourses(!showCourses)}>
-          <Link2 className="w-3.5 h-3.5 ml-1" />
+          <Link2 className="w-3.5 h-3.5 ms-1" />
           {showCourses ? "إلغاء" : "ربط بفصل"}
         </Button>
       </div>
@@ -380,7 +383,7 @@ function BatchMappingCard({ batch, connectionId }: { batch: any; connectionId: n
                 <span>{m.googleCourseName || m.googleCourseId}</span>
                 {m.lastSyncAt && (
                   <span className="text-xs text-muted-foreground">
-                    <Clock className="w-3 h-3 inline ml-1" />
+                    <Clock className="w-3 h-3 inline ms-1" />
                     آخر مزامنة: {new Date(m.lastSyncAt).toLocaleDateString("ar-TN")}
                   </span>
                 )}

@@ -254,7 +254,7 @@ export default function Statistics() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="border-b">
-                      <tr className="text-right">
+                      <tr className="text-end">
                         <th className="pb-3 font-semibold">المشارك</th>
                         <th className="pb-3 font-semibold">الدرجة</th>
                         <th className="pb-3 font-semibold">الحالة</th>

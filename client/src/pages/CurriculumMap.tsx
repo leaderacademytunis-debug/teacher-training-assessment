@@ -309,10 +309,10 @@ export default function CurriculumMap() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl" dir={isRTL ? "rtl" : "ltr"}>
             <DialogHeader>
-              <DialogTitle className={isRTL ? "text-right" : "text-left"}>{t("استيراد مخطط سنوي بالذكاء الاصطناعي", "Importer un Plan Annuel par IA", "Import Annual Plan with AI")}</DialogTitle>
+              <DialogTitle className={isRTL ? "text-end" : "text-start"}>{t("استيراد مخطط سنوي بالذكاء الاصطناعي", "Importer un Plan Annuel par IA", "Import Annual Plan with AI")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className={`text-sm text-muted-foreground ${isRTL ? "text-right" : "text-left"}`}>
+              <p className={`text-sm text-muted-foreground ${isRTL ? "text-end" : "text-start"}`}>
                 {t("الصق محتوى المخطط السنوي (من ملف PDF أو Word) وسيقوم الذكاء الاصطناعي بتحليله واستخراج المواضيع تلقائيًا.", "Collez le contenu du plan annuel (depuis un PDF ou Word) et l'IA l'analysera et extraira les sujets automatiquement.", "Paste the content of the annual plan (from a PDF or Word file) and the AI will analyze it and extract the topics automatically.")}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,11 +352,11 @@ export default function CurriculumMap() {
           </DialogTrigger>
           <DialogContent dir={isRTL ? "rtl" : "ltr"}>
             <DialogHeader>
-              <DialogTitle className={isRTL ? "text-right" : "text-left"}>{t("إنشاء مخطط تدرج سنوي جديد", "Créer un nouveau plan annuel", "Create a New Annual Plan")}</DialogTitle>
+              <DialogTitle className={isRTL ? "text-end" : "text-start"}>{t("إنشاء مخطط تدرج سنوي جديد", "Créer un nouveau plan annuel", "Create a New Annual Plan")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div>
-                <Label htmlFor="plan-title" className={`mb-1.5 block ${isRTL ? "text-right" : "text-left"}`}>{t("عنوان المخطط", "Titre du Plan", "Plan Title")}</Label>
+                <Label htmlFor="plan-title" className={`mb-1.5 block ${isRTL ? "text-end" : "text-start"}`}>{t("عنوان المخطط", "Titre du Plan", "Plan Title")}</Label>
                 <Input id="plan-title" value={newPlan.planTitle} onChange={e => setNewPlan(p => ({ ...p, planTitle: e.target.value }))} placeholder={t("مثال: مخطط الرياضيات للسنة الثالثة", "Ex: Plan de maths 3ème année", "Ex: 3rd Grade Math Plan")} />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -374,7 +374,7 @@ export default function CurriculumMap() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="total-periods" className={`mb-1.5 block ${isRTL ? "text-right" : "text-left"}`}>{t("عدد الفترات", "Nombre de Périodes", "Number of Periods")}</Label>
+                <Label htmlFor="total-periods" className={`mb-1.5 block ${isRTL ? "text-end" : "text-start"}`}>{t("عدد الفترات", "Nombre de Périodes", "Number of Periods")}</Label>
                 <Input id="total-periods" type="number" value={newPlan.totalPeriods} onChange={e => setNewPlan(p => ({ ...p, totalPeriods: +e.target.value }))} />
               </div>
               <Button onClick={handleCreatePlan} disabled={createPlanMutation.isLoading} className="w-full">
@@ -402,7 +402,7 @@ export default function CurriculumMap() {
                   key={plan.id}
                   onClick={() => setSelectedPlanId(plan.id)}
                   className={`w-full flex items-center justify-between text-sm p-2 rounded-md transition-colors cursor-pointer ${selectedPlanId === plan.id ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"}`}>
-                  <div className={isRTL ? "text-right" : "text-left"}>
+                  <div className={isRTL ? "text-end" : "text-start"}>
                     <p className="font-medium">{plan.planTitle}</p>
                     <p className={`text-xs ${selectedPlanId === plan.id ? "text-blue-600" : "text-muted-foreground"}`}>
                       {plan.subject} - {plan.grade}
@@ -433,7 +433,7 @@ export default function CurriculumMap() {
       {selectedPlan ? (
         <>
           {/* Header */}
-          <div className={`p-4 rounded-lg bg-white border border-gray-200 ${isRTL ? "text-right" : "text-left"}`}>
+          <div className={`p-4 rounded-lg bg-white border border-gray-200 ${isRTL ? "text-end" : "text-start"}`}>
             <h2 className="text-lg font-bold text-gray-800">{selectedPlan.planTitle}</h2>
             <p className="text-sm text-muted-foreground">{selectedPlan.subject} · {selectedPlan.grade} · {selectedPlan.schoolYear}</p>
           </div>
@@ -503,14 +503,14 @@ export default function CurriculumMap() {
                   <button onClick={() => togglePeriod(period.periodNumber)} className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100">
                     <div className="flex items-center gap-3">
                       {expandedPeriods[period.periodNumber] ? <ChevronDown className="h-5 w-5" /> : (isRTL ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />)}
-                      <div className={isRTL ? "text-right" : "text-left"}>
+                      <div className={isRTL ? "text-end" : "text-start"}>
                         <p className="font-semibold">{t("الفترة", "Période", "Period")} {period.periodNumber}</p>
                         <p className="text-xs text-muted-foreground">{t(`${period.completedTopics} من ${period.totalTopics} مواضيع مكتملة`, `${period.completedTopics} / ${period.totalTopics} sujets terminés`, `${period.completedTopics} of ${period.totalTopics} topics completed`)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Progress value={(period.completedTopics / period.totalTopics) * 100} className="w-24 h-2" />
-                      <span className="text-xs font-mono w-10 text-right">{Math.round((period.completedTopics / period.totalTopics) * 100)}%</span>
+                      <span className="text-xs font-mono w-10 text-end">{Math.round((period.completedTopics / period.totalTopics) * 100)}%</span>
                     </div>
                   </button>
                   {expandedPeriods[period.periodNumber] && (

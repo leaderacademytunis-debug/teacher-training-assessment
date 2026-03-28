@@ -137,7 +137,7 @@ export default function ManageVideos() {
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 ml-2" />
+                <Plus className="w-4 h-4 ms-2" />
                 إضافة فيديو
               </Button>
             </DialogTrigger>
@@ -181,7 +181,7 @@ export default function ManageVideos() {
                 <DialogFooter className="gap-2">
                   <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>إلغاء</Button>
                   <Button type="submit" disabled={createVideo.isPending}>
-                    {createVideo.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+                    {createVideo.isPending && <Loader2 className="w-4 h-4 ms-2 animate-spin" />}
                     إضافة الفيديو
                   </Button>
                 </DialogFooter>
@@ -256,9 +256,9 @@ export default function ManageVideos() {
                         </span>
                         <Badge variant={video.isRequired ? "default" : "secondary"} className="text-xs">
                           {video.isRequired ? (
-                            <><CheckCircle2 className="w-3 h-3 ml-1" />إلزامي</>
+                            <><CheckCircle2 className="w-3 h-3 ms-1" />إلزامي</>
                           ) : (
-                            <><Circle className="w-3 h-3 ml-1" />اختياري</>
+                            <><Circle className="w-3 h-3 ms-1" />اختياري</>
                           )}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
@@ -334,7 +334,7 @@ export default function ManageVideos() {
               <DialogFooter className="gap-2">
                 <Button type="button" variant="outline" onClick={() => { setIsEditDialogOpen(false); setEditingVideo(null); }}>إلغاء</Button>
                 <Button type="submit" disabled={updateVideo.isPending}>
-                  {updateVideo.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+                  {updateVideo.isPending && <Loader2 className="w-4 h-4 ms-2 animate-spin" />}
                   حفظ التغييرات
                 </Button>
               </DialogFooter>

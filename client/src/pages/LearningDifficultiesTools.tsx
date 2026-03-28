@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import useI18n from "@/i18n";
+
 
 // ===== Language helper =====
 const useLang = () => {
@@ -207,12 +209,12 @@ const STATS = [
 ];
 
 export default function LearningDifficultiesTools() {
-  const lang = useLang();
+  const { t: _t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [showAllDisorders, setShowAllDisorders] = useState(false);
 
-  const T = (ar: string, fr: string, en: string) => t(ar, fr, en, lang);
+  const T = (ar: string, fr: string, en: string) => t(ar, fr, en, lang);  // uses module-level t
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50" dir="rtl">
@@ -310,15 +312,15 @@ export default function LearningDifficultiesTools() {
                 isAvailable ? "border-slate-200 hover:border-teal-300" : "border-slate-200/60 hover:border-purple-200"
               }`}>
                 {/* Status badge */}
-                <div className="absolute top-3 left-3 z-10">
+                <div className="absolute top-3 start-3 z-10">
                   {isAvailable ? (
                     <Badge className="bg-teal-500 text-white border-0 shadow-sm">
-                      <CheckCircle2 className="h-3 w-3 ml-1" />
+                      <CheckCircle2 className="h-3 w-3 ms-1" />
                       {T("متاحة", "Disponible", "Available")}
                     </Badge>
                   ) : (
                     <Badge className="bg-purple-100 text-purple-700 border-purple-200 shadow-sm">
-                      <Clock className="h-3 w-3 ml-1" />
+                      <Clock className="h-3 w-3 ms-1" />
                       {T("قريباً", "Bientôt", "Coming Soon")}
                     </Badge>
                   )}

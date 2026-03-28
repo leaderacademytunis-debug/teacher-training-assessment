@@ -35,6 +35,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import useI18n from "@/i18n";
+
 
 // ===== DIFFICULTY TYPES =====
 const DIFFICULTY_TYPES = [
@@ -69,6 +71,7 @@ const GRADE_LEVELS = [
 ];
 
 export default function ContentAdapter() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"adapt" | "history">("adapt");
 
@@ -180,7 +183,7 @@ export default function ContentAdapter() {
       <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white" dir="rtl">
         <div className="container max-w-5xl py-8">
           <Button variant="ghost" className="mb-6 text-slate-400 hover:text-white" onClick={() => setHistoryViewId(null)}>
-            <ArrowLeft className="h-4 w-4 ml-2" /> العودة للسجل
+            <ArrowLeft className="h-4 w-4 ms-2" /> العودة للسجل
           </Button>
           <ResultDisplay data={item} expandedSections={expandedSections} toggleSection={toggleSection} />
         </div>
@@ -198,7 +201,7 @@ export default function ContentAdapter() {
             <div className="flex items-center gap-4">
               <Link href="/learning-support">
                 <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                  <ArrowLeft className="h-4 w-4 ml-1" /> أدوات ذوي الصعوبات
+                  <ArrowLeft className="h-4 w-4 ms-1" /> أدوات ذوي الصعوبات
                 </Button>
               </Link>
               <div>
@@ -229,7 +232,7 @@ export default function ContentAdapter() {
               onClick={() => setActiveTab("adapt")}
               className={activeTab === "adapt" ? "bg-emerald-600 hover:bg-emerald-700" : "text-slate-400"}
             >
-              <Wand2 className="h-4 w-4 ml-1" /> تكييف جديد
+              <Wand2 className="h-4 w-4 ms-1" /> تكييف جديد
             </Button>
             <Button
               variant={activeTab === "history" ? "default" : "ghost"}
@@ -237,7 +240,7 @@ export default function ContentAdapter() {
               onClick={() => setActiveTab("history")}
               className={activeTab === "history" ? "bg-emerald-600 hover:bg-emerald-700" : "text-slate-400"}
             >
-              <History className="h-4 w-4 ml-1" /> السجل
+              <History className="h-4 w-4 ms-1" /> السجل
             </Button>
           </div>
         </div>
@@ -358,7 +361,7 @@ export default function ContentAdapter() {
                         <button
                           key={level.id}
                           onClick={() => setAdaptationLevel(level.id)}
-                          className={`p-4 rounded-xl border text-right transition-all ${
+                          className={`p-4 rounded-xl border text-end transition-all ${
                             adaptationLevel === level.id
                               ? `${level.color} border-2 scale-[1.02] shadow-lg`
                               : "border-slate-700/50 bg-slate-800/30 text-slate-400 hover:border-slate-600"
@@ -477,7 +480,7 @@ export default function ContentAdapter() {
                   <h3 className="text-lg font-bold text-slate-300 mb-2">لا توجد تكييفات سابقة</h3>
                   <p className="text-slate-400 mb-4">ابدأ بتكييف أول درس لك!</p>
                   <Button onClick={() => setActiveTab("adapt")} className="bg-emerald-600 hover:bg-emerald-700">
-                    <Wand2 className="h-4 w-4 ml-2" /> تكييف جديد
+                    <Wand2 className="h-4 w-4 ms-2" /> تكييف جديد
                   </Button>
                 </CardContent>
               </Card>
@@ -511,7 +514,7 @@ export default function ContentAdapter() {
                           {item.status === "completed" && (
                             <Button size="sm" variant="ghost" className="text-emerald-400 hover:text-emerald-300 text-xs"
                               onClick={() => setHistoryViewId(item.id)}>
-                              <Eye className="h-3.5 w-3.5 ml-1" /> عرض
+                              <Eye className="h-3.5 w-3.5 ms-1" /> عرض
                             </Button>
                           )}
                           <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 text-xs"
@@ -520,7 +523,7 @@ export default function ContentAdapter() {
                                 deleteMutation.mutate({ id: item.id });
                               }
                             }}>
-                            <Trash2 className="h-3.5 w-3.5 ml-1" /> حذف
+                            <Trash2 className="h-3.5 w-3.5 ms-1" /> حذف
                           </Button>
                         </div>
                       </CardContent>
@@ -560,7 +563,7 @@ function ResultDisplay({ data, expandedSections, toggleSection }: {
               </div>
               <h2 className="text-xl font-bold text-white mb-1">{data.adaptedTitle || data.originalTitle}</h2>
               <p className="text-sm text-slate-400">
-                {data.subject && <span className="ml-3">{data.subject}</span>}
+                {data.subject && <span className="ms-3">{data.subject}</span>}
                 {data.gradeLevel && <span>{data.gradeLevel}</span>}
               </p>
             </div>

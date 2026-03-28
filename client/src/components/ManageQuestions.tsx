@@ -147,7 +147,7 @@ export default function ManageQuestions() {
           }}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="w-4 h-4 ml-2" />
+                <Plus className="w-4 h-4 ms-2" />
                 إضافة سؤال جديد
               </Button>
             </DialogTrigger>
@@ -261,7 +261,7 @@ export default function ManageQuestions() {
                   >
                     {(createMutation.isPending || updateMutation.isPending) ? (
                       <>
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                         جاري الحفظ...
                       </>
                     ) : (
@@ -373,10 +373,10 @@ export default function ManageQuestions() {
                               isCorrect ? "bg-green-50 border-green-500" : "bg-gray-50 border-gray-200"
                             }`}
                           >
-                            <span className="font-semibold ml-2">{option}.</span>
+                            <span className="font-semibold ms-2">{option}.</span>
                             {question.options[optionKey]}
                             {isCorrect && (
-                              <span className="text-green-600 font-semibold mr-2">(الإجابة الصحيحة)</span>
+                              <span className="text-green-600 font-semibold me-2">(الإجابة الصحيحة)</span>
                             )}
                           </div>
                         );

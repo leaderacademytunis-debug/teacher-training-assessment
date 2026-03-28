@@ -408,8 +408,8 @@ export default function LessonSheetFromPlan() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className={`p-6 text-sm leading-relaxed ${isRTL ? 'text-right' : 'text-left'}`}>
-                <div className={`space-y-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+            <CardContent className={`p-6 text-sm leading-relaxed ${isRTL ? 'text-end' : 'text-start'}`}>
+                <div className={`space-y-4 ${isRTL ? 'text-end' : 'text-start'}`}>
                   {displaySheet.lessonTitle && <EditableField isRTL={isRTL} editMode={editMode} label={t("عنوان الدرس", "Titre de la leçon", "Lesson Title")} value={displaySheet.lessonTitle} onChange={(val) => updateEditedField("lessonTitle", val)} />}
                   <div className="grid grid-cols-2 gap-4">
                     {displaySheet.duration && <DisplayField isRTL={isRTL} label={t("المدة", "Durée", "Duration")} value={displaySheet.duration} />}
@@ -441,7 +441,7 @@ export default function LessonSheetFromPlan() {
 function EditableField({ isRTL, editMode, label, value, onChange }: { isRTL: boolean; editMode: boolean; label: string; value: string; onChange: (value: string) => void; }) {
   return (
     <div>
-      <Label className={`font-bold text-blue-800 mb-1 block ${isRTL ? 'text-right' : 'text-left'}`}>{label}</Label>
+      <Label className={`font-bold text-blue-800 mb-1 block ${isRTL ? 'text-end' : 'text-start'}`}>{label}</Label>
       {editMode ? (
         <Textarea value={value} onChange={(e) => onChange(e.target.value)} className="w-full p-2 border rounded-md" />
       ) : (
@@ -454,7 +454,7 @@ function EditableField({ isRTL, editMode, label, value, onChange }: { isRTL: boo
 function DisplayField({ isRTL, label, value }: { isRTL: boolean; label: string; value: string; }) {
   return (
     <div>
-      <Label className={`font-bold text-blue-800 mb-1 block ${isRTL ? 'text-right' : 'text-left'}`}>{label}</Label>
+      <Label className={`font-bold text-blue-800 mb-1 block ${isRTL ? 'text-end' : 'text-start'}`}>{label}</Label>
       <div className="p-2 bg-gray-50 rounded-md border">{value}</div>
     </div>
   );
@@ -463,8 +463,8 @@ function DisplayField({ isRTL, label, value }: { isRTL: boolean; label: string; 
 function DisplayList({ isRTL, label, items }: { isRTL: boolean; label: string; items: string[]; }) {
   return (
     <div>
-      <Label className={`font-bold text-blue-800 mb-1 block ${isRTL ? 'text-right' : 'text-left'}`}>{label}</Label>
-      <ul className={`list-disc ${isRTL ? 'list-inside pr-4' : 'list-outside pl-4'}`}>
+      <Label className={`font-bold text-blue-800 mb-1 block ${isRTL ? 'text-end' : 'text-start'}`}>{label}</Label>
+      <ul className={`list-disc ${isRTL ? 'list-inside pe-4' : 'list-outside ps-4'}`}>
         {items.map((item, index) => <li key={index} className="mb-1">{item}</li>)}
       </ul>
     </div>
@@ -475,7 +475,7 @@ function PhaseCard({ isRTL, phase, title, t }: { isRTL: boolean; phase: any; tit
   return (
     <Card className="bg-blue-50 border-blue-200">
       <CardHeader className="pb-2">
-        <CardTitle className={`text-base font-semibold text-blue-900 ${isRTL ? 'text-right' : 'text-left'}`}>{title} ({phase.duration})</CardTitle>
+        <CardTitle className={`text-base font-semibold text-blue-900 ${isRTL ? 'text-end' : 'text-start'}`}>{title} ({phase.duration})</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         {phase.problemSituation && <p><strong>{t("وضعية الانطلاق", "Situation de départ", "Starting Situation")}:</strong> {phase.problemSituation}</p>}
@@ -485,7 +485,7 @@ function PhaseCard({ isRTL, phase, title, t }: { isRTL: boolean; phase: any; tit
         {phase.steps && (
           <div className="space-y-2">
             {phase.steps.map((step: any, i: number) => (
-              <div key={i} className={`p-2 rounded-md bg-white border ${isRTL ? 'border-r-2 border-r-blue-300' : 'border-l-2 border-l-blue-300'}`}>
+              <div key={i} className={`p-2 rounded-md bg-white border ${isRTL ? 'border-e-2 border-e-blue-300' : 'border-s-2 border-s-blue-300'}`}>
                 <p className="font-semibold">{step.step}</p>
                 <p><strong>{t("نشاط المعلم", "Activité de l'enseignant", "Teacher's Activity")}:</strong> {step.teacherActivity}</p>
                 <p><strong>{t("نشاط المتعلم", "Activité de l'apprenant", "Learner's Activity")}:</strong> {step.learnerActivity}</p>
@@ -506,7 +506,7 @@ function RemediationCard({ isRTL, remediation, t }: { isRTL: boolean; remediatio
   return (
     <Card className="bg-orange-50 border-orange-200">
       <CardHeader className="pb-2">
-        <CardTitle className={`text-base font-semibold text-orange-900 ${isRTL ? 'text-right' : 'text-left'}`}>{t("مرحلة العلاج", "Phase de remédiation", "Remediation Phase")}</CardTitle>
+        <CardTitle className={`text-base font-semibold text-orange-900 ${isRTL ? 'text-end' : 'text-start'}`}>{t("مرحلة العلاج", "Phase de remédiation", "Remediation Phase")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         <p><strong>{t("الصعوبات المرصودة", "Difficultés observées", "Observed Difficulties")}:</strong> {remediation.difficulties}</p>
@@ -522,7 +522,7 @@ function AssessmentCriteriaCard({ isRTL, criteria, t }: { isRTL: boolean; criter
   return (
     <Card className="bg-purple-50 border-purple-200">
       <CardHeader className="pb-2">
-        <CardTitle className={`text-base font-semibold text-purple-900 ${isRTL ? 'text-right' : 'text-left'}`}>{t("معايير التقييم", "Critères d'évaluation", "Assessment Criteria")}</CardTitle>
+        <CardTitle className={`text-base font-semibold text-purple-900 ${isRTL ? 'text-end' : 'text-start'}`}>{t("معايير التقييم", "Critères d'évaluation", "Assessment Criteria")}</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-2 text-sm">
         {Object.entries(criteria).map(([key, value]) => (

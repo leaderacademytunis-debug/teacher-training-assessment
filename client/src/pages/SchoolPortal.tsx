@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Building2, Briefcase, Plus, MapPin, BookOpen, GraduationCap, CheckCircle, Clock, Users, Star, Send, School, ChevronDown, ChevronUp, Award, Globe, Brain, Zap, TrendingUp, ShieldCheck, Eye, Languages, Target } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const REGIONS = [
   "تونس العاصمة", "أريانة", "بن عروس", "منوبة", "نابل", "زغوان", "بنزرت",
@@ -65,6 +67,7 @@ const INITIAL_JOB_FORM: JobFormState = {
 };
 
 export default function SchoolPortal() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("register");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -257,9 +260,9 @@ export default function SchoolPortal() {
                       <h2 className="text-xl font-bold flex items-center gap-2">
                         {mySchool.schoolNameAr || mySchool.schoolName}
                         {mySchool.isVerified ? (
-                          <Badge className="bg-green-100 text-green-700"><CheckCircle className="w-3 h-3 ml-1" /> موثقة</Badge>
+                          <Badge className="bg-green-100 text-green-700"><CheckCircle className="w-3 h-3 ms-1" /> موثقة</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-yellow-600 border-yellow-300"><Clock className="w-3 h-3 ml-1" /> قيد المراجعة</Badge>
+                          <Badge variant="outline" className="text-yellow-600 border-yellow-300"><Clock className="w-3 h-3 ms-1" /> قيد المراجعة</Badge>
                         )}
                       </h2>
                       <p className="text-gray-500 flex items-center gap-1"><MapPin className="w-4 h-4" /> {mySchool.region}</p>
@@ -279,7 +282,7 @@ export default function SchoolPortal() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-bold">عروض العمل المنشورة</h3>
                   <Button onClick={() => setShowJobForm(!showJobForm)} className="bg-blue-700 hover:bg-blue-800">
-                    <Plus className="w-4 h-4 ml-2" /> نشر عرض عمل
+                    <Plus className="w-4 h-4 ms-2" /> نشر عرض عمل
                   </Button>
                 </div>
 
@@ -486,7 +489,7 @@ export default function SchoolPortal() {
 
                       <div className="flex gap-3">
                         <Button className="bg-blue-700 hover:bg-blue-800" onClick={handlePostJob} disabled={postJobMutation.isPending}>
-                          <Send className="w-4 h-4 ml-2" />
+                          <Send className="w-4 h-4 ms-2" />
                           {postJobMutation.isPending ? "جاري النشر والمطابقة..." : "نشر العرض وتفعيل المطابقة الذكية"}
                         </Button>
                         <Button variant="outline" onClick={() => { setShowJobForm(false); setShowAdvanced(false); }}>إلغاء</Button>
@@ -754,7 +757,7 @@ function MatchCard({ match, rank }: { match: any; rank: number }) {
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div className={`h-full ${barColor} rounded-full transition-all`} style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="text-xs font-bold w-14 text-left" dir="ltr">{val.score}/{val.max}</span>
+                  <span className="text-xs font-bold w-14 text-start" dir="ltr">{val.score}/{val.max}</span>
                   <span className="text-xs text-gray-400 w-24 truncate" title={val.details}>{val.details}</span>
                 </div>
               );
@@ -767,12 +770,12 @@ function MatchCard({ match, rank }: { match: any; rank: number }) {
           {match.slug && (
             <a href={`/portfolio/${match.slug}`} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="outline" className="text-xs">
-                <Eye className="w-3 h-3 ml-1" /> عرض الملف المهني
+                <Eye className="w-3 h-3 ms-1" /> عرض الملف المهني
               </Button>
             </a>
           )}
           <Button size="sm" variant="outline" className="text-xs" onClick={() => toast.info("ميزة المراسلة قادمة قريباً")}>
-            <Send className="w-3 h-3 ml-1" /> مراسلة
+            <Send className="w-3 h-3 ms-1" /> مراسلة
           </Button>
         </div>
       </CardContent>

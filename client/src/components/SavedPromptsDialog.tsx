@@ -66,7 +66,7 @@ export function SavedPromptsDialog({ open, onOpenChange, onSelectPrompt }: Saved
             savedPrompts.map((prompt) => (
               <Card
                 key={prompt.id}
-                className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-purple-500"
+                className="hover:shadow-md transition-shadow cursor-pointer border-s-4 border-s-purple-500"
                 onClick={() => handleUsePrompt(prompt.promptText, prompt.id)}
               >
                 <CardHeader>

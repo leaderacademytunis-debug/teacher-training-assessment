@@ -132,14 +132,14 @@ function LibraryItem({
 }) {
   return (
     <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors">
-      <div className={`flex-1 min-w-0 ${lang === "ar" ? "text-right" : "text-left"}`}>
+      <div className={`flex-1 min-w-0 ${lang === "ar" ? "text-end" : "text-start"}`}>
         <p className="font-semibold text-gray-800 text-sm truncate">
           {exam.subject} — {exam.level}
         </p>
         <p className="text-xs text-blue-600">{exam.trimester} · {formatDate(exam.createdAt, lang)}</p>
         {exam.topics && <p className="text-xs text-gray-400 truncate mt-0.5">{exam.topics}</p>}
       </div>
-      <div className={`flex gap-2 ${lang === "ar" ? "mr-3" : "ml-3"} shrink-0`}>
+      <div className={`flex gap-2 ${lang === "ar" ? "me-3" : "ms-3"} shrink-0`}>
         {exam.answerKeyContent && (
           <Badge className="bg-purple-100 text-purple-700 text-xs">+ {t("تصحيح", "corrigé", "answer key")}</Badge>
         )}
@@ -652,7 +652,7 @@ export default function ExamBuilder() {
                 <img src={schoolLogo} alt={t("شعار", "Logo", "Logo")} className="w-full h-full object-contain p-0.5" />
                 <button
                   onClick={() => { setSchoolLogo(""); updateProfile.mutate({ schoolLogo: "" }); }}
-                  className="absolute -top-0.5 -left-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
+                  className="absolute -top-0.5 -start-0.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"
                 >×</button>
               </div>
             ) : (
@@ -799,7 +799,7 @@ export default function ExamBuilder() {
 
           <TabsContent value="exam">
             <div
-              className={`prose prose-sm max-w-none leading-relaxed overflow-auto max-h-[600px] pr-1 transition-all duration-200 rounded-lg ${
+              className={`prose prose-sm max-w-none leading-relaxed overflow-auto max-h-[600px] pe-1 transition-all duration-200 rounded-lg ${
                 isDragOver ? "ring-2 ring-violet-400 bg-violet-50" : ""
               }`}
               style={{ direction: "rtl", fontFamily: "'Almarai', sans-serif", color: "#1F2937" }}
@@ -840,7 +840,7 @@ export default function ExamBuilder() {
                 <p className="text-purple-600 font-semibold" style={{ fontFamily: "'Almarai', sans-serif" }}>{t("يُعدّ نموذج الإجابة النموذجية...", "Préparation du corrigé type...", "Preparing the answer key...")}</p>
               </div>
             ) : answerKey ? (
-              <div className="prose prose-sm max-w-none leading-relaxed overflow-auto max-h-[600px] pr-1" style={{ direction: "rtl", fontFamily: "'Almarai', sans-serif", color: "#1F2937" }}>
+              <div className="prose prose-sm max-w-none leading-relaxed overflow-auto max-h-[600px] pe-1" style={{ direction: "rtl", fontFamily: "'Almarai', sans-serif", color: "#1F2937" }}>
                 <Streamdown>{answerKey}</Streamdown>
               </div>
             ) : null}
@@ -857,7 +857,7 @@ export default function ExamBuilder() {
               </h4>
               <Button size="sm" variant="outline" onClick={() => setExamImages([])}
                 className="text-xs h-6 px-2 border-red-200 text-red-400 hover:bg-red-50">
-                <Trash2 className="w-3 h-3 ml-1" /> {t("مسح الكل", "Tout supprimer", "Clear all")}
+                <Trash2 className="w-3 h-3 ms-1" /> {t("مسح الكل", "Tout supprimer", "Clear all")}
               </Button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -881,7 +881,7 @@ export default function ExamBuilder() {
                   {img.caption && (
                     <div className="p-1.5 text-[10px] text-gray-500 text-center truncate">{img.caption}</div>
                   )}
-                  <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                  <div className="absolute bottom-8 start-0 end-0 flex justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <button onClick={(e) => { e.stopPropagation(); handleRegenerateImage(idx); }}
                       disabled={regeneratingIndex !== null}
                       className="bg-blue-500 text-white rounded px-1.5 py-0.5 text-[10px] hover:bg-blue-400 disabled:opacity-50">
@@ -893,7 +893,7 @@ export default function ExamBuilder() {
                     </button>
                   </div>
                   <button onClick={() => setExamImages(prev => prev.filter((_, i) => i !== idx))}
-                    className="absolute top-1 left-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                    className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                     ×
                   </button>
                 </div>

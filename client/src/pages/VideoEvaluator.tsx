@@ -153,8 +153,8 @@ const VideoEvaluator = () => {
     return (
       <div className={`text-center p-8 rounded-2xl ${level.bg} border-2 ${level.border} relative overflow-hidden`}>
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-4 right-8 w-20 h-20 rounded-full border-4" style={{ borderColor: level.color }} />
-          <div className="absolute bottom-4 left-8 w-16 h-16 rounded-full border-4" style={{ borderColor: level.color }} />
+          <div className="absolute top-4 end-8 w-20 h-20 rounded-full border-4" style={{ borderColor: level.color }} />
+          <div className="absolute bottom-4 start-8 w-16 h-16 rounded-full border-4" style={{ borderColor: level.color }} />
         </div>
         <div className="relative z-10">
           {attemptNumber && (
@@ -237,7 +237,7 @@ const VideoEvaluator = () => {
   function HistoryCard({ evaluation, onClick }: { evaluation: any; onClick: () => void }) {
     const level = getScoreLevel(evaluation.totalScore);
     return (
-      <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 group" style={{ borderLeftColor: level.color }} onClick={onClick}>
+      <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 border-s-4 group" style={{ borderLeftColor: level.color }} onClick={onClick}>
         <CardContent className="py-4 px-5">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
@@ -249,7 +249,7 @@ const VideoEvaluator = () => {
               <p className="text-sm font-semibold text-gray-800 truncate">{evaluation.educationalObjective}</p>
               <p className="text-xs text-gray-500 mt-1">{new Date(evaluation.createdAt).toLocaleString(language === 'ar' ? 'ar-TN' : language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             </div>
-            <div className={`flex flex-col items-end ${isRTL ? "mr-3" : "ml-3"}`}>
+            <div className={`flex flex-col items-end ${isRTL ? "me-3" : "ms-3"}`}>
               <div className="text-2xl font-bold" style={{ color: level.color }}>{evaluation.totalScore}</div>
               <div className="text-xs font-medium" style={{ color: level.color }}>{level.label}</div>
             </div>
@@ -641,7 +641,7 @@ const VideoEvaluator = () => {
             onClick={() => setActiveTab("form")}
             className={`flex-1 ${activeTab === "form" ? "font-bold" : ""}`}
           >
-            <Wrench className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} /> {t("إعداد التقييم", "Configuration", "Setup")}
+            <Wrench className={`w-4 h-4 ${isRTL ? "ms-2" : "me-2"}`} /> {t("إعداد التقييم", "Configuration", "Setup")}
           </Button>
           <Button
             variant={activeTab === "results" ? "secondary" : "ghost"}
@@ -649,14 +649,14 @@ const VideoEvaluator = () => {
             disabled={!evaluationResult}
             className={`flex-1 ${activeTab === "results" ? "font-bold" : ""}`}
           >
-            <BarChart3 className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} /> {t("النتائج", "Résultats", "Results")}
+            <BarChart3 className={`w-4 h-4 ${isRTL ? "ms-2" : "me-2"}`} /> {t("النتائج", "Résultats", "Results")}
           </Button>
           <Button
             variant={activeTab === "history" ? "secondary" : "ghost"}
             onClick={() => setActiveTab("history")}
             className={`flex-1 ${activeTab === "history" ? "font-bold" : ""}`}
           >
-            <History className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} /> {t("الأرشيف", "Historique", "History")}
+            <History className={`w-4 h-4 ${isRTL ? "ms-2" : "me-2"}`} /> {t("الأرشيف", "Historique", "History")}
           </Button>
         </div>
 
@@ -856,7 +856,7 @@ const VideoEvaluator = () => {
                           </div>
                         ))}
                         <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="mt-2">
-                          <Paperclip className={`w-4 h-4 ${isRTL ? "ml-1" : "mr-1"}`} /> {t("إضافة ملف آخر", "Ajouter un autre", "Add another")}
+                          <Paperclip className={`w-4 h-4 ${isRTL ? "ms-1" : "me-1"}`} /> {t("إضافة ملف آخر", "Ajouter un autre", "Add another")}
                         </Button>
                       </div>
                     )}
@@ -941,13 +941,13 @@ const VideoEvaluator = () => {
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <Youtube className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-red-400`} />
+                        <Youtube className={`absolute ${isRTL ? 'end-3' : 'start-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-red-400`} />
                         <input
                           type="url"
                           value={youtubeUrl}
                           onChange={(e) => { setYoutubeUrl(e.target.value); setYoutubeData(null); }}
                           placeholder={t("الصق رابط يوتيوب هنا...", "Collez le lien YouTube ici...", "Paste YouTube link here...")}
-                          className={`w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-background`}
+                          className={`w-full ${isRTL ? 'pe-10 ps-3' : 'ps-10 pe-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-background`}
                           dir="ltr"
                         />
                       </div>
@@ -981,13 +981,13 @@ const VideoEvaluator = () => {
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <Link2 className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400`} />
+                        <Link2 className={`absolute ${isRTL ? 'end-3' : 'start-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400`} />
                         <input
                           type="url"
                           value={directUrl}
                           onChange={(e) => { setDirectUrl(e.target.value); setDirectUrlData(null); }}
                           placeholder={t("الصق رابط الفيديو المباشر هنا...", "Collez le lien direct de la vidéo ici...", "Paste direct video URL here...")}
-                          className={`w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-background`}
+                          className={`w-full ${isRTL ? 'pe-10 ps-3' : 'ps-10 pe-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-background`}
                           dir="ltr"
                         />
                       </div>
@@ -1023,13 +1023,13 @@ const VideoEvaluator = () => {
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <Cloud className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400`} />
+                        <Cloud className={`absolute ${isRTL ? 'end-3' : 'start-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400`} />
                         <input
                           type="url"
                           value={cloudUrl}
                           onChange={(e) => { setCloudUrl(e.target.value); setCloudData(null); }}
                           placeholder={t("الصق رابط Google Drive أو Dropbox هنا...", "Collez le lien Google Drive ou Dropbox ici...", "Paste Google Drive or Dropbox link here...")}
-                          className={`w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-background`}
+                          className={`w-full ${isRTL ? 'pe-10 ps-3' : 'ps-10 pe-3'} py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-background`}
                           dir="ltr"
                         />
                       </div>
@@ -1101,7 +1101,7 @@ const VideoEvaluator = () => {
                           </Button>
                         </div>
                         {isRecording && (
-                          <div className="absolute top-3 right-3 flex items-center gap-2 bg-red-600 text-white text-xs px-3 py-1.5 rounded-full">
+                          <div className="absolute top-3 end-3 flex items-center gap-2 bg-red-600 text-white text-xs px-3 py-1.5 rounded-full">
                             <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                             {t("جارٍ التسجيل...", "Enregistrement...", "Recording...")}
                           </div>
@@ -1116,7 +1116,7 @@ const VideoEvaluator = () => {
                         </div>
                         <video src={recordedPreviewUrl} controls className="w-full rounded-xl max-h-48" />
                         <Button variant="outline" size="sm" onClick={() => { setRecordedBlob(null); setRecordedPreviewUrl(null); startCamera(); }}>
-                          <RefreshCw className={`w-4 h-4 ${isRTL ? 'ml-1' : 'mr-1'}`} /> {t("إعادة التسجيل", "Réenregistrer", "Re-record")}
+                          <RefreshCw className={`w-4 h-4 ${isRTL ? 'ms-1' : 'me-1'}`} /> {t("إعادة التسجيل", "Réenregistrer", "Re-record")}
                         </Button>
                       </div>
                     )}
@@ -1133,9 +1133,9 @@ const VideoEvaluator = () => {
               style={{ background: canSubmit ? "linear-gradient(135deg, #1A237E, #1565C0)" : undefined }}
             >
               {isLoading ? (
-                <><Loader2 className={`w-5 h-5 animate-spin ${isRTL ? "ml-2" : "mr-2"}`} /> {t("جارٍ التقييم بالذكاء الاصطناعي... (15-30 ثانية)", "Évaluation par IA en cours... (15-30s)", "AI evaluation in progress... (15-30s)")}</>
+                <><Loader2 className={`w-5 h-5 animate-spin ${isRTL ? "ms-2" : "me-2"}`} /> {t("جارٍ التقييم بالذكاء الاصطناعي... (15-30 ثانية)", "Évaluation par IA en cours... (15-30s)", "AI evaluation in progress... (15-30s)")}</>
               ) : (
-                <><Sparkles className={`w-5 h-5 ${isRTL ? "ml-2" : "mr-2"}`} /> {t("تقييم الفيديو بالذكاء الاصطناعي", "Évaluer la vidéo par IA", "Evaluate Video with AI")}</>
+                <><Sparkles className={`w-5 h-5 ${isRTL ? "ms-2" : "me-2"}`} /> {t("تقييم الفيديو بالذكاء الاصطناعي", "Évaluer la vidéo par IA", "Evaluate Video with AI")}</>
               )}
             </Button>
 
@@ -1232,7 +1232,7 @@ const VideoEvaluator = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`absolute top-2 ${isRTL ? "left-2" : "right-2"} h-8 w-8 text-gray-500 hover:bg-blue-100 hover:text-blue-700`}
+                    className={`absolute top-2 ${isRTL ? "start-2" : "end-2"} h-8 w-8 text-gray-500 hover:bg-blue-100 hover:text-blue-700`}
                     onClick={handleCopyPrompt}
                   >
                     <Copy className="w-4 h-4" />
@@ -1246,10 +1246,10 @@ const VideoEvaluator = () => {
 
             <div className="flex justify-center gap-4 pt-4">
               <Button onClick={handleNewEvaluation} size="lg" className="h-12 text-base">
-                <RefreshCw className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} /> {t("تقييم جديد", "Nouvelle Évaluation", "New Evaluation")}
+                <RefreshCw className={`w-4 h-4 ${isRTL ? "ms-2" : "me-2"}`} /> {t("تقييم جديد", "Nouvelle Évaluation", "New Evaluation")}
               </Button>
               <Button onClick={() => setActiveTab("history")} size="lg" variant="outline" className="h-12 text-base">
-                <History className={`w-4 h-4 ${isRTL ? "ml-2" : "mr-2"}`} /> {t("عرض الأرشيف", "Voir l'Historique", "View History")}
+                <History className={`w-4 h-4 ${isRTL ? "ms-2" : "me-2"}`} /> {t("عرض الأرشيف", "Voir l'Historique", "View History")}
               </Button>
             </div>
           </div>

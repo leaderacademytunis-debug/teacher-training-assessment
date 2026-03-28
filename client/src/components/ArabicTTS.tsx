@@ -265,7 +265,7 @@ export default function ArabicTTS({
   if (!isSupported) {
     return (
       <Button size={size} variant={variant} disabled className={`text-xs opacity-50 ${className}`}>
-        <VolumeX className="w-3 h-3 ml-1" />
+        <VolumeX className="w-3 h-3 ms-1" />
         غير مدعوم
       </Button>
     );
@@ -331,7 +331,7 @@ export default function ArabicTTS({
             <ChevronDown className="w-3 h-3" />
           </Button>
           {showVoices && (
-            <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-lg z-50 min-w-[200px] py-1">
+            <div className="absolute top-full start-0 mt-1 bg-white border rounded-lg shadow-lg z-50 min-w-[200px] py-1">
               <p className="px-3 py-1 text-[10px] text-gray-500 font-bold border-b">اختر الصوت العربي</p>
               {arabicVoices.map((v, idx) => (
                 <button
@@ -344,7 +344,7 @@ export default function ArabicTTS({
                       setTimeout(speak, 100);
                     }
                   }}
-                  className={`w-full text-right px-3 py-1.5 text-[10px] hover:bg-blue-50 transition-colors ${
+                  className={`w-full text-end px-3 py-1.5 text-[10px] hover:bg-blue-50 transition-colors ${
                     selectedVoiceIdx === idx ? "bg-blue-50 text-blue-700 font-bold" : "text-gray-700"
                   }`}
                 >

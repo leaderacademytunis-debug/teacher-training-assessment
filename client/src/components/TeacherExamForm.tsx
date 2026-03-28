@@ -218,7 +218,7 @@ export function TeacherExamForm({ onSuccess }: { onSuccess?: () => void }) {
 
           <Button type="submit" disabled={createMutation.isPending} className="w-full">
             {createMutation.isPending && (
-              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              <Loader2 className="ms-2 h-4 w-4 animate-spin" />
             )}
             حفظ الاختبار
           </Button>

@@ -8,9 +8,12 @@ import { trpc } from "@/lib/trpc";
 import { Loader2, Upload, CheckCircle2, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 
 export default function CompleteRegistration() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   
@@ -293,12 +296,12 @@ export default function CompleteRegistration() {
                 >
                   {uploading || completeMutation.isPending ? (
                     <>
-                      <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                      <Loader2 className="w-5 h-5 ms-2 animate-spin" />
                       جاري الإرسال...
                     </>
                   ) : (
                     <>
-                      <ArrowRight className="w-5 h-5 ml-2" />
+                      <ArrowRight className="w-5 h-5 ms-2" />
                       إكمال التسجيل
                     </>
                   )}

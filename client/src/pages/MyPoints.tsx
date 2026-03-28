@@ -8,8 +8,11 @@ import {
   Coins, ArrowUp, ArrowDown, Gift, RotateCcw, Home,
   ChevronRight, Loader2, AlertCircle, Sparkles, Mic, Image, Volume2
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 export default function MyPoints() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   
   const pointsQuery = trpc.voiceCloning.getMyPoints.useQuery(undefined, {
@@ -75,7 +78,7 @@ export default function MyPoints() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link href="/teacher-tools">
             <Button variant="ghost" size="sm">
-              <Home className="h-4 w-4 ml-1" />
+              <Home className="h-4 w-4 ms-1" />
               الأدوات
             </Button>
           </Link>
@@ -89,8 +92,8 @@ export default function MyPoints() {
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Balance Card */}
         <Card className="border-amber-200 bg-gradient-to-l from-amber-50 to-orange-50 overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-32 h-32 bg-amber-200/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-24 h-24 bg-orange-200/20 rounded-full translate-x-1/2 translate-y-1/2" />
+          <div className="absolute top-0 start-0 w-32 h-32 bg-amber-200/20 rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 end-0 w-24 h-24 bg-orange-200/20 rounded-full translate-x-1/2 translate-y-1/2" />
           <CardContent className="pt-8 pb-8 relative">
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 mb-4">
@@ -138,7 +141,7 @@ export default function MyPoints() {
                     <h4 className="font-bold text-sm">صوت مستنسخ (TTS)</h4>
                     <p className="text-xs text-muted-foreground">لكل مشهد</p>
                   </div>
-                  <Badge className="mr-auto bg-violet-100 text-violet-700 hover:bg-violet-100">
+                  <Badge className="me-auto bg-violet-100 text-violet-700 hover:bg-violet-100">
                     {pricing.voiceCloneTTS} نقاط
                   </Badge>
                 </div>
@@ -151,7 +154,7 @@ export default function MyPoints() {
                     <h4 className="font-bold text-sm">صوت عادي (TTS)</h4>
                     <p className="text-xs text-muted-foreground">لكل مشهد</p>
                   </div>
-                  <Badge className="mr-auto bg-blue-100 text-blue-700 hover:bg-blue-100">
+                  <Badge className="me-auto bg-blue-100 text-blue-700 hover:bg-blue-100">
                     {pricing.standardTTS} نقطة
                   </Badge>
                 </div>
@@ -164,7 +167,7 @@ export default function MyPoints() {
                     <h4 className="font-bold text-sm">توليد صورة</h4>
                     <p className="text-xs text-muted-foreground">لكل مشهد</p>
                   </div>
-                  <Badge className="mr-auto bg-pink-100 text-pink-700 hover:bg-pink-100">
+                  <Badge className="me-auto bg-pink-100 text-pink-700 hover:bg-pink-100">
                     {pricing.imageGeneration} نقاط
                   </Badge>
                 </div>
@@ -194,9 +197,9 @@ export default function MyPoints() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{tx.description}</p>
                       <p className="text-xs text-muted-foreground">
-                        {tx.featureUsed && <span className="ml-2">{tx.featureUsed}</span>}
+                        {tx.featureUsed && <span className="ms-2">{tx.featureUsed}</span>}
                         {tx.createdAt && (
-                          <span className="mr-2">
+                          <span className="me-2">
                             {new Date(tx.createdAt).toLocaleDateString("ar-TN", {
                               day: "2-digit",
                               month: "2-digit",
@@ -208,7 +211,7 @@ export default function MyPoints() {
                         )}
                       </p>
                     </div>
-                    <div className="text-left">
+                    <div className="text-start">
                       {getTypeBadge(tx.type)}
                       <p className={`text-sm font-bold mt-1 ${
                         tx.amount > 0 ? "text-emerald-600" : "text-red-500"

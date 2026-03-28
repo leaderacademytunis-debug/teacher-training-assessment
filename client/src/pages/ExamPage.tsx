@@ -8,8 +8,11 @@ import { Loader2, ArrowRight, Clock, CheckCircle2 } from "lucide-react";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 export default function ExamPage() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { id } = useParams<{ id: string }>();
   const examId = parseInt(id || "0");
   const { user, loading: authLoading } = useAuth();
@@ -137,7 +140,7 @@ export default function ExamPage() {
           <div className="container py-6">
             <Link href={`/courses/${exam.courseId}`}>
               <Button variant="outline">
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-4 h-4 ms-2" />
                 العودة للدورة
               </Button>
             </Link>
@@ -171,7 +174,7 @@ export default function ExamPage() {
           <div className="container py-6">
             <Link href={`/courses/${exam.courseId}`}>
               <Button variant="outline">
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-4 h-4 ms-2" />
                 العودة للدورة
               </Button>
             </Link>
@@ -214,7 +217,7 @@ export default function ExamPage() {
               >
                 {startMutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                     جاري البدء...
                   </>
                 ) : (
@@ -294,7 +297,7 @@ export default function ExamPage() {
                             htmlFor={`q${question.id}-${option}`}
                             className="flex-1 cursor-pointer text-base"
                           >
-                            <span className="font-semibold ml-2">{option}.</span>
+                            <span className="font-semibold ms-2">{option}.</span>
                             {optionText}
                           </Label>
                         </div>
@@ -317,7 +320,7 @@ export default function ExamPage() {
               >
                 {submitMutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                     جاري التقديم...
                   </>
                 ) : (

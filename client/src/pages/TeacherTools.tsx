@@ -381,7 +381,7 @@ function ToolCard({ tool, lang }: { tool: ToolDef; lang: AppLanguage }) {
 
         {/* New badge */}
         {tool.isNew && (
-          <div className="absolute top-4 left-3 z-20">
+          <div className="absolute top-4 start-3 z-20">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white shadow-lg animate-pulse"
               style={{ background: "linear-gradient(135deg, #FF6D00, #FF9800)" }}>
               <Sparkles className="w-3 h-3" />
@@ -496,8 +496,8 @@ function TeacherTools() {
       {/* Hero Header */}
       <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A237E 0%, #0D47A1 40%, #1565C0 70%, #42A5F5 100%)" }}>
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-20 w-72 h-72 rounded-full bg-white/20 blur-3xl" />
-          <div className="absolute bottom-10 left-20 w-96 h-96 rounded-full bg-orange-300/20 blur-3xl" />
+          <div className="absolute top-10 end-20 w-72 h-72 rounded-full bg-white/20 blur-3xl" />
+          <div className="absolute bottom-10 start-20 w-96 h-96 rounded-full bg-orange-300/20 blur-3xl" />
         </div>
 
         <div className="container mx-auto px-4 py-12 relative z-10">

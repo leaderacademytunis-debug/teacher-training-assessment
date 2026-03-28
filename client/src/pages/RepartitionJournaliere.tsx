@@ -11,8 +11,11 @@ import { toast } from "sonner";
 import { ArrowRight, ArrowLeft, FileText, Download, Trash2, Loader2, Calendar, BookOpen, GraduationCap, ChevronRight, Database } from "lucide-react";
 import { Link } from "wouter";
 import { useExtractionStore } from "@/stores/extractionStore";
+import useI18n from "@/i18n";
+
 
 export default function RepartitionJournaliere() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading } = useAuth();
   const [step, setStep] = useState(1);
   const [showResult, setShowResult] = useState(false);

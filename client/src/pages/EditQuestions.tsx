@@ -18,8 +18,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import useI18n from "@/i18n";
+
 
 export default function EditQuestions() {
+  const { t, lang, isRTL, dir } = useI18n();
   const params = useParams();
   const examId = parseInt(params.id || "0");
   const [, setLocation] = useLocation();
@@ -131,7 +134,7 @@ export default function EditQuestions() {
         <div>
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" className="mb-4">
-              <ArrowLeft className="ml-2 h-4 w-4" />
+              <ArrowLeft className="ms-2 h-4 w-4" />
               العودة للوحة التحكم
             </Button>
           </Link>
@@ -142,7 +145,7 @@ export default function EditQuestions() {
         </div>
         <Link href={`/preview-exam/${examId}`}>
           <Button size="lg">
-            <Check className="ml-2 h-5 w-5" />
+            <Check className="ms-2 h-5 w-5" />
             معاينة الاختبار
           </Button>
         </Link>
@@ -184,7 +187,7 @@ export default function EditQuestions() {
                         onClick={handleSave}
                         disabled={updateMutation.isPending}
                       >
-                        <Check className="ml-2 h-4 w-4" />
+                        <Check className="ms-2 h-4 w-4" />
                         حفظ
                       </Button>
                       <Button

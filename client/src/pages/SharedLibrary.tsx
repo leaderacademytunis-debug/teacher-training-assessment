@@ -7,8 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Eye, Copy, Star, User, Calendar, Home } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import useI18n from "@/i18n";
+
 
 export default function SharedLibrary() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [filters, setFilters] = useState({
     educationLevel: undefined as "primary" | "middle" | "secondary" | undefined,
     grade: undefined as string | undefined,
@@ -56,8 +59,8 @@ export default function SharedLibrary() {
             </Button>
           </Link>
         </div>
-        <h1 className="text-3xl font-bold text-right mb-2">المكتبة المشتركة للمذكرات البيداغوجية</h1>
-        <p className="text-muted-foreground text-right">
+        <h1 className="text-3xl font-bold text-end mb-2">المكتبة المشتركة للمذكرات البيداغوجية</h1>
+        <p className="text-muted-foreground text-end">
           تصفح واستفد من مذكرات زملائك المدرسين
         </p>
       </div>
@@ -65,12 +68,12 @@ export default function SharedLibrary() {
       {/* Filters */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-right">تصفية النتائج</CardTitle>
+          <CardTitle className="text-end">تصفية النتائج</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="text-sm font-medium mb-2 block text-right">المستوى التعليمي</label>
+              <label className="text-sm font-medium mb-2 block text-end">المستوى التعليمي</label>
               <Select
                 value={filters.educationLevel}
                 onValueChange={(value: any) => setFilters({ ...filters, educationLevel: value === "all" ? undefined : value, grade: undefined })}
@@ -89,7 +92,7 @@ export default function SharedLibrary() {
 
             {filters.educationLevel && (
               <div>
-                <label className="text-sm font-medium mb-2 block text-right">الصف</label>
+                <label className="text-sm font-medium mb-2 block text-end">الصف</label>
                 <Select
                   value={filters.grade}
                   onValueChange={(value) => setFilters({ ...filters, grade: value === "all" ? undefined : value })}
@@ -108,7 +111,7 @@ export default function SharedLibrary() {
             )}
 
             <div>
-              <label className="text-sm font-medium mb-2 block text-right">المادة</label>
+              <label className="text-sm font-medium mb-2 block text-end">المادة</label>
               <Select
                 value={filters.subject}
                 onValueChange={(value) => setFilters({ ...filters, subject: value === "all" ? undefined : value })}
@@ -126,7 +129,7 @@ export default function SharedLibrary() {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block text-right">التقييم الأدنى</label>
+              <label className="text-sm font-medium mb-2 block text-end">التقييم الأدنى</label>
               <Select
                 value={filters.minRating?.toString()}
                 onValueChange={(value) => setFilters({ ...filters, minRating: value === "all" ? undefined : Number(value) })}
@@ -157,7 +160,7 @@ export default function SharedLibrary() {
             <Card key={sheet.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg text-right flex-1">{sheet.lessonTitle}</CardTitle>
+                  <CardTitle className="text-lg text-end flex-1">{sheet.lessonTitle}</CardTitle>
                   {sheet.ratingCount > 0 && (
                     <Badge variant="secondary" className="gap-1">
                       <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -165,7 +168,7 @@ export default function SharedLibrary() {
                     </Badge>
                   )}
                 </div>
-                <CardDescription className="text-right space-y-1">
+                <CardDescription className="text-end space-y-1">
                   <div className="flex items-center justify-end gap-2">
                     <span>{sheet.subject}</span>
                     <span>•</span>

@@ -316,7 +316,7 @@ export default function BlindGrading() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800">{t("قائمة الجلسات", "Liste des sessions", "Sessions List")}</h2>
             <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-              <Plus className="w-4 h-4 ltr:mr-2 rtl:ml-2" />
+              <Plus className="w-4 h-4 ltr:me-2 rtl:ms-2" />
               {showCreateForm ? t("إلغاء", "Annuler", "Cancel") : t("جلسة جديدة", "Nouvelle session", "New Session")}
             </Button>
           </div>
@@ -327,7 +327,7 @@ export default function BlindGrading() {
               <h3 className="text-xl font-bold text-gray-800">{t("إنشاء جلسة تصحيح جديدة", "Créer une nouvelle session de correction", "Create a New Grading Session")}</h3>
               
               {fromExamContent && (
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
+                  <div className="bg-blue-50 border-s-4 border-blue-400 p-4 rounded-e-lg">
                       <p className="text-sm text-blue-800">{t("تم استيراد بيانات التقييم بنجاح. يمكنك تعديلها أدناه.", "Les données de l'évaluation ont été importées. Vous pouvez les modifier ci-dessous.", "Exam data has been imported. You can modify it below.")}</p>
                   </div>
               )}
@@ -370,7 +370,7 @@ export default function BlindGrading() {
               <div className="flex justify-end gap-3">
                 <Button variant="ghost" onClick={() => setShowCreateForm(false)}>{tt.cancel}</Button>
                 <Button onClick={() => createSessionMutation.mutate({ title: newTitle, subject: newSubject, grade: newGrade, examType: newExamType, examContent: fromExamContent || undefined })} disabled={createSessionMutation.isLoading || !newTitle || !newSubject || !newGrade}>
-                  {createSessionMutation.isLoading && <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2" />}
+                  {createSessionMutation.isLoading && <Loader2 className="w-4 h-4 animate-spin ltr:me-2 rtl:ms-2" />}
                   {tt.save}
                 </Button>
               </div>
@@ -386,14 +386,14 @@ export default function BlindGrading() {
                 <h3 className="mt-4 text-xl font-semibold text-gray-700">{t("لا توجد جلسات تصحيح بعد", "Aucune session de correction", "No Grading Sessions Yet")}</h3>
                 <p className="mt-2 text-sm text-gray-500">{t("ابدأ بإنشاء جلسة جديدة لرفع أوراق التلاميذ وتصحيحها.", "Créez une nouvelle session pour commencer à téléverser et corriger les copies.", "Create a new session to start uploading and grading papers.")}</p>
                 <Button onClick={() => setShowCreateForm(true)} className="mt-6">
-                  <Plus className="w-4 h-4 ltr:mr-2 rtl:ml-2" />
+                  <Plus className="w-4 h-4 ltr:me-2 rtl:ms-2" />
                   {t("إنشاء أول جلسة", "Créer la première session", "Create First Session")}
                 </Button>
               </div>
             )}
             {sessionsQuery.data?.map(session => (
               <div key={session.id} className="bg-white rounded-2xl shadow-sm border hover:border-indigo-300 transition-all duration-200 p-5 flex items-center justify-between">
-                <div className={isRTL ? "text-right" : "text-left"}>
+                <div className={isRTL ? "text-end" : "text-start"}>
                   <p className="font-bold text-lg text-gray-800">{session.title}</p>
                   <p className="text-sm text-gray-500">{session.subject} • {session.grade}</p>
                   <div className="flex items-center gap-4 mt-2 text-xs">
@@ -405,7 +405,7 @@ export default function BlindGrading() {
                   </div>
                 </div>
                 <Button onClick={() => { setSelectedSessionId(session.id); setActiveView("session-detail"); }}>
-                  {t("فتح الجلسة", "Ouvrir", "Open Session")} <ArrowRight className="w-4 h-4 ltr:ml-2 rtl:mr-2" />
+                  {t("فتح الجلسة", "Ouvrir", "Open Session")} <ArrowRight className="w-4 h-4 ltr:ms-2 rtl:me-2" />
                 </Button>
               </div>
             ))}
@@ -470,7 +470,7 @@ export default function BlindGrading() {
                             />
                             <input type="file" ref={fileInputRef} onChange={handleFileUpload} multiple className="hidden" accept="image/*,application/pdf" />
                             <Button onClick={handleTriggerUpload} disabled={uploading} className="w-full md:w-auto">
-                                {uploading ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2" /> : <Upload className="w-4 h-4 ltr:mr-2 rtl:ml-2" />}
+                                {uploading ? <Loader2 className="w-4 h-4 animate-spin ltr:me-2 rtl:ms-2" /> : <Upload className="w-4 h-4 ltr:me-2 rtl:ms-2" />}
                                 {uploading ? t("جاري الرفع...", "Téléversement...", "Uploading...") : t("رفع ورقة تلميذ", "Téléverser une copie", "Upload Paper")}
                             </Button>
                         </div>
@@ -518,7 +518,7 @@ export default function BlindGrading() {
                                 <div className="flex justify-between"><span>{t("معدل القسم", "Moyenne de la classe", "Class Average")}</span><span className="font-bold">{session.classAverage?.toFixed(2) || 'N/A'}</span></div>
                             </div>
                             <Button onClick={() => setActiveView("statistics")} className="w-full mt-5">
-                                <BarChart3 className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> {t("عرض الإحصائيات الكاملة", "Voir les statistiques complètes", "View Full Statistics")}
+                                <BarChart3 className="w-4 h-4 ltr:me-2 rtl:ms-2" /> {t("عرض الإحصائيات الكاملة", "Voir les statistiques complètes", "View Full Statistics")}
                             </Button>
                         </div>
 
@@ -526,11 +526,11 @@ export default function BlindGrading() {
                             <h3 className="text-xl font-bold text-gray-800 mb-4">{t("إجراءات", "Actions", "Actions")}</h3>
                             <div className="space-y-3">
                                 <Button variant="outline" className="w-full justify-start" onClick={() => updateSessionMutation.mutate({ sessionId: session.id, status: session.status === 'completed' ? 'in-progress' : 'completed' })}>
-                                    {session.status === 'completed' ? <Clock className="w-4 h-4 ltr:mr-2 rtl:ml-2"/> : <CheckCircle2 className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                    {session.status === 'completed' ? <Clock className="w-4 h-4 ltr:me-2 rtl:ms-2"/> : <CheckCircle2 className="w-4 h-4 ltr:me-2 rtl:ms-2"/>}
                                     {session.status === 'completed' ? t("إعادة فتح الجلسة", "Rouvrir la session", "Re-open Session") : t("إنهاء وغلق الجلسة", "Terminer et fermer la session", "Finalize Session")}
                                 </Button>
                                 <Button variant="outline" className="w-full justify-start" onClick={() => { setExportingInspector(true); inspectorReportMutation.mutate({ sessionId: session.id }); }} disabled={exportingInspector}>
-                                    {exportingInspector ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <FileDown className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                    {exportingInspector ? <Loader2 className="w-4 h-4 animate-spin ltr:me-2 rtl:ms-2"/> : <FileDown className="w-4 h-4 ltr:me-2 rtl:ms-2"/>}
                                     {t("تصدير تقرير المتفقد", "Exporter rapport d'inspecteur", "Export Inspector Report")}
                                 </Button>
                                 <Button variant="destructive_outline" className="w-full justify-start" onClick={() => {
@@ -538,7 +538,7 @@ export default function BlindGrading() {
                                         deleteSessionMutation.mutate({ sessionId: session.id });
                                     }
                                 }}>
-                                    <Trash2 className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> {t("حذف الجلسة", "Supprimer la session", "Delete Session")}
+                                    <Trash2 className="w-4 h-4 ltr:me-2 rtl:ms-2" /> {t("حذف الجلسة", "Supprimer la session", "Delete Session")}
                                 </Button>
                             </div>
                         </div>
@@ -604,7 +604,7 @@ export default function BlindGrading() {
                                 
                                 {submission.status === 'pending' && session?.examContent && (
                                     <Button className="w-full mb-4" onClick={() => aiGradeMutation.mutate({ submissionId: submission.id })} disabled={aiGradeMutation.isLoading}>
-                                        {aiGradeMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <Sparkles className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                        {aiGradeMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin ltr:me-2 rtl:ms-2"/> : <Sparkles className="w-4 h-4 ltr:me-2 rtl:ms-2"/>}
                                         {t("بدء التصحيح بالذكاء الاصطناعي", "Lancer la correction IA", "Start AI Grading")}
                                     </Button>
                                 )}
@@ -649,7 +649,7 @@ export default function BlindGrading() {
                                         <span>{submission.finalScore} / {submission.totalScore}</span>
                                     </div>
                                     <Button className="w-full" onClick={() => finalizeSubmissionMutation.mutate({ submissionId: submission.id, grades: submission.grades.map(g => ({ criterionId: g.id, score: g.score, masteryLevel: g.masteryLevel }))})} disabled={finalizeSubmissionMutation.isLoading}>
-                                        {finalizeSubmissionMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <CheckCircle2 className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                        {finalizeSubmissionMutation.isLoading ? <Loader2 className="w-4 h-4 animate-spin ltr:me-2 rtl:ms-2"/> : <CheckCircle2 className="w-4 h-4 ltr:me-2 rtl:ms-2"/>}
                                         {t("تثبيت التقييم النهائي", "Finaliser l'évaluation", "Finalize Assessment")}
                                     </Button>
                                 </div>
@@ -658,7 +658,7 @@ export default function BlindGrading() {
                                 <h3 className="text-xl font-bold text-gray-800 mb-4">{t("إجراءات الورقة", "Actions sur la copie", "Submission Actions")}</h3>
                                 <div className="space-y-3">
                                     <Button variant="outline" className="w-full justify-start" onClick={() => { setExportingPdf(true); exportPdfMutation.mutate({ submissionId: submission.id }); }} disabled={exportingPdf}>
-                                        {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2"/> : <Download className="w-4 h-4 ltr:mr-2 rtl:ml-2"/>}
+                                        {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin ltr:me-2 rtl:ms-2"/> : <Download className="w-4 h-4 ltr:me-2 rtl:ms-2"/>}
                                         {t("تصدير تقرير التلميذ (PDF)", "Exporter rapport élève (PDF)", "Export Student Report (PDF)")}
                                     </Button>
                                     <Button variant="destructive_outline" className="w-full justify-start" onClick={() => {
@@ -666,7 +666,7 @@ export default function BlindGrading() {
                                             deleteSubmissionMutation.mutate({ submissionId: submission.id });
                                         }
                                     }}>
-                                        <Trash2 className="w-4 h-4 ltr:mr-2 rtl:ml-2" /> {t("حذف الورقة", "Supprimer la copie", "Delete Submission")}
+                                        <Trash2 className="w-4 h-4 ltr:me-2 rtl:ms-2" /> {t("حذف الورقة", "Supprimer la copie", "Delete Submission")}
                                     </Button>
                                 </div>
                             </div>

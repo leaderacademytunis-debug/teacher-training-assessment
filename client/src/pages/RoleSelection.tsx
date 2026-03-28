@@ -24,6 +24,8 @@ import {
   MessageSquare,
   Loader2,
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const TEACHER_FEATURES = [
   { icon: BookOpen, text: "أدوات ذكاء اصطناعي متقدمة لإعداد الدروس والاختبارات" },
@@ -44,6 +46,7 @@ const SCHOOL_FEATURES = [
 ];
 
 export default function RoleSelection() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [selectedRole, setSelectedRole] = useState<"teacher" | "school" | null>(null);
@@ -246,7 +249,7 @@ export default function RoleSelection() {
                     disabled={selectRoleMutation.isPending}
                   >
                     {selectRoleMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                      <Loader2 className="w-4 h-4 animate-spin ms-2" />
                     ) : null}
                     تأكيد الاختيار
                   </Button>

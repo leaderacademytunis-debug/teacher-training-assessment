@@ -12,6 +12,8 @@ import {
   GraduationCap, ArrowLeft, Loader2, Compass, Sparkles,
   Target, Clock, Award, Lightbulb
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const CONTENT_TYPES: Record<string, { label: string; color: string }> = {
   lesson_plan: { label: "جذاذة درس", color: "bg-blue-100 text-blue-800" },
@@ -24,6 +26,7 @@ const CONTENT_TYPES: Record<string, { label: string; color: string }> = {
 };
 
 export default function MarketplaceSearch() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
@@ -53,7 +56,7 @@ export default function MarketplaceSearch() {
         <div className="container py-4">
           <div className="flex items-center gap-4">
             <Link href="/marketplace">
-              <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 ml-1" /> السوق الذهبي</Button>
+              <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 ms-1" /> السوق الذهبي</Button>
             </Link>
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -71,13 +74,13 @@ export default function MarketplaceSearch() {
         <div className="relative mb-8">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute end-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input
                 placeholder="ابحث عن جذاذات، اختبارات، تقييمات... (مثال: رياضيات السنة الرابعة الكسور)"
                 value={searchQuery}
                 onChange={e => { setSearchQuery(e.target.value); setHasSearched(false); }}
                 onKeyDown={e => e.key === "Enter" && handleSearch()}
-                className="pr-10 py-6 text-lg rounded-xl border-amber-200 focus:border-amber-400"
+                className="pe-10 py-6 text-lg rounded-xl border-amber-200 focus:border-amber-400"
                 dir="rtl"
               />
             </div>
@@ -98,7 +101,7 @@ export default function MarketplaceSearch() {
             {searchLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
-                <span className="mr-3 text-muted-foreground">جاري البحث...</span>
+                <span className="me-3 text-muted-foreground">جاري البحث...</span>
               </div>
             ) : searchResults?.results && searchResults.results.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,7 +161,7 @@ export default function MarketplaceSearch() {
                   مقترحات حسب موقعك في المنهج
                 </h2>
                 <p className="text-sm text-muted-foreground mb-4">
-                  <Lightbulb className="w-4 h-4 inline ml-1 text-amber-500" />
+                  <Lightbulb className="w-4 h-4 inline ms-1 text-amber-500" />
                   بناءً على تقدمك في GPS المنهج، هذه الموارد قد تفيدك الآن
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

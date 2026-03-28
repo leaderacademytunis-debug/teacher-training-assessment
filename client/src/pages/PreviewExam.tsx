@@ -7,8 +7,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Eye, CheckCircle2, XCircle } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 export default function PreviewExam() {
+  const { t, lang, isRTL, dir } = useI18n();
   const params = useParams();
   const examId = parseInt(params.id || "0");
   
@@ -87,7 +90,7 @@ export default function PreviewExam() {
       {/* Preview Banner */}
       <Alert className="mb-6 border-blue-500 bg-blue-50 dark:bg-blue-950">
         <Eye className="h-4 w-4" />
-        <AlertDescription className="text-right">
+        <AlertDescription className="text-end">
           <strong>وضع المعاينة:</strong> هذا عرض تجريبي للاختبار. لن يتم حفظ النتائج أو التأثير على الإحصائيات.
         </AlertDescription>
       </Alert>
@@ -95,7 +98,7 @@ export default function PreviewExam() {
       {/* Back Button */}
       <Link href={`/edit-questions/${examId}`}>
         <Button variant="ghost" size="sm" className="mb-4">
-          <ArrowLeft className="ml-2 h-4 w-4" />
+          <ArrowLeft className="ms-2 h-4 w-4" />
           العودة للتحرير
         </Button>
       </Link>
@@ -196,10 +199,10 @@ export default function PreviewExam() {
                           htmlFor={`q${question.id}-${option}`}
                           className="flex-1 cursor-pointer font-normal"
                         >
-                          <span className="font-semibold ml-2">{option}.</span>
+                          <span className="font-semibold ms-2">{option}.</span>
                           {optionText}
                           {isThisCorrect && (
-                            <span className="mr-2 text-green-600 font-semibold">✓ الإجابة الصحيحة</span>
+                            <span className="me-2 text-green-600 font-semibold">✓ الإجابة الصحيحة</span>
                           )}
                         </Label>
                       </div>

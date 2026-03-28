@@ -8,8 +8,11 @@ import { Loader2, Video, CheckCircle, ArrowRight, Play } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 export default function CourseVideos() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { id } = useParams<{ id: string }>();
   const courseId = parseInt(id || "0");
   const { user, loading: authLoading } = useAuth();
@@ -128,7 +131,7 @@ export default function CourseVideos() {
             </div>
             <Link href={`/courses/${courseId}`}>
               <Button variant="outline">
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-4 h-4 ms-2" />
                 العودة للدورة
               </Button>
             </Link>
@@ -149,7 +152,7 @@ export default function CourseVideos() {
               </div>
               {hasCompleted && (
                 <Badge className="bg-green-600">
-                  <CheckCircle className="w-4 h-4 ml-1" />
+                  <CheckCircle className="w-4 h-4 ms-1" />
                   مكتمل
                 </Badge>
               )}
@@ -203,7 +206,7 @@ export default function CourseVideos() {
                         )}
                         {getVideoProgress(selectedVideo.id)?.completed && (
                           <Badge className="bg-green-600">
-                            <CheckCircle className="w-3 h-3 ml-1" />
+                            <CheckCircle className="w-3 h-3 ms-1" />
                             مكتمل
                           </Badge>
                         )}
@@ -237,7 +240,7 @@ export default function CourseVideos() {
                       <button
                         key={video.id}
                         onClick={() => setSelectedVideo(video)}
-                        className={`w-full text-right p-4 hover:bg-gray-50 transition-colors ${
+                        className={`w-full text-end p-4 hover:bg-gray-50 transition-colors ${
                           isSelected ? "bg-blue-50" : ""
                         }`}
                       >

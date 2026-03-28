@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import ToolPageHeader from "@/components/ToolPageHeader";
+import useI18n from "@/i18n";
+
 
 const DIGITIZER_GRADIENT = "linear-gradient(135deg, #2563eb, #4338ca)";
 
@@ -89,6 +91,7 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
 
 // ===== MAIN COMPONENT =====
 export default function LegacyDigitizer() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -510,12 +513,12 @@ export default function LegacyDigitizer() {
               onClick={() => { setBatchMode(!batchMode); if (!batchMode) { resetAll(); } }}
               className={batchMode ? "bg-amber-600 hover:bg-amber-700" : "bg-white/15 text-white border-white/30 hover:bg-white/25"}
             >
-              <FolderUp className="w-4 h-4 ml-1" />
+              <FolderUp className="w-4 h-4 ms-1" />
               {batchMode ? "وضع الدفعة" : "رفع جماعي"}
             </Button>
             <Button variant="outline" size="sm" onClick={() => { resetAll(); setBatchMode(false); setBatchFiles([]); }}
               className="bg-white/15 text-white border-white/30 hover:bg-white/25">
-              <RotateCcw className="w-4 h-4 ml-1" />
+              <RotateCcw className="w-4 h-4 ms-1" />
               جديد
             </Button>
             <Button
@@ -606,7 +609,7 @@ export default function LegacyDigitizer() {
                   <CardTitle className="flex items-center gap-2">
                     <FolderUp className="w-5 h-5 text-amber-600" />
                     رفع جماعي — رقمنة فصل دراسي كامل
-                    <Badge variant="outline" className="mr-auto text-xs">{batchFiles.length} صورة</Badge>
+                    <Badge variant="outline" className="me-auto text-xs">{batchFiles.length} صورة</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -689,16 +692,16 @@ export default function LegacyDigitizer() {
                                 />
                                 <div className="flex items-center gap-1">
                                   {item.status === "pending" && (
-                                    <Badge variant="outline" className="text-[10px]"><Clock className="w-3 h-3 ml-0.5" />في الانتظار</Badge>
+                                    <Badge variant="outline" className="text-[10px]"><Clock className="w-3 h-3 ms-0.5" />في الانتظار</Badge>
                                   )}
                                   {item.status === "processing" && (
-                                    <Badge className="bg-blue-100 text-blue-700 text-[10px]"><Loader2 className="w-3 h-3 ml-0.5 animate-spin" />جاري...</Badge>
+                                    <Badge className="bg-blue-100 text-blue-700 text-[10px]"><Loader2 className="w-3 h-3 ms-0.5 animate-spin" />جاري...</Badge>
                                   )}
                                   {item.status === "done" && (
-                                    <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle2 className="w-3 h-3 ml-0.5" />تم</Badge>
+                                    <Badge className="bg-green-100 text-green-700 text-[10px]"><CheckCircle2 className="w-3 h-3 ms-0.5" />تم</Badge>
                                   )}
                                   {item.status === "error" && (
-                                    <Badge className="bg-red-100 text-red-700 text-[10px]"><XCircle className="w-3 h-3 ml-0.5" />فشل</Badge>
+                                    <Badge className="bg-red-100 text-red-700 text-[10px]"><XCircle className="w-3 h-3 ms-0.5" />فشل</Badge>
                                   )}
                                 </div>
                                 {item.error && <p className="text-[10px] text-red-500 mt-1">{item.error}</p>}
@@ -727,11 +730,11 @@ export default function LegacyDigitizer() {
                           disabled={batchProcessing || batchFiles.every(f => f.status === "done")}
                         >
                           {batchProcessing ? (
-                            <><Loader2 className="w-5 h-5 ml-2 animate-spin" />جاري معالجة {batchFiles.length} وثيقة...</>
+                            <><Loader2 className="w-5 h-5 ms-2 animate-spin" />جاري معالجة {batchFiles.length} وثيقة...</>
                           ) : batchFiles.every(f => f.status === "done") ? (
-                            <><CheckCircle2 className="w-5 h-5 ml-2" />تم معالجة الجميع!</>
+                            <><CheckCircle2 className="w-5 h-5 ms-2" />تم معالجة الجميع!</>
                           ) : (
-                            <><ScanLine className="w-5 h-5 ml-2" />بدء الرقمنة الجماعية ({batchFiles.filter(f => f.status === "pending").length} وثيقة)</>
+                            <><ScanLine className="w-5 h-5 ms-2" />بدء الرقمنة الجماعية ({batchFiles.filter(f => f.status === "pending").length} وثيقة)</>
                           )}
                         </Button>
                         <Button
@@ -740,7 +743,7 @@ export default function LegacyDigitizer() {
                           onClick={() => { setBatchFiles([]); setBatchProgress(0); }}
                           disabled={batchProcessing}
                         >
-                          <Trash2 className="w-4 h-4 ml-1" />
+                          <Trash2 className="w-4 h-4 ms-1" />
                           مسح الكل
                         </Button>
                       </div>
@@ -763,7 +766,7 @@ export default function LegacyDigitizer() {
                             className="mt-2"
                             onClick={() => { setBatchMode(false); setBatchFiles([]); setBatchProgress(0); }}
                           >
-                            <ArrowLeft className="w-4 h-4 ml-1" />
+                            <ArrowLeft className="w-4 h-4 ms-1" />
                             العودة للوضع العادي
                           </Button>
                         </div>
@@ -790,7 +793,7 @@ export default function LegacyDigitizer() {
                     placeholder="عنوان الوثيقة (اختياري)"
                     value={documentTitle}
                     onChange={(e) => setDocumentTitle(e.target.value)}
-                    className="text-right"
+                    className="text-end"
                   />
 
                   {/* Drop zone */}
@@ -852,12 +855,12 @@ export default function LegacyDigitizer() {
                     >
                       {uploadOCR.isPending ? (
                         <>
-                          <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                          <Loader2 className="w-5 h-5 ms-2 animate-spin" />
                           جاري استخراج النص...
                         </>
                       ) : (
                         <>
-                          <ScanLine className="w-5 h-5 ml-2" />
+                          <ScanLine className="w-5 h-5 ms-2" />
                           مسح واستخراج النص (OCR)
                         </>
                       )}
@@ -938,12 +941,12 @@ export default function LegacyDigitizer() {
                       >
                         {formatAI.isPending ? (
                           <>
-                            <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                            <Loader2 className="w-5 h-5 ms-2 animate-spin" />
                             جاري التنسيق بالذكاء الاصطناعي...
                           </>
                         ) : (
                           <>
-                            <Wand2 className="w-5 h-5 ml-2" />
+                            <Wand2 className="w-5 h-5 ms-2" />
                             تنسيق بالذكاء الاصطناعي
                           </>
                         )}
@@ -1042,9 +1045,9 @@ export default function LegacyDigitizer() {
                         disabled={matchCompetencies.isPending}
                       >
                         {matchCompetencies.isPending ? (
-                          <Loader2 className="w-3 h-3 ml-1 animate-spin" />
+                          <Loader2 className="w-3 h-3 ms-1 animate-spin" />
                         ) : (
-                          <RotateCcw className="w-3 h-3 ml-1" />
+                          <RotateCcw className="w-3 h-3 ms-1" />
                         )}
                         إعادة البحث
                       </Button>
@@ -1165,9 +1168,9 @@ export default function LegacyDigitizer() {
                           className="bg-green-600 hover:bg-green-700"
                         >
                           {saveMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                            <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                           ) : (
-                            <Save className="w-4 h-4 ml-2" />
+                            <Save className="w-4 h-4 ms-2" />
                           )}
                           حفظ في المكتبة
                         </Button>
@@ -1177,7 +1180,7 @@ export default function LegacyDigitizer() {
                           onClick={handleFormatWithAI}
                           disabled={formatAI.isPending}
                         >
-                          <RotateCcw className="w-4 h-4 ml-2" />
+                          <RotateCcw className="w-4 h-4 ms-2" />
                           إعادة التنسيق
                         </Button>
                       </div>
@@ -1189,9 +1192,9 @@ export default function LegacyDigitizer() {
                           disabled={exportWord.isPending}
                         >
                           {exportWord.isPending ? (
-                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                            <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                           ) : (
-                            <FileDown className="w-4 h-4 ml-2" />
+                            <FileDown className="w-4 h-4 ms-2" />
                           )}
                           تصدير Word
                         </Button>
@@ -1202,9 +1205,9 @@ export default function LegacyDigitizer() {
                           disabled={exportPDF.isPending}
                         >
                           {exportPDF.isPending ? (
-                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                            <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                           ) : (
-                            <Download className="w-4 h-4 ml-2" />
+                            <Download className="w-4 h-4 ms-2" />
                           )}
                           تصدير PDF
                         </Button>

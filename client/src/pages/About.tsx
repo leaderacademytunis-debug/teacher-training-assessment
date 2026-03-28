@@ -8,6 +8,8 @@ import {
   FileText, Scale, BadgeCheck,
 } from "lucide-react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
+import useI18n from "@/i18n";
+
 
 const VISION_POINTS = [
   {
@@ -56,6 +58,7 @@ const TEAM = [
 ];
 
 export default function About() {
+  const { t, lang, isRTL, dir } = useI18n();
   return (
     <div className="min-h-screen bg-white" dir="rtl" style={{ fontFamily: "Cairo, Tajawal, sans-serif" }}>
       <SEOHead
@@ -69,8 +72,8 @@ export default function About() {
       {/* Hero Section */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0D1B5E 0%, #1A237E 50%, #1565C0 100%)" }}>
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,109,0,0.3), transparent)" }} />
-          <div className="absolute bottom-10 left-20 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle, rgba(21,101,192,0.4), transparent)" }} />
+          <div className="absolute top-10 end-20 w-72 h-72 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,109,0,0.3), transparent)" }} />
+          <div className="absolute bottom-10 start-20 w-96 h-96 rounded-full" style={{ background: "radial-gradient(circle, rgba(21,101,192,0.4), transparent)" }} />
         </div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
           <div className="max-w-3xl">
@@ -150,7 +153,7 @@ export default function About() {
             <Heart className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-3xl font-black mb-6" style={{ color: "#1A237E" }}>رسالتنا</h2>
-          <blockquote className="text-xl text-gray-600 leading-relaxed italic border-r-4 pr-6" style={{ borderColor: "#FF6D00" }}>
+          <blockquote className="text-xl text-gray-600 leading-relaxed italic border-e-4 pe-6" style={{ borderColor: "#FF6D00" }}>
             "نؤمن بأن كل معلم تونسي يستحق أن يمتلك أدوات ذكية تساعده على تصميم دروس مبتكرة، 
             وتقييم مكتسبات تلاميذه بدقة، وتطوير مهاراته المهنية باستمرار. 
             هدفنا هو أن يصبح المعلم التونسي قائداً رقمياً في فصله الدراسي."
@@ -203,7 +206,7 @@ export default function About() {
               <div className="w-28 h-28 rounded-full flex items-center justify-center flex-shrink-0 text-4xl font-black text-white" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
                 ع.س
               </div>
-              <div className="text-center md:text-right">
+              <div className="text-center md:text-end">
                 <h3 className="text-2xl font-black mb-1" style={{ color: "#1A237E" }}>علي سعدالله</h3>
                 <p className="text-orange-600 font-bold mb-3">المؤسس والمدير العام — Leader Academy</p>
                 <p className="text-gray-600 leading-relaxed">
@@ -305,13 +308,13 @@ export default function About() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/">
               <Button className="px-8 py-3 text-lg font-bold rounded-xl" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
-                <ArrowLeft className="w-5 h-5 ml-2" />
+                <ArrowLeft className="w-5 h-5 ms-2" />
                 ابدأ الآن
               </Button>
             </Link>
             <Link href="/contact">
               <Button variant="outline" className="px-8 py-3 text-lg font-bold rounded-xl border-white/30 text-white hover:bg-white/10">
-                <Mail className="w-5 h-5 ml-2" />
+                <Mail className="w-5 h-5 ms-2" />
                 تواصل معنا
               </Button>
             </Link>

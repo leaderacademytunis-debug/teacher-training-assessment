@@ -31,6 +31,8 @@ import {
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend
 } from "recharts";
 import RichTextEditor from "@/components/RichTextEditor";
+import useI18n from "@/i18n";
+
 
 // ===== TYPES =====
 type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages";
@@ -69,6 +71,7 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
 
 // ===== MAIN COMPONENT =====
 export default function AdminDashboardV2() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [activeSection, setActiveSection] = useState<Section>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -110,8 +113,8 @@ export default function AdminDashboardV2() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:sticky top-0 right-0 h-screen z-50 lg:z-auto
-        bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white transition-all duration-300 flex flex-col border-l border-slate-800
+        fixed lg:sticky top-0 end-0 h-screen z-50 lg:z-auto
+        bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-white transition-all duration-300 flex flex-col border-s border-slate-800
         ${mobileSidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
         ${sidebarOpen ? "w-64" : "w-20"}
       `}>
@@ -291,7 +294,7 @@ function OverviewSection() {
               <p className="text-sm text-slate-400">معدل التحويل (مجاني → مدفوع)</p>
               <p className="text-3xl font-bold text-emerald-400">{conversionRate.data.conversionRate}%</p>
             </div>
-            <div className="mr-auto text-sm text-slate-400">
+            <div className="me-auto text-sm text-slate-400">
               <span className="text-white font-bold">{conversionRate.data.paidUsers}</span> مدفوع من أصل{" "}
               <span className="text-white font-bold">{conversionRate.data.totalUsers}</span> مستخدم
             </div>
@@ -534,7 +537,7 @@ function UsageLimitsSection() {
                 className="w-full mt-3 border-slate-700 text-slate-300 hover:bg-slate-800"
                 onClick={() => setEditingTool({ ...tool })}
               >
-                <Edit className="h-3 w-3 ml-1" /> تعديل الحدود
+                <Edit className="h-3 w-3 ms-1" /> تعديل الحدود
               </Button>
             </CardContent>
           </Card>
@@ -555,7 +558,7 @@ function UsageLimitsSection() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pe-1">
               {/* Enable/Disable */}
               <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800">
                 <Label>الأداة مفعلة</Label>
@@ -668,7 +671,7 @@ function UsageLimitsSection() {
                   setEditingTool(null);
                 }}
               >
-                <Save className="h-4 w-4 ml-1" /> حفظ التغييرات
+                <Save className="h-4 w-4 ms-1" /> حفظ التغييرات
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -739,12 +742,12 @@ function UserManagementSection() {
             <div className="flex-1 min-w-[200px]">
               <Label className="text-xs text-slate-400 mb-1 block">بحث</Label>
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
                   placeholder="اسم، بريد إلكتروني..."
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  className="bg-slate-800 border-slate-700 text-white pr-9"
+                  className="bg-slate-800 border-slate-700 text-white pe-9"
                 />
               </div>
             </div>
@@ -792,7 +795,7 @@ function UserManagementSection() {
                 }
               }}
             >
-              <Download className="h-4 w-4 ml-1" /> تصدير CSV
+              <Download className="h-4 w-4 ms-1" /> تصدير CSV
             </Button>
           </div>
         </CardContent>
@@ -804,13 +807,13 @@ function UserManagementSection() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800 text-slate-400">
-                <th className="text-right p-3">المستخدم</th>
-                <th className="text-right p-3">البريد</th>
-                <th className="text-right p-3">الدور</th>
-                <th className="text-right p-3">المستوى</th>
-                <th className="text-right p-3">استخدام الشهر</th>
-                <th className="text-right p-3">آخر دخول</th>
-                <th className="text-right p-3">إجراءات</th>
+                <th className="text-end p-3">المستخدم</th>
+                <th className="text-end p-3">البريد</th>
+                <th className="text-end p-3">الدور</th>
+                <th className="text-end p-3">المستوى</th>
+                <th className="text-end p-3">استخدام الشهر</th>
+                <th className="text-end p-3">آخر دخول</th>
+                <th className="text-end p-3">إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -988,7 +991,7 @@ function UserManagementSection() {
                       className="mt-2 border-slate-700 text-slate-300"
                       onClick={() => resetUsage.mutate({ userId: selectedUser })}
                     >
-                      <RefreshCw className="h-3 w-3 ml-1" /> إعادة تعيين الاستخدام
+                      <RefreshCw className="h-3 w-3 ms-1" /> إعادة تعيين الاستخدام
                     </Button>
                   </div>
                 )}
@@ -1130,7 +1133,7 @@ function SubscriptionSection() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">خطط الأسعار</CardTitle>
           <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={() => setShowNewPlan(true)}>
-            <Plus className="h-4 w-4 ml-1" /> خطة جديدة
+            <Plus className="h-4 w-4 ms-1" /> خطة جديدة
           </Button>
         </CardHeader>
         <CardContent>
@@ -1347,7 +1350,7 @@ function ContentManagementSection() {
           <div className="flex justify-between items-center">
             <h3 className="text-white font-bold">رسائل المنصة</h3>
             <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={() => setShowNewMessage(true)}>
-              <Plus className="h-4 w-4 ml-1" /> رسالة جديدة
+              <Plus className="h-4 w-4 ms-1" /> رسالة جديدة
             </Button>
           </div>
 
@@ -1512,7 +1515,7 @@ function ContentManagementSection() {
                   });
                 }}
               >
-                <Bell className="h-4 w-4 ml-1" />
+                <Bell className="h-4 w-4 ms-1" />
                 {sendNotification.isPending ? "جاري الإرسال..." : notification.userId ? "إرسال لمستخدم محدد" : "إرسال للجميع"}
               </Button>
             </CardContent>
@@ -1762,9 +1765,9 @@ function PageManagementSection() {
               className="bg-blue-600 hover:bg-blue-700"
             >
               {seedPages.isPending ? (
-                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+                <RefreshCw className="h-4 w-4 animate-spin ms-2" />
               ) : (
-                <Plus className="h-4 w-4 ml-2" />
+                <Plus className="h-4 w-4 ms-2" />
               )}
               تحميل الصفحات الافتراضية
             </Button>
@@ -1804,12 +1807,12 @@ function PageManagementSection() {
           <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
             <div className="flex gap-3 flex-1 w-full md:w-auto">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
                   placeholder="بحث عن صفحة..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-10 bg-slate-800 border-slate-700 text-white"
+                  className="pe-10 bg-slate-800 border-slate-700 text-white"
                 />
               </div>
               <Select value={filterCategory} onValueChange={setFilterCategory}>
@@ -1827,7 +1830,7 @@ function PageManagementSection() {
               onClick={() => setShowAddDialog(true)}
               className="bg-green-600 hover:bg-green-700"
             >
-              <Plus className="h-4 w-4 ml-2" />
+              <Plus className="h-4 w-4 ms-2" />
               إضافة صفحة جديدة
             </Button>
           </div>
@@ -1841,7 +1844,7 @@ function PageManagementSection() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 text-sm">
-                  <th className="p-3 text-right">الصفحة</th>
+                  <th className="p-3 text-end">الصفحة</th>
                   <th className="p-3 text-center">المسار</th>
                   <th className="p-3 text-center">النوع</th>
                   <th className="p-3 text-center">الفئة</th>
@@ -2119,7 +2122,7 @@ function PageManagementSection() {
                   setEditingPage(null);
                 }}
               >
-                <Save className="h-4 w-4 ml-2" />
+                <Save className="h-4 w-4 ms-2" />
                 حفظ التعديلات
               </Button>
             </DialogFooter>
@@ -2337,9 +2340,9 @@ function PageManagementSection() {
               }}
             >
               {addCustomPage.isPending ? (
-                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+                <RefreshCw className="h-4 w-4 animate-spin ms-2" />
               ) : (
-                <Plus className="h-4 w-4 ml-2" />
+                <Plus className="h-4 w-4 ms-2" />
               )}
               إضافة الصفحة
             </Button>

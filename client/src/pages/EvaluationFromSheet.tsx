@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useLocation } from "wouter";
+import useI18n from "@/i18n";
+
 
 // ─── Types SC2M223 ────────────────────────────────────────────────────────────
 interface Instruction {
@@ -67,6 +69,7 @@ interface Evaluation {
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function EvaluationFromSheet() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, navigate] = useLocation();
 
   const [sheet, setSheet] = useState<Record<string, unknown> | null>(null);
@@ -225,7 +228,7 @@ export default function EvaluationFromSheet() {
             <h1 className="text-lg font-bold text-gray-800">توليد ورقة التقييم — قالب SC2M223</h1>
           </div>
           {sheet && (
-            <Badge variant="outline" className="mr-auto border-green-300 text-green-700 text-xs">
+            <Badge variant="outline" className="me-auto border-green-300 text-green-700 text-xs">
               {String(sheet.subject || "")} — {String(sheet.level || "")}
             </Badge>
           )}
@@ -272,9 +275,9 @@ export default function EvaluationFromSheet() {
                   size="sm"
                   variant="outline"
                   onClick={() => navigate("/lesson-sheet-from-plan")}
-                  className="mr-auto border-amber-400 text-amber-700"
+                  className="me-auto border-amber-400 text-amber-700"
                 >
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <ChevronRight className="w-4 h-4 ms-1" />
                   توليد جذاذة
                 </Button>
               </div>
@@ -374,12 +377,12 @@ export default function EvaluationFromSheet() {
             >
               {generateMutation.isPending ? (
                 <>
-                  <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 ms-2 animate-spin" />
                   جارٍ توليد ورقة التقييم...
                 </>
               ) : (
                 <>
-                  <Wand2 className="w-5 h-5 ml-2" />
+                  <Wand2 className="w-5 h-5 ms-2" />
                   توليد ورقة التقييم بالذكاء الاصطناعي
                 </>
               )}
@@ -406,7 +409,7 @@ export default function EvaluationFromSheet() {
                   onClick={() => setShowAnswerKey(!showAnswerKey)}
                   className="border-gray-300 text-gray-600 text-xs"
                 >
-                  <ListChecks className="w-3.5 h-3.5 ml-1" />
+                  <ListChecks className="w-3.5 h-3.5 ms-1" />
                   {showAnswerKey ? "إخفاء مفتاح الإجابة" : "إظهار مفتاح الإجابة"}
                 </Button>
                 <Button
@@ -415,7 +418,7 @@ export default function EvaluationFromSheet() {
                   onClick={() => setEditMode(!editMode)}
                   className={`text-xs ${editMode ? "border-orange-400 text-orange-600" : "border-blue-300 text-blue-600"}`}
                 >
-                  <Edit3 className="w-3.5 h-3.5 ml-1" />
+                  <Edit3 className="w-3.5 h-3.5 ms-1" />
                   {editMode ? "إيقاف التعديل" : "تعديل يدوي"}
                 </Button>
                 <Button
@@ -425,9 +428,9 @@ export default function EvaluationFromSheet() {
                   className="bg-[#1E8449] hover:bg-[#196F3D] text-white text-xs"
                 >
                   {exportWordMutation.isPending ? (
-                    <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 ms-1 animate-spin" />
                   ) : (
-                    <Download className="w-3.5 h-3.5 ml-1" />
+                    <Download className="w-3.5 h-3.5 ms-1" />
                   )}
                   تحميل Word
                 </Button>
@@ -440,7 +443,7 @@ export default function EvaluationFromSheet() {
               <div className="bg-[#1E8449]">
                 {/* الصف الأول: الجمهورية التونسية */}
                 <div className="flex items-center justify-between px-6 py-2 border-b border-white/20">
-                  <div className="text-white text-xs text-right">
+                  <div className="text-white text-xs text-end">
                     <p className="font-bold">الجمهورية التونسية</p>
                     <p className="opacity-80">وزارة التربية</p>
                   </div>
@@ -448,7 +451,7 @@ export default function EvaluationFromSheet() {
                     <p>Leader Academy</p>
                     <p>leaderacademy.school</p>
                   </div>
-                  <div className="text-white text-xs text-left">
+                  <div className="text-white text-xs text-start">
                     <p className="font-bold">{schoolName || "اسم المدرسة"}</p>
                     <p className="opacity-80">السنة الدراسية: {schoolYear}</p>
                   </div>
@@ -473,21 +476,21 @@ export default function EvaluationFromSheet() {
                   <table className="w-full text-sm">
                     <tbody>
                       <tr className="border-b border-gray-200">
-                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs w-1/4 border-l border-gray-200">الاسم واللقب</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs w-1/4 border-s border-gray-200">الاسم واللقب</td>
                         <td className="px-3 py-2 text-gray-400 text-xs">.....................................................</td>
-                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs w-1/4 border-l border-gray-200">الرقم</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs w-1/4 border-s border-gray-200">الرقم</td>
                         <td className="px-3 py-2 text-gray-400 text-xs">.............</td>
                       </tr>
                       <tr className="border-b border-gray-200">
-                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">المادة</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-s border-gray-200">المادة</td>
                         <td className="px-3 py-2 text-xs font-medium">{displayEval.subject || "—"}</td>
-                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">المستوى</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-s border-gray-200">المستوى</td>
                         <td className="px-3 py-2 text-xs font-medium">{displayEval.level || "—"}</td>
                       </tr>
                       <tr>
-                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">الثلاثي</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-s border-gray-200">الثلاثي</td>
                         <td className="px-3 py-2 text-xs font-medium">{displayEval.trimester || "—"}</td>
-                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-l border-gray-200">المدة</td>
+                        <td className="bg-[#1E8449]/10 px-3 py-2 font-bold text-[#1E8449] text-xs border-s border-gray-200">المدة</td>
                         <td className="px-3 py-2 text-xs font-medium">{displayEval.duration || "—"}</td>
                       </tr>
                     </tbody>
@@ -537,7 +540,7 @@ export default function EvaluationFromSheet() {
 
                       {/* نص السند */}
                       {sup.supportText && (
-                        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 border-r-4 border-r-[#1E8449]">
+                        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 border-e-4 border-e-[#1E8449]">
                           <p className="text-sm text-gray-700 italic leading-relaxed">{sup.supportText}</p>
                         </div>
                       )}
@@ -550,7 +553,7 @@ export default function EvaluationFromSheet() {
                             <div className="flex items-start gap-3 mb-2">
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-semibold text-gray-800">
-                                  <span className="text-[#1E8449] font-bold ml-1">تعليمة {inst.instructionNumber}:</span>
+                                  <span className="text-[#1E8449] font-bold ms-1">تعليمة {inst.instructionNumber}:</span>
                                   {inst.instructionText}
                                 </p>
                               </div>
@@ -588,7 +591,7 @@ export default function EvaluationFromSheet() {
                                 </table>
                               </div>
                             ) : inst.items && inst.items.length > 0 ? (
-                              <div className="mt-2 space-y-1 pr-4">
+                              <div className="mt-2 space-y-1 pe-4">
                                 {inst.items.map((item, itemIdx) => (
                                   <div key={itemIdx} className="flex items-center gap-2 text-sm text-gray-700">
                                     <span className="w-4 h-4 border border-gray-400 rounded-sm shrink-0 inline-block" />
@@ -633,7 +636,7 @@ export default function EvaluationFromSheet() {
                         <table className="w-full text-xs">
                           <thead>
                             <tr>
-                              <th className="bg-[#1E8449]/10 border border-gray-200 px-3 py-2 text-right font-bold text-[#1E8449] w-1/3">
+                              <th className="bg-[#1E8449]/10 border border-gray-200 px-3 py-2 text-end font-bold text-[#1E8449] w-1/3">
                                 مستوى الأداء
                               </th>
                               {displayEval.scoringGrid.criteria.map((c, cIdx) => (
@@ -674,7 +677,7 @@ export default function EvaluationFromSheet() {
                 disabled={exportWordMutation.isPending}
                 className="bg-[#1E8449] hover:bg-[#196F3D] text-white px-6 py-3 text-sm font-bold shadow-lg"
               >
-                {exportWordMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Download className="w-4 h-4 ml-2" />}
+                {exportWordMutation.isPending ? <Loader2 className="w-4 h-4 ms-2 animate-spin" /> : <Download className="w-4 h-4 ms-2" />}
                 تحميل Word
               </Button>
 
@@ -684,7 +687,7 @@ export default function EvaluationFromSheet() {
                 variant="outline"
                 className="border-blue-500 text-blue-700 hover:bg-blue-50 px-6 py-3 text-sm font-bold"
               >
-                <Printer className="w-4 h-4 ml-2" />
+                <Printer className="w-4 h-4 ms-2" />
                 طباعة A4
               </Button>
 
@@ -695,7 +698,7 @@ export default function EvaluationFromSheet() {
                 variant="outline"
                 className="border-purple-500 text-purple-700 hover:bg-purple-50 px-6 py-3 text-sm font-bold"
               >
-                {variantBMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Copy className="w-4 h-4 ml-2" />}
+                {variantBMutation.isPending ? <Loader2 className="w-4 h-4 ms-2 animate-spin" /> : <Copy className="w-4 h-4 ms-2" />}
                 نسخة بديلة (ب)
               </Button>
 
@@ -706,7 +709,7 @@ export default function EvaluationFromSheet() {
                 variant="outline"
                 className={isSaved ? "border-green-500 text-green-700 bg-green-50 px-6 py-3 text-sm font-bold" : "border-amber-500 text-amber-700 hover:bg-amber-50 px-6 py-3 text-sm font-bold"}
               >
-                {saveEvalMutation.isPending ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Save className="w-4 h-4 ml-2" />}
+                {saveEvalMutation.isPending ? <Loader2 className="w-4 h-4 ms-2 animate-spin" /> : <Save className="w-4 h-4 ms-2" />}
                 {isSaved ? "تم الحفظ ✓" : "حفظ في المكتبة"}
               </Button>
 
@@ -717,7 +720,7 @@ export default function EvaluationFromSheet() {
                 disabled={generateMutation.isPending}
                 className="border-gray-400 text-gray-600 hover:bg-gray-50 px-5 py-3 text-sm"
               >
-                <RotateCcw className="w-4 h-4 ml-2" />
+                <RotateCcw className="w-4 h-4 ms-2" />
                 توليد جديد
               </Button>
             </div>

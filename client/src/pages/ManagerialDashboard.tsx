@@ -11,6 +11,8 @@ import {
   Star, Download, Eye, ArrowLeft, Activity, AlertTriangle,
   Loader2, Crown, Target, Layers
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const ACTIVITY_TYPE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   lesson_plan: { label: "جذاذة درس", icon: "📝", color: "bg-blue-100 text-blue-800" },
@@ -21,6 +23,7 @@ const ACTIVITY_TYPE_LABELS: Record<string, { label: string; icon: string; color:
 };
 
 export default function ManagerialDashboard() {
+  const { t, lang, isRTL, dir } = useI18n();
   const auth = useAuth();
   const user = auth.user;
   const authLoading = !auth.isAuthenticated && !user;
@@ -66,7 +69,7 @@ export default function ManagerialDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/teacher-tools">
-                <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 ml-1" /> العودة</Button>
+                <Button variant="ghost" size="sm"><ArrowLeft className="w-4 h-4 ms-1" /> العودة</Button>
               </Link>
               <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -77,7 +80,7 @@ export default function ManagerialDashboard() {
               </div>
             </div>
             <Badge variant="outline" className="text-sm px-3 py-1">
-              <Crown className="w-4 h-4 ml-1 text-amber-500" />
+              <Crown className="w-4 h-4 ms-1 text-amber-500" />
               {user.role === "admin" ? "مدير" : "مشرف"}
             </Badge>
           </div>
@@ -106,7 +109,7 @@ export default function ManagerialDashboard() {
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            <span className="mr-3 text-muted-foreground">جاري تحميل التحليلات...</span>
+            <span className="me-3 text-muted-foreground">جاري تحميل التحليلات...</span>
           </div>
         ) : dashboard ? (
           <>
@@ -254,10 +257,10 @@ export default function ManagerialDashboard() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b text-muted-foreground">
-                            <th className="text-right py-2 px-3">المعلم</th>
-                            <th className="text-right py-2 px-3">النوع</th>
-                            <th className="text-right py-2 px-3">المادة</th>
-                            <th className="text-right py-2 px-3">التاريخ</th>
+                            <th className="text-end py-2 px-3">المعلم</th>
+                            <th className="text-end py-2 px-3">النوع</th>
+                            <th className="text-end py-2 px-3">المادة</th>
+                            <th className="text-end py-2 px-3">التاريخ</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -351,13 +354,13 @@ export default function ManagerialDashboard() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b text-muted-foreground">
-                            <th className="text-right py-2 px-3">#</th>
-                            <th className="text-right py-2 px-3">المعلم</th>
-                            <th className="text-right py-2 px-3">إجمالي الأنشطة</th>
-                            <th className="text-right py-2 px-3">جذاذات</th>
-                            <th className="text-right py-2 px-3">اختبارات</th>
-                            <th className="text-right py-2 px-3">تقييمات</th>
-                            <th className="text-right py-2 px-3">صور</th>
+                            <th className="text-end py-2 px-3">#</th>
+                            <th className="text-end py-2 px-3">المعلم</th>
+                            <th className="text-end py-2 px-3">إجمالي الأنشطة</th>
+                            <th className="text-end py-2 px-3">جذاذات</th>
+                            <th className="text-end py-2 px-3">اختبارات</th>
+                            <th className="text-end py-2 px-3">تقييمات</th>
+                            <th className="text-end py-2 px-3">صور</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -419,7 +422,7 @@ export default function ManagerialDashboard() {
                                   <p className="text-xs text-muted-foreground">{gap.itemCount} محتوى تم تحليله</p>
                                 </div>
                               </div>
-                              <div className="text-left">
+                              <div className="text-start">
                                 <p className={`text-2xl font-bold ${
                                   gap.avgScore < 50 ? "text-red-600" : gap.avgScore < 70 ? "text-orange-600" : "text-green-600"
                                 }`}>

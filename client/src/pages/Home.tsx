@@ -403,7 +403,7 @@ function CurriculumGPSSection({ t }: { t: (ar: string, fr: string, en: string) =
                     </span>
                     {currentLesson.weekNumber && (
                       <span className="text-xs text-blue-300">
-                        <Clock className="w-3 h-3 inline ml-1" />
+                        <Clock className="w-3 h-3 inline ms-1" />
                         {t(`الأسبوع ${currentLesson.weekNumber}`, `Semaine ${currentLesson.weekNumber}`, `Week ${currentLesson.weekNumber}`)}
                       </span>
                     )}
@@ -413,7 +413,7 @@ function CurriculumGPSSection({ t }: { t: (ar: string, fr: string, en: string) =
                   </h3>
                   {currentLesson.competency && (
                     <p className="text-blue-200 text-sm mb-1">
-                      {currentLesson.competencyCode && <span className="font-bold text-yellow-300 ml-2">{currentLesson.competencyCode}</span>}
+                      {currentLesson.competencyCode && <span className="font-bold text-yellow-300 ms-2">{currentLesson.competencyCode}</span>}
                       {currentLesson.competency}
                     </p>
                   )}
@@ -554,9 +554,9 @@ function NewsletterSection() {
               style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 8px 24px rgba(255,109,0,0.4)" }}
             >
               {subscribeMutation.isPending ? (
-                <><Loader2 className="w-5 h-5 animate-spin ml-2" />{t("جاري...", "En cours...", "Loading...")}</>
+                <><Loader2 className="w-5 h-5 animate-spin ms-2" />{t("جاري...", "En cours...", "Loading...")}</>
               ) : (
-                <><Sparkles className="w-5 h-5 ml-2" />{t("احصل على الدليل المجاني", "Obtenir le guide gratuit", "Get Free Guide")}</>
+                <><Sparkles className="w-5 h-5 ms-2" />{t("احصل على الدليل المجاني", "Obtenir le guide gratuit", "Get Free Guide")}</>
               )}
             </Button>
             {subscribeMutation.isError && (
@@ -639,8 +639,8 @@ function KillerFeaturesSection({ t }: { t: (ar: string, fr: string, en: string) 
   return (
     <section className="py-24 lg:py-28 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F0F4FF 100%)" }}>
       {/* Decorative */}
-      <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, #1A237E, transparent 70%)" }} />
-      <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #FF6D00, transparent 70%)" }} />
+      <div className="absolute top-0 end-0 w-96 h-96 rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, #1A237E, transparent 70%)" }} />
+      <div className="absolute bottom-0 start-0 w-80 h-80 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #FF6D00, transparent 70%)" }} />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" dir="rtl">
         {/* Section Header */}
@@ -675,7 +675,7 @@ function KillerFeaturesSection({ t }: { t: (ar: string, fr: string, en: string) 
                 <div className={`group relative bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1 cursor-pointer`}>
                   {/* Badge */}
                   {feature.badge && (
-                    <div className="absolute top-4 left-4 rtl:left-auto rtl:right-4 z-10">
+                    <div className="absolute top-4 start-4 rtl:left-auto rtl:end-4 z-10">
                       <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold text-white shadow-lg animate-pulse-glow" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
                         <Crown className="w-3.5 h-3.5" />
                         {t(feature.badge.ar, feature.badge.fr, feature.badge.en)}
@@ -730,7 +730,7 @@ function KillerFeaturesSection({ t }: { t: (ar: string, fr: string, en: string) 
                             <Icon className="w-20 h-20 lg:w-24 lg:h-24 text-white opacity-90" />
                           </div>
                           {/* Floating stat badge */}
-                          <div className="absolute -bottom-4 -right-4 bg-white rounded-xl px-4 py-2 shadow-lg border border-gray-100" style={{ animation: "float 5s ease-in-out infinite" }}>
+                          <div className="absolute -bottom-4 -end-4 bg-white rounded-xl px-4 py-2 shadow-lg border border-gray-100" style={{ animation: "float 5s ease-in-out infinite" }}>
                             <div className="flex items-center gap-2">
                               <TrendingUp className="w-4 h-4 text-green-500" />
                               <span className="text-sm font-bold" style={{ color: "#1A237E" }}>
@@ -961,9 +961,9 @@ function FAQSection({ t }: { t: (ar: string, fr: string, en: string) => string }
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between p-6 text-right"
+                  className="w-full flex items-center justify-between p-6 text-end"
                 >
-                  <span className="font-bold text-base lg:text-lg flex-1 ml-4" style={{ color: isOpen ? "#1A237E" : "#374151", fontFamily: "'Cairo', sans-serif" }}>
+                  <span className="font-bold text-base lg:text-lg flex-1 ms-4" style={{ color: isOpen ? "#1A237E" : "#374151", fontFamily: "'Cairo', sans-serif" }}>
                     {t(item.qAr, item.qFr, item.qEn)}
                   </span>
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 ${isOpen ? "rotate-180" : ""}`} style={{ background: isOpen ? "linear-gradient(135deg, #1A237E, #1565C0)" : "rgba(26,35,126,0.06)" }}>
@@ -1066,8 +1066,8 @@ function MiniPricingSection({ t }: { t: (ar: string, fr: string, en: string) => 
   return (
     <section className="py-24 lg:py-28 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%)" }} dir="rtl">
       {/* Decorative */}
-      <div className="absolute top-0 left-1/3 w-96 h-96 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #1A237E, transparent)" }} />
-      <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #FF6D00, transparent)" }} />
+      <div className="absolute top-0 start-1/3 w-96 h-96 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #1A237E, transparent)" }} />
+      <div className="absolute bottom-0 end-1/4 w-80 h-80 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #FF6D00, transparent)" }} />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -1107,7 +1107,7 @@ function MiniPricingSection({ t }: { t: (ar: string, fr: string, en: string) => 
               >
                 {/* Popular badge */}
                 {isPopular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                  <div className="absolute -top-4 start-1/2 -translate-x-1/2 z-10">
                     <span className="inline-flex items-center gap-1.5 px-5 py-1.5 rounded-full text-xs font-bold text-white shadow-lg" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
                       <Star className="w-3.5 h-3.5 fill-current" />
                       {t("الأكثر طلباً", "Le plus populaire", "Most Popular")}
@@ -1136,7 +1136,7 @@ function MiniPricingSection({ t }: { t: (ar: string, fr: string, en: string) => 
                       <span className="text-gray-400 text-sm font-semibold">TND/{t("شهر", "mois", "month")}</span>
                     </div>
                     <span className="text-sm text-red-400 line-through">{tier.oldPrice} TND</span>
-                    <span className="text-xs font-bold mr-2 px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.1)", color: "#059669" }}>
+                    <span className="text-xs font-bold me-2 px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.1)", color: "#059669" }}>
                       -{Math.round(((tier.oldPrice - tier.price) / tier.oldPrice) * 100)}%
                     </span>
                   </div>
@@ -1228,7 +1228,7 @@ function AdminConsoleDropdown({ language, t, location, isAdmin }: { language: Ap
         <ChevronDown className="w-3.5 h-3.5 text-blue-200 transition-transform group-hover/admin:rotate-180" />
       </button>
       {/* Hover dropdown */}
-      <div className="absolute left-0 top-full pt-1 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
+      <div className="absolute start-0 top-full pt-1 opacity-0 invisible group-hover/admin:opacity-100 group-hover/admin:visible transition-all duration-200 z-50" style={{ minWidth: "320px" }}>
         <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden" dir="rtl">
           <div className="px-4 py-2.5 border-b border-gray-100" style={{ background: "linear-gradient(135deg, #1A237E, #1565C0)" }}>
             <p className="text-white font-bold text-sm flex items-center gap-2">
@@ -1322,7 +1322,7 @@ function AdminMobileLink({ setMobileMenuOpen, location, language, t, isAdmin }: 
         return (
           <Link key={link.href} href={link.href}>
             <button
-              className={`flex items-center gap-3 w-full text-right px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 w-full text-end px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive ? "text-white bg-white/15" : "text-blue-100 hover:text-white hover:bg-white/10"
               }`}
               onClick={() => setMobileMenuOpen(false)}
@@ -1379,8 +1379,8 @@ export default function Home() {
         {/* Subtle decorative background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Soft gradient blobs */}
-          <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.04]" style={{ background: "#1A237E", filter: "blur(100px)" }} />
-          <div className="absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full opacity-[0.03]" style={{ background: "#FF6D00", filter: "blur(80px)" }} />
+          <div className="absolute -top-32 -end-32 w-[500px] h-[500px] rounded-full opacity-[0.04]" style={{ background: "#1A237E", filter: "blur(100px)" }} />
+          <div className="absolute -bottom-20 -start-20 w-[400px] h-[400px] rounded-full opacity-[0.03]" style={{ background: "#FF6D00", filter: "blur(80px)" }} />
           {/* Dot pattern */}
           <div className="absolute inset-0 opacity-[0.03]" style={{
             backgroundImage: "radial-gradient(#1A237E 1px, transparent 1px)",
@@ -1433,7 +1433,7 @@ export default function Home() {
                     className="text-white font-bold px-8 h-13 text-base rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.03] transition-all duration-200"
                     style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 6px 24px rgba(255,109,0,0.3)" }}
                   >
-                    <Sparkles className="w-5 h-5 ml-2" />
+                    <Sparkles className="w-5 h-5 ms-2" />
                     {t("جرب الأدوات الذكية", "Essayer les outils IA", "Try Smart Tools")}
                   </Button>
                 </Link>
@@ -1536,7 +1536,7 @@ export default function Home() {
                 </div>
 
                 {/* Floating badge: top-right */}
-                <div className="absolute -top-5 -right-5 rounded-xl px-4 py-2.5 shadow-lg bg-white border border-gray-100" style={{ animation: "float 6s ease-in-out infinite" }}>
+                <div className="absolute -top-5 -end-5 rounded-xl px-4 py-2.5 shadow-lg bg-white border border-gray-100" style={{ animation: "float 6s ease-in-out infinite" }}>
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#E8F5E9" }}>
                       <span className="text-green-600 text-base font-bold">✓</span>
@@ -1549,7 +1549,7 @@ export default function Home() {
                 </div>
 
                 {/* Floating badge: bottom-left */}
-                <div className="absolute -bottom-5 -left-5 rounded-xl px-4 py-2.5 shadow-lg bg-white border border-gray-100" style={{ animation: "float 6s ease-in-out infinite 3s" }}>
+                <div className="absolute -bottom-5 -start-5 rounded-xl px-4 py-2.5 shadow-lg bg-white border border-gray-100" style={{ animation: "float 6s ease-in-out infinite 3s" }}>
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#FFF3E0" }}>
                       <Zap className="w-5 h-5" style={{ color: "#FF6D00" }} />
@@ -1562,7 +1562,7 @@ export default function Home() {
                 </div>
 
                 {/* Floating badge: top-left */}
-                <div className="absolute top-8 -left-8 rounded-xl px-3 py-2 shadow-lg bg-white border border-gray-100" style={{ animation: "float 5s ease-in-out infinite 1.5s" }}>
+                <div className="absolute top-8 -start-8 rounded-xl px-3 py-2 shadow-lg bg-white border border-gray-100" style={{ animation: "float 5s ease-in-out infinite 1.5s" }}>
                   <div className="flex items-center gap-2">
                     <span className="text-xl">🇹🇳</span>
                     <div>
@@ -1626,7 +1626,7 @@ export default function Home() {
                   }`} style={{ borderRadius: "16px" }}>
                     {/* Badge */}
                     {tool.badge && (
-                      <div className="absolute -top-3 left-5 rtl:left-auto rtl:right-5">
+                      <div className="absolute -top-3 start-5 rtl:left-auto rtl:end-5">
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold text-white shadow-md" style={{ background: tool.badge.color }}>
                           <Sparkles className="w-3 h-3" />
                           {t(tool.badge.ar, tool.badge.fr, tool.badge.en)}
@@ -1669,7 +1669,7 @@ export default function Home() {
                 className="font-bold text-base px-8 h-12 rounded-xl border-2 hover:scale-[1.03] transition-all duration-200"
                 style={{ borderColor: "#1A237E", color: "#1A237E" }}
               >
-                <Sparkles className="w-5 h-5 ml-2" style={{ color: "#FF6D00" }} />
+                <Sparkles className="w-5 h-5 ms-2" style={{ color: "#FF6D00" }} />
                 {t("استكشف جميع الأدوات", "Explorer tous les outils", "Explore All Tools")}
               </Button>
             </Link>
@@ -1800,7 +1800,7 @@ export default function Home() {
                           {/* Badge */}
                           {cover && (
                             <div
-                              className="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg"
+                              className="absolute top-3 end-3 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg"
                               style={{ background: cover.badgeColor }}
                             >
                               {t(cover.badgeAr, cover.badgeFr, cover.badgeEn)}
@@ -1808,7 +1808,7 @@ export default function Home() {
                           )}
                           {/* Duration pill */}
                           {course.duration && (
-                            <div className="absolute bottom-3 left-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
+                            <div className="absolute bottom-3 start-3 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
                               <Clock className="w-3.5 h-3.5" />
                               <span>{course.duration} {t("ساعة", "h", "h")}</span>
                             </div>
@@ -1843,7 +1843,7 @@ export default function Home() {
                                   }}
                                 />
                               ))}
-                              <span className="text-gray-600 font-semibold mr-1">{rating}</span>
+                              <span className="text-gray-600 font-semibold me-1">{rating}</span>
                             </div>
                             <div className="flex items-center gap-1 text-gray-400">
                               <Users className="w-3.5 h-3.5" />
@@ -1919,8 +1919,8 @@ export default function Home() {
       {/* ===== TESTIMONIALS SECTION - HYBRID TRUST WALL WITH REAL PHOTOS ===== */}
       <section className="py-24 lg:py-32 relative overflow-hidden" style={{ background: "#FFFFFF" }} dir={language === "ar" ? "rtl" : "ltr"}>
         {/* Subtle decorative elements */}
-        <div className="absolute top-0 left-0 w-72 h-72 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #1A237E, transparent 70%)", transform: "translate(-30%, -30%)" }} />
-        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full opacity-[0.02]" style={{ background: "radial-gradient(circle, #FF6D00, transparent 70%)", transform: "translate(30%, 30%)" }} />
+        <div className="absolute top-0 start-0 w-72 h-72 rounded-full opacity-[0.03]" style={{ background: "radial-gradient(circle, #1A237E, transparent 70%)", transform: "translate(-30%, -30%)" }} />
+        <div className="absolute bottom-0 end-0 w-96 h-96 rounded-full opacity-[0.02]" style={{ background: "radial-gradient(circle, #FF6D00, transparent 70%)", transform: "translate(30%, 30%)" }} />
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
@@ -2029,7 +2029,7 @@ export default function Home() {
                         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.05) 40%, transparent 60%)" }} />
                         {/* Course badge on image */}
                         {courseName && (
-                          <div className="absolute bottom-3 right-3">
+                          <div className="absolute bottom-3 end-3">
                             <span 
                               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold backdrop-blur-md"
                               style={{ 
@@ -2045,7 +2045,7 @@ export default function Home() {
                         )}
                         {/* Decorative accent line */}
                         <div 
-                          className="absolute bottom-0 left-0 right-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                          className="absolute bottom-0 start-0 end-0 h-[3px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                           style={{ background: `linear-gradient(90deg, ${accentColor}, ${accentColor}80, ${accentColor}40)` }} 
                         />
                       </div>
@@ -2053,7 +2053,7 @@ export default function Home() {
                       {/* Card Content */}
                       <div className="relative p-7 lg:p-8">
                         {/* Avatar overlapping the image-content boundary */}
-                        <div className="absolute -top-8 right-7" style={{ direction: "ltr" }}>
+                        <div className="absolute -top-8 end-7" style={{ direction: "ltr" }}>
                           <div 
                             className="w-[60px] h-[60px] rounded-full overflow-hidden flex-shrink-0 transition-transform duration-300 group-hover:scale-110"
                             style={{ 
@@ -2230,7 +2230,7 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/assistant">
               <Button size="lg" className="text-white font-bold px-10 py-4 text-lg rounded-xl shadow-2xl hover:scale-105 transition-transform" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)", boxShadow: "0 8px 32px rgba(255,109,0,0.4)" }}>
-                <Brain className="w-5 h-5 ml-2" />
+                <Brain className="w-5 h-5 ms-2" />
                 جرّب EDUGPT مجاناً
               </Button>
             </Link>
@@ -2247,9 +2247,9 @@ export default function Home() {
       <footer className="text-white relative overflow-hidden" dir="rtl" style={{ background: "linear-gradient(165deg, #050D2E 0%, #0A1847 35%, #0D1B5E 65%, #101F6A 100%)" }}>
         {/* Decorative Background Elements */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/[0.03] rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-blue-400/[0.04] rounded-full blur-[100px]" />
-          <div className="absolute top-1/2 left-0 w-64 h-64 bg-purple-500/[0.02] rounded-full blur-[80px]" />
+          <div className="absolute top-0 start-1/4 w-96 h-96 bg-orange-500/[0.03] rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 end-1/4 w-80 h-80 bg-blue-400/[0.04] rounded-full blur-[100px]" />
+          <div className="absolute top-1/2 start-0 w-64 h-64 bg-purple-500/[0.02] rounded-full blur-[80px]" />
         </div>
 
         {/* Top Decorative Line */}
@@ -2310,7 +2310,7 @@ export default function Home() {
                 ].map((link, i) => (
                   <li key={i}>
                     <Link href={link.href} className="text-blue-200/50 text-sm hover:text-orange-300 transition-all duration-200 flex items-center gap-2.5 group" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      <ChevronLeft className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all duration-200 -mr-1 group-hover:mr-0 text-orange-400" />
+                      <ChevronLeft className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all duration-200 -me-1 group-hover:me-0 text-orange-400" />
                       <span className="group-hover:translate-x-[-4px] transition-transform duration-200">{t(link.labelAr, link.labelFr, link.labelEn)}</span>
                     </Link>
                   </li>
@@ -2334,7 +2334,7 @@ export default function Home() {
                 ].map((link, i) => (
                   <li key={i}>
                     <Link href={link.href} className="text-blue-200/50 text-sm hover:text-orange-300 transition-all duration-200 flex items-center gap-2.5 group" style={{ fontFamily: "'Almarai', sans-serif" }}>
-                      <ChevronLeft className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all duration-200 -mr-1 group-hover:mr-0 text-orange-400" />
+                      <ChevronLeft className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-all duration-200 -me-1 group-hover:me-0 text-orange-400" />
                       <span className="group-hover:translate-x-[-4px] transition-transform duration-200">{t(link.labelAr, link.labelFr, link.labelEn)}</span>
                     </Link>
                   </li>
@@ -2375,11 +2375,11 @@ export default function Home() {
               <div className="relative">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-300/30" />
+                    <Mail className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-300/30" />
                     <input
                       type="email"
                       placeholder={t("بريدك الإلكتروني", "Votre email", "Your email")}
-                      className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl pr-10 pl-4 py-3 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-orange-400/40 focus:bg-white/[0.08] transition-all duration-300"
+                      className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl pe-10 ps-4 py-3 text-sm text-white placeholder:text-blue-300/30 focus:outline-none focus:border-orange-400/40 focus:bg-white/[0.08] transition-all duration-300"
                       style={{ fontFamily: "'Almarai', sans-serif" }}
                       dir="rtl"
                     />

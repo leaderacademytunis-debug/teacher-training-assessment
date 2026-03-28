@@ -68,7 +68,7 @@ export default function MyStudioProjects() {
             </div>
             <Link href="/edu-studio">
               <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border-0">
-                <Clapperboard className="w-4 h-4 mr-2" />
+                <Clapperboard className="w-4 h-4 me-2" />
                 {t("مشروع جديد", "Nouveau projet", "New Project")}
               </Button>
             </Link>
@@ -80,13 +80,13 @@ export default function MyStudioProjects() {
       <div className="container mx-auto px-4 py-8">
         {/* Search */}
         <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t("البحث في المشاريع...", "Rechercher dans les projets...", "Search projects...")}
-            className="w-full bg-white/5 border border-purple-500/20 rounded-xl py-3 pl-11 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-400/50"
+            className="w-full bg-white/5 border border-purple-500/20 rounded-xl py-3 ps-11 pe-4 text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-400/50"
           />
         </div>
 
@@ -110,7 +110,7 @@ export default function MyStudioProjects() {
             </p>
             <Link href="/edu-studio">
               <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-0">
-                <Clapperboard className="w-4 h-4 mr-2" />
+                <Clapperboard className="w-4 h-4 me-2" />
                 {t("إنشاء مشروع", "Créer un projet", "Create Project")}
               </Button>
             </Link>
@@ -138,7 +138,7 @@ export default function MyStudioProjects() {
                       <h3 className="font-semibold text-white text-lg leading-tight flex-1 group-hover:text-purple-200 transition-colors">
                         {project.title || t("مشروع بدون عنوان", "Projet sans titre", "Untitled Project")}
                       </h3>
-                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${status.color} flex-shrink-0 ml-2`}>
+                      <span className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${status.color} flex-shrink-0 ms-2`}>
                         <StatusIcon className="w-3 h-3" />
                         {status.label}
                       </span>

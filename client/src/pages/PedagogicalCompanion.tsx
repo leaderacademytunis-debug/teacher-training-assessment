@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 // Difficulty types with translations
 const DIFFICULTIES = [
@@ -50,6 +52,7 @@ const DURATIONS = [
 type ViewMode = "home" | "new-profile" | "profiles" | "generate" | "plans" | "view-plan";
 
 export default function PedagogicalCompanion() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [step, setStep] = useState(1);
@@ -200,14 +203,14 @@ export default function PedagogicalCompanion() {
         {/* Hero */}
         <div className="relative overflow-hidden bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-600 text-white">
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 right-10 w-40 h-40 rounded-full bg-white/20 blur-3xl" />
-            <div className="absolute bottom-10 left-20 w-60 h-60 rounded-full bg-emerald-300/20 blur-3xl" />
+            <div className="absolute top-10 end-10 w-40 h-40 rounded-full bg-white/20 blur-3xl" />
+            <div className="absolute bottom-10 start-20 w-60 h-60 rounded-full bg-emerald-300/20 blur-3xl" />
           </div>
           <div className="container max-w-6xl py-12 relative">
             <div className="flex items-center gap-2 mb-4">
               <Link href="/learning-support">
                 <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
-                  <ArrowLeft className="w-4 h-4 ml-1" />
+                  <ArrowLeft className="w-4 h-4 ms-1" />
                   العودة لأدوات ذوي الصعوبات
                 </Button>
               </Link>
@@ -215,7 +218,7 @@ export default function PedagogicalCompanion() {
             <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="flex-1">
                 <Badge className="bg-white/20 text-white border-white/30 mb-4">
-                  <Sparkles className="w-3 h-3 ml-1" /> مدعوم بالذكاء الاصطناعي
+                  <Sparkles className="w-3 h-3 ms-1" /> مدعوم بالذكاء الاصطناعي
                 </Badge>
                 <h1 className="text-3xl md:text-4xl font-bold mb-4">المرافق البيداغوجي الخاص</h1>
                 <p className="text-lg text-teal-100 mb-6 leading-relaxed">
@@ -224,11 +227,11 @@ export default function PedagogicalCompanion() {
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Button size="lg" className="bg-white text-teal-700 hover:bg-teal-50 font-bold" onClick={() => setViewMode("new-profile")}>
-                    <Plus className="w-5 h-5 ml-2" /> إنشاء ملف تلميذ جديد
+                    <Plus className="w-5 h-5 ms-2" /> إنشاء ملف تلميذ جديد
                   </Button>
                   {(profiles.data?.length || 0) > 0 && (
                     <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10" onClick={() => setViewMode("profiles")}>
-                      <Users className="w-5 h-5 ml-2" /> ملفات التلاميذ ({profiles.data?.length})
+                      <Users className="w-5 h-5 ms-2" /> ملفات التلاميذ ({profiles.data?.length})
                     </Button>
                   )}
                 </div>
@@ -311,7 +314,7 @@ export default function PedagogicalCompanion() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">آخر خطط المرافقة</h2>
               <Button variant="outline" onClick={() => setViewMode("plans")}>
-                عرض الكل <ChevronLeft className="w-4 h-4 mr-1" />
+                عرض الكل <ChevronLeft className="w-4 h-4 me-1" />
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -346,7 +349,7 @@ export default function PedagogicalCompanion() {
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white py-8" dir="rtl">
         <div className="container max-w-3xl">
           <Button variant="ghost" className="mb-4" onClick={() => { setViewMode("home"); resetProfileForm(); }}>
-            <ArrowLeft className="w-4 h-4 ml-1" /> العودة
+            <ArrowLeft className="w-4 h-4 ms-1" /> العودة
           </Button>
 
           <Card className="border-0 shadow-xl">
@@ -407,7 +410,7 @@ export default function PedagogicalCompanion() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {DIFFICULTIES.map(d => (
                         <button key={d.value}
-                          className={`p-3 rounded-xl border-2 text-right transition-all ${
+                          className={`p-3 rounded-xl border-2 text-end transition-all ${
                             profileForm.primaryDifficulty === d.value
                               ? "border-teal-500 bg-teal-50 shadow-md"
                               : "border-gray-200 hover:border-gray-300"
@@ -430,7 +433,7 @@ export default function PedagogicalCompanion() {
                       }
                       setStep(2);
                     }} className="bg-teal-600 hover:bg-teal-700">
-                      التالي <ChevronLeft className="w-4 h-4 mr-1" />
+                      التالي <ChevronLeft className="w-4 h-4 me-1" />
                     </Button>
                   </div>
                 </div>
@@ -470,10 +473,10 @@ export default function PedagogicalCompanion() {
                   </div>
                   <div className="flex justify-between">
                     <Button variant="outline" onClick={() => setStep(1)}>
-                      <ChevronRight className="w-4 h-4 ml-1" /> السابق
+                      <ChevronRight className="w-4 h-4 ms-1" /> السابق
                     </Button>
                     <Button onClick={() => setStep(3)} className="bg-teal-600 hover:bg-teal-700">
-                      التالي <ChevronLeft className="w-4 h-4 mr-1" />
+                      التالي <ChevronLeft className="w-4 h-4 me-1" />
                     </Button>
                   </div>
                 </div>
@@ -513,11 +516,11 @@ export default function PedagogicalCompanion() {
 
                   <div className="flex justify-between">
                     <Button variant="outline" onClick={() => setStep(2)}>
-                      <ChevronRight className="w-4 h-4 ml-1" /> السابق
+                      <ChevronRight className="w-4 h-4 ms-1" /> السابق
                     </Button>
                     <Button onClick={handleCreateProfile} disabled={createProfile.isPending}
                       className="bg-teal-600 hover:bg-teal-700">
-                      {createProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : <CheckCircle2 className="w-4 h-4 ml-2" />}
+                      {createProfile.isPending ? <Loader2 className="w-4 h-4 animate-spin ms-2" /> : <CheckCircle2 className="w-4 h-4 ms-2" />}
                       حفظ الملف
                     </Button>
                   </div>
@@ -538,12 +541,12 @@ export default function PedagogicalCompanion() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Button variant="ghost" onClick={() => setViewMode("home")}>
-                <ArrowLeft className="w-4 h-4 ml-1" /> العودة
+                <ArrowLeft className="w-4 h-4 ms-1" /> العودة
               </Button>
               <h1 className="text-2xl font-bold text-gray-900">ملفات التلاميذ</h1>
             </div>
             <Button onClick={() => setViewMode("new-profile")} className="bg-teal-600 hover:bg-teal-700">
-              <Plus className="w-4 h-4 ml-2" /> ملف جديد
+              <Plus className="w-4 h-4 ms-2" /> ملف جديد
             </Button>
           </div>
 
@@ -554,7 +557,7 @@ export default function PedagogicalCompanion() {
               <Users className="w-16 h-16 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 mb-4">لا توجد ملفات تلاميذ بعد</p>
               <Button onClick={() => setViewMode("new-profile")} className="bg-teal-600 hover:bg-teal-700">
-                <Plus className="w-4 h-4 ml-2" /> إنشاء أول ملف
+                <Plus className="w-4 h-4 ms-2" /> إنشاء أول ملف
               </Button>
             </Card>
           ) : (
@@ -589,7 +592,7 @@ export default function PedagogicalCompanion() {
                         <span className="text-xs text-gray-400">{new Date(profile.createdAt).toLocaleDateString("ar-TN")}</span>
                         <Button size="sm" className="bg-teal-600 hover:bg-teal-700"
                           onClick={() => { setSelectedProfileId(profile.id); setViewMode("generate"); }}>
-                          <Sparkles className="w-3.5 h-3.5 ml-1" /> توليد خطة مرافقة
+                          <Sparkles className="w-3.5 h-3.5 ms-1" /> توليد خطة مرافقة
                         </Button>
                       </div>
                     </CardContent>
@@ -612,7 +615,7 @@ export default function PedagogicalCompanion() {
       <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white py-8" dir="rtl">
         <div className="container max-w-3xl">
           <Button variant="ghost" className="mb-4" onClick={() => setViewMode("profiles")}>
-            <ArrowLeft className="w-4 h-4 ml-1" /> العودة للملفات
+            <ArrowLeft className="w-4 h-4 ms-1" /> العودة للملفات
           </Button>
 
           {generatePlan.isPending ? (
@@ -681,7 +684,7 @@ export default function PedagogicalCompanion() {
                     onChange={e => setPlanForm(p => ({ ...p, additionalNotes: e.target.value }))} />
                 </div>
                 <Button onClick={handleGeneratePlan} className="w-full bg-teal-600 hover:bg-teal-700 h-12 text-lg">
-                  <Sparkles className="w-5 h-5 ml-2" /> توليد خطة المرافقة بالذكاء الاصطناعي
+                  <Sparkles className="w-5 h-5 ms-2" /> توليد خطة المرافقة بالذكاء الاصطناعي
                 </Button>
               </CardContent>
             </Card>
@@ -699,7 +702,7 @@ export default function PedagogicalCompanion() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <Button variant="ghost" onClick={() => setViewMode("home")}>
-                <ArrowLeft className="w-4 h-4 ml-1" /> العودة
+                <ArrowLeft className="w-4 h-4 ms-1" /> العودة
               </Button>
               <h1 className="text-2xl font-bold text-gray-900">خطط المرافقة</h1>
             </div>
@@ -736,7 +739,7 @@ export default function PedagogicalCompanion() {
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => { setSelectedPlanId(plan.id); setViewMode("view-plan"); }}>
-                          <Eye className="w-4 h-4 ml-1" /> عرض
+                          <Eye className="w-4 h-4 ms-1" /> عرض
                         </Button>
                         <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-700"
                           onClick={() => deletePlan.mutate({ id: plan.id })}>
@@ -768,13 +771,13 @@ export default function PedagogicalCompanion() {
         <div className="container max-w-4xl">
           <div className="flex items-center justify-between mb-6">
             <Button variant="ghost" onClick={() => setViewMode("plans")}>
-              <ArrowLeft className="w-4 h-4 ml-1" /> العودة للخطط
+              <ArrowLeft className="w-4 h-4 ms-1" /> العودة للخطط
             </Button>
             <div className="flex gap-2">
               {plan.status === "draft" && (
                 <Button size="sm" className="bg-green-600 hover:bg-green-700"
                   onClick={() => updatePlanStatus.mutate({ id: plan.id, status: "active" })}>
-                  <CheckCircle2 className="w-4 h-4 ml-1" /> تفعيل الخطة
+                  <CheckCircle2 className="w-4 h-4 ms-1" /> تفعيل الخطة
                 </Button>
               )}
               {plan.status === "active" && (
@@ -784,7 +787,7 @@ export default function PedagogicalCompanion() {
                 </Button>
               )}
               <Button size="sm" variant="outline" onClick={() => window.print()}>
-                <Download className="w-4 h-4 ml-1" /> طباعة
+                <Download className="w-4 h-4 ms-1" /> طباعة
               </Button>
             </div>
           </div>
@@ -825,7 +828,7 @@ export default function PedagogicalCompanion() {
             </CardHeader>
             <CardContent className="space-y-6">
               {weeklyPlan.map((week: any, i: number) => (
-                <div key={i} className="border-r-4 border-teal-500 pr-4">
+                <div key={i} className="border-e-4 border-teal-500 pe-4">
                   <h3 className="font-bold text-lg text-gray-900 mb-3 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-sm font-bold text-teal-700">
                       {week.week}

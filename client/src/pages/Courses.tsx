@@ -11,6 +11,8 @@ import {
   BookOpen, Clock, Users, Star, Search, GraduationCap,
   ArrowLeft, Filter, Sparkles, Award, Loader2, ChevronLeft
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const CATEGORY_OPTIONS = [
   { value: "all", labelAr: "جميع الدورات", labelFr: "Toutes les formations" },
@@ -36,14 +38,13 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function Courses() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const { data: courses, isLoading } = trpc.courses.list.useQuery();
   const { data: enrollments } = trpc.enrollments.myEnrollments.useQuery(undefined, { enabled: !!user });
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAr] = useState(true);
-
-  const t = (ar: string, fr: string, _en?: string) => isAr ? ar : fr;
+  // Using t from useI18n instead of local t function
 
   const enrolledCourseIds = useMemo(() => {
     if (!enrollments) return new Set<number>();
@@ -84,14 +85,14 @@ export default function Courses() {
         style={{ background: "linear-gradient(135deg, #1A237E 0%, #283593 40%, #1565C0 100%)" }}
       >
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute bottom-10 left-10 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" />
+          <div className="absolute top-10 end-10 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute bottom-10 start-10 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex items-center gap-2 mb-6">
             <Link href="/">
               <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10">
-                <ChevronLeft className="w-4 h-4 ml-1" />
+                <ChevronLeft className="w-4 h-4 ms-1" />
                 {t("الرئيسية", "Accueil")}
               </Button>
             </Link>
@@ -138,12 +139,12 @@ export default function Courses() {
           <div className="flex flex-col md:flex-row gap-4 items-center">
             {/* Search */}
             <div className="relative flex-1 w-full md:max-w-md">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute end-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <Input
                 placeholder={t("ابحث عن دورة...", "Rechercher une formation...")}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pr-10 rounded-xl border-gray-200 h-11"
+                className="pe-10 rounded-xl border-gray-200 h-11"
                 style={{ fontFamily: "'Almarai', sans-serif" }}
               />
             </div>
@@ -217,11 +218,11 @@ export default function Courses() {
                               </div>
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                            <Badge className="absolute top-4 right-4 bg-orange-500 text-white border-0 rounded-lg px-3 py-1 text-sm font-bold">
+                            <Badge className="absolute top-4 end-4 bg-orange-500 text-white border-0 rounded-lg px-3 py-1 text-sm font-bold">
                               {t("باقة شاملة", "Pack complet")}
                             </Badge>
                             {course.originalPrice && course.originalPrice > (course.price || 0) && (
-                              <Badge className="absolute top-4 left-4 bg-red-500 text-white border-0 rounded-lg px-3 py-1 text-sm font-bold">
+                              <Badge className="absolute top-4 start-4 bg-red-500 text-white border-0 rounded-lg px-3 py-1 text-sm font-bold">
                                 -{Math.round(((course.originalPrice - (course.price || 0)) / course.originalPrice) * 100)}%
                               </Badge>
                             )}
@@ -288,21 +289,21 @@ export default function Courses() {
                               )}
                               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                               {course.isFeatured && (
-                                <Badge className="absolute top-3 right-3 bg-yellow-500 text-white border-0 rounded-lg text-xs">
-                                  <Star className="w-3 h-3 ml-1 fill-current" /> {t("مميّزة", "En vedette")}
+                                <Badge className="absolute top-3 end-3 bg-yellow-500 text-white border-0 rounded-lg text-xs">
+                                  <Star className="w-3 h-3 ms-1 fill-current" /> {t("مميّزة", "En vedette")}
                                 </Badge>
                               )}
                               {catLabel && (
-                                <Badge className="absolute bottom-3 right-3 text-white border-0 rounded-lg text-xs" style={{ background: catColor }}>
+                                <Badge className="absolute bottom-3 end-3 text-white border-0 rounded-lg text-xs" style={{ background: catColor }}>
                                   {t(catLabel.labelAr, catLabel.labelFr)}
                                 </Badge>
                               )}
                               {course.price ? (
-                                <Badge className="absolute bottom-3 left-3 bg-orange-500 text-white border-0 rounded-lg text-xs font-bold">
+                                <Badge className="absolute bottom-3 start-3 bg-orange-500 text-white border-0 rounded-lg text-xs font-bold">
                                   {course.price} {t("د.ت", "DT")}
                                 </Badge>
                               ) : (
-                                <Badge className="absolute bottom-3 left-3 bg-green-500 text-white border-0 rounded-lg text-xs font-bold">
+                                <Badge className="absolute bottom-3 start-3 bg-green-500 text-white border-0 rounded-lg text-xs font-bold">
                                   {t("مجاني", "Gratuit")}
                                 </Badge>
                               )}
@@ -400,7 +401,7 @@ export default function Courses() {
             </Link>
             <Link href="/">
               <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 rounded-xl px-8 font-bold">
-                <ArrowLeft className="w-5 h-5 ml-2" />
+                <ArrowLeft className="w-5 h-5 ms-2" />
                 {t("العودة للرئيسية", "Retour à l'accueil")}
               </Button>
             </Link>

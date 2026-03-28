@@ -26,6 +26,8 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, LineChart, Line
 } from "recharts";
+import useI18n from "@/i18n";
+
 
 // ===== CONSTANTS =====
 const DIFFICULTY_TYPES = [
@@ -74,6 +76,7 @@ const SCORE_LABELS: Record<string, string> = {
 };
 
 export default function FollowUpReport() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("generate");
   const [viewingResult, setViewingResult] = useState<any>(null);
@@ -493,9 +496,9 @@ export default function FollowUpReport() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-gray-50">
-                      <th className="text-right p-3 font-semibold">الإجراء</th>
-                      <th className="text-right p-3 font-semibold">المسؤول</th>
-                      <th className="text-right p-3 font-semibold">الموعد</th>
+                      <th className="text-end p-3 font-semibold">الإجراء</th>
+                      <th className="text-end p-3 font-semibold">المسؤول</th>
+                      <th className="text-end p-3 font-semibold">الموعد</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -720,7 +723,7 @@ export default function FollowUpReport() {
 
                       <div className="flex justify-end">
                         <Button onClick={() => setStep(2)} className="bg-amber-500 hover:bg-amber-600">
-                          التالي <ArrowRight className="h-4 w-4 mr-2" />
+                          التالي <ArrowRight className="h-4 w-4 me-2" />
                         </Button>
                       </div>
                     </CardContent>
@@ -785,7 +788,7 @@ export default function FollowUpReport() {
                       <div className="flex justify-between">
                         <Button variant="outline" onClick={() => setStep(1)}>السابق</Button>
                         <Button onClick={() => setStep(3)} className="bg-amber-500 hover:bg-amber-600">
-                          التالي <ArrowRight className="h-4 w-4 mr-2" />
+                          التالي <ArrowRight className="h-4 w-4 me-2" />
                         </Button>
                       </div>
                     </CardContent>
@@ -866,7 +869,7 @@ export default function FollowUpReport() {
                     <div className="flex justify-between">
                       <Button variant="outline" onClick={() => setStep(2)}>السابق</Button>
                       <Button onClick={() => setStep(4)} className="bg-amber-500 hover:bg-amber-600">
-                        التالي <ArrowRight className="h-4 w-4 mr-2" />
+                        التالي <ArrowRight className="h-4 w-4 me-2" />
                       </Button>
                     </div>
                   </div>
@@ -1018,7 +1021,7 @@ export default function FollowUpReport() {
                   <h3 className="text-lg font-semibold text-gray-500 mb-2">لا توجد تقارير بعد</h3>
                   <p className="text-gray-400 mb-4">ابدأ بإنشاء أول تقرير متابعة فردي</p>
                   <Button onClick={() => setActiveTab("generate")} className="bg-amber-500 hover:bg-amber-600">
-                    <Sparkles className="h-4 w-4 ml-2" />
+                    <Sparkles className="h-4 w-4 ms-2" />
                     إنشاء تقرير
                   </Button>
                 </CardContent>
@@ -1054,7 +1057,7 @@ export default function FollowUpReport() {
                                 size="sm"
                                 onClick={() => { setViewingResult(item); setActiveTab("result"); }}
                               >
-                                <FileText className="h-4 w-4 ml-1" />
+                                <FileText className="h-4 w-4 ms-1" />
                                 عرض
                               </Button>
                             )}

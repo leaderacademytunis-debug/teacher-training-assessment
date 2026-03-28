@@ -158,12 +158,12 @@ export default function LessonHistory() {
           <CardContent className="pt-4 pb-3">
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder={t("البحث بعنوان الدرس أو المادة أو الصف...", "Rechercher par titre, matière ou classe...", "Search by title, subject or grade...")}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  className="pr-9 text-sm"
+                  className="pe-9 text-sm"
                 />
               </div>
               <Select value={filterLevel} onValueChange={setFilterLevel}>

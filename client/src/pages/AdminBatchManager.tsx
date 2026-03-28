@@ -16,6 +16,8 @@ import { Users, Plus, Trash2, Settings, BarChart3, BookOpen, Search, UserPlus, C
 import BatchStatsDashboard from "./BatchStatsDashboard";
 import SubmissionComments from "./SubmissionComments";
 import ParticipantPDFReport from "./ParticipantPDFReport";
+import useI18n from "@/i18n";
+
 
 const FEATURE_OPTIONS = [
   { key: "accessEdugpt", label: "EduGPT المساعد الذكي", icon: "🤖" },
@@ -38,6 +40,7 @@ const BATCH_COLORS = [
 ];
 
 export default function AdminBatchManager() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   // Using sonner toast
   const [activeTab, setActiveTab] = useState("batches");
@@ -170,7 +173,7 @@ export default function AdminBatchManager() {
             <>
               <p className="text-sm text-gray-600">شارك هذا الرابط مع المشاركين للانضمام تلقائياً إلى الدفعة:</p>
               <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
-                <input readOnly className="flex-1 bg-transparent text-sm font-mono text-left" dir="ltr" value={getInviteUrl(inviteLinkQuery.data.inviteCode)} />
+                <input readOnly className="flex-1 bg-transparent text-sm font-mono text-start" dir="ltr" value={getInviteUrl(inviteLinkQuery.data.inviteCode)} />
                 <Button size="sm" variant="outline" onClick={() => copyInviteLink(inviteLinkQuery.data!.inviteCode!)}>
                   {copiedLink ? <CheckCircle2 className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
                 </Button>
@@ -209,11 +212,11 @@ export default function AdminBatchManager() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => regenerateInviteLink.mutate({ batchId: selectedBatchId!, expiresAt: inviteExpiresAt || undefined, maxMembers: inviteMaxMembers ? parseInt(inviteMaxMembers) : undefined })} disabled={regenerateInviteLink.isPending}>
-                  {regenerateInviteLink.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <RefreshCw className="h-4 w-4 ml-1" />}
+                  {regenerateInviteLink.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-1" /> : <RefreshCw className="h-4 w-4 ms-1" />}
                   تجديد الرابط
                 </Button>
                 <Button size="sm" className="flex-1" onClick={() => copyInviteLink(inviteLinkQuery.data!.inviteCode!)}>
-                  <Copy className="h-4 w-4 ml-1" />
+                  <Copy className="h-4 w-4 ms-1" />
                   نسخ الرابط
                 </Button>
               </div>
@@ -246,11 +249,11 @@ export default function AdminBatchManager() {
             </div>
             <div className="flex gap-3">
               <Link href="/admin/batch-comparison">
-                <Button variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20"><BarChart3 className="h-4 w-4 ml-2" />مقارنة الدفعات</Button>
+                <Button variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20"><BarChart3 className="h-4 w-4 ms-2" />مقارنة الدفعات</Button>
               </Link>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
-                  <Button className="bg-white text-blue-700 hover:bg-blue-50"><Plus className="h-4 w-4 ml-2" />دفعة جديدة</Button>
+                  <Button className="bg-white text-blue-700 hover:bg-blue-50"><Plus className="h-4 w-4 ms-2" />دفعة جديدة</Button>
                 </DialogTrigger>
                 <DialogContent dir="rtl">
                   <DialogHeader><DialogTitle>إنشاء دفعة جديدة</DialogTitle></DialogHeader>
@@ -275,7 +278,7 @@ export default function AdminBatchManager() {
                   <DialogFooter>
                     <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
                     <Button onClick={() => createBatch.mutate(newBatch)} disabled={!newBatch.name || createBatch.isPending}>
-                      {createBatch.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}إنشاء
+                      {createBatch.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : null}إنشاء
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -323,7 +326,7 @@ export default function AdminBatchManager() {
                   </div>
                 ) : (
                   batchesQuery.data?.map(batch => (
-                    <button key={batch.id} className={`w-full text-right p-3 rounded-lg border transition-all hover:shadow-sm ${selectedBatchId === batch.id ? "border-blue-500 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-gray-300"}`} onClick={() => setSelectedBatchId(batch.id)}>
+                    <button key={batch.id} className={`w-full text-end p-3 rounded-lg border transition-all hover:shadow-sm ${selectedBatchId === batch.id ? "border-blue-500 bg-blue-50 shadow-sm" : "border-gray-200 hover:border-gray-300"}`} onClick={() => setSelectedBatchId(batch.id)}>
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: batch.color || "#3B82F6" }} />
                         <div className="flex-1 min-w-0">
@@ -373,11 +376,11 @@ export default function AdminBatchManager() {
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" className="text-green-600 hover:bg-green-50" onClick={() => { if (!inviteLinkQuery.data?.inviteCode) { generateInviteLink.mutate({ batchId: selectedBatchId! }); } setShowInviteLinkDialog(true); }}>
-                          <Link2 className="h-4 w-4 ml-1" />
+                          <Link2 className="h-4 w-4 ms-1" />
                           رابط الدعوة
                         </Button>
                         <Button variant="outline" size="sm" className="text-purple-600 hover:bg-purple-50" onClick={handleExportCSV}>
-                          <Download className="h-4 w-4 ml-1" />
+                          <Download className="h-4 w-4 ms-1" />
                           تصدير CSV
                         </Button>
                         <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50" onClick={() => { if (confirm("هل أنت متأكد من حذف هذه الدفعة؟")) deleteBatch.mutate({ id: selectedBatchId! }); }}>
@@ -406,7 +409,7 @@ export default function AdminBatchManager() {
                           <CardTitle className="text-base">أعضاء الدفعة</CardTitle>
                           <Dialog open={showMemberDialog} onOpenChange={setShowMemberDialog}>
                             <DialogTrigger asChild>
-                              <Button size="sm"><UserPlus className="h-4 w-4 ml-1" />إضافة أعضاء</Button>
+                              <Button size="sm"><UserPlus className="h-4 w-4 ms-1" />إضافة أعضاء</Button>
                             </DialogTrigger>
                             <DialogContent dir="rtl">
                               <DialogHeader><DialogTitle>إضافة أعضاء للدفعة</DialogTitle></DialogHeader>
@@ -481,7 +484,7 @@ export default function AdminBatchManager() {
                             }
                           }}>
                             <DialogTrigger asChild>
-                              <Button size="sm"><Settings className="h-4 w-4 ml-1" />تعديل</Button>
+                              <Button size="sm"><Settings className="h-4 w-4 ms-1" />تعديل</Button>
                             </DialogTrigger>
                             <DialogContent dir="rtl">
                               <DialogHeader><DialogTitle>تعديل صلاحيات الدفعة</DialogTitle></DialogHeader>
@@ -500,7 +503,7 @@ export default function AdminBatchManager() {
                                   const features = Object.entries(selectedFeatures).filter(([_, v]) => v).map(([k]) => ({ featureKey: k, isEnabled: true }));
                                   setFeatureAccess.mutate({ batchId: selectedBatchId!, features });
                                 }} disabled={setFeatureAccess.isPending}>
-                                  {setFeatureAccess.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}حفظ
+                                  {setFeatureAccess.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : null}حفظ
                                 </Button>
                               </DialogFooter>
                             </DialogContent>
@@ -539,7 +542,7 @@ export default function AdminBatchManager() {
                           <CardTitle className="text-base">الواجبات</CardTitle>
                           <Dialog open={showAssignmentDialog} onOpenChange={setShowAssignmentDialog}>
                             <DialogTrigger asChild>
-                              <Button size="sm"><Plus className="h-4 w-4 ml-1" />واجب جديد</Button>
+                              <Button size="sm"><Plus className="h-4 w-4 ms-1" />واجب جديد</Button>
                             </DialogTrigger>
                             <DialogContent dir="rtl" className="max-w-lg">
                               <DialogHeader><DialogTitle>إنشاء واجب جديد</DialogTitle></DialogHeader>
@@ -578,7 +581,7 @@ export default function AdminBatchManager() {
                               <DialogFooter>
                                 <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
                                 <Button onClick={() => createAssignment.mutate({ batchId: selectedBatchId!, ...newAssignment, isPublished: true })} disabled={!newAssignment.title || createAssignment.isPending}>
-                                  {createAssignment.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}إنشاء ونشر
+                                  {createAssignment.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : null}إنشاء ونشر
                                 </Button>
                               </DialogFooter>
                             </DialogContent>
@@ -609,7 +612,7 @@ export default function AdminBatchManager() {
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Button variant="outline" size="sm" onClick={() => setShowSubmissionDetail(a.id)}>
-                                      <Eye className="h-4 w-4 ml-1" />عرض التسليمات
+                                      <Eye className="h-4 w-4 ms-1" />عرض التسليمات
                                     </Button>
                                     <Badge variant={a.isPublished ? "default" : "secondary"}>{a.isPublished ? "منشور" : "مسودة"}</Badge>
                                   </div>
@@ -790,7 +793,7 @@ export default function AdminBatchManager() {
                   {sub.status === 'submitted' && (
                     <div className="flex gap-2 mt-3 pt-3 border-t">
                       <Button size="sm" onClick={() => aiGrade.mutate({ submissionId: sub.id })} disabled={aiGrade.isPending}>
-                        {aiGrade.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <CheckCircle2 className="h-4 w-4 ml-1" />}
+                        {aiGrade.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-1" /> : <CheckCircle2 className="h-4 w-4 ms-1" />}
                         تقييم بالذكاء الاصطناعي
                       </Button>
                     </div>
@@ -798,7 +801,7 @@ export default function AdminBatchManager() {
 
                   <div className="text-xs text-gray-400 mt-2">
                     تاريخ التسليم: {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('ar-TN') : '—'}
-                    {sub.gradedAt && <span className="mr-3">تاريخ التقييم: {new Date(sub.gradedAt).toLocaleString('ar-TN')}</span>}
+                    {sub.gradedAt && <span className="me-3">تاريخ التقييم: {new Date(sub.gradedAt).toLocaleString('ar-TN')}</span>}
                   </div>
 
                   {/* Submission Comments */}

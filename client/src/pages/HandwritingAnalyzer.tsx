@@ -27,6 +27,8 @@ import {
   BellRing, CheckCheck, AlertCircle, GitCompare, FileEdit, CalendarDays,
 } from "lucide-react";
 import ToolPageHeader from "@/components/ToolPageHeader";
+import useI18n from "@/i18n";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -175,6 +177,7 @@ function buildAnalysisReportHtml(result: AnalysisResult): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function HandwritingAnalyzer() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<MainTab>("analyze");
   const [analysisStep, setAnalysisStep] = useState<"upload" | "analyzing" | "results">("upload");
@@ -376,7 +379,7 @@ function UploadStep({ imagePreview, studentName, studentAge, studentGrade, gende
           <CardContent>
             {imagePreview ? (
               <div className="relative"><img src={imagePreview} alt="معاينة" className="w-full rounded-lg border max-h-[300px] object-contain bg-white" />
-                <button onClick={onClearImage} className="absolute top-2 left-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"><X className="h-4 w-4" /></button>
+                <button onClick={onClearImage} className="absolute top-2 start-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"><X className="h-4 w-4" /></button>
               </div>
             ) : (
               <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50/50 hover:bg-blue-50 transition-colors cursor-pointer"
@@ -420,7 +423,7 @@ function UploadStep({ imagePreview, studentName, studentAge, studentGrade, gende
           </CardContent>
         </Card>
         <Button className="w-full h-14 text-lg bg-gradient-to-l from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg" onClick={onAnalyze} disabled={!imagePreview}>
-          <Brain className="h-5 w-5 ml-2" />ابدأ التحليل الذكي<Sparkles className="h-5 w-5 mr-2" />
+          <Brain className="h-5 w-5 ms-2" />ابدأ التحليل الذكي<Sparkles className="h-5 w-5 me-2" />
         </Button>
       </div>
     </div>
@@ -434,7 +437,7 @@ function AnalyzingStep() {
     <div className="flex flex-col items-center justify-center py-20">
       <div className="relative mb-8">
         <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center animate-pulse"><Brain className="h-12 w-12 text-blue-600" /></div>
-        <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center animate-bounce"><Sparkles className="h-4 w-4 text-white" /></div>
+        <div className="absolute -top-2 -end-2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center animate-bounce"><Sparkles className="h-4 w-4 text-white" /></div>
       </div>
       <h2 className="text-2xl font-bold text-gray-800 mb-3">جارٍ تحليل خط اليد...</h2>
       <p className="text-gray-500 mb-6 text-center max-w-md">يقوم الذكاء الاصطناعي بتحليل 7 محاور مختلفة</p>
@@ -467,22 +470,22 @@ function ResultsStep({ result, showDetailedReport, showRecommendations, onToggle
         <div className="flex items-center gap-3">
           <CheckCircle2 className="h-6 w-6 text-green-600" />
           <h2 className="text-xl font-bold text-gray-800">نتائج التحليل</h2>
-          {result.studentName && <Badge variant="outline" className="text-blue-600 border-blue-200"><User className="h-3 w-3 ml-1" />{result.studentName}</Badge>}
+          {result.studentName && <Badge variant="outline" className="text-blue-600 border-blue-200"><User className="h-3 w-3 ms-1" />{result.studentName}</Badge>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowProgress(!showProgress)}>
-            <LineChart className="h-4 w-4 ml-1" />{showProgress ? "إخفاء التقدم" : "منحنى التقدم"}
+            <LineChart className="h-4 w-4 ms-1" />{showProgress ? "إخفاء التقدم" : "منحنى التقدم"}
           </Button>
           <Button variant="outline" size="sm" onClick={onExportParent} disabled={isExportingParent}>
-            {isExportingParent ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Users className="h-4 w-4 ml-1" />}تقرير الأولياء
+            {isExportingParent ? <Loader2 className="h-4 w-4 animate-spin ms-1" /> : <Users className="h-4 w-4 ms-1" />}تقرير الأولياء
           </Button>
           <Button variant="outline" size="sm" onClick={onExportPdf} disabled={isExporting}>
-            {isExporting ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <Download className="h-4 w-4 ml-1" />}تصدير PDF
+            {isExporting ? <Loader2 className="h-4 w-4 animate-spin ms-1" /> : <Download className="h-4 w-4 ms-1" />}تصدير PDF
           </Button>
           <Button variant="outline" size="sm" onClick={onPrint} className="text-green-700 border-green-300 hover:bg-green-50">
-            <Printer className="h-4 w-4 ml-1" />طباعة مباشرة
+            <Printer className="h-4 w-4 ms-1" />طباعة مباشرة
           </Button>
-          <Button variant="outline" size="sm" onClick={onReset}><PenTool className="h-4 w-4 ml-1" />تحليل جديد</Button>
+          <Button variant="outline" size="sm" onClick={onReset}><PenTool className="h-4 w-4 ms-1" />تحليل جديد</Button>
         </div>
       </div>
 
@@ -492,7 +495,7 @@ function ResultsStep({ result, showDetailedReport, showRecommendations, onToggle
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><LineChart className="h-5 w-5 text-blue-600" />منحنى تقدم {result.studentName}</CardTitle></CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <div className="flex items-end gap-4 min-w-[400px] h-48 border-b border-r border-gray-200 p-4 relative">
+              <div className="flex items-end gap-4 min-w-[400px] h-48 border-b border-e border-gray-200 p-4 relative">
                 {progressQuery.data.map((point: any, i: number) => (
                   <div key={i} className="flex flex-col items-center gap-1 flex-1">
                     <span className={`text-xs font-bold ${getScoreColor(point.overallScore)}`}>{point.overallScore}</span>
@@ -571,7 +574,7 @@ function ResultsStep({ result, showDetailedReport, showRecommendations, onToggle
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b bg-gray-50"><th className="text-right p-3 font-semibold">الاضطراب</th><th className="text-center p-3 font-semibold">الاحتمال</th><th className="text-right p-3 font-semibold">المؤشرات</th></tr></thead>
+              <thead><tr className="border-b bg-gray-50"><th className="text-end p-3 font-semibold">الاضطراب</th><th className="text-center p-3 font-semibold">الاحتمال</th><th className="text-end p-3 font-semibold">المؤشرات</th></tr></thead>
               <tbody>
                 {result.disorders.map((d: Disorder, i: number) => (
                   <tr key={i} className="border-b last:border-0 hover:bg-gray-50">
@@ -703,7 +706,7 @@ function MultiSampleTab() {
             {samples.map((s, i) => (
               <div key={i} className="relative border rounded-lg overflow-hidden">
                 <img src={s.preview} alt={`عينة ${i + 1}`} className="w-full h-24 object-cover" />
-                <button onClick={() => setSamples(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 left-1 bg-red-500 text-white rounded-full p-0.5"><X className="h-3 w-3" /></button>
+                <button onClick={() => setSamples(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 start-1 bg-red-500 text-white rounded-full p-0.5"><X className="h-3 w-3" /></button>
                 <Select value={s.writingType} onValueChange={(v) => setSamples(prev => prev.map((item, j) => j === i ? { ...item, writingType: v } : item))}>
                   <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>{WRITING_TYPES.map(wt => <SelectItem key={wt.value} value={wt.value}>{wt.label}</SelectItem>)}</SelectContent>
@@ -724,7 +727,7 @@ function MultiSampleTab() {
               <SelectContent>{GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent></Select>
           </div>
           <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={handleAnalyze} disabled={samples.length < 2 || mutation.isPending}>
-            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Brain className="h-4 w-4 ml-2" />}
+            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : <Brain className="h-4 w-4 ms-2" />}
             تحليل مقارن ({samples.length} عينات)
           </Button>
         </CardContent>
@@ -860,7 +863,7 @@ function VoiceAnalysisTab() {
               `;
               handlePrintReport("تقرير التحليل الصوتي", voiceHtml);
             }}>
-              <Printer className="h-4 w-4 ml-1" />طباعة مباشرة
+              <Printer className="h-4 w-4 ms-1" />طباعة مباشرة
             </Button>
             <Button variant="outline" onClick={() => { setResult(null); setAudioFile(null); }}>تحليل جديد</Button>
           </div>
@@ -939,10 +942,10 @@ function VoiceAnalysisTab() {
                   <CheckCheck className="h-5 w-5 text-green-600" />
                   <span className="font-medium text-gray-800">{audioFile.name}</span>
                   <span className="text-sm text-gray-500">({(audioFile.size / 1024 / 1024).toFixed(2)} MB)</span>
-                  {recordingTime > 0 && <Badge variant="outline" className="text-purple-600"><Timer className="h-3 w-3 ml-1" />{formatTime(recordingTime)}</Badge>}
+                  {recordingTime > 0 && <Badge variant="outline" className="text-purple-600"><Timer className="h-3 w-3 ms-1" />{formatTime(recordingTime)}</Badge>}
                 </div>
                 <Button variant="ghost" size="sm" onClick={resetRecording} className="text-red-500 hover:text-red-700">
-                  <Trash2 className="h-4 w-4 ml-1" />حذف
+                  <Trash2 className="h-4 w-4 ms-1" />حذف
                 </Button>
               </div>
               {audioUrl && <audio controls src={audioUrl} className="w-full" />}
@@ -982,7 +985,7 @@ function VoiceAnalysisTab() {
             <SelectContent>{GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent></Select>
         </div>
         <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={handleAnalyze} disabled={!audioFile || mutation.isPending || isRecording}>
-          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Mic className="h-4 w-4 ml-2" />}تحليل القراءة
+          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : <Mic className="h-4 w-4 ms-2" />}تحليل القراءة
         </Button>
       </CardContent>
     </Card>
@@ -1114,7 +1117,7 @@ function SpecialistsTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold flex items-center gap-2"><UserPlus className="h-5 w-5 text-blue-600" />جهات اتصال الأخصائيين</h2>
-        <Button onClick={() => setShowAdd(!showAdd)} size="sm"><Plus className="h-4 w-4 ml-1" />إضافة أخصائي</Button>
+        <Button onClick={() => setShowAdd(!showAdd)} size="sm"><Plus className="h-4 w-4 ms-1" />إضافة أخصائي</Button>
       </div>
 
       {showAdd && (
@@ -1138,7 +1141,7 @@ function SpecialistsTab() {
               <div><Label>المدرسة</Label><Input value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="mt-1" /></div>
             </div>
             <Button onClick={() => addMutation.mutate({ name, specialty: specialty as any, email: email || undefined, phone: phone || undefined, schoolName: schoolName || undefined })} disabled={!name || addMutation.isPending}>
-              {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : null}حفظ
+              {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-1" /> : null}حفظ
             </Button>
           </CardContent>
         </Card>
@@ -1203,7 +1206,7 @@ function PEITab() {
           <h2 className="text-xl font-bold flex items-center gap-2"><ClipboardList className="h-5 w-5 text-purple-600" />خطة التدخل الفردية</h2>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => exportMutation.mutate({ id: result.id })} disabled={exportMutation.isPending}>
-              {exportMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-1" /> : <FileDown className="h-4 w-4 ml-1" />}تصدير PDF
+              {exportMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-1" /> : <FileDown className="h-4 w-4 ms-1" />}تصدير PDF
             </Button>
             <Button variant="outline" size="sm" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => {
               const peiHtml = `
@@ -1215,7 +1218,7 @@ function PEITab() {
               `;
               handlePrintReport("خطة التدخل الفردية - " + (result.studentName || "تلميذ"), peiHtml);
             }}>
-              <Printer className="h-4 w-4 ml-1" />طباعة مباشرة
+              <Printer className="h-4 w-4 ms-1" />طباعة مباشرة
             </Button>
             <Button variant="outline" size="sm" onClick={() => setResult(null)}>خطة جديدة</Button>
           </div>
@@ -1227,7 +1230,7 @@ function PEITab() {
         {result.objectives && result.objectives.length > 0 && (
           <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Target className="h-5 w-5 text-blue-600" />الأهداف</CardTitle></CardHeader>
             <CardContent>
-              <table className="w-full text-sm"><thead><tr className="border-b bg-gray-50"><th className="p-3 text-right">الهدف</th><th className="p-3 text-center">المدة</th><th className="p-3 text-center">الحالة</th></tr></thead>
+              <table className="w-full text-sm"><thead><tr className="border-b bg-gray-50"><th className="p-3 text-end">الهدف</th><th className="p-3 text-center">المدة</th><th className="p-3 text-center">الحالة</th></tr></thead>
                 <tbody>{result.objectives.map((o: any, i: number) => (
                   <tr key={i} className="border-b"><td className="p-3">{o.objective}</td><td className="p-3 text-center">{o.timeline}</td><td className="p-3 text-center"><Badge variant="outline">{o.status}</Badge></td></tr>
                 ))}</tbody></table>
@@ -1282,7 +1285,7 @@ function PEITab() {
             studentGrade: studentGrade || undefined, handwritingAnalysisId: selectedAnalysis ? parseInt(selectedAnalysis) : undefined,
             teacherName: teacherName || undefined, specialistName: specialistName || undefined, parentName: parentName || undefined,
           })} disabled={!studentName || generateMutation.isPending}>
-            {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <ClipboardList className="h-4 w-4 ml-2" />}
+            {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : <ClipboardList className="h-4 w-4 ms-2" />}
             إنشاء خطة التدخل بالذكاء الاصطناعي
           </Button>
         </CardContent>
@@ -1302,7 +1305,7 @@ function PEITab() {
                   </div>
                   <p className="text-sm text-gray-500 mt-1">{p.studentGrade} - {new Date(p.createdAt).toLocaleDateString("ar-TN")}</p>
                   <Button variant="outline" size="sm" className="mt-3" onClick={() => exportMutation.mutate({ id: p.id })} disabled={exportMutation.isPending}>
-                    <FileDown className="h-3.5 w-3.5 ml-1" />تصدير PDF
+                    <FileDown className="h-3.5 w-3.5 ms-1" />تصدير PDF
                   </Button>
                 </CardContent>
               </Card>
@@ -1329,11 +1332,11 @@ function BenchmarksTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50">
-                  <th className="p-3 text-right font-semibold">العمر</th>
-                  <th className="p-3 text-right font-semibold">المستوى</th>
+                  <th className="p-3 text-end font-semibold">العمر</th>
+                  <th className="p-3 text-end font-semibold">المستوى</th>
                   <th className="p-3 text-center font-semibold">الدرجة المتوقعة</th>
                   {AXIS_CONFIG.map(a => <th key={a.key} className="p-3 text-center font-semibold text-xs">{a.label}</th>)}
-                  <th className="p-3 text-right font-semibold">ملاحظات</th>
+                  <th className="p-3 text-end font-semibold">ملاحظات</th>
                 </tr>
               </thead>
               <tbody>
@@ -1411,7 +1414,7 @@ function DashboardTab() {
                     <div className="flex-1 bg-gray-200 rounded-full h-3">
                       <div className={`h-3 rounded-full ${getScoreBg(score)}`} style={{ width: `${score}%` }} />
                     </div>
-                    <span className={`text-sm font-bold w-10 text-left ${getScoreColor(score)}`}>{score}%</span>
+                    <span className={`text-sm font-bold w-10 text-start ${getScoreColor(score)}`}>{score}%</span>
                   </div>
                 );
               })}
@@ -1428,7 +1431,7 @@ function DashboardTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b bg-gray-50">
-                  <th className="p-3 text-right">الاضطراب</th><th className="p-3 text-center text-red-600">مرتفع</th>
+                  <th className="p-3 text-end">الاضطراب</th><th className="p-3 text-center text-red-600">مرتفع</th>
                   <th className="p-3 text-center text-amber-600">متوسط</th><th className="p-3 text-center text-blue-600">منخفض</th>
                   <th className="p-3 text-center text-green-600">غير موجود</th>
                 </tr></thead>
@@ -1585,7 +1588,7 @@ function CompareTab() {
             disabled={!student1 || !student2 || compareMutation.isPending}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            {compareMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري المقارنة...</> : <><GitCompare className="h-4 w-4 ml-2" />مقارنة</>}
+            {compareMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ms-2" />جاري المقارنة...</> : <><GitCompare className="h-4 w-4 ms-2" />مقارنة</>}
           </Button>
 
           {studentNames.length < 2 && (
@@ -1698,7 +1701,7 @@ function CompareTab() {
                 </table><p style="text-align:center;color:#6b7280;font-size:12px;">Leader Academy 🇹🇳 - ${new Date().toLocaleDateString("ar-TN")}</p></body></html>`;
                 const w = window.open("", "_blank"); if (w) { w.document.write(html); w.document.close(); w.print(); }
               }}>
-                <Printer className="h-4 w-4 ml-2" />طباعة المقارنة
+                <Printer className="h-4 w-4 ms-2" />طباعة المقارنة
               </Button>
             </div>
           )}
@@ -1809,7 +1812,7 @@ function WorksheetsTab() {
               disabled={selectedAxes.length === 0 || generateMutation.isPending}
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
-              {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء بالذكاء الاصطناعي...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء ورقة العمل</>}
+              {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ms-2" />جاري الإنشاء بالذكاء الاصطناعي...</> : <><Sparkles className="h-4 w-4 ms-2" />إنشاء ورقة العمل</>}
             </Button>
           </CardContent>
         </Card>
@@ -1823,10 +1826,10 @@ function WorksheetsTab() {
                   const w = window.open("", "_blank"); if (w) { w.document.write(generatedWorksheet.printableHtml); w.document.close(); w.print(); }
                 }
               }}>
-                <Printer className="h-4 w-4 ml-2" />طباعة
+                <Printer className="h-4 w-4 ms-2" />طباعة
               </Button>
               <Button variant="outline" onClick={() => { setGeneratedWorksheet(null); setShowForm(true); }}>
-                <Plus className="h-4 w-4 ml-2" />ورقة جديدة
+                <Plus className="h-4 w-4 ms-2" />ورقة جديدة
               </Button>
             </div>
           </div>
@@ -1945,7 +1948,7 @@ function MonthlyReportTab() {
               disabled={generateMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />جاري الإنشاء...</> : <><Sparkles className="h-4 w-4 ml-2" />إنشاء التقرير</>}
+              {generateMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin ms-2" />جاري الإنشاء...</> : <><Sparkles className="h-4 w-4 ms-2" />إنشاء التقرير</>}
             </Button>
           </div>
 
@@ -1987,12 +1990,12 @@ function MonthlyReportTab() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b bg-gray-50">
-                            <th className="py-3 px-4 text-right font-semibold">التلميذ</th>
+                            <th className="py-3 px-4 text-end font-semibold">التلميذ</th>
                             <th className="py-3 px-4 text-center font-semibold">التحليلات</th>
                             <th className="py-3 px-4 text-center font-semibold">آخر درجة</th>
                             <th className="py-3 px-4 text-center font-semibold">الدرجة السابقة</th>
                             <th className="py-3 px-4 text-center font-semibold">الاتجاه</th>
-                            <th className="py-3 px-4 text-right font-semibold">المخاوف</th>
+                            <th className="py-3 px-4 text-end font-semibold">المخاوف</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2085,7 +2088,7 @@ function MonthlyReportTab() {
                 <p style="text-align:center;color:#6b7280;font-size:12px;margin-top:30px;">Leader Academy 🇹🇳 - ${new Date().toLocaleDateString("ar-TN")}</p></body></html>`;
                 const w = window.open("", "_blank"); if (w) { w.document.write(html); w.document.close(); w.print(); }
               }}>
-                <Printer className="h-4 w-4 ml-2" />طباعة التقرير
+                <Printer className="h-4 w-4 ms-2" />طباعة التقرير
               </Button>
             </div>
           )}

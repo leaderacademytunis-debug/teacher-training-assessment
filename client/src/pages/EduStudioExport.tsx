@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, Printer, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
+import useI18n from "@/i18n";
+
 
 interface ExportData {
   title: string;
@@ -36,6 +38,7 @@ interface ExportData {
 }
 
 export default function EduStudioExport() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [data, setData] = useState<ExportData | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -83,7 +86,7 @@ export default function EduStudioExport() {
           </Link>
           <div className="flex items-center gap-3">
             <Button onClick={handlePrint} variant="outline" size="sm">
-              <Printer className="w-4 h-4 mr-2" />
+              <Printer className="w-4 h-4 me-2" />
               طباعة / حفظ PDF
             </Button>
           </div>
@@ -134,10 +137,10 @@ export default function EduStudioExport() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-purple-50">
-                  <th className="border border-purple-200 px-3 py-2 text-right font-semibold text-purple-700">#</th>
-                  <th className="border border-purple-200 px-3 py-2 text-right font-semibold text-purple-700">العنوان</th>
-                  <th className="border border-purple-200 px-3 py-2 text-right font-semibold text-purple-700">المدة</th>
-                  <th className="border border-purple-200 px-3 py-2 text-right font-semibold text-purple-700">الانتقال</th>
+                  <th className="border border-purple-200 px-3 py-2 text-end font-semibold text-purple-700">#</th>
+                  <th className="border border-purple-200 px-3 py-2 text-end font-semibold text-purple-700">العنوان</th>
+                  <th className="border border-purple-200 px-3 py-2 text-end font-semibold text-purple-700">المدة</th>
+                  <th className="border border-purple-200 px-3 py-2 text-end font-semibold text-purple-700">الانتقال</th>
                   <th className="border border-purple-200 px-3 py-2 text-center font-semibold text-purple-700">بصري</th>
                   <th className="border border-purple-200 px-3 py-2 text-center font-semibold text-purple-700">صوتي</th>
                 </tr>
@@ -201,7 +204,7 @@ export default function EduStudioExport() {
                 <h3 className="text-sm font-bold text-blue-700 mb-2 uppercase tracking-wider">
                   🎨 Visual Prompt — {card.visualPrompt.suggestedTool} ({card.visualPrompt.aspectRatio})
                 </h3>
-                <div className="bg-blue-50 rounded-xl p-4 border-l-4 border-blue-500">
+                <div className="bg-blue-50 rounded-xl p-4 border-s-4 border-blue-500">
                   <p className="text-sm text-blue-900 font-mono leading-relaxed">{card.visualPrompt.visualPrompt}</p>
                   {card.visualPrompt.negativePrompt && (
                     <div className="mt-3 pt-3 border-t border-blue-200">
@@ -220,7 +223,7 @@ export default function EduStudioExport() {
                 <h3 className="text-sm font-bold text-green-700 mb-2 uppercase tracking-wider">
                   🎙 التعليق الصوتي — {card.voiceover.emotionalTone} • {card.voiceover.pace}
                 </h3>
-                <div className="bg-green-50 rounded-xl p-4 border-l-4 border-green-500">
+                <div className="bg-green-50 rounded-xl p-4 border-s-4 border-green-500">
                   <p className="text-sm text-green-900 leading-relaxed" dir="auto">{card.voiceover.spokenText}</p>
                   <div className="mt-3 pt-3 border-t border-green-200 space-y-1">
                     <p className="text-xs text-green-700">🎭 <span className="font-medium">توجيهات الأداء:</span> {card.voiceover.performanceNotes}</p>

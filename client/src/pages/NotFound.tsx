@@ -3,8 +3,11 @@ import SEOHead from "@/components/SEOHead";
 import { Home, BookX, ArrowLeft, Search, Sparkles } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useEffect } from "react";
+import useI18n from "@/i18n";
+
 
 export default function NotFound() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, setLocation] = useLocation();
   const [glitch, setGlitch] = useState(false);
 
@@ -29,8 +32,8 @@ export default function NotFound() {
         <div className="absolute bottom-[10%] left-[20%] text-white/5 text-9xl font-black select-none" style={{ transform: "rotate(20deg)" }}>+</div>
         <div className="absolute top-[60%] right-[60%] text-white/5 text-8xl font-black select-none" style={{ transform: "rotate(-25deg)" }}>=</div>
         {/* Glowing orbs */}
-        <div className="absolute top-20 left-1/4 w-64 h-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,109,0,0.15), transparent)" }} />
-        <div className="absolute bottom-20 right-1/4 w-80 h-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(21,101,192,0.2), transparent)" }} />
+        <div className="absolute top-20 start-1/4 w-64 h-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(255,109,0,0.15), transparent)" }} />
+        <div className="absolute bottom-20 end-1/4 w-80 h-80 rounded-full" style={{ background: "radial-gradient(circle, rgba(21,101,192,0.2), transparent)" }} />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
@@ -76,7 +79,7 @@ export default function NotFound() {
                 className="px-8 py-3 text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                 style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}
               >
-                <Home className="w-5 h-5 ml-2" />
+                <Home className="w-5 h-5 ms-2" />
                 العودة للصفحة الرئيسية
               </Button>
               <Button
@@ -84,7 +87,7 @@ export default function NotFound() {
                 variant="outline"
                 className="px-8 py-3 text-lg font-bold rounded-xl border-white/20 text-white hover:bg-white/10 transition-all duration-300"
               >
-                <ArrowLeft className="w-5 h-5 ml-2" />
+                <ArrowLeft className="w-5 h-5 ms-2" />
                 الرجوع للخلف
               </Button>
             </div>

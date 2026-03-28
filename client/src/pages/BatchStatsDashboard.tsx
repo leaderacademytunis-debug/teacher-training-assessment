@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, BarChart3, Users, BookOpen, TrendingUp, Award, Download, ArrowRight, ChevronDown, ChevronUp, FileText, MessageSquare } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend } from "recharts";
+import useI18n from "@/i18n";
+
 
 const GRADE_COLORS: Record<string, string> = {
   excellent: "#16a34a",
@@ -28,6 +30,7 @@ interface BatchStatsDashboardProps {
 }
 
 export default function BatchStatsDashboard({ batchId, onGenerateReport }: BatchStatsDashboardProps) {
+  const { t, lang, isRTL, dir } = useI18n();
   const [expandedMember, setExpandedMember] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
   const statsQuery = trpc.batchStats.getStats.useQuery({ batchId }, { enabled: !!batchId });
@@ -277,7 +280,7 @@ export default function BatchStatsDashboard({ batchId, onGenerateReport }: Batch
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50">
-                  <th className="text-right p-3 font-medium">الواجب</th>
+                  <th className="text-end p-3 font-medium">الواجب</th>
                   <th className="text-center p-3 font-medium">النوع</th>
                   <th className="text-center p-3 font-medium">التسليمات</th>
                   <th className="text-center p-3 font-medium">المقيّمة</th>
@@ -360,7 +363,7 @@ export default function BatchStatsDashboard({ batchId, onGenerateReport }: Batch
                         onClick={(e) => { e.stopPropagation(); onGenerateReport(member.userId); }}
                         className="text-xs"
                       >
-                        <Download className="h-3 w-3 ml-1" />
+                        <Download className="h-3 w-3 ms-1" />
                         تقرير PDF
                       </Button>
                     )}

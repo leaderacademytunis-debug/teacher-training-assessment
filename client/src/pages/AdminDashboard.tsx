@@ -17,6 +17,8 @@ import {
   BookOpen, GraduationCap, Package, Search, RefreshCw, FileText,
   BarChart3, Bell, Menu
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 // ===== TYPES =====
 type Tab = "overview" | "users" | "payments" | "activity" | "pricing" | "bulk" | "settings";
@@ -52,6 +54,7 @@ const ACTIVITY_LABELS: Record<string, { label: string; icon: string }> = {
 
 // ===== MAIN COMPONENT =====
 export default function AdminDashboard() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -92,7 +95,7 @@ export default function AdminDashboard() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:sticky top-0 right-0 h-screen z-50 lg:z-auto
+        fixed lg:sticky top-0 end-0 h-screen z-50 lg:z-auto
         bg-slate-900 text-white transition-all duration-300 flex flex-col
         ${mobileSidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
         ${sidebarOpen ? "w-64" : "w-20"}
@@ -193,7 +196,7 @@ function OverviewTab() {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">الإحصائيات العامة</h3>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 ml-2" />
+          <RefreshCw className="h-4 w-4 ms-2" />
           تحديث
         </Button>
       </div>
@@ -270,22 +273,22 @@ function UsersTab() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-72">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="بحث بالاسم أو البريد..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pr-10"
+              className="pe-10"
             />
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 ml-2" />
+            <Download className="h-4 w-4 ms-2" />
             تصدير CSV
           </Button>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 ml-2" />
+            <RefreshCw className="h-4 w-4 ms-2" />
             تحديث
           </Button>
         </div>
@@ -297,12 +300,12 @@ function UsersTab() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="text-right p-3 font-medium">المستخدم</th>
-                <th className="text-right p-3 font-medium">الدور</th>
-                <th className="text-right p-3 font-medium">الخدمات</th>
-                <th className="text-right p-3 font-medium">المستوى</th>
-                <th className="text-right p-3 font-medium">التسجيل</th>
-                <th className="text-right p-3 font-medium">إجراءات</th>
+                <th className="text-end p-3 font-medium">المستخدم</th>
+                <th className="text-end p-3 font-medium">الدور</th>
+                <th className="text-end p-3 font-medium">الخدمات</th>
+                <th className="text-end p-3 font-medium">المستوى</th>
+                <th className="text-end p-3 font-medium">التسجيل</th>
+                <th className="text-end p-3 font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -538,11 +541,11 @@ function PaymentsTab() {
         </Select>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 ml-2" />
+            <Download className="h-4 w-4 ms-2" />
             تصدير CSV
           </Button>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 ml-2" />
+            <RefreshCw className="h-4 w-4 ms-2" />
             تحديث
           </Button>
         </div>
@@ -576,17 +579,17 @@ function PaymentsTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => setReceiptPreview(req.receiptImageUrl)}>
-                    <Eye className="h-4 w-4 ml-1" />
+                    <Eye className="h-4 w-4 ms-1" />
                     الإيصال
                   </Button>
                   {req.status === "pending" && (
                     <>
                       <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setApproveDialog(req)}>
-                        <Check className="h-4 w-4 ml-1" />
+                        <Check className="h-4 w-4 ms-1" />
                         تفعيل
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => setRejectDialog(req)}>
-                        <X className="h-4 w-4 ml-1" />
+                        <X className="h-4 w-4 ms-1" />
                         رفض
                       </Button>
                     </>
@@ -697,7 +700,7 @@ function ActivityTab() {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">البث المباشر لنشاط الذكاء الاصطناعي</h3>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 ml-2" />
+          <RefreshCw className="h-4 w-4 ms-2" />
           تحديث
         </Button>
       </div>
@@ -874,7 +877,7 @@ function PricingTab() {
               <Card key={plan.id} className={`relative overflow-hidden ${!plan.isActive ? 'opacity-60' : ''}`}>
                 <div className={`h-2 ${colorClass}`} />
                 {plan.isPopular && (
-                  <Badge className="absolute top-4 left-4 bg-amber-500 text-white">
+                  <Badge className="absolute top-4 start-4 bg-amber-500 text-white">
                     {plan.badgeText || "الأكثر طلباً"}
                   </Badge>
                 )}
@@ -1136,7 +1139,7 @@ function BulkActivationTab() {
             />
             <p className="text-xs text-muted-foreground">
               {emails.length > 0 ? `✅ تم اكتشاف ${emails.length} بريد إلكتروني صالح` : "لم يتم اكتشاف أي بريد إلكتروني بعد"}
-              {emails.length > 500 && <span className="text-red-500 mr-2">⚠️ تجاوز الحد الأقصى (500)</span>}
+              {emails.length > 500 && <span className="text-red-500 me-2">⚠️ تجاوز الحد الأقصى (500)</span>}
             </p>
           </div>
 

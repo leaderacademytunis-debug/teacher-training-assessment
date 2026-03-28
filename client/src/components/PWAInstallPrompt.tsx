@@ -74,7 +74,7 @@ export function PWAInstallPrompt() {
   return (
     <>
       {/* Install Banner */}
-      <div className="fixed bottom-20 left-4 right-4 md:left-auto md:right-auto md:bottom-6 md:left-6 md:max-w-[380px] z-40 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="fixed bottom-20 start-4 end-4 md:left-auto md:right-auto md:bottom-6 md:start-6 md:max-w-[380px] z-40 animate-in slide-in-from-bottom-4 duration-500">
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-3">
           {/* App Icon */}
           <div className="shrink-0 h-14 w-14 rounded-xl bg-blue-600 flex items-center justify-center shadow-md">

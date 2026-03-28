@@ -625,8 +625,8 @@ export default function AIToolsHub() {
       {/* Hero Header */}
       <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A237E 0%, #0D47A1 40%, #01579B 70%, #006064 100%)" }}>
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-orange-300 rounded-full blur-3xl" />
+          <div className="absolute top-10 start-10 w-72 h-72 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-10 end-10 w-96 h-96 bg-orange-300 rounded-full blur-3xl" />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
           <div className="flex items-center gap-3 mb-4">
@@ -741,7 +741,7 @@ export default function AIToolsHub() {
                                 )}
                                 {tool.isExclusive && (
                                   <Badge className="bg-amber-100 text-amber-700 border-0 text-[10px] font-bold">
-                                    <Crown className="w-3 h-3 inline mr-0.5" />
+                                    <Crown className="w-3 h-3 inline me-0.5" />
                                     {t("حصري", "Exclusif", "Exclusive")}
                                   </Badge>
                                 )}
@@ -772,7 +772,7 @@ export default function AIToolsHub() {
                                   style={{ background: tool.gradient }}
                                 >
                                   {t("استخدم", "Utiliser", "Use")}
-                                  <ArrowRight className="w-3.5 h-3.5 mr-1 rtl:rotate-180" />
+                                  <ArrowRight className="w-3.5 h-3.5 me-1 rtl:rotate-180" />
                                 </Button>
                               </Link>
                             </div>
@@ -830,7 +830,7 @@ export default function AIToolsHub() {
                                   className="text-white rounded-xl px-8"
                                   style={{ background: tool.gradient }}
                                 >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  <ExternalLink className="w-4 h-4 me-2" />
                                   {t("افتح الأداة الآن", "Ouvrir l'outil", "Open Tool Now")}
                                 </Button>
                               </Link>
@@ -863,7 +863,7 @@ export default function AIToolsHub() {
             <Link href="/">
               <Button size="lg" className="bg-[#FF6D00] hover:bg-orange-600 text-white rounded-xl px-8 font-bold">
                 {t("سجّل الآن", "S'inscrire", "Sign Up")}
-                <ArrowRight className="w-5 h-5 mr-2 rtl:rotate-180" />
+                <ArrowRight className="w-5 h-5 me-2 rtl:rotate-180" />
               </Button>
             </Link>
           </div>

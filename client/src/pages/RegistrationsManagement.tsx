@@ -25,10 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import useI18n from "@/i18n";
+
 
 type FilterType = "all" | "pending" | "approved" | "rejected";
 
 export default function RegistrationsManagement() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [filter, setFilter] = useState<FilterType>("all");
@@ -213,7 +216,7 @@ export default function RegistrationsManagement() {
                   <SelectItem value="rejected">مرفوض</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm text-gray-500 mr-auto">
+              <span className="text-sm text-gray-500 me-auto">
                 {registrations?.length || 0} تسجيل
               </span>
               <Button
@@ -222,9 +225,9 @@ export default function RegistrationsManagement() {
                 className="bg-green-600 hover:bg-green-700"
               >
                 {exportMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                 ) : (
-                  <Download className="w-4 h-4 ml-2" />
+                  <Download className="w-4 h-4 ms-2" />
                 )}
                 تصدير إلى Excel
               </Button>
@@ -244,12 +247,12 @@ export default function RegistrationsManagement() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-right p-3 text-sm font-semibold text-gray-700">الاسم بالعربية</th>
-                      <th className="text-right p-3 text-sm font-semibold text-gray-700">الاسم بالفرنسية</th>
-                      <th className="text-right p-3 text-sm font-semibold text-gray-700">البريد الإلكتروني</th>
-                      <th className="text-right p-3 text-sm font-semibold text-gray-700">رقم الهاتف</th>
-                      <th className="text-right p-3 text-sm font-semibold text-gray-700">الحالة</th>
-                      <th className="text-right p-3 text-sm font-semibold text-gray-700">تاريخ التسجيل</th>
+                      <th className="text-end p-3 text-sm font-semibold text-gray-700">الاسم بالعربية</th>
+                      <th className="text-end p-3 text-sm font-semibold text-gray-700">الاسم بالفرنسية</th>
+                      <th className="text-end p-3 text-sm font-semibold text-gray-700">البريد الإلكتروني</th>
+                      <th className="text-end p-3 text-sm font-semibold text-gray-700">رقم الهاتف</th>
+                      <th className="text-end p-3 text-sm font-semibold text-gray-700">الحالة</th>
+                      <th className="text-end p-3 text-sm font-semibold text-gray-700">تاريخ التسجيل</th>
                       <th className="text-center p-3 text-sm font-semibold text-gray-700">الإجراءات</th>
                     </tr>
                   </thead>
@@ -275,7 +278,7 @@ export default function RegistrationsManagement() {
                               variant="outline"
                               onClick={() => handleViewDetails(registration)}
                             >
-                              <Eye className="w-4 h-4 ml-1" />
+                              <Eye className="w-4 h-4 ms-1" />
                               التفاصيل
                             </Button>
                             <Button
@@ -284,7 +287,7 @@ export default function RegistrationsManagement() {
                               className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                               onClick={() => handleDeleteClick(registration)}
                             >
-                              <Trash2 className="w-4 h-4 ml-1" />
+                              <Trash2 className="w-4 h-4 ms-1" />
                               حذف
                             </Button>
                             {registration.registrationStatus === "pending" && (
@@ -296,7 +299,7 @@ export default function RegistrationsManagement() {
                                   onClick={() => handleApprove(registration.id)}
                                   disabled={approveMutation.isPending}
                                 >
-                                  <CheckCircle className="w-4 h-4 ml-1" />
+                                  <CheckCircle className="w-4 h-4 ms-1" />
                                   قبول
                                 </Button>
                                 <Button
@@ -306,7 +309,7 @@ export default function RegistrationsManagement() {
                                   onClick={() => handleReject(registration.id)}
                                   disabled={rejectMutation.isPending}
                                 >
-                                  <XCircle className="w-4 h-4 ml-1" />
+                                  <XCircle className="w-4 h-4 ms-1" />
                                   رفض
                                 </Button>
                               </>
@@ -388,7 +391,7 @@ export default function RegistrationsManagement() {
                   className="w-full"
                   onClick={() => handleViewReceipt(selectedUser)}
                 >
-                  <Eye className="w-4 h-4 ml-2" />
+                  <Eye className="w-4 h-4 ms-2" />
                   عرض وصل الخلاص
                 </Button>
               </div>
@@ -401,9 +404,9 @@ export default function RegistrationsManagement() {
                     disabled={approveMutation.isPending}
                   >
                     {approveMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                     ) : (
-                      <CheckCircle className="w-4 h-4 ml-2" />
+                      <CheckCircle className="w-4 h-4 ms-2" />
                     )}
                     قبول التسجيل
                   </Button>
@@ -414,9 +417,9 @@ export default function RegistrationsManagement() {
                     disabled={rejectMutation.isPending}
                   >
                     {rejectMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                     ) : (
-                      <XCircle className="w-4 h-4 ml-2" />
+                      <XCircle className="w-4 h-4 ms-2" />
                     )}
                     رفض التسجيل
                   </Button>
@@ -462,9 +465,9 @@ export default function RegistrationsManagement() {
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? (
-                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                <Loader2 className="w-4 h-4 ms-2 animate-spin" />
               ) : (
-                <Trash2 className="w-4 h-4 ml-2" />
+                <Trash2 className="w-4 h-4 ms-2" />
               )}
               تأكيد الحذف
             </Button>

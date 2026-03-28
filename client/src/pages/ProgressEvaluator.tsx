@@ -25,6 +25,8 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, LineChart, Line, AreaChart, Area
 } from "recharts";
+import useI18n from "@/i18n";
+
 
 // ===== CONSTANTS =====
 const DIFFICULTY_TYPES = [
@@ -75,6 +77,7 @@ const SKILL_COLORS: Record<string, string> = {
 };
 
 export default function ProgressEvaluator() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const trpcUtils = trpc.useUtils();
   const [activeTab, setActiveTab] = useState("generate");
@@ -969,7 +972,7 @@ export default function ProgressEvaluator() {
                   <h3 className="text-lg font-semibold text-gray-500 mb-2">لا توجد تقييمات بعد</h3>
                   <p className="text-gray-400 mb-4">ابدأ بإنشاء أول تقييم تقدم</p>
                   <Button onClick={() => setActiveTab("generate")} className="bg-violet-500 hover:bg-violet-600">
-                    <Sparkles className="h-4 w-4 ml-2" />
+                    <Sparkles className="h-4 w-4 ms-2" />
                     تقييم جديد
                   </Button>
                 </CardContent>
@@ -1015,7 +1018,7 @@ export default function ProgressEvaluator() {
                                 size="sm"
                                 onClick={() => { setViewingResult(item); setActiveTab("result"); }}
                               >
-                                <FileText className="h-4 w-4 ml-1" />
+                                <FileText className="h-4 w-4 ms-1" />
                                 عرض
                               </Button>
                             )}

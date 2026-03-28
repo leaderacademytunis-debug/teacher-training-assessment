@@ -36,6 +36,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 const SUBJECTS = [
   "اللغة العربية",
@@ -176,6 +178,7 @@ function CritereCard({ critere, index }: { critere: EvaluationResult["criteres"]
 }
 
 export default function EvaluateFiche() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, navigate] = useLocation();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -390,7 +393,7 @@ export default function EvaluateFiche() {
               <div className="bg-gradient-to-r from-violet-600 to-purple-700 p-6 text-white">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <NoteCircle note={result.noteGlobale} />
-                  <div className="text-center sm:text-right">
+                  <div className="text-center sm:text-end">
                     <p className="text-violet-200 text-sm mb-1">النتيجة الإجمالية</p>
                     <h2 className="text-3xl font-bold mb-2">{result.noteGlobale} / 20</h2>
                     <Badge className={`text-sm px-3 py-1 border ${appreciationColor(result.appreciation)}`}>
@@ -573,7 +576,7 @@ export default function EvaluateFiche() {
                     className="text-red-500 hover:text-red-700"
                     onClick={(e) => { e.stopPropagation(); setFile(null); }}
                   >
-                    <X className="w-4 h-4 mr-1" /> إزالة الملف
+                    <X className="w-4 h-4 me-1" /> إزالة الملف
                   </Button>
                 </div>
               ) : (

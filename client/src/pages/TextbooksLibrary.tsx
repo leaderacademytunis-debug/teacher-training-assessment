@@ -8,6 +8,8 @@ import {
   GraduationCap, Calculator, FlaskConical, Globe2,
 } from "lucide-react";
 import ToolPageHeader from "@/components/ToolPageHeader";
+import useI18n from "@/i18n";
+
 
 const LIBRARY_GRADIENT = "linear-gradient(135deg, #f59e0b, #d97706)";
 
@@ -76,6 +78,7 @@ const MOCK_TEXTBOOKS: TextbookItem[] = [
 ];
 
 export default function TextbooksLibrary() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -109,12 +112,12 @@ export default function TextbooksLibrary() {
         {/* Search & Filter */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ابحث عن كتاب..."
-              className="pr-10"
+              className="pe-10"
             />
           </div>
           <div className="flex gap-2">
@@ -154,8 +157,8 @@ export default function TextbooksLibrary() {
                   {/* Book Cover */}
                   <div className={`${book.bgColor} p-6 flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden`}>
                     <div className="absolute inset-0 opacity-5">
-                      <div className="absolute top-2 left-2 w-20 h-20 border-2 border-current rounded-full" />
-                      <div className="absolute bottom-2 right-2 w-16 h-16 border-2 border-current rounded-lg rotate-12" />
+                      <div className="absolute top-2 start-2 w-20 h-20 border-2 border-current rounded-full" />
+                      <div className="absolute bottom-2 end-2 w-16 h-16 border-2 border-current rounded-lg rotate-12" />
                     </div>
                     <div className={`w-16 h-16 rounded-2xl ${book.bgColor} border-2 ${book.borderColor} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                       <Icon className={`w-8 h-8 ${book.color}`} />

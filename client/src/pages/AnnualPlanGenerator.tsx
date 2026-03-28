@@ -279,7 +279,7 @@ export default function AnnualPlanGenerator() {
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") confirmEdit(); if (e.key === "Escape") cancelEdit(); }}
-            className={`h-7 text-xs px-1 ${isRTL ? 'text-right' : 'text-left'}`}
+            className={`h-7 text-xs px-1 ${isRTL ? 'text-end' : 'text-start'}`}
             autoFocus
           />
           <button onClick={confirmEdit} className="text-green-600 hover:text-green-800"><Check className="w-3 h-3" /></button>
@@ -303,7 +303,7 @@ export default function AnnualPlanGenerator() {
         className="cursor-pointer group flex items-start gap-1 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors"
         onClick={() => startEdit(rowIdx, field)}
       >
-        <span className={`text-xs ${isRTL ? 'text-right' : 'text-left'} flex-1 leading-relaxed`}>{value}</span>
+        <span className={`text-xs ${isRTL ? 'text-end' : 'text-start'} flex-1 leading-relaxed`}>{value}</span>
         <Edit2 className={`w-3 h-3 opacity-0 group-hover:opacity-50 flex-shrink-0 mt-0.5`} />
       </div>
     );
@@ -379,7 +379,7 @@ export default function AnnualPlanGenerator() {
             <h2 className="text-lg font-bold text-gray-800">{t("المخطط السنوي لـ", "Plan Annuel pour", "Annual Plan for")} {subject} - {t("السنة", "Année", "Year")} {grade}</h2>
             <div className="flex gap-2">
               <Button onClick={handleExportWord} variant="outline" size="sm" disabled={exportMutation.isLoading}>
-                <Download className="w-4 h-4 ltr:mr-2 rtl:ml-2" />
+                <Download className="w-4 h-4 ltr:me-2 rtl:ms-2" />
                 {exportMutation.isLoading ? tt.loading : tt.downloadWord}
               </Button>
             </div>
@@ -429,7 +429,7 @@ export default function AnnualPlanGenerator() {
           </div>
           <div className="p-2 bg-gray-50 border-t">
             <Button variant="ghost" size="sm" className="w-full text-sm" onClick={addRow}>
-              <Plus className="w-4 h-4 ltr:mr-2 rtl:ml-2" />
+              <Plus className="w-4 h-4 ltr:me-2 rtl:ms-2" />
               {t("إضافة صف جديد", "Ajouter une ligne", "Add new row")}
             </Button>
           </div>
@@ -449,7 +449,7 @@ export default function AnnualPlanGenerator() {
               <DialogTitle>{t("توليد تقييم من درس", "Générer une évaluation à partir d'une leçon", "Generate Evaluation from Lesson")}</DialogTitle>
             </DialogHeader>
             <div className="py-4 space-y-4">
-              <p className={`text-sm bg-blue-50 p-3 rounded-md border border-blue-200 ${isRTL ? 'text-right' : 'text-left'}`}>
+              <p className={`text-sm bg-blue-50 p-3 rounded-md border border-blue-200 ${isRTL ? 'text-end' : 'text-start'}`}>
                 <strong>{tt.subject}:</strong> {subject}<br />
                 <strong>{tt.level}:</strong> {grade}<br />
                 <strong>{t("الدرس", "Leçon", "Lesson")}:</strong> {selectedRow.content}
@@ -488,7 +488,7 @@ export default function AnnualPlanGenerator() {
               <Button variant="ghost" onClick={() => setEvalDialogOpen(false)}>{tt.cancel}</Button>
               <Button onClick={handleGenerateEvaluation} disabled={isGeneratingEval}>
                 {isGeneratingEval ? (
-                  <><Loader2 className="w-4 h-4 animate-spin ltr:mr-2 rtl:ml-2" /> {tt.generating}</>
+                  <><Loader2 className="w-4 h-4 animate-spin ltr:me-2 rtl:ms-2" /> {tt.generating}</>
                 ) : (
                   t("توليد ورقة التقييم", "Générer la fiche", "Generate Sheet")
                 )}

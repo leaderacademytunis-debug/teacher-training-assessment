@@ -22,6 +22,8 @@ import {
   Download,
 } from "lucide-react";
 import { Streamdown } from "streamdown";
+import useI18n from "@/i18n";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,6 +130,7 @@ function ScoreBadge({ score }: { score: number }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SmartInspector() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [activeTab, setActiveTab] = useState<TabId>("lesson");
   const [documentText, setDocumentText] = useState("");
   const [result, setResult] = useState<string | null>(null);

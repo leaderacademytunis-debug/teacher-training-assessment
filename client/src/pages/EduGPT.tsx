@@ -17,6 +17,8 @@ import {
   Film, Video, Clapperboard, X, Volume2,
 } from "lucide-react";
 import ArabicTTS from "@/components/ArabicTTS";
+import useI18n from "@/i18n";
+
 
 const LEVELS = [
   { value: "ابتدائي", label: "ابتدائي (Primaire)", icon: "🏫" },
@@ -43,6 +45,7 @@ const TIPS = [
 ];
 
 export default function EduGPT() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, navigate] = useLocation();
   const [level, setLevel] = useState("");
   const [subject, setSubject] = useState("");
@@ -342,12 +345,12 @@ export default function EduGPT() {
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                      <Loader2 className="w-5 h-5 ms-2 animate-spin" />
                       جاري التوليد...
                     </>
                   ) : (
                     <>
-                      <Wand2 className="w-5 h-5 ml-2" />
+                      <Wand2 className="w-5 h-5 ms-2" />
                       توليد جذاذة احترافية
                     </>
                   )}
@@ -359,7 +362,7 @@ export default function EduGPT() {
                     variant="ghost"
                     className="w-full h-9 text-sm text-gray-500 hover:text-gray-700"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 ml-1.5" />
+                    <RotateCcw className="w-3.5 h-3.5 ms-1.5" />
                     إعادة تعيين
                   </Button>
                 )}
@@ -377,7 +380,7 @@ export default function EduGPT() {
                   <button
                     key={i}
                     onClick={() => handleQuickExample(ex)}
-                    className="w-full text-right p-3 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group"
+                    className="w-full text-end p-3 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all group"
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -500,7 +503,7 @@ export default function EduGPT() {
                       <div className="w-28 h-28 rounded-3xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #EEF2FF, #E8EAF6)" }}>
                         <FileText className="w-14 h-14" style={{ color: "#C5CAE9" }} />
                       </div>
-                      <div className="absolute -top-2 -right-2 w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
+                      <div className="absolute -top-2 -end-2 w-10 h-10 rounded-2xl flex items-center justify-center shadow-md" style={{ background: "linear-gradient(135deg, #FF6D00, #FF8F00)" }}>
                         <Wand2 className="w-5 h-5 text-white" />
                       </div>
                     </div>
@@ -681,7 +684,7 @@ export default function EduGPT() {
                 <h2 className="text-2xl font-bold text-white">عرض على المتفقد الذكي</h2>
                 <p className="text-blue-200 text-sm mt-0.5">تقرير تفقد رسمي بمعايير وزارة التربية التونسية — رتبة مميز، 30 سنة خبرة</p>
               </div>
-              <div className="mr-auto flex gap-2">
+              <div className="me-auto flex gap-2">
                 {[
                   { icon: "✅", text: "انسجام بيداغوجي" },
                   { icon: "📊", text: "تمشّي الحصة" },
@@ -727,9 +730,9 @@ export default function EduGPT() {
                   style={{ background: inspectMutation.isPending ? "#9E9E9E" : "linear-gradient(135deg, #FF6D00 0%, #FF8F00 100%)", color: "white" }}
                 >
                   {inspectMutation.isPending ? (
-                    <><Loader2 className="w-5 h-5 animate-spin ml-2" />جاري التحليل... (قد يستغرق 30 ثانية)</>
+                    <><Loader2 className="w-5 h-5 animate-spin ms-2" />جاري التحليل... (قد يستغرق 30 ثانية)</>
                   ) : (
-                    <><span className="ml-2 text-xl">👨‍🏫</span>عرض على المتفقد الذكي</>
+                    <><span className="ms-2 text-xl">👨‍🏫</span>عرض على المتفقد الذكي</>
                   )}
                 </Button>
 

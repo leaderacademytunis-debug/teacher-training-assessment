@@ -7,8 +7,11 @@ import { trpc } from "@/lib/trpc";
 import { Loader2, Award, Download, ArrowRight, Star, CheckCircle, Lock } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 export default function MyCertificates() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading: authLoading } = useAuth();
   const { data: certificates, isLoading, refetch } = trpc.certificates.listMyCertificates.useQuery();
   const { data: courses } = trpc.courses.list.useQuery();
@@ -61,7 +64,7 @@ export default function MyCertificates() {
             </div>
             <Link href="/">
               <Button variant="outline">
-                <ArrowRight className="w-4 h-4 mr-2" />
+                <ArrowRight className="w-4 h-4 me-2" />
                 العودة للرئيسية
               </Button>
             </Link>
@@ -88,7 +91,7 @@ export default function MyCertificates() {
                 <div className="flex justify-center mb-4">
                   <div className="relative">
                     <Award className="w-24 h-24 text-amber-500" />
-                    <Star className="w-8 h-8 text-yellow-400 fill-yellow-400 absolute -top-1 -right-1" />
+                    <Star className="w-8 h-8 text-yellow-400 fill-yellow-400 absolute -top-1 -end-1" />
                   </div>
                 </div>
                 <CardTitle className="text-2xl text-amber-800">الشهادة الجامعة</CardTitle>
@@ -106,7 +109,7 @@ export default function MyCertificates() {
                   className="bg-amber-600 hover:bg-amber-700 text-white px-8"
                   onClick={() => comprehensiveCert.pdfUrl && window.open(comprehensiveCert.pdfUrl, "_blank")}
                 >
-                  <Download className="w-5 h-5 ml-2" />
+                  <Download className="w-5 h-5 ms-2" />
                   تحميل الشهادة الجامعة
                 </Button>
               </CardContent>
@@ -119,10 +122,10 @@ export default function MyCertificates() {
                   <div className="flex-shrink-0">
                     <div className="relative">
                       <Award className="w-20 h-20 text-gray-300" />
-                      <Lock className="w-8 h-8 text-gray-400 absolute -bottom-1 -right-1 bg-white rounded-full p-1" />
+                      <Lock className="w-8 h-8 text-gray-400 absolute -bottom-1 -end-1 bg-white rounded-full p-1" />
                     </div>
                   </div>
-                  <div className="flex-1 text-center md:text-right">
+                  <div className="flex-1 text-center md:text-end">
                     <h3 className="text-xl font-bold text-gray-700 mb-2">
                       الشهادة الجامعة — تأهيل أصحاب الشهادات العليا
                     </h3>
@@ -164,9 +167,9 @@ export default function MyCertificates() {
                             disabled={generateCumulative.isPending}
                           >
                             {generateCumulative.isPending ? (
-                              <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري الإصدار...</>
+                              <><Loader2 className="w-4 h-4 ms-2 animate-spin" />جاري الإصدار...</>
                             ) : (
-                              <><Star className="w-4 h-4 ml-2 fill-white" />إصدار الشهادة الجامعة</>
+                              <><Star className="w-4 h-4 ms-2 fill-white" />إصدار الشهادة الجامعة</>
                             )}
                           </Button>
                         )}
@@ -199,7 +202,7 @@ export default function MyCertificates() {
                       <div className="flex justify-center mb-3">
                         <div className="relative">
                           <Award className="w-14 h-14 text-blue-500" />
-                          <CheckCircle className="w-5 h-5 text-green-500 fill-green-100 absolute -bottom-1 -right-1" />
+                          <CheckCircle className="w-5 h-5 text-green-500 fill-green-100 absolute -bottom-1 -end-1" />
                         </div>
                       </div>
                       <CardTitle className="text-center text-lg leading-tight">
@@ -220,7 +223,7 @@ export default function MyCertificates() {
                         className="w-full bg-blue-600 hover:bg-blue-700"
                         onClick={() => cert.pdfUrl && window.open(cert.pdfUrl, "_blank")}
                       >
-                        <Download className="w-4 h-4 ml-2" />
+                        <Download className="w-4 h-4 ms-2" />
                         تحميل الشهادة
                       </Button>
                     </CardContent>

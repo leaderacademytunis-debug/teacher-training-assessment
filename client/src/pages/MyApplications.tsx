@@ -11,6 +11,8 @@ import {
   Loader2, Calendar, TrendingUp, ChevronLeft, Sparkles,
   Bell, GraduationCap
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string; bgColor: string }> = {
   sent: { label: "مُرسل", icon: Send, color: "text-blue-700", bgColor: "bg-blue-50 border-blue-200" },
@@ -24,6 +26,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string; b
 const STEPS = ["sent", "viewed", "shortlisted", "interviewed", "accepted"];
 
 export default function MyApplications() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const applicationsQuery = trpc.applications.myApplications.useQuery(undefined, { enabled: !!user });
   const countsQuery = trpc.applications.myCounts.useQuery(undefined, { enabled: !!user });

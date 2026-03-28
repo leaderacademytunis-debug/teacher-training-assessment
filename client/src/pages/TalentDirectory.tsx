@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, MapPin, GraduationCap, Star, Award, BookOpen, FileText, ChevronLeft, ChevronRight, Users, Filter, Briefcase, ExternalLink } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const REGIONS = [
   "تونس العاصمة", "أريانة", "بن عروس", "منوبة", "نابل", "زغوان", "بنزرت",
@@ -29,6 +31,7 @@ const SUBJECTS = [
 ];
 
 export default function TalentDirectory() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [subject, setSubject] = useState<string>("");
   const [region, setRegion] = useState<string>("");
   const [grade, setGrade] = useState<string>("");
@@ -73,9 +76,9 @@ export default function TalentDirectory() {
           {/* Quick Search Bar */}
           <div className="flex flex-col md:flex-row gap-3 max-w-4xl">
             <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300" />
+              <Search className="absolute end-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300" />
               <Select value={subject} onValueChange={(v) => { setSubject(v === "all" ? "" : v); setPage(1); }}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white pr-10 h-12 [&>span]:text-white">
+                <SelectTrigger className="bg-white/10 border-white/20 text-white pe-10 h-12 [&>span]:text-white">
                   <SelectValue placeholder="اختر المادة..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -85,9 +88,9 @@ export default function TalentDirectory() {
               </Select>
             </div>
             <div className="flex-1 relative">
-              <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300" />
+              <MapPin className="absolute end-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-300" />
               <Select value={region} onValueChange={(v) => { setRegion(v === "all" ? "" : v); setPage(1); }}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white pr-10 h-12 [&>span]:text-white">
+                <SelectTrigger className="bg-white/10 border-white/20 text-white pe-10 h-12 [&>span]:text-white">
                   <SelectValue placeholder="اختر المنطقة..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -101,7 +104,7 @@ export default function TalentDirectory() {
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-12"
               onClick={() => setShowFilters(!showFilters)}
             >
-              <Filter className="w-4 h-4 ml-2" />
+              <Filter className="w-4 h-4 ms-2" />
               فلاتر متقدمة
             </Button>
           </div>
@@ -199,7 +202,7 @@ export default function TalentDirectory() {
                       teacher.level === "متوسط" ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100" :
                       "bg-gray-100 text-gray-700 hover:bg-gray-100"
                     }>
-                      <Star className="w-3 h-3 ml-1" /> {teacher.level}
+                      <Star className="w-3 h-3 ms-1" /> {teacher.level}
                     </Badge>
                     <span className="text-sm text-gray-500">{teacher.totalScore} نقطة</span>
                   </div>
@@ -248,7 +251,7 @@ export default function TalentDirectory() {
                   {/* View Profile Button */}
                   <Link href={`/showcase/${teacher.slug}`}>
                     <Button variant="outline" className="w-full mt-2 group-hover:bg-blue-50 group-hover:border-blue-300 group-hover:text-blue-700">
-                      <ExternalLink className="w-4 h-4 ml-2" />
+                      <ExternalLink className="w-4 h-4 ms-2" />
                       عرض الملف المهني
                     </Button>
                   </Link>
@@ -275,7 +278,7 @@ export default function TalentDirectory() {
               disabled={page === 1}
               onClick={() => setPage(p => Math.max(1, p - 1))}
             >
-              <ChevronRight className="w-4 h-4 ml-1" /> السابق
+              <ChevronRight className="w-4 h-4 ms-1" /> السابق
             </Button>
             <span className="text-gray-600">
               صفحة {page} من {Math.ceil(data.total / 12)}
@@ -285,7 +288,7 @@ export default function TalentDirectory() {
               disabled={page >= Math.ceil(data.total / 12)}
               onClick={() => setPage(p => p + 1)}
             >
-              التالي <ChevronLeft className="w-4 h-4 mr-1" />
+              التالي <ChevronLeft className="w-4 h-4 me-1" />
             </Button>
           </div>
         )}
@@ -343,7 +346,7 @@ function JobPostingsSection() {
                 <h3 className="font-bold text-lg text-gray-800">{item.job.title}</h3>
                 <p className="text-sm text-gray-500 flex items-center gap-1">
                   {item.schoolNameAr || item.schoolName}
-                  {item.isVerified && <Badge className="bg-green-100 text-green-700 text-xs mr-1">موثقة</Badge>}
+                  {item.isVerified && <Badge className="bg-green-100 text-green-700 text-xs me-1">موثقة</Badge>}
                 </p>
               </div>
               <Badge variant="outline" className="text-xs">

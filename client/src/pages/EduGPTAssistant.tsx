@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
+import useI18n from "@/i18n";
+
 
 interface Message {
   role: "user" | "assistant";
@@ -23,6 +25,7 @@ interface AttachedFile {
 }
 
 export default function EduGPTAssistant() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -190,8 +193,8 @@ export default function EduGPTAssistant() {
     <div className="container mx-auto h-[calc(100vh-80px)] flex flex-col py-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-right mb-2">المساعد البيداغوجي</h1>
-        <p className="text-muted-foreground text-right">
+        <h1 className="text-3xl font-bold text-end mb-2">المساعد البيداغوجي</h1>
+        <p className="text-muted-foreground text-end">
           مساعدك الذكي لإعداد المذكرات البيداغوجية والتخطيط الدراسي
         </p>
       </div>
@@ -218,28 +221,28 @@ export default function EduGPTAssistant() {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
                 <Button
                   variant="outline"
-                  className="text-right justify-start h-auto py-3 px-4"
+                  className="text-end justify-start h-auto py-3 px-4"
                   onClick={() => setInput("أنشئ لي مذكرة بيداغوجية لدرس قراءة للسنة السادسة ابتدائي")}
                 >
                   <span className="text-sm">أنشئ مذكرة بيداغوجية</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-right justify-start h-auto py-3 px-4"
+                  className="text-end justify-start h-auto py-3 px-4"
                   onClick={() => setInput("اقترح لي أنشطة تفاعلية لدرس الرياضيات")}
                 >
                   <span className="text-sm">اقترح أنشطة تفاعلية</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-right justify-start h-auto py-3 px-4"
+                  className="text-end justify-start h-auto py-3 px-4"
                   onClick={() => setInput("ساعدني في إعداد تقييم تشخيصي")}
                 >
                   <span className="text-sm">إعداد تقييم تشخيصي</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-right justify-start h-auto py-3 px-4"
+                  className="text-end justify-start h-auto py-3 px-4"
                   onClick={() => setInput("كيف أدمج الذكاء الاصطناعي في التدريس؟")}
                 >
                   <span className="text-sm">دمج الذكاء الاصطناعي</span>

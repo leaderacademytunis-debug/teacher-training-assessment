@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { MessageCircle, Send, ArrowRight, Building2, User, Clock, Archive, AlertTriangle, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
+import useI18n from "@/i18n";
+
 
 export default function CareerMessages() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [selectedConvoId, setSelectedConvoId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState("");
   const [showMobileList, setShowMobileList] = useState(true);
@@ -103,8 +106,8 @@ export default function CareerMessages() {
                 <button
                   key={convo.id}
                   onClick={() => selectConversation(convo.id)}
-                  className={`w-full p-4 border-b text-right hover:bg-blue-50 transition-colors ${
-                    selectedConvoId === convo.id ? "bg-blue-50 border-r-4 border-r-blue-500" : ""
+                  className={`w-full p-4 border-b text-end hover:bg-blue-50 transition-colors ${
+                    selectedConvoId === convo.id ? "bg-blue-50 border-e-4 border-e-blue-500" : ""
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -209,7 +212,7 @@ export default function CareerMessages() {
                       onChange={(e) => setMessageText(e.target.value)}
                       onKeyDown={handleKeyDown}
                       placeholder="اكتب رسالتك المهنية..."
-                      className="flex-1 text-right"
+                      className="flex-1 text-end"
                       disabled={sendMutation.isPending}
                     />
                     <Button

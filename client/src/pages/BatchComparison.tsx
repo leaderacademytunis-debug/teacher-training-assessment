@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Loader2, BarChart3, Users, BookOpen, TrendingUp, Award, ArrowRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import { useLocation } from "wouter";
+import useI18n from "@/i18n";
+
 
 const COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#14b8a6", "#f97316", "#6366f1"];
 
 export default function BatchComparison() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, navigate] = useLocation();
   const comparisonQuery = trpc.batchComparison.getAll.useQuery();
 
@@ -194,7 +197,7 @@ export default function BatchComparison() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50">
-                  <th className="text-right p-3 font-medium">الدفعة</th>
+                  <th className="text-end p-3 font-medium">الدفعة</th>
                   <th className="text-center p-3 font-medium">الأعضاء</th>
                   <th className="text-center p-3 font-medium">الواجبات</th>
                   <th className="text-center p-3 font-medium">التسليمات</th>

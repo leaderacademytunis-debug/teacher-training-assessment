@@ -125,14 +125,14 @@ export default function ManageExams() {
         <div className="flex gap-2">
           <Link href="/import-exam">
             <Button variant="outline">
-              <Upload className="w-4 h-4 ml-2" />
+              <Upload className="w-4 h-4 ms-2" />
               استيراد من Google Forms
             </Button>
           </Link>
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4 ml-2" />
+                <Plus className="w-4 h-4 ms-2" />
                 إضافة اختبار جديد
               </Button>
             </DialogTrigger>
@@ -208,7 +208,7 @@ export default function ManageExams() {
                   <Button type="button" variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>إلغاء</Button>
                   <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                     {(createMutation.isPending || updateMutation.isPending) ? (
-                      <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري الحفظ...</>
+                      <><Loader2 className="w-4 h-4 ms-2 animate-spin" />جاري الحفظ...</>
                     ) : (editingExam ? "تحديث" : "إنشاء")}
                   </Button>
                 </DialogFooter>
@@ -315,23 +315,23 @@ export default function ManageExams() {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <Button variant="outline" size="sm" onClick={() => handleEdit(exam)}>
-                          <Pencil className="w-3.5 h-3.5 ml-1" />
+                          <Pencil className="w-3.5 h-3.5 ms-1" />
                           تعديل
                         </Button>
                         <Link href={`/admin/exam-attempts/${exam.id}`}>
                           <Button variant="secondary" size="sm" className="w-full">
-                            <Users className="w-3.5 h-3.5 ml-1" />
+                            <Users className="w-3.5 h-3.5 ms-1" />
                             المحاولات
                           </Button>
                         </Link>
                         <Link href={`/dashboard?tab=questions&examId=${exam.id}`}>
                           <Button variant="outline" size="sm" className="w-full text-blue-600 border-blue-300 hover:bg-blue-50">
-                            <ListChecks className="w-3.5 h-3.5 ml-1" />
+                            <ListChecks className="w-3.5 h-3.5 ms-1" />
                             الأسئلة
                           </Button>
                         </Link>
                         <Button variant="destructive" size="sm" onClick={() => handleDelete(exam)}>
-                          <Trash2 className="w-3.5 h-3.5 ml-1" />
+                          <Trash2 className="w-3.5 h-3.5 ms-1" />
                           حذف
                         </Button>
                       </div>

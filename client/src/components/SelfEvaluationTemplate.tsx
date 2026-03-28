@@ -258,7 +258,7 @@ export default function SelfEvaluationTemplate() {
                     : critPct >= 50
                     ? <AlertCircle className="w-4 h-4 text-amber-500" />
                     : <XCircle className="w-4 h-4 text-red-500" />}
-                  <span className="font-bold text-sm min-w-[3rem] text-right">
+                  <span className="font-bold text-sm min-w-[3rem] text-end">
                     {s.score} / {criterion.maxScore}
                   </span>
                   {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}

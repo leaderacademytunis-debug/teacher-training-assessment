@@ -45,6 +45,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
+import useI18n from "@/i18n";
+
 
 // ===== TIER SYSTEM =====
 interface Tier {
@@ -103,6 +105,7 @@ const ACTIVITY_META: Record<string, { icon: LucideIcon; label: string; color: st
 };
 
 export default function TeacherDashboard() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
@@ -720,7 +723,7 @@ function ToolCategory({ title, description, tools }: {
                   <p className="text-sm font-medium text-gray-700">{tool.label}</p>
                   <p className="text-xs text-gray-400">{tool.desc}</p>
                 </div>
-                <ExternalLink className="w-3 h-3 text-gray-300 mr-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ExternalLink className="w-3 h-3 text-gray-300 me-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </Link>
           ))}

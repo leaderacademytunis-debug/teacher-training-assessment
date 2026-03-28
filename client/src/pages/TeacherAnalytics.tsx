@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { BarChart3, Eye, Download, Zap, MousePointer, TrendingUp, ClipboardList, Send, Star, ArrowRight, Calendar } from "lucide-react";
 import { Link } from "wouter";
+import useI18n from "@/i18n";
+
 
 function MiniBarChart({ data }: { data: { date: string; count: number }[] }) {
   const maxCount = Math.max(...data.map(d => d.count), 1);
@@ -28,6 +30,7 @@ function MiniBarChart({ data }: { data: { date: string; count: number }[] }) {
 }
 
 export default function TeacherAnalytics() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [activeTab, setActiveTab] = useState("stats");
   const [responseTaskId, setResponseTaskId] = useState<number | null>(null);
   const [responseContent, setResponseContent] = useState("");
@@ -246,7 +249,7 @@ export default function TeacherAnalytics() {
                                 value={responseContent}
                                 onChange={(e) => setResponseContent(e.target.value)}
                                 placeholder="اكتب ردك على المهمة... يمكنك أيضاً استخدام المساعد لتوليد المحتوى"
-                                className="min-h-[100px] text-right"
+                                className="min-h-[100px] text-end"
                               />
                               <div className="flex gap-2">
                                 <Button

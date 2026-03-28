@@ -106,7 +106,7 @@ export default function MyCourses() {
             </div>
             <Link href="/">
               <Button variant="outline">
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-4 h-4 ms-2" />
                 {tx.backHome}
               </Button>
             </Link>

@@ -17,6 +17,8 @@ import {
   Upload, ArrowRight, Shield, Zap, Star, Award, MessageCircle,
   Mic, Video, Brain, FileText, Image, Headphones, Rocket
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 // ============ TIER DEFINITIONS ============
 const TIERS = [
@@ -138,6 +140,7 @@ const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; 
 };
 
 export default function Pricing() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const { data: permissions } = trpc.adminDashboard.getMyPermissions.useQuery(undefined, { enabled: !!user });
   const [showPayment, setShowPayment] = useState(false);
@@ -244,7 +247,7 @@ export default function Pricing() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.15),transparent_70%)]" />
         <div className="container max-w-3xl relative z-10">
           <Badge className="mb-5 bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30 px-4 py-1.5">
-            <Crown className="h-3.5 w-3.5 ml-1.5" />
+            <Crown className="h-3.5 w-3.5 ms-1.5" />
             استثمر في مستقبلك التعليمي
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold mb-5 text-white">
@@ -279,9 +282,9 @@ export default function Pricing() {
 
                   {/* Badge */}
                   {tier.badge && (
-                    <div className="absolute top-4 left-4 z-10">
+                    <div className="absolute top-4 start-4 z-10">
                       <Badge className={`${isPro ? 'bg-gradient-to-l from-blue-600 to-indigo-600' : 'bg-gradient-to-l from-amber-600 to-yellow-500'} text-white border-0 shadow-lg px-3 py-1 text-xs font-bold`}>
-                        {isPro && <Award className="h-3.5 w-3.5 ml-1" />}
+                        {isPro && <Award className="h-3.5 w-3.5 ms-1" />}
                         {tier.badge}
                       </Badge>
                     </div>
@@ -301,7 +304,7 @@ export default function Pricing() {
                       {tier.oldPrice > tier.price && (
                         <div className="mb-1">
                           <span className="text-lg text-slate-500 line-through">{tier.oldPrice} {tier.currency}</span>
-                          <Badge variant="destructive" className="mr-2 text-xs">
+                          <Badge variant="destructive" className="me-2 text-xs">
                             -{Math.round(((tier.oldPrice - tier.price) / tier.oldPrice) * 100)}%
                           </Badge>
                         </div>
@@ -309,7 +312,7 @@ export default function Pricing() {
                       <span className={`text-5xl font-bold ${isVIP ? 'bg-gradient-to-l from-amber-400 to-yellow-300 bg-clip-text text-transparent' : 'text-white'}`}>
                         {tier.price}
                       </span>
-                      <span className="text-sm text-slate-400 mr-2">
+                      <span className="text-sm text-slate-400 me-2">
                         {tier.currency} / {tier.billing}
                       </span>
                     </div>
@@ -375,7 +378,7 @@ export default function Pricing() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-700">
-                      <th className="text-right p-4 text-slate-400 font-medium w-[40%]">الميزة</th>
+                      <th className="text-end p-4 text-slate-400 font-medium w-[40%]">الميزة</th>
                       <th className="p-4 text-center">
                         <span className="text-emerald-400 font-bold">المبادر</span>
                         <div className="text-xs text-slate-500 mt-0.5">{TIERS[0].price} TND</div>
@@ -400,7 +403,7 @@ export default function Pricing() {
                         </tr>
                         {cat.features.map((f) => (
                           <tr key={f.name} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
-                            <td className="p-3 pr-4 text-slate-300">{f.name}</td>
+                            <td className="p-3 pe-4 text-slate-300">{f.name}</td>
                             <td className="p-3 text-center">{renderCellValue(f.starter)}</td>
                             <td className="p-3 text-center bg-blue-500/5">{renderCellValue(f.pro)}</td>
                             <td className="p-3 text-center">{renderCellValue(f.vip)}</td>
@@ -477,7 +480,7 @@ export default function Pricing() {
                 {/* Bank transfer info */}
                 <div className="bg-blue-950/50 border border-blue-800/50 rounded-xl p-4 text-sm space-y-2">
                   <p className="font-semibold text-blue-300">طرق الدفع المتاحة:</p>
-                  <ul className="text-blue-200/80 space-y-1.5 mr-4">
+                  <ul className="text-blue-200/80 space-y-1.5 me-4">
                     <li className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                       التحويل البنكي
@@ -504,7 +507,7 @@ export default function Pricing() {
                       <div className="flex items-center gap-2 p-3 bg-emerald-950/50 border border-emerald-800/50 rounded-lg">
                         <Check className="h-5 w-5 text-emerald-400" />
                         <span className="text-sm text-emerald-300">تم رفع الإيصال بنجاح</span>
-                        <Button size="sm" variant="ghost" onClick={() => setReceiptUrl("")} className="mr-auto text-slate-400">
+                        <Button size="sm" variant="ghost" onClick={() => setReceiptUrl("")} className="me-auto text-slate-400">
                           تغيير
                         </Button>
                       </div>

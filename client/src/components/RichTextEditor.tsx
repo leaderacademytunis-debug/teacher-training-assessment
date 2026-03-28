@@ -194,7 +194,7 @@ export default function RichTextEditor({
             <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://..." className={cn("text-sm", inputBg)} dir="ltr" onKeyDown={(e) => e.key === "Enter" && addLink()} />
             <Button size="sm" onClick={addLink} className="bg-blue-600 hover:bg-blue-700">إضافة</Button>
           </div>
-          {editor.isActive("link") && <Button variant="ghost" size="sm" className="mt-2 w-full text-xs text-red-400" onClick={() => editor.chain().focus().unsetLink().run()}><X className="h-3 w-3 ml-1" /> إزالة الرابط</Button>}
+          {editor.isActive("link") && <Button variant="ghost" size="sm" className="mt-2 w-full text-xs text-red-400" onClick={() => editor.chain().focus().unsetLink().run()}><X className="h-3 w-3 ms-1" /> إزالة الرابط</Button>}
         </PopoverContent></Popover>
         {/* Image */}
         <Popover><PopoverTrigger asChild>
@@ -217,23 +217,23 @@ export default function RichTextEditor({
         </PopoverTrigger>
         <PopoverContent className={cn("w-48 p-2", popBg)}>
           <div className="space-y-1">
-            <button type="button" className={cn("w-full text-right px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+            <button type="button" className={cn("w-full text-end px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
               <Plus className="h-3.5 w-3.5" /> إدراج جدول 3×3
             </button>
             {editor.isActive("table") && (<>
-              <button type="button" className={cn("w-full text-right px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().addColumnAfter().run()}>
+              <button type="button" className={cn("w-full text-end px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().addColumnAfter().run()}>
                 <Columns2 className="h-3.5 w-3.5" /> إضافة عمود
               </button>
-              <button type="button" className={cn("w-full text-right px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().addRowAfter().run()}>
+              <button type="button" className={cn("w-full text-end px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().addRowAfter().run()}>
                 <RowsIcon className="h-3.5 w-3.5" /> إضافة صف
               </button>
-              <button type="button" className={cn("w-full text-right px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().deleteColumn().run()}>
+              <button type="button" className={cn("w-full text-end px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().deleteColumn().run()}>
                 <Columns2 className="h-3.5 w-3.5 text-red-400" /> حذف عمود
               </button>
-              <button type="button" className={cn("w-full text-right px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().deleteRow().run()}>
+              <button type="button" className={cn("w-full text-end px-2 py-1.5 text-sm rounded flex items-center gap-2", darkMode ? "text-slate-300 hover:bg-slate-700" : "text-gray-700 hover:bg-gray-100")} onClick={() => editor.chain().focus().deleteRow().run()}>
                 <RowsIcon className="h-3.5 w-3.5 text-red-400" /> حذف صف
               </button>
-              <button type="button" className={cn("w-full text-right px-2 py-1.5 text-sm text-red-400 rounded flex items-center gap-2", darkMode ? "hover:bg-slate-700" : "hover:bg-gray-100")} onClick={() => editor.chain().focus().deleteTable().run()}>
+              <button type="button" className={cn("w-full text-end px-2 py-1.5 text-sm text-red-400 rounded flex items-center gap-2", darkMode ? "hover:bg-slate-700" : "hover:bg-gray-100")} onClick={() => editor.chain().focus().deleteTable().run()}>
                 <Trash2 className="h-3.5 w-3.5" /> حذف الجدول
               </button>
             </>)}

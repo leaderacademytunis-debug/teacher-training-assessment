@@ -8,8 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, BookOpen, Clock, FileText, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
+import useI18n from "@/i18n";
+
 
 export default function TemplateLibrary() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, setLocation] = useLocation();
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("all");
@@ -132,7 +135,7 @@ export default function TemplateLibrary() {
                     <CardTitle className="text-xl font-bold text-gray-900 flex-1">
                       {template.templateName}
                     </CardTitle>
-                    <BookOpen className="h-5 w-5 text-blue-600 flex-shrink-0 mr-2" />
+                    <BookOpen className="h-5 w-5 text-blue-600 flex-shrink-0 me-2" />
                   </div>
                   <CardDescription className="text-gray-600">
                     {template.description}
@@ -186,7 +189,7 @@ export default function TemplateLibrary() {
                     className="flex-1"
                     onClick={() => setPreviewTemplate(template)}
                   >
-                    <Eye className="h-4 w-4 ml-2" />
+                    <Eye className="h-4 w-4 ms-2" />
                     معاينة
                   </Button>
                   <Button

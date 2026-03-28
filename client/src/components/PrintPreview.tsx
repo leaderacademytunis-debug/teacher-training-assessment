@@ -616,7 +616,7 @@ export default function PrintPreview({
             onClick={() => setGrayscale(!grayscale)}
             className="text-xs h-8"
           >
-            {grayscale ? <EyeOff className="w-3.5 h-3.5 ml-1" /> : <Eye className="w-3.5 h-3.5 ml-1" />}
+            {grayscale ? <EyeOff className="w-3.5 h-3.5 ms-1" /> : <Eye className="w-3.5 h-3.5 ms-1" />}
             {grayscale ? "ألوان" : "أبيض/أسود"}
           </Button>
 
@@ -640,7 +640,7 @@ export default function PrintPreview({
             size="sm"
             className="bg-red-600 hover:bg-red-700 text-white text-xs h-8 px-3"
           >
-            <FileText className="w-3.5 h-3.5 ml-1" />
+            <FileText className="w-3.5 h-3.5 ms-1" />
             {isExporting === "pdf" ? "جارٍ..." : "تحميل PDF"}
           </Button>
 
@@ -651,7 +651,7 @@ export default function PrintPreview({
             size="sm"
             className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8 px-3"
           >
-            <Download className="w-3.5 h-3.5 ml-1" />
+            <Download className="w-3.5 h-3.5 ms-1" />
             {isExporting === "word" ? "جارٍ..." : "تحميل Word"}
           </Button>
 
@@ -663,7 +663,7 @@ export default function PrintPreview({
             size="sm"
             className="text-xs h-8 px-3"
           >
-            <Printer className="w-3.5 h-3.5 ml-1" />
+            <Printer className="w-3.5 h-3.5 ms-1" />
             طباعة مباشرة
           </Button>
 

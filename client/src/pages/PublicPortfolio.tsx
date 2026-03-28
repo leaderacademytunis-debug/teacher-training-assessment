@@ -7,6 +7,8 @@ import {
   MessageSquare, BookOpen, Loader2, User, School, MapPin,
   Briefcase, TrendingUp, ShieldCheck,
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 // Radar Chart (same as TeacherPortfolio)
 function RadarChart({ data, size = 260 }: { data: Record<string, number>; size?: number }) {
@@ -77,6 +79,7 @@ function StatCard({ icon: Icon, label, value, color, bgColor }: {
 }
 
 export default function PublicPortfolio() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [, params] = useRoute("/public-portfolio/:token");
   const token = params?.token || "";
 

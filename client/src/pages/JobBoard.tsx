@@ -17,6 +17,8 @@ import {
   FileText, ExternalLink, Loader2, GraduationCap, Shield,
   Award, Languages, Brain, Zap, ShieldCheck
 } from "lucide-react";
+import useI18n from "@/i18n";
+
 
 const REGIONS = [
   "تونس", "أريانة", "بن عروس", "منوبة", "نابل", "زغوان", "بنزرت",
@@ -42,6 +44,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function JobBoard() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -89,8 +92,8 @@ export default function JobBoard() {
       {/* Hero Section */}
       <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1A237E 0%, #1565C0 50%, #0D47A1 100%)" }}>
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-20 w-32 h-32 rounded-full bg-white/20 blur-xl" />
-          <div className="absolute bottom-10 left-20 w-48 h-48 rounded-full bg-orange-300/20 blur-xl" />
+          <div className="absolute top-10 end-20 w-32 h-32 rounded-full bg-white/20 blur-xl" />
+          <div className="absolute bottom-10 start-20 w-48 h-48 rounded-full bg-orange-300/20 blur-xl" />
         </div>
         <div className="container max-w-6xl py-12 relative z-10">
           <div className="text-center mb-8">
@@ -111,12 +114,12 @@ export default function JobBoard() {
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/20">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-2 relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                <Search className="absolute end-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                 <Input
                   placeholder="ابحث حسب المادة أو المنصب..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/15"
+                  className="pe-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/15"
                 />
               </div>
               <Select value={selectedRegion} onValueChange={(v) => setSelectedRegion(v === "all" ? "" : v)}>
@@ -309,7 +312,7 @@ function JobCard({ job, onApply, user }: { job: any; onApply: (id: number) => vo
               )}
               {job.urgencyLevel && job.urgencyLevel !== "normal" && (
                 <Badge className={job.urgencyLevel === "immediate" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}>
-                  <Zap className="w-3 h-3 ml-1" />
+                  <Zap className="w-3 h-3 ms-1" />
                   {job.urgencyLevel === "immediate" ? "فوري" : "مستعجل"}
                 </Badge>
               )}
@@ -353,7 +356,7 @@ function JobCard({ job, onApply, user }: { job: any; onApply: (id: number) => vo
                 {hasApplied ? (
                   <div className="flex items-center gap-2">
                     <Badge className={STATUS_LABELS[application?.status || "sent"]?.color || "bg-blue-100 text-blue-700"}>
-                      <CheckCircle2 className="w-3 h-3 ml-1" />
+                      <CheckCircle2 className="w-3 h-3 ms-1" />
                       {STATUS_LABELS[application?.status || "sent"]?.label || "مُرسل"}
                     </Badge>
                     {application?.matchScore != null && (

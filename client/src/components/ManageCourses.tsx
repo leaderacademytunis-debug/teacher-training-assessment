@@ -285,7 +285,7 @@ export default function ManageCourses() {
         }}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6">
-              <Plus className="w-4 h-4 ml-2" />
+              <Plus className="w-4 h-4 ms-2" />
               إضافة دورة جديدة
             </Button>
           </DialogTrigger>
@@ -401,9 +401,9 @@ export default function ManageCourses() {
                           onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                           placeholder="مثال: 150"
                           min="0"
-                          className="rounded-xl pl-12"
+                          className="rounded-xl ps-12"
                         />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">د.ت</span>
+                        <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">د.ت</span>
                       </div>
                     </div>
                     <div>
@@ -416,9 +416,9 @@ export default function ManageCourses() {
                           onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
                           placeholder="مثال: 200"
                           min="0"
-                          className="rounded-xl pl-12"
+                          className="rounded-xl ps-12"
                         />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">د.ت</span>
+                        <span className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">د.ت</span>
                       </div>
                     </div>
                   </div>
@@ -461,7 +461,7 @@ export default function ManageCourses() {
                               />
                               <span className="text-sm">{course.titleAr}</span>
                               {course.price > 0 && (
-                                <Badge variant="outline" className="text-xs mr-auto">{course.price} د.ت</Badge>
+                                <Badge variant="outline" className="text-xs me-auto">{course.price} د.ت</Badge>
                               )}
                             </label>
                           ))}
@@ -543,7 +543,7 @@ export default function ManageCourses() {
                             className="rounded-lg"
                             onClick={() => fileInputRef.current?.click()}
                           >
-                            <Upload className="w-4 h-4 ml-1" />
+                            <Upload className="w-4 h-4 ms-1" />
                             تغيير الصورة
                           </Button>
                           <Button
@@ -553,7 +553,7 @@ export default function ManageCourses() {
                             className="rounded-lg text-red-500 hover:text-red-700"
                             onClick={() => setFormData(prev => ({ ...prev, coverImageUrl: '' }))}
                           >
-                            <Trash2 className="w-4 h-4 ml-1" />
+                            <Trash2 className="w-4 h-4 ms-1" />
                             حذف
                           </Button>
                         </div>
@@ -648,7 +648,7 @@ export default function ManageCourses() {
                 </Button>
                 <Button type="submit" className="rounded-xl bg-emerald-600 hover:bg-emerald-700" disabled={createMutation.isPending || updateMutation.isPending}>
                   {(createMutation.isPending || updateMutation.isPending) ? (
-                    <><Loader2 className="w-4 h-4 ml-2 animate-spin" />جاري الحفظ...</>
+                    <><Loader2 className="w-4 h-4 ms-2 animate-spin" />جاري الحفظ...</>
                   ) : (editingCourse ? "تحديث الدورة" : "إنشاء الدورة")}
                 </Button>
               </DialogFooter>
@@ -744,36 +744,36 @@ export default function ManageCourses() {
                     onError={(e) => { (e.target as HTMLImageElement).src = ''; (e.target as HTMLImageElement).className = 'hidden'; }}
                   />
                   {/* Overlay badges */}
-                  <div className="absolute top-3 right-3 flex gap-2">
+                  <div className="absolute top-3 end-3 flex gap-2">
                     {course.isBundle && (
                       <Badge className="bg-orange-500 text-white text-xs">
-                        <Package className="w-3 h-3 ml-1" />
+                        <Package className="w-3 h-3 ms-1" />
                         باقة
                       </Badge>
                     )}
                     {course.isFeatured && (
                       <Badge className="bg-amber-500 text-white text-xs">
-                        <Star className="w-3 h-3 ml-1" />
+                        <Star className="w-3 h-3 ms-1" />
                         مميزة
                       </Badge>
                     )}
                   </div>
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 start-3">
                     {course.isActive ? (
                       <Badge className="bg-emerald-500/90 text-white text-xs">
-                        <Eye className="w-3 h-3 ml-1" />
+                        <Eye className="w-3 h-3 ms-1" />
                         نشطة
                       </Badge>
                     ) : (
                       <Badge className="bg-red-500/90 text-white text-xs">
-                        <EyeOff className="w-3 h-3 ml-1" />
+                        <EyeOff className="w-3 h-3 ms-1" />
                         معطلة
                       </Badge>
                     )}
                   </div>
                   {/* Price badge on image */}
                   {course.price > 0 && (
-                    <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm">
+                    <div className="absolute bottom-3 start-3 bg-white/95 backdrop-blur-sm rounded-lg px-3 py-1.5 shadow-sm">
                       <div className="flex items-center gap-2">
                         {course.originalPrice && course.originalPrice > course.price && (
                           <span className="text-xs text-gray-400 line-through">{course.originalPrice}</span>
@@ -786,13 +786,13 @@ export default function ManageCourses() {
               ) : (
                 <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative">
                   <Image className="w-12 h-12 text-gray-300" />
-                  <div className="absolute top-3 right-3 flex gap-2">
-                    {course.isBundle && <Badge className="bg-orange-500 text-white text-xs"><Package className="w-3 h-3 ml-1" />باقة</Badge>}
-                    {course.isFeatured && <Badge className="bg-amber-500 text-white text-xs"><Star className="w-3 h-3 ml-1" />مميزة</Badge>}
+                  <div className="absolute top-3 end-3 flex gap-2">
+                    {course.isBundle && <Badge className="bg-orange-500 text-white text-xs"><Package className="w-3 h-3 ms-1" />باقة</Badge>}
+                    {course.isFeatured && <Badge className="bg-amber-500 text-white text-xs"><Star className="w-3 h-3 ms-1" />مميزة</Badge>}
                   </div>
-                  <div className="absolute top-3 left-3">
+                  <div className="absolute top-3 start-3">
                     <Badge className={course.isActive ? "bg-emerald-500/90 text-white text-xs" : "bg-red-500/90 text-white text-xs"}>
-                      {course.isActive ? <><Eye className="w-3 h-3 ml-1" />نشطة</> : <><EyeOff className="w-3 h-3 ml-1" />معطلة</>}
+                      {course.isActive ? <><Eye className="w-3 h-3 ms-1" />نشطة</> : <><EyeOff className="w-3 h-3 ms-1" />معطلة</>}
                     </Badge>
                   </div>
                 </div>
@@ -839,12 +839,12 @@ export default function ManageCourses() {
                 {/* Action Buttons */}
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1 rounded-xl" onClick={() => handleEdit(course)}>
-                    <Pencil className="w-3.5 h-3.5 ml-1" />
+                    <Pencil className="w-3.5 h-3.5 ms-1" />
                     تعديل
                   </Button>
                   {course.isActive ? (
                     <Button variant="destructive" size="sm" className="flex-1 rounded-xl" onClick={() => { setCourseToDelete(course); setDeleteDialogOpen(true); }}>
-                      <Trash2 className="w-3.5 h-3.5 ml-1" />
+                      <Trash2 className="w-3.5 h-3.5 ms-1" />
                       إزالة
                     </Button>
                   ) : (
@@ -852,7 +852,7 @@ export default function ManageCourses() {
                       onClick={() => restoreMutation.mutate({ id: course.id })}
                       disabled={restoreMutation.isPending}
                     >
-                      <RotateCcw className="w-3.5 h-3.5 ml-1" />
+                      <RotateCcw className="w-3.5 h-3.5 ms-1" />
                       استعادة
                     </Button>
                   )}

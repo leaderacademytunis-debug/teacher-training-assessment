@@ -6,8 +6,11 @@ import { trpc } from "@/lib/trpc";
 import { Loader2, ArrowRight, CheckCircle2, XCircle, Award } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { toast } from "sonner";
+import useI18n from "@/i18n";
+
 
 export default function ExamResults() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { id } = useParams<{ id: string }>();
   const attemptId = parseInt(id || "0");
   const { user, loading: authLoading } = useAuth();
@@ -69,7 +72,7 @@ export default function ExamResults() {
         <div className="container py-6">
           <Link href={exam ? `/courses/${exam.courseId}` : "/"}>
             <Button variant="outline">
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ms-2" />
               العودة للدورة
             </Button>
           </Link>
@@ -124,7 +127,7 @@ export default function ExamResults() {
               <CardContent className="text-center space-y-4">
                 <Link href={`/exam/${exam?.id}`}>
                   <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                    <ArrowRight className="w-5 h-5 ms-2" />
                     إعادة المحاولة
                   </Button>
                 </Link>
@@ -197,7 +200,7 @@ export default function ExamResults() {
                           >
                             {icon}
                             <span className={`flex-1 ${textColor}`}>
-                              <span className="font-semibold ml-2">{option}.</span>
+                              <span className="font-semibold ms-2">{option}.</span>
                               {optionText}
                             </span>
                             {isUserAnswer && (
@@ -238,7 +241,7 @@ export default function ExamResults() {
                     onClick={() => certificate.pdfUrl && window.open(certificate.pdfUrl, "_blank")}
                     className="bg-amber-600 hover:bg-amber-700"
                   >
-                    <Award className="w-5 h-5 ml-2" />
+                    <Award className="w-5 h-5 ms-2" />
                     تحميل الشهادة
                   </Button>
                 ) : (
@@ -250,12 +253,12 @@ export default function ExamResults() {
                   >
                     {generateCertificate.isPending ? (
                       <>
-                        <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                        <Loader2 className="w-5 h-5 ms-2 animate-spin" />
                         جاري إنشاء الشهادة...
                       </>
                     ) : (
                       <>
-                        <Award className="w-5 h-5 ml-2" />
+                        <Award className="w-5 h-5 ms-2" />
                         إنشاء الشهادة
                       </>
                     )}

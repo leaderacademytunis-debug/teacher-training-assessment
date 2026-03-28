@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { BookOpen, Clock, CheckCircle2, AlertCircle, Send, Eye, Loader2, FileText, Award, BarChart3, Star, RefreshCw, Paperclip, Type } from "lucide-react";
 import RichTextEditor from "@/components/RichTextEditor";
 import FileUploader from "@/components/FileUploader";
+import useI18n from "@/i18n";
+
 
 interface FileAttachment {
   name: string;
@@ -37,6 +39,7 @@ const GRADE_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export default function MyAssignments() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user } = useAuth();
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [submissionContent, setSubmissionContent] = useState("");
@@ -221,7 +224,7 @@ export default function MyAssignments() {
                             }}>
                               <DialogTrigger asChild>
                                 <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
-                                  <Send className="h-4 w-4 ml-1" />
+                                  <Send className="h-4 w-4 ms-1" />
                                   {assignment.submission?.status === "returned" ? "إعادة التسليم" : "تسليم"}
                                 </Button>
                               </DialogTrigger>
@@ -249,7 +252,7 @@ export default function MyAssignments() {
                                         <Paperclip className="h-4 w-4" />
                                         رفع ملفات
                                         {submissionAttachments.length > 0 && (
-                                          <Badge variant="secondary" className="mr-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                                          <Badge variant="secondary" className="me-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
                                             {submissionAttachments.length}
                                           </Badge>
                                         )}
@@ -309,7 +312,7 @@ export default function MyAssignments() {
                                     disabled={submitWork.isPending || (!submissionContent.trim() && submissionContent !== "<p></p>" && submissionAttachments.length === 0)}
                                     className="bg-emerald-600 hover:bg-emerald-700"
                                   >
-                                    {submitWork.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Send className="h-4 w-4 ml-2" />}
+                                    {submitWork.isPending ? <Loader2 className="h-4 w-4 animate-spin ms-2" /> : <Send className="h-4 w-4 ms-2" />}
                                     تسليم للتقييم
                                   </Button>
                                 </DialogFooter>
@@ -323,7 +326,7 @@ export default function MyAssignments() {
                               if (open) setSelectedAssignment(assignment);
                             }}>
                               <DialogTrigger asChild>
-                                <Button size="sm" variant="outline"><Eye className="h-4 w-4 ml-1" />عرض التقييم</Button>
+                                <Button size="sm" variant="outline"><Eye className="h-4 w-4 ms-1" />عرض التقييم</Button>
                               </DialogTrigger>
                               <DialogContent dir="rtl" className="max-w-2xl max-h-[90vh] overflow-y-auto">
                                 <DialogHeader>

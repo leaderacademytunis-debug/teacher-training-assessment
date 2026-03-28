@@ -935,8 +935,8 @@ export default function PromptLab() {
       {/* Hero Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/3 translate-y-1/3" />
+          <div className="absolute top-0 start-0 w-72 h-72 bg-white rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 end-0 w-96 h-96 bg-white rounded-full translate-x-1/3 translate-y-1/3" />
         </div>
         <div className="container mx-auto px-4 py-12 relative z-10">
           <div className="flex items-center gap-2 mb-4">
@@ -1103,7 +1103,7 @@ function LibraryTab({ language, tt, t }: { language: AppLanguage; tt: T; t: (ar:
                       <Button
                         size="sm"
                         variant={isCopied ? "default" : "outline"}
-                        className={`absolute top-3 ${language === "ar" ? "left-3" : "right-3"} ${isCopied ? "bg-green-600" : ""}`}
+                        className={`absolute top-3 ${language === "ar" ? "start-3" : "end-3"} ${isCopied ? "bg-green-600" : ""}`}
                         onClick={(e) => { e.stopPropagation(); handleCopy(promptText, item.id); }}
                       >
                         {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -1216,7 +1216,7 @@ function OptimizerTab({ language, tt, t }: { language: AppLanguage; tt: T; t: (a
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`absolute top-3 ${language === "ar" ? "left-3" : "right-3"}`}
+                    className={`absolute top-3 ${language === "ar" ? "start-3" : "end-3"}`}
                     onClick={() => handleCopy(optimizedResult.optimized)}
                   >
                     <Copy className="w-4 h-4 me-1" />{tt.copyPrompt}

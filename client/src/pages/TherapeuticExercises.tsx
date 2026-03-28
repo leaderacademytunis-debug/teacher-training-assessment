@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import useI18n from "@/i18n";
+
 
 // ===== CONSTANTS =====
 const DIFFICULTY_TYPES = [
@@ -66,6 +68,7 @@ const DIFFICULTY_LEVELS = [
 ];
 
 export default function TherapeuticExercises() {
+  const { t, lang, isRTL, dir } = useI18n();
   const { user, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("generate");
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
@@ -465,12 +468,12 @@ export default function TherapeuticExercises() {
                     >
                       {generateMutation.isPending ? (
                         <>
-                          <Loader2 className="h-5 w-5 animate-spin ml-2" />
+                          <Loader2 className="h-5 w-5 animate-spin ms-2" />
                           جاري التوليد...
                         </>
                       ) : (
                         <>
-                          <Sparkles className="h-5 w-5 ml-2" />
+                          <Sparkles className="h-5 w-5 ms-2" />
                           توليد التمارين
                         </>
                       )}
@@ -518,7 +521,7 @@ export default function TherapeuticExercises() {
                   onClick={() => setActiveTab("generate")}
                   className="mt-4 bg-emerald-600 hover:bg-emerald-700"
                 >
-                  <Sparkles className="h-4 w-4 ml-2" />
+                  <Sparkles className="h-4 w-4 ms-2" />
                   توليد تمارين
                 </Button>
               </Card>
@@ -625,7 +628,7 @@ export default function TherapeuticExercises() {
                         <CardContent className="p-0">
                           <button
                             onClick={() => setExpandedExercise(isExpanded ? null : idx)}
-                            className="w-full p-4 flex items-center justify-between text-right"
+                            className="w-full p-4 flex items-center justify-between text-end"
                           >
                             <div className="flex items-center gap-3">
                               <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
@@ -637,7 +640,7 @@ export default function TherapeuticExercises() {
                                   <Badge variant="outline" className="text-xs">{ex.type}</Badge>
                                   {ex.duration && (
                                     <Badge variant="secondary" className="text-xs">
-                                      <Clock className="h-3 w-3 ml-1" />
+                                      <Clock className="h-3 w-3 ms-1" />
                                       {ex.duration} د
                                     </Badge>
                                   )}

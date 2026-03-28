@@ -342,7 +342,7 @@ function PaperResult({
       }
     )
     .replace(/\*\*(.+?)\*\*/g, `<strong style="color: ${accentColor}">$1</strong>`)
-    .replace(/^[-•]\s+(.+)$/gm, '<li class="mr-4 mb-1.5 leading-relaxed">$1</li>')
+    .replace(/^[-•]\s+(.+)$/gm, '<li class="me-4 mb-1.5 leading-relaxed">$1</li>')
     .replace(/(<li.*<\/li>\n?)+/g, '<ul class="list-disc list-inside mb-4 space-y-1">$&</ul>')
     .replace(/\n{2,}/g, '</p><p class="mb-3 leading-[1.9]">')
     .replace(/\n/g, "<br/>");
@@ -661,7 +661,7 @@ export default function UnifiedToolLayout({
         <div className="flex flex-col lg:flex-row min-h-[calc(100vh-57px)]">
           {/* ═══ RIGHT PANEL: Input Form ═══ */}
           <div
-            className={`w-full lg:w-[420px] xl:w-[460px] flex-shrink-0 border-l border-gray-100 bg-white ${
+            className={`w-full lg:w-[420px] xl:w-[460px] flex-shrink-0 border-s border-gray-100 bg-white ${
               mobileView === "input" ? "block" : "hidden lg:block"
             }`}
           >
@@ -681,7 +681,7 @@ export default function UnifiedToolLayout({
                   </h2>
                 </div>
                 <p
-                  className="text-xs text-gray-400 mr-3.5"
+                  className="text-xs text-gray-400 me-3.5"
                   style={{ fontFamily: "'Almarai', sans-serif" }}
                 >
                   {t(

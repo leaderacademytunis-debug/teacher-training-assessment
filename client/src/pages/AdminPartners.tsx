@@ -7,8 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Building2, CheckCircle2, XCircle, Clock, Briefcase, Shield, BarChart3, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
+import useI18n from "@/i18n";
+
 
 export default function AdminPartners() {
+  const { t, lang, isRTL, dir } = useI18n();
   const [activeTab, setActiveTab] = useState("pending");
   const stats = trpc.adminPartners.getStats.useQuery();
   const pendingSchools = trpc.adminPartners.listPendingSchools.useQuery();
@@ -40,8 +43,8 @@ export default function AdminPartners() {
   });
 
   const statusBadge = (isVerified: boolean) => {
-    if (isVerified) return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200"><CheckCircle2 className="w-3 h-3 ml-1" />معتمدة</Badge>;
-    return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200"><Clock className="w-3 h-3 ml-1" />قيد المراجعة</Badge>;
+    if (isVerified) return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200"><CheckCircle2 className="w-3 h-3 ms-1" />معتمدة</Badge>;
+    return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200"><Clock className="w-3 h-3 ms-1" />قيد المراجعة</Badge>;
   };
 
   return (

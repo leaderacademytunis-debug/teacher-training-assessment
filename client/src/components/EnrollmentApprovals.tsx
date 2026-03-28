@@ -70,9 +70,9 @@ export default function EnrollmentApprovals() {
                       className="flex-1"
                     >
                       {approve.isPending ? (
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                       ) : (
-                        <CheckCircle className="w-4 h-4 ml-2" />
+                        <CheckCircle className="w-4 h-4 ms-2" />
                       )}
                       الموافقة
                     </Button>
@@ -87,9 +87,9 @@ export default function EnrollmentApprovals() {
                       className="flex-1"
                     >
                       {reject.isPending ? (
-                        <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                        <Loader2 className="w-4 h-4 ms-2 animate-spin" />
                       ) : (
-                        <XCircle className="w-4 h-4 ml-2" />
+                        <XCircle className="w-4 h-4 ms-2" />
                       )}
                       رفض
                     </Button>
