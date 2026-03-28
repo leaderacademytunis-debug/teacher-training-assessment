@@ -121,6 +121,8 @@ const translations = {
     ffmpegReload: "جاري تفعيل محرك الفيديو... سيتم تحديث الصفحة.",
     ffmpegLoadFailed: "فشل تحميل محرك الفيديو. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.",
     videoGenericError: "حدث خطأ أثناء إنشاء الفيديو. حاول مرة أخرى.",
+    videoTryChrome: "يرجى استخدام Google Chrome على الحاسوب للحصول على أفضل نتيجة.",
+    videoNetworkError: "خطأ في الشبكة أثناء تحميل محرك الفيديو. تحقق من اتصالك بالإنترنت.",
     exportPlanSuccess: "تم تصدير خطة العمل",
 
     // ─── Projects Dialog ───
@@ -310,6 +312,8 @@ const translations = {
     ffmpegReload: "Activation du moteur vidéo... La page va se recharger.",
     ffmpegLoadFailed: "Échec du chargement du moteur vidéo. Vérifiez votre connexion et réessayez.",
     videoGenericError: "Une erreur est survenue lors de la création de la vidéo. Réessayez.",
+    videoTryChrome: "Veuillez utiliser Google Chrome sur ordinateur pour un meilleur résultat.",
+    videoNetworkError: "Erreur réseau lors du chargement du moteur vidéo. Vérifiez votre connexion.",
     exportPlanSuccess: "Plan de travail exporté",
 
     // ─── Projects Dialog ───
@@ -499,6 +503,8 @@ const translations = {
     ffmpegReload: "Activating video engine... The page will reload.",
     ffmpegLoadFailed: "Failed to load video engine. Check your internet connection and try again.",
     videoGenericError: "An error occurred while creating the video. Please try again.",
+    videoTryChrome: "Please use Google Chrome on desktop for the best experience.",
+    videoNetworkError: "Network error while loading video engine. Check your internet connection.",
     exportPlanSuccess: "Work plan exported",
 
     // ─── Projects Dialog ───

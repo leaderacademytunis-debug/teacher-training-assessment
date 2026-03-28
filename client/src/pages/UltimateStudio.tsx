@@ -606,13 +606,8 @@ export default function UltimateStudio() {
       return;
     }
 
-    // Check Cross-Origin Isolation (needed for SharedArrayBuffer / FFmpeg.wasm)
-    // If not isolated, force a full page reload to get the COOP/COEP headers
-    if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
-      toast.info(us.ffmpegReload);
-      window.location.reload();
-      return;
-    }
+    // Note: We use single-threaded FFmpeg.wasm (ESM core) which does NOT require
+    // SharedArrayBuffer or crossOriginIsolated. No reload needed.
 
     setIsExporting(true);
     setExportError(null);
@@ -642,16 +637,20 @@ export default function UltimateStudio() {
       toast.success(us.videoExportSuccess);
     } catch (err: any) {
       console.error('[VideoExport]', err);
-      if (err.message === 'WASM_NOT_SUPPORTED') {
+      const errMsg = err.message || '';
+      if (errMsg === 'WASM_NOT_SUPPORTED') {
         setExportError(us.wasmNotSupported);
-      } else if (err.message === 'NO_SCENES') {
+      } else if (errMsg === 'NO_SCENES') {
         setExportError(us.completeStep1First);
-      } else if (err.message === 'CROSS_ORIGIN_ISOLATION') {
-        setExportError(us.wasmNotSupported);
-      } else if (err.message?.startsWith('FFMPEG_LOAD_FAILED')) {
-        setExportError(us.ffmpegLoadFailed);
+      } else if (errMsg === 'CROSS_ORIGIN_ISOLATION') {
+        // Single-threaded mode should work without isolation, but if it still fails:
+        setExportError(us.ffmpegLoadFailed + ' - ' + (us.videoTryChrome || 'Please try using Chrome on desktop.'));
+      } else if (errMsg.startsWith('FFMPEG_LOAD_FAILED')) {
+        setExportError(us.ffmpegLoadFailed + ' - ' + (us.videoTryChrome || 'Please try using Chrome on desktop.'));
+      } else if (errMsg.includes('fetch') || errMsg.includes('network') || errMsg.includes('Failed to fetch')) {
+        setExportError(us.videoNetworkError || 'Network error while loading video engine. Check your internet connection.');
       } else {
-        setExportError(err.message || us.videoGenericError);
+        setExportError(errMsg || us.videoGenericError);
       }
     } finally {
       setIsExporting(false);

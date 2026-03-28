@@ -77,21 +77,36 @@ async function loadFFmpeg(onProgress?: ProgressCallback): Promise<FFmpeg> {
     console.log('[FFmpeg]', message);
   });
 
-  try {
-    // Use the ESM single-threaded core (no SharedArrayBuffer needed)
-    const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
+  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
+  const maxRetries = 2;
 
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    });
-  } catch (loadError: any) {
-    console.error('[FFmpeg] Load error:', loadError);
-    // If the error is about SharedArrayBuffer, provide a clear message
-    if (loadError.message?.includes('SharedArrayBuffer') || loadError.message?.includes('cross-origin')) {
-      throw new Error('CROSS_ORIGIN_ISOLATION');
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Use the ESM single-threaded core (no SharedArrayBuffer needed)
+      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+
+      await ffmpeg.load({ coreURL, wasmURL });
+      break; // Success - exit retry loop
+    } catch (loadError: any) {
+      console.error(`[FFmpeg] Load attempt ${attempt + 1} failed:`, loadError);
+
+      if (attempt < maxRetries) {
+        onProgress?.({
+          phase: 'loading',
+          percent: 5,
+          message: `إعادة المحاولة... (${attempt + 2}/${maxRetries + 1})`,
+        });
+        await new Promise(r => setTimeout(r, 1500)); // Wait before retry
+        continue;
+      }
+
+      // Final attempt failed
+      if (loadError.message?.includes('SharedArrayBuffer') || loadError.message?.includes('cross-origin')) {
+        throw new Error('CROSS_ORIGIN_ISOLATION');
+      }
+      throw new Error(`FFMPEG_LOAD_FAILED: ${loadError.message || 'Unknown error'}`);
     }
-    throw new Error(`FFMPEG_LOAD_FAILED: ${loadError.message || 'Unknown error'}`);
   }
 
   ffmpegInstance = ffmpeg;
@@ -129,7 +144,7 @@ async function fetchFileData(url: string): Promise<Uint8Array> {
  */
 async function getAudioDuration(audioData: Uint8Array): Promise<number> {
   return new Promise((resolve, reject) => {
-    const blob = new Blob([audioData], { type: 'audio/mpeg' });
+    const blob = new Blob([audioData.buffer as ArrayBuffer], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(blob);
     const audio = new Audio();
     audio.addEventListener('loadedmetadata', () => {
@@ -576,7 +591,8 @@ export async function renderVideo(
     });
 
     const outputData = await ffmpeg.readFile('final_output.mp4');
-    const blob = new Blob([outputData], { type: 'video/mp4' });
+    const outputBuffer = outputData instanceof Uint8Array ? outputData.buffer : outputData;
+    const blob = new Blob([outputBuffer as BlobPart], { type: 'video/mp4' });
 
     // Cleanup virtual FS
     const filesToClean = ['concat_list.txt', 'final_output.mp4'];

@@ -3445,3 +3445,13 @@
 - [x] تحديث البرومبت في routers.ts: langNote + القاعدة الذهبية + قواعد إضافية
 - [x] إزالة التعيين التلقائي للغة التدريس من الواجهة الأمامية
 - [x] حفظ checkpoint
+
+## 🚨 إصلاح فشل مرحلة توليد الفيديو في Ultimate Studio
+- [x] تحليل كود توليد الفيديو (videoRenderer.ts + UltimateStudio.tsx)
+- [x] تحديد سبب الفشل: crossOriginIsolated check يسبب حلقة إعادة تحميل لا نهائية
+- [x] إزالة فحص crossOriginIsolated (الوضع أحادي الخيط لا يحتاجه)
+- [x] إضافة retry logic لتحميل FFmpeg (3 محاولات)
+- [x] إصلاح أخطاء TypeScript (Uint8Array → BlobPart)
+- [x] تحسين رسائل الخطأ (شبكة، Chrome، CORS)
+- [x] كتابة 13 اختبار vitest (كلها ناجحة)
+- [x] حفظ checkpoint

@@ -14573,8 +14573,8 @@ ${input.videoDescription ? "- وصف الفيديو: " + input.videoDescription 
     getEvaluation: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
-        const database = getDb();
-        const [evaluation] = await database.select().from(videoEvaluations)
+        const database = await getDb();
+        const [evaluation] = await database!.select().from(videoEvaluations)
           .where(and(eq(videoEvaluations.id, input.id), eq(videoEvaluations.userId, ctx.user.id)));
         if (!evaluation) throw new TRPCError({ code: "NOT_FOUND", message: "التقييم غير موجود" });
         return evaluation;
@@ -14583,15 +14583,15 @@ ${input.videoDescription ? "- وصف الفيديو: " + input.videoDescription 
     // Get user's stats summary
     getMyStats: protectedProcedure
       .query(async ({ ctx }) => {
-        const database = getDb();
-        const evaluations = await database.select().from(videoEvaluations)
+        const database = await getDb();
+        const evaluations = await database!.select().from(videoEvaluations)
           .where(eq(videoEvaluations.userId, ctx.user.id))
           .orderBy(desc(videoEvaluations.createdAt));
         if (evaluations.length === 0) {
           return { totalEvaluations: 0, averageScore: 0, bestScore: 0, latestScore: 0, improvement: 0, averages: { visual: 0, narrative: 0, pedagogical: 0, engagement: 0, technical: 0 } };
         }
         const totalEvaluations = evaluations.length;
-        const averageScore = Math.round(evaluations.reduce((sum, e) => sum + e.totalScore, 0) / totalEvaluations);
+        const averageScore = Math.round(evaluations.reduce((sum: number, e: any) => sum + e.totalScore, 0) / totalEvaluations);
         const bestScore = Math.max(...evaluations.map((e: any) => e.totalScore));
         const latestScore = evaluations[0].totalScore;
         const improvement = evaluations.length >= 2 ? evaluations[0].totalScore - evaluations[evaluations.length - 1].totalScore : 0;
