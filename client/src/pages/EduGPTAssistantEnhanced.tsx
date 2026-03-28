@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles, BookOpen, ClipboardCheck } from "lucide-react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles, BookOpen, ClipboardCheck, Copy, RefreshCw, Printer, Calendar, GripVertical, Upload } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,21 @@ const UI = {
     toastFileTooLarge: "كبير جداً. الحد الأقصى 10 ميجابايت",
     toastFileAnalyzeError: "تعذر تحليل الملف",
     toastUploadError: "خطأ في رفع الملفات",
+    toastCopied: "تم نسخ النص بنجاح",
+    toastExportingMsg: "جاري تصدير الرد...",
+    copyBtn: "نسخ",
+    downloadPdfBtn: "PDF",
+    downloadWordBtn: "Word",
+    printBtn: "طباعة",
+    regenerateBtn: "إعادة التوليد",
+    dropZoneText: "أفلت الملفات هنا",
+    dropZoneSubtext: "PDF, صور, Word",
+    quickAnnualPlan: "توزيع سنوي",
+    quickAnnualPlanPrompt: "أعدّ لي توزيعاً سنوياً مفصلاً وفق البرنامج الرسمي التونسي مع توزيع الحصص على الثلاثيات",
+    quickExercises: "تمارين",
+    quickExercisesPrompt: "أنشئ سلسلة تمارين متدرجة الصعوبة (دعم + علاج + تميز) مع الإصلاح",
+    quickImage: "صورة تعليمية",
+    quickImagePrompt: "أنشئ صورة تعليمية بالأبيض والأسود للطباعة تناسب الدرس",
     // Misc
     typing: "جاري الكتابة...",
     deleteConfirm: "هل أنت متأكد من حذف هذه المحادثة؟",
@@ -198,6 +213,21 @@ const UI = {
     toastFileTooLarge: "trop volumineux. Maximum 10 Mo",
     toastFileAnalyzeError: "Impossible d'analyser le fichier",
     toastUploadError: "Erreur de téléchargement",
+    toastCopied: "Texte copié avec succès",
+    toastExportingMsg: "Export du message en cours...",
+    copyBtn: "Copier",
+    downloadPdfBtn: "PDF",
+    downloadWordBtn: "Word",
+    printBtn: "Imprimer",
+    regenerateBtn: "Regénérer",
+    dropZoneText: "Déposez vos fichiers ici",
+    dropZoneSubtext: "PDF, images, Word",
+    quickAnnualPlan: "Répartition annuelle",
+    quickAnnualPlanPrompt: "Préparez une répartition annuelle détaillée selon le programme officiel tunisien",
+    quickExercises: "Exercices",
+    quickExercisesPrompt: "Créez une série d'exercices différenciés (remédiation + soutien + excellence) avec corrigé",
+    quickImage: "Image pédagogique",
+    quickImagePrompt: "Générez une image pédagogique en noir et blanc pour impression",
     typing: "En train d'écrire...",
     deleteConfirm: "Êtes-vous sûr de vouloir supprimer cette conversation ?",
     pinTitle: "Épingler en haut",
@@ -303,6 +333,21 @@ Ou dites-moi directement ce dont vous avez besoin ! 😊`,
     toastFileTooLarge: "too large. Maximum 10 MB",
     toastFileAnalyzeError: "Unable to analyze file",
     toastUploadError: "File upload error",
+    toastCopied: "Text copied successfully",
+    toastExportingMsg: "Exporting message...",
+    copyBtn: "Copy",
+    downloadPdfBtn: "PDF",
+    downloadWordBtn: "Word",
+    printBtn: "Print",
+    regenerateBtn: "Regenerate",
+    dropZoneText: "Drop files here",
+    dropZoneSubtext: "PDF, images, Word",
+    quickAnnualPlan: "Annual plan",
+    quickAnnualPlanPrompt: "Prepare a detailed annual distribution according to the official Tunisian program",
+    quickExercises: "Exercises",
+    quickExercisesPrompt: "Create a series of differentiated exercises (remediation + support + excellence) with corrections",
+    quickImage: "Educational image",
+    quickImagePrompt: "Generate a black and white educational image for printing",
     typing: "Typing...",
     deleteConfirm: "Are you sure you want to delete this conversation?",
     pinTitle: "Pin to top",
@@ -456,6 +501,7 @@ export default function EduGPTAssistantEnhanced() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportModalFormat, setExportModalFormat] = useState<"pdf" | "word">("pdf");
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Read templateId from URL query params
   const templateId = useMemo(() => {
@@ -778,6 +824,112 @@ export default function EduGPTAssistantEnhanced() {
   const removeFile = (index: number) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
+
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+    const newFiles: AttachedFile[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`${file.name} ${t.toastFileTooLarge}`);
+        continue;
+      }
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const preview = event.target?.result as string;
+          setAttachedFiles(prev => prev.map(f => f.name === file.name ? { ...f, preview } : f));
+        };
+        reader.readAsDataURL(file);
+      }
+      newFiles.push({ name: file.name, size: file.size, type: file.type, file });
+    }
+    setAttachedFiles(prev => [...prev, ...newFiles]);
+  }, [t]);
+
+  // Copy message content
+  const copyMessageContent = useCallback(async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success(t.toastCopied);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = content;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      toast.success(t.toastCopied);
+    }
+  }, [t]);
+
+  // Export single message as PDF
+  const exportSingleMessagePDF = useCallback(async (content: string) => {
+    toast.info(t.toastExportingMsg);
+    try {
+      await exportCleanPDFMutation.mutateAsync({
+        title: conversationTitle,
+        messages: [{ role: "assistant" as const, content, timestamp: Date.now() }],
+        createdAt: new Date().toISOString(),
+        subject: selectedSubject || undefined,
+        level: selectedLevel || undefined,
+        language: teachingLanguage || undefined,
+      });
+    } catch { /* handled by mutation */ }
+  }, [conversationTitle, selectedSubject, selectedLevel, teachingLanguage, t]);
+
+  // Export single message as Word
+  const exportSingleMessageWord = useCallback(async (content: string) => {
+    toast.info(t.toastExportingMsg);
+    try {
+      await exportCleanWordMutation.mutateAsync({
+        title: conversationTitle,
+        messages: [{ role: "assistant" as const, content, timestamp: Date.now() }],
+        createdAt: new Date().toISOString(),
+        subject: selectedSubject || undefined,
+        level: selectedLevel || undefined,
+        language: teachingLanguage || undefined,
+      });
+    } catch { /* handled by mutation */ }
+  }, [conversationTitle, selectedSubject, selectedLevel, teachingLanguage, t]);
+
+  // Regenerate last assistant response
+  const regenerateLastResponse = useCallback(() => {
+    if (isLoading) return;
+    // Find the last user message
+    const lastUserMsgIndex = [...messages].reverse().findIndex(m => m.role === "user");
+    if (lastUserMsgIndex === -1) return;
+    const actualIndex = messages.length - 1 - lastUserMsgIndex;
+    // Remove all messages after the last user message
+    const trimmedMessages = messages.slice(0, actualIndex + 1);
+    setMessages(trimmedMessages);
+    setIsLoading(true);
+    sendMessage.mutate({
+      messages: trimmedMessages,
+      subject: selectedSubject || undefined,
+      level: selectedLevel || undefined,
+      teachingLanguage: teachingLanguage || undefined,
+    });
+  }, [messages, isLoading, selectedSubject, selectedLevel, teachingLanguage]);
 
   // Send message with file analysis
   const handleSend = async () => {
@@ -1249,7 +1401,22 @@ export default function EduGPTAssistantEnhanced() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div 
+        className="flex-1 flex flex-col min-w-0 overflow-hidden relative"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drag overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-50 bg-blue-500/20 backdrop-blur-sm border-4 border-dashed border-blue-500 rounded-lg flex items-center justify-center pointer-events-none">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl text-center">
+              <Upload className="h-12 w-12 text-blue-500 mx-auto mb-3" />
+              <p className="text-lg font-bold text-gray-900">{t.dropZoneText}</p>
+              <p className="text-sm text-gray-500 mt-1">{t.dropZoneSubtext}</p>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-3 py-2 sm:px-4 sm:py-3 flex flex-col gap-1.5 shrink-0">
           {/* Row 1: nav + title + action buttons */}
@@ -1560,9 +1727,46 @@ export default function EduGPTAssistantEnhanced() {
                   <div className="prose prose-sm max-w-none" dir="auto" style={{ textAlign: 'start' }}>
                     <Streamdown>{message.content}</Streamdown>
                   </div>
-                  {/* Timestamp */}
-                  <div className={`text-xs mt-2 opacity-50 ${isUser ? '' : 'text-blue-100'}`} dir="ltr" style={{ textAlign: isRTL ? 'left' : 'right' }}>
-                    {new Date(message.timestamp).toLocaleTimeString(globalLanguage === 'fr' ? 'fr-TN' : globalLanguage === 'en' ? 'en-US' : 'ar-TN', { hour: '2-digit', minute: '2-digit' })}
+                  {/* Timestamp + Inline Actions */}
+                  <div className={`flex items-center gap-2 mt-2 ${isUser ? '' : ''}`} dir="ltr">
+                    <span className={`text-xs opacity-50 ${isUser ? '' : 'text-blue-100'}`}>
+                      {new Date(message.timestamp).toLocaleTimeString(globalLanguage === 'fr' ? 'fr-TN' : globalLanguage === 'en' ? 'en-US' : 'ar-TN', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {!isUser && (
+                      <div className="flex items-center gap-0.5 ms-auto">
+                        <button
+                          onClick={() => copyMessageContent(message.content)}
+                          className="p-1 rounded hover:bg-white/20 transition-colors text-blue-100 hover:text-white"
+                          title={t.copyBtn}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => exportSingleMessagePDF(message.content)}
+                          className="p-1 rounded hover:bg-white/20 transition-colors text-blue-100 hover:text-white"
+                          title={t.downloadPdfBtn}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => exportSingleMessageWord(message.content)}
+                          className="p-1 rounded hover:bg-white/20 transition-colors text-blue-100 hover:text-white text-[10px] font-bold"
+                          title={t.downloadWordBtn}
+                        >
+                          W
+                        </button>
+                        {index === messages.length - 1 && (
+                          <button
+                            onClick={regenerateLastResponse}
+                            className="p-1 rounded hover:bg-white/20 transition-colors text-blue-100 hover:text-white"
+                            title={t.regenerateBtn}
+                            disabled={isLoading}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </Card>
               </div>
@@ -1616,6 +1820,36 @@ export default function EduGPTAssistantEnhanced() {
             >
               <Sparkles className="h-3.5 w-3.5" />
               {t.quickDrama}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-400 rounded-full px-4 h-8 text-xs font-semibold"
+              onClick={() => { setInput(t.quickAnnualPlanPrompt); }}
+              disabled={isLoading}
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              {t.quickAnnualPlan}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-100 hover:border-teal-400 rounded-full px-4 h-8 text-xs font-semibold"
+              onClick={() => { setInput(t.quickExercisesPrompt); }}
+              disabled={isLoading}
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              {t.quickExercises}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-pink-200 text-pink-700 hover:bg-pink-100 hover:border-pink-400 rounded-full px-4 h-8 text-xs font-semibold"
+              onClick={() => { setInput(t.quickImagePrompt); }}
+              disabled={isLoading}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              {t.quickImage}
             </Button>
           </div>
         </div>
