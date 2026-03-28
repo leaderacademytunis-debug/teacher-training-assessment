@@ -467,6 +467,13 @@ export default function UltimateStudio() {
   // ─── Paywall State ───
   const { data: permissions } = trpc.adminDashboard.getMyPermissions.useQuery(undefined, { enabled: !!user });
   const isVIP = permissions?.tier === "vip";
+  // Check if user is enrolled in the AI video course (ID: 30001) - they get voice cloning access too
+  const { data: myEnrollments } = trpc.enrollments.myEnrollments.useQuery(undefined, { enabled: !!user });
+  const isVideoCourseMember = myEnrollments?.some((e: any) => 
+    (e.enrollment?.courseId === 30001 || e.course?.category === "digital_teacher_ai") && 
+    ["approved", "active", "completed"].includes(e.enrollment?.status)
+  ) ?? false;
+  const canUseVoiceClone = isVIP || isVideoCourseMember;
   const [showPaywall, setShowPaywall] = useState(false);
 
   return (
@@ -865,9 +872,9 @@ export default function UltimateStudio() {
                               {us.aiVoices}
                             </button>
                             <button
-                              className={`flex-1 p-2 rounded-lg border text-xs font-bold transition-all relative ${voiceMode === "clone" ? "bg-amber-500/20 border-amber-500/40 text-amber-400" : "bg-white/5 border-white/10 text-white/50"} ${!isVIP ? "" : !hasClonedVoice ? "opacity-50" : ""}`}
+                              className={`flex-1 p-2 rounded-lg border text-xs font-bold transition-all relative ${voiceMode === "clone" ? "bg-amber-500/20 border-amber-500/40 text-amber-400" : "bg-white/5 border-white/10 text-white/50"} ${!canUseVoiceClone ? "" : !hasClonedVoice ? "opacity-50" : ""}`}
                               onClick={() => {
-                                if (!isVIP) {
+                                if (!canUseVoiceClone) {
                                   setShowPaywall(true);
                                   return;
                                 }
@@ -878,7 +885,7 @@ export default function UltimateStudio() {
                                 setVoiceMode("clone");
                               }}
                             >
-                              {!isVIP && <Crown className="w-3 h-3 absolute top-1 start-1 text-amber-400" />}
+                              {!canUseVoiceClone && <Crown className="w-3 h-3 absolute top-1 start-1 text-amber-400" />}
                               <Mic className="w-4 h-4 mx-auto mb-1" />
                               {us.myClonedVoice}
                             </button>

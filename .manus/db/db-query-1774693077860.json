@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, titleAr, category FROM courses WHERE category = 'digital_teacher_ai' OR titleAr LIKE '%فيديو%' OR titleAr LIKE '%ذكاء%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT id, titleAr, category FROM courses WHERE category = 'digital_teacher_ai' OR titleAr LIKE '%فيديو%' OR titleAr LIKE '%ذكاء%'",
+  "rows": [
+    {
+      "id": "7",
+      "titleAr": "المعلم الرقمي والذكاء الاصطناعي",
+      "category": "digital_teacher_ai"
+    },
+    {
+      "id": "30001",
+      "titleAr": "دورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي ",
+      "category": "primary_teachers"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitleAr\tcategory\n7\tالمعلم الرقمي والذكاء الاصطناعي\tdigital_teacher_ai\n30001\tدورة اعداد الفيديوات التعليمية بالذكاء الاصطناعي \tprimary_teachers\n",
+  "stderr": "",
+  "execution_time_ms": 102
+}
