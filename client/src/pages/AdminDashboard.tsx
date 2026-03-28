@@ -15,7 +15,7 @@ import {
   LayoutDashboard, Users, CreditCard, Activity, Settings, Download,
   ChevronRight, ChevronLeft, Eye, Check, X, Shield, Sparkles,
   BookOpen, GraduationCap, Package, Search, RefreshCw, FileText,
-  BarChart3, Bell, Menu
+  BarChart3, Bell, Menu, Gift, Calendar
 } from "lucide-react";
 import useI18n from "@/i18n";
 
@@ -241,6 +241,11 @@ function UsersTab() {
     onError: (e) => toast.error(e.message),
   });
   const exportCSV = trpc.adminDashboard.exportUsersCSV.useQuery(undefined, { enabled: false });
+  const giftMutation = trpc.adminDashboard.giftBonusDays.useMutation({
+    onSuccess: (data) => { toast.success(`تم إضافة ${data.daysAdded} يوم هدية بنجاح! 🎁`); refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const [giftConfirm, setGiftConfirm] = useState<{ userId: number; name: string } | null>(null);
 
   const handleExportCSV = async () => {
     const result = await exportCSV.refetch();
@@ -304,15 +309,16 @@ function UsersTab() {
                 <th className="text-end p-3 font-medium">الدور</th>
                 <th className="text-end p-3 font-medium">الخدمات</th>
                 <th className="text-end p-3 font-medium">المستوى</th>
+                <th className="text-end p-3 font-medium">الاشتراك</th>
                 <th className="text-end p-3 font-medium">التسجيل</th>
                 <th className="text-end p-3 font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {isLoading ? (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">جارٍ التحميل...</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">جارٍ التحميل...</td></tr>
               ) : filteredUsers.length === 0 ? (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">لا توجد نتائج</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">لا توجد نتائج</td></tr>
               ) : filteredUsers.map(u => (
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="p-3">
@@ -358,6 +364,27 @@ function UsersTab() {
                       {u.permissions?.tier || "free"}
                     </Badge>
                   </td>
+                  <td className="p-3">
+                    {u.permissions?.expiresAt ? (
+                      <div className="text-xs">
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium ${
+                          new Date(u.permissions.expiresAt) > new Date()
+                            ? (new Date(u.permissions.expiresAt).getTime() - Date.now()) < 3 * 24 * 60 * 60 * 1000
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-emerald-100 text-emerald-700"
+                            : "bg-red-100 text-red-700"
+                        }`}>
+                          <Calendar className="h-3 w-3" />
+                          {new Date(u.permissions.expiresAt).toLocaleDateString("ar-TN", { day: "numeric", month: "short" })}
+                        </span>
+                        {(u.permissions?.giftBonusDays || 0) > 0 && (
+                          <span className="ms-1 text-pink-500 font-medium">🎁+{u.permissions.giftBonusDays}j</span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">بدون اشتراك</span>
+                    )}
+                  </td>
                   <td className="p-3 text-xs text-muted-foreground">
                     {u.createdAt ? new Date(u.createdAt).toLocaleDateString("ar-TN") : "-"}
                   </td>
@@ -375,6 +402,15 @@ function UsersTab() {
                         tier: u.permissions?.tier || "free",
                       })} title="تعديل الصلاحيات">
                         <Settings className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-pink-500 hover:text-pink-700 hover:bg-pink-50"
+                        onClick={() => setGiftConfirm({ userId: u.id, name: u.name || u.arabicName || u.email })}
+                        title="🎁 +شهر مجاني"
+                      >
+                        <Gift className="h-4 w-4" />
                       </Button>
                     </div>
                   </td>
@@ -464,6 +500,45 @@ function UsersTab() {
               <DialogFooter>
                 <Button onClick={() => updatePerms.mutate(permDialog)} disabled={updatePerms.isPending}>
                   {updatePerms.isPending ? "جارٍ الحفظ..." : "حفظ الصلاحيات"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Gift Confirmation Dialog */}
+      <Dialog open={!!giftConfirm} onOpenChange={(open) => { if (!open) setGiftConfirm(null); }}>
+        <DialogContent className="max-w-sm" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-pink-600">
+              <Gift className="h-5 w-5" />
+              هدية شهر مجاني 🎁
+            </DialogTitle>
+          </DialogHeader>
+          {giftConfirm && (
+            <div className="space-y-4">
+              <div className="bg-pink-50 rounded-lg p-4 text-center">
+                <Gift className="h-12 w-12 text-pink-500 mx-auto mb-2" />
+                <p className="text-sm">
+                  هل تريد إضافة <strong className="text-pink-600">30 يوم مجاني</strong> للمعلم:
+                </p>
+                <p className="font-bold text-lg mt-1">{giftConfirm.name}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  سيتم تمديد اشتراكه بـ 30 يوماً إضافياً وسيتلقى إشعاراً بالهدية
+                </p>
+              </div>
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setGiftConfirm(null)}>إلغاء</Button>
+                <Button
+                  className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white"
+                  onClick={() => {
+                    giftMutation.mutate({ userId: giftConfirm.userId, days: 30 });
+                    setGiftConfirm(null);
+                  }}
+                  disabled={giftMutation.isPending}
+                >
+                  {giftMutation.isPending ? "جارٍ الإضافة..." : "🎁 أضف 30 يوم هدية"}
                 </Button>
               </DialogFooter>
             </div>

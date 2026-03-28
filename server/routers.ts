@@ -6104,7 +6104,75 @@ ${input.additionalInstructions ? `- تعليمات إضافية: ${input.additio
     getMyPermissions: protectedProcedure.query(async ({ ctx }) => {
       const database = (await getDb())!;
       const perms = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, ctx.user.id)).limit(1);
-      return perms[0] || { accessEdugpt: false, accessCourseAi: false, accessCoursePedagogy: false, accessFullBundle: false, accessVoiceClone: false, accessUltimateStudioFull: false, accessPrioritySupport: false, tier: "free" as const };
+      return perms[0] || { accessEdugpt: false, accessCourseAi: false, accessCoursePedagogy: false, accessFullBundle: false, accessVoiceClone: false, accessUltimateStudioFull: false, accessPrioritySupport: false, tier: "free" as const, expiresAt: null, giftBonusDays: 0, lastGiftAt: null, lastGiftSeenAt: null };
+    }),
+
+    // --- Get subscription status for badge ---
+    getMySubscriptionStatus: protectedProcedure.query(async ({ ctx }) => {
+      const database = (await getDb())!;
+      const perms = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, ctx.user.id)).limit(1);
+      const perm = perms[0];
+      if (!perm || !perm.expiresAt) {
+        return { status: "none" as const, tier: "free" as const, expiresAt: null, daysRemaining: 0, hasUnseenGift: false };
+      }
+      const now = new Date();
+      const expiresAt = new Date(perm.expiresAt);
+      const daysRemaining = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      let status: "active" | "expiring" | "expired" | "none" = "active";
+      if (daysRemaining <= 0) status = "expired";
+      else if (daysRemaining <= 3) status = "expiring";
+      const hasUnseenGift = !!(perm.lastGiftAt && (!perm.lastGiftSeenAt || new Date(perm.lastGiftAt) > new Date(perm.lastGiftSeenAt)));
+      return { status, tier: perm.tier, expiresAt: perm.expiresAt, daysRemaining: Math.max(0, daysRemaining), hasUnseenGift, giftBonusDays: perm.giftBonusDays || 0 };
+    }),
+
+    // --- Mark gift notification as seen ---
+    markGiftSeen: protectedProcedure.mutation(async ({ ctx }) => {
+      const database = (await getDb())!;
+      await database.update(servicePermissions).set({ lastGiftSeenAt: new Date() }).where(eq(servicePermissions.userId, ctx.user.id));
+      return { success: true };
+    }),
+
+    // --- Admin: Gift bonus days to a user ---
+    giftBonusDays: adminProcedure.input(z.object({
+      userId: z.number(),
+      days: z.number().int().min(1).max(365).default(30),
+    })).mutation(async ({ ctx, input }) => {
+      const database = (await getDb())!;
+      const existing = await database.select().from(servicePermissions).where(eq(servicePermissions.userId, input.userId)).limit(1);
+      if (!existing[0]) {
+        // Create new permission with gift
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + input.days);
+        await database.insert(servicePermissions).values({
+          userId: input.userId,
+          tier: "starter",
+          expiresAt,
+          activatedAt: new Date(),
+          activatedBy: ctx.user.id,
+          giftBonusDays: input.days,
+          lastGiftAt: new Date(),
+        });
+      } else {
+        // Extend existing subscription
+        const currentExpiry = existing[0].expiresAt ? new Date(existing[0].expiresAt) : new Date();
+        const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+        baseDate.setDate(baseDate.getDate() + input.days);
+        await database.update(servicePermissions).set({
+          expiresAt: baseDate,
+          giftBonusDays: (existing[0].giftBonusDays || 0) + input.days,
+          lastGiftAt: new Date(),
+          lastGiftSeenAt: null, // Reset so user sees the notification
+        }).where(eq(servicePermissions.userId, input.userId));
+      }
+      // Send notification to the user
+      await database.insert(notifications).values({
+        userId: input.userId,
+        type: "system",
+        title: "هدية من الإدارة!",
+        message: `تهانينا! حصلت على ${input.days} يوم إضافي مجاني كهدية من إدارة Leader Academy!`,
+        isRead: false,
+      });
+      return { success: true, daysAdded: input.days };
     }),
 
     // --- Pricing Plans CRUD (Admin) ---
@@ -15464,8 +15532,8 @@ async function calculateEnhancedMatchScore(database: any, teacherUserId: number,
     matchedSkills,
     matchedRegion,
     matchedLevel,
-    strengthAreas: [...new Set(strengthAreas)],
-    improvementAreas: [...new Set(improvementAreas)],
+    strengthAreas: Array.from(new Set(strengthAreas)),
+    improvementAreas: Array.from(new Set(improvementAreas)),
   };
 }
 

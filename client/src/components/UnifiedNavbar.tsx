@@ -10,6 +10,7 @@ import {
   Megaphone, Settings, ScanLine, FileCheck, Store, Briefcase, FileText, Theater, Building2, Film, Shield, PanelLeft, HeartHandshake,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import SubscriptionBadge from "@/components/SubscriptionBadge";
 import { Link, useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -302,6 +303,7 @@ export default function UnifiedNavbar() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {user && <SubscriptionBadge />}
             {user && <NotificationBell />}
 
             {user ? (

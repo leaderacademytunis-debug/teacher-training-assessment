@@ -3352,4 +3352,14 @@
 - [x] ضبط RTL/LTR الديناميكي على مستوى document.dir (LanguageContext)
 - [x] تحويل 1010 كلاس Tailwind اتجاهي إلى logical properties في 113 ملف
 - [x] كتابة 20 اختبار vitest ناجح
-- [ ] حفظ checkpoint
+- [x] حفظ checkpoint (f62ed5c7)
+
+## نظام شارة الاشتراك وزر الهدية (Subscription Badge & Gift System)
+- [x] تحليل schema الحالي وإضافة حقول giftBonusDays و lastGiftAt
+- [x] إنشاء إجراءات tRPC (getMySubscriptionStatus, giftBonusDays, markGiftSeen)
+- [x] بناء شارة الاشتراك الذكية في الشريط العلوي (3 حالات: أخضر/برتقالي/أحمر)
+- [x] بناء زر الهدية السحري 🎁 +شهر مجاني في لوحة الإدارة (+30 يوم)
+- [x] بناء إشعار المفاجأة (Surprise Toast) عند دخول المعلم بعد الهدية
+- [x] دعم اللغات الثلاث (AR/FR/EN) لجميع النصوص
+- [x] كتابة 18 اختبار vitest ناجح
+- [x] حفظ checkpoint (f62ed5c7)

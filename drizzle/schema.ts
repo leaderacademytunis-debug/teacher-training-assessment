@@ -828,6 +828,11 @@ export const servicePermissions = mysqlTable("service_permissions", {
   activatedBy: int("activatedBy"), // admin who activated
   paymentMethod: varchar("paymentMethod", { length: 50 }), // bank_transfer, d17, flouci, konnect, whatsapp
   
+  // Gift system
+  giftBonusDays: int("giftBonusDays").default(0).notNull(), // Total bonus days gifted by admin
+  lastGiftAt: timestamp("lastGiftAt"), // When the last gift was given
+  lastGiftSeenAt: timestamp("lastGiftSeenAt"), // When user acknowledged the gift notification
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
