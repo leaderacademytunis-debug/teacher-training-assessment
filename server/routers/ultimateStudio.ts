@@ -117,6 +117,185 @@ Respond entirely in English.`,
     }),
 
   /**
+   * Extract text from an image file (JPG/PNG) using LLM Vision
+   */
+  extractFromImage: protectedProcedure
+    .input(z.object({
+      imageBase64: z.string().min(10, "Image data is required"),
+      language: z.enum(["ar", "fr", "en"]).default("ar"),
+    }))
+    .mutation(async ({ input }) => {
+      const systemPrompts: Record<string, string> = {
+        ar: `أنت نظام OCR متقدم متخصص في استخراج النصوص من الصور والوثائق التعليمية.
+قواعد الاستخراج:
+1. استخرج النص بالضبط كما هو مكتوب في الصورة
+2. حافظ على التنسيق الأصلي (فقرات، عناوين، قوائم)
+3. إذا كان النص بالعربية اكتبه بالعربية، وإذا كان بالفرنسية اكتبه بالفرنسية
+4. لا تضف أي تعليقات - فقط النص المستخرج
+5. إذا وجدت جداول حاول إعادة تمثيلها بنص منسق
+أجب بالعربية.`,
+        fr: `Vous êtes un système OCR avancé spécialisé dans l'extraction de texte des images et documents éducatifs.
+Règles: Extrayez le texte exactement tel qu'il est écrit. Conservez le formatage. N'ajoutez aucun commentaire.
+Répondez en français.`,
+        en: `You are an advanced OCR system specialized in extracting text from educational images and documents.
+Rules: Extract text exactly as written. Preserve formatting. Do not add comments.
+Respond in English.`,
+      };
+
+      const lang = input.language || "ar";
+      try {
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompts[lang] || systemPrompts.ar },
+            {
+              role: "user",
+              content: [
+                { type: "text" as const, text: "استخرج كل النص الموجود في هذه الصورة:" },
+                { type: "image_url" as const, image_url: { url: input.imageBase64, detail: "high" as const } },
+              ],
+            },
+          ],
+        });
+        const text = typeof response?.choices?.[0]?.message?.content === "string"
+          ? response.choices[0].message.content.trim()
+          : "";
+        return { text };
+      } catch (err: any) {
+        console.error("[UltimateStudio] Image extraction failed:", err?.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في استخراج النص من الصورة" });
+      }
+    }),
+
+  /**
+   * Extract text from a DOC/DOCX file uploaded as base64
+   */
+  extractFromDoc: protectedProcedure
+    .input(z.object({
+      fileBase64: z.string().min(10, "File data is required"),
+      fileName: z.string(),
+      language: z.enum(["ar", "fr", "en"]).default("ar"),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        // Decode base64 to buffer
+        const base64Data = input.fileBase64.includes(",")
+          ? input.fileBase64.split(",")[1]
+          : input.fileBase64;
+        const buffer = Buffer.from(base64Data, "base64");
+
+        // Use mammoth to extract text from DOCX
+        let text = "";
+        try {
+          const mammoth = await import("mammoth");
+          const result = await mammoth.extractRawText({ buffer });
+          text = result.value.trim();
+        } catch {
+          // Fallback: try to read as plain text
+          text = buffer.toString("utf-8").trim();
+        }
+
+        if (!text) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "لم يتم العثور على نص في الملف" });
+        }
+
+        return { text, fileName: input.fileName };
+      } catch (err: any) {
+        if (err instanceof TRPCError) throw err;
+        console.error("[UltimateStudio] Doc extraction failed:", err?.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في استخراج النص من الملف" });
+      }
+    }),
+
+  /**
+   * Enhance a visual prompt using AI
+   */
+  enhancePrompt: protectedProcedure
+    .input(z.object({
+      prompt: z.string().min(3, "Prompt is too short"),
+      style: z.enum(["realistic", "cartoon", "lineart", "educational", "watercolor", "child_friendly"]).default("educational"),
+      context: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const styleDescriptions: Record<string, string> = {
+        realistic: "Photorealistic, high-resolution photograph, natural lighting, detailed textures, cinematic quality",
+        cartoon: "Colorful cartoon illustration, bold outlines, vibrant colors, friendly characters, animated style",
+        lineart: "Black and white line art, clean outlines, minimalist, ink drawing style, suitable for printing and coloring",
+        educational: "Educational illustration, clear diagrams, labeled elements, infographic style, professional educational material",
+        watercolor: "Watercolor painting, soft colors, artistic brushstrokes, gentle gradients, dreamy atmosphere",
+        child_friendly: "Children's book illustration, cute characters, bright primary colors, simple shapes, playful and engaging",
+      };
+
+      try {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert AI image prompt engineer. Your job is to enhance visual prompts for educational image generation.
+Rules:
+1. Keep the original educational intent
+2. Add specific visual details (lighting, composition, colors, camera angle)
+3. Apply the requested style: ${styleDescriptions[input.style]}
+4. Make the prompt more descriptive and specific
+5. Output ONLY the enhanced prompt in English, nothing else
+6. Keep it under 200 words`,
+            },
+            {
+              role: "user",
+              content: `Enhance this visual prompt for an educational image:\n\nOriginal prompt: ${input.prompt}\n${input.context ? `Context: ${input.context}` : ""}\nStyle: ${input.style}`,
+            },
+          ],
+        });
+
+        const enhanced = typeof response?.choices?.[0]?.message?.content === "string"
+          ? response.choices[0].message.content.trim()
+          : input.prompt;
+
+        return { enhancedPrompt: enhanced, style: input.style };
+      } catch (err: any) {
+        console.error("[UltimateStudio] Prompt enhancement failed:", err?.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحسين البرومبت" });
+      }
+    }),
+
+  /**
+   * Generate image with specific style
+   */
+  generateImageWithStyle: protectedProcedure
+    .input(z.object({
+      sceneNumber: z.number(),
+      visualPrompt: z.string().min(5),
+      style: z.enum(["realistic", "cartoon", "lineart", "educational", "watercolor", "child_friendly"]).default("educational"),
+    }))
+    .mutation(async ({ input }) => {
+      const stylePrefix: Record<string, string> = {
+        realistic: "Photorealistic cinematic still, professional photography, natural lighting, high detail.",
+        cartoon: "Colorful cartoon illustration, bold outlines, vibrant colors, animated style, friendly characters.",
+        lineart: "Black and white line art drawing, clean ink outlines, minimalist style, no colors, suitable for printing.",
+        educational: "Professional educational illustration, clear and informative, labeled diagram style, clean design.",
+        watercolor: "Beautiful watercolor painting, soft artistic brushstrokes, gentle color gradients, dreamy atmosphere.",
+        child_friendly: "Children's book illustration, cute simple characters, bright primary colors, playful and engaging.",
+      };
+
+      try {
+        const { generateImage } = await import("../_core/imageGeneration");
+        const fullPrompt = `${stylePrefix[input.style]} ${input.visualPrompt}. No text, no watermarks, 16:9 aspect ratio.`;
+        const result = await generateImage({ prompt: fullPrompt });
+
+        return {
+          sceneNumber: input.sceneNumber,
+          imageUrl: result.url || "",
+          style: input.style,
+          success: true,
+        };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `فشل في توليد صورة المشهد ${input.sceneNumber}: ${error?.message || "خطأ غير معروف"}`,
+        });
+      }
+    }),
+
+  /**
    * Quick scenario generation optimized for the pipeline flow
    */
   quickScenario: protectedProcedure

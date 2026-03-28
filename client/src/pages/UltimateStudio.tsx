@@ -15,6 +15,7 @@ import {
   Sparkles, Eye, Volume2, Check, RefreshCw, ZoomIn, ZoomOut,
   ChevronLeft, ChevronRight, Film, Save, FolderOpen, Trash2,
   PenLine, Clock, MoreVertical, Plus, Clapperboard, X, Crown, Lock,
+  FileImage, Palette, RotateCcw, Pencil,
 } from "lucide-react";
 import { Link } from "wouter";
 import * as pdfjsLib from "pdfjs-dist";
@@ -23,6 +24,9 @@ import { renderVideo, downloadBlob, isWasmSupported, type RenderProgress, type S
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs`;
 
 // ─── Types ───
+type ImageStyle = "realistic" | "cartoon" | "lineart" | "educational" | "watercolor" | "child_friendly";
+type SourceFileType = "pdf" | "image" | "doc" | "text";
+type InputMode = "file" | "text";
 interface SceneData {
   sceneNumber: number;
   title: string;
@@ -72,6 +76,20 @@ export default function UltimateStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Multi-format upload state
+  const [inputMode, setInputMode] = useState<InputMode>("file");
+  const [loadedFileType, setLoadedFileType] = useState<SourceFileType | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [docBase64, setDocBase64] = useState<string | null>(null);
+  const [pageCountToExtract, setPageCountToExtract] = useState(1);
+
+  // Image style state
+  const [imageStyle, setImageStyle] = useState<ImageStyle>("educational");
+  const [editingPromptIdx, setEditingPromptIdx] = useState<number | null>(null);
+  const [editedPromptText, setEditedPromptText] = useState("");
+  const [enhancingPromptIdx, setEnhancingPromptIdx] = useState<number | null>(null);
+
   // ═══ Column 2: Pipeline State ═══
   const [activeStep, setActiveStep] = useState<PipelineStep>("script");
   const [scenario, setScenario] = useState<ScenarioData | null>(null);
@@ -89,8 +107,12 @@ export default function UltimateStudio() {
 
   // ═══ tRPC Mutations & Queries ═══
   const extractMutation = trpc.ultimateStudio.extractPageText.useMutation();
+  const extractImageMutation = trpc.ultimateStudio.extractFromImage.useMutation();
+  const extractDocMutation = trpc.ultimateStudio.extractFromDoc.useMutation();
   const scenarioMutation = trpc.ultimateStudio.quickScenario.useMutation();
   const imageMutation = trpc.eduStudio.generateSceneImage.useMutation();
+  const imageStyleMutation = trpc.ultimateStudio.generateImageWithStyle.useMutation();
+  const enhancePromptMutation = trpc.ultimateStudio.enhancePrompt.useMutation();
   const audioMutation = trpc.eduStudio.generateSceneAudio.useMutation();
   const cloneQuery = trpc.voiceCloning.getMyVoiceClone.useQuery();
   const cloneTTSMutation = trpc.voiceCloning.generateWithClonedVoice.useMutation();
@@ -203,7 +225,7 @@ export default function UltimateStudio() {
     toast.info(us.newProjectToast);
   };
 
-  // ═══ PDF Loading ═══
+  // ═══ File Loading (PDF / Image / DOC) ═══
   const loadPDF = async (file: File) => {
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -213,12 +235,75 @@ export default function UltimateStudio() {
       setCurrentPage(1);
       setPageInput("1");
       setFileName(file.name);
+      setLoadedFileType("pdf");
+      setImagePreviewUrl(null);
+      setImageBase64(null);
+      setDocBase64(null);
       if (!projectTitle) {
         setProjectTitle(file.name.replace(".pdf", ""));
       }
       toast.success(`${us.pdfLoaded} "${file.name}" (${doc.numPages} ${us.pdfPages})`);
     } catch {
       toast.error(us.pdfLoadFailed);
+    }
+  };
+
+  const loadImage = async (file: File) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setImageBase64(base64);
+        setImagePreviewUrl(base64);
+        setFileName(file.name);
+        setLoadedFileType("image");
+        setPdfDoc(null);
+        setTotalPages(0);
+        setDocBase64(null);
+        if (!projectTitle) {
+          setProjectTitle(file.name.replace(/\.(jpg|jpeg|png|gif|bmp|webp)$/i, ""));
+        }
+        toast.success(`${us.fileLoaded} "${file.name}"`);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error(us.fileLoadFailed);
+    }
+  };
+
+  const loadDoc = async (file: File) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setDocBase64(base64);
+        setFileName(file.name);
+        setLoadedFileType("doc");
+        setPdfDoc(null);
+        setTotalPages(0);
+        setImagePreviewUrl(null);
+        setImageBase64(null);
+        if (!projectTitle) {
+          setProjectTitle(file.name.replace(/\.(docx?|rtf)$/i, ""));
+        }
+        toast.success(`${us.fileLoaded} "${file.name}"`);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error(us.fileLoadFailed);
+    }
+  };
+
+  const handleFileUpload = (file: File) => {
+    const ext = file.name.toLowerCase().split(".").pop() || "";
+    if (ext === "pdf") {
+      loadPDF(file);
+    } else if (["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(ext)) {
+      loadImage(file);
+    } else if (["doc", "docx"].includes(ext)) {
+      loadDoc(file);
+    } else {
+      toast.error(us.unsupportedFormat);
     }
   };
 
@@ -243,29 +328,147 @@ export default function UltimateStudio() {
     if (pdfDoc) renderPage(currentPage);
   }, [pdfDoc, currentPage, renderPage]);
 
-  // ═══ Extract Text from Current Page ═══
+  // ═══ Extract Text (multi-format + multi-page) ═══
   const handleExtract = async () => {
-    if (!canvasRef.current) return;
     setIsExtracting(true);
     try {
-      const imageBase64 = canvasRef.current.toDataURL("image/png");
-      const result = await extractMutation.mutateAsync({
-        imageBase64,
-        pageNumber: currentPage,
-        fileName,
-        language: appLang,
-      });
-      if (result.text) {
-        setExtractedText(result.text);
-        toast.success(`${us.extractText} - ${currentPage}`);
-      } else {
-        toast.error(us.noTextFound);
+      if (loadedFileType === "image" && imageBase64) {
+        // Extract from image file
+        const result = await extractImageMutation.mutateAsync({
+          imageBase64,
+          language: appLang as "ar" | "fr" | "en",
+        });
+        if (result.text) {
+          setExtractedText(result.text);
+          toast.success(us.extractText);
+        } else {
+          toast.error(us.noTextFound);
+        }
+      } else if (loadedFileType === "doc" && docBase64) {
+        // Extract from DOC/DOCX
+        const result = await extractDocMutation.mutateAsync({
+          fileBase64: docBase64,
+          fileName,
+          language: appLang as "ar" | "fr" | "en",
+        });
+        if (result.text) {
+          setExtractedText(result.text);
+          toast.success(us.extractText);
+        } else {
+          toast.error(us.noTextFound);
+        }
+      } else if (loadedFileType === "pdf" && canvasRef.current) {
+        // Extract from PDF (multi-page support)
+        const pagesToExtract = Math.min(pageCountToExtract, totalPages - currentPage + 1);
+        let allText = "";
+        for (let i = 0; i < pagesToExtract; i++) {
+          const pageNum = currentPage + i;
+          // Render the page to canvas to get image
+          if (pdfDoc && canvasRef.current) {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale });
+            const canvas = canvasRef.current;
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              await page.render({ canvasContext: ctx, viewport }).promise;
+            }
+          }
+          const pageImage = canvasRef.current.toDataURL("image/png");
+          const result = await extractMutation.mutateAsync({
+            imageBase64: pageImage,
+            pageNumber: pageNum,
+            fileName,
+            language: appLang as "ar" | "fr" | "en",
+          });
+          if (result.text) {
+            allText += (allText ? "\n\n---\n\n" : "") + result.text;
+          }
+          if (pagesToExtract > 1) {
+            toast.info(us.extractingPages.replace("{current}", String(i + 1)).replace("{total}", String(pagesToExtract)));
+          }
+        }
+        if (allText) {
+          setExtractedText(allText);
+          if (pagesToExtract > 1) {
+            toast.success(us.multiPageExtracted.replace("{count}", String(pagesToExtract)));
+          } else {
+            toast.success(`${us.extractText} - ${currentPage}`);
+          }
+        } else {
+          toast.error(us.noTextFound);
+        }
       }
     } catch {
       toast.error(us.extractFailed);
     } finally {
       setIsExtracting(false);
     }
+  };
+
+  // ═══ Enhanced Image Generation with Style ═══
+  const handleGenerateImageWithStyle = async (sceneIdx: number) => {
+    if (!scenario) return;
+    const scene = scenario.scenes[sceneIdx];
+    setGeneratingImageIdx(sceneIdx);
+    try {
+      const result = await imageStyleMutation.mutateAsync({
+        sceneNumber: scene.sceneNumber,
+        visualPrompt: scene.visualPrompt,
+        style: imageStyle,
+      });
+      setScenario(prev => {
+        if (!prev) return prev;
+        const updated = { ...prev, scenes: [...prev.scenes] };
+        updated.scenes[sceneIdx] = { ...updated.scenes[sceneIdx], imageUrl: result.imageUrl };
+        return updated;
+      });
+      toast.success(`${us.generateImage} - ${us.sceneLabel} ${scene.sceneNumber}`);
+    } catch {
+      toast.error(`${us.sceneLabel} ${scene.sceneNumber} - ${us.scenarioFailed}`);
+    } finally {
+      setGeneratingImageIdx(null);
+    }
+  };
+
+  // ═══ Enhance Prompt with AI ═══
+  const handleEnhancePrompt = async (sceneIdx: number) => {
+    if (!scenario) return;
+    const scene = scenario.scenes[sceneIdx];
+    setEnhancingPromptIdx(sceneIdx);
+    try {
+      const result = await enhancePromptMutation.mutateAsync({
+        prompt: scene.visualPrompt,
+        style: imageStyle,
+        context: scene.educationalContent,
+      });
+      setScenario(prev => {
+        if (!prev) return prev;
+        const updated = { ...prev, scenes: [...prev.scenes] };
+        updated.scenes[sceneIdx] = { ...updated.scenes[sceneIdx], visualPrompt: result.enhancedPrompt };
+        return updated;
+      });
+      toast.success(us.promptEnhanced);
+    } catch {
+      toast.error(us.promptEnhanceFailed);
+    } finally {
+      setEnhancingPromptIdx(null);
+    }
+  };
+
+  // ═══ Save Edited Prompt ═══
+  const handleSaveEditedPrompt = (sceneIdx: number) => {
+    if (!scenario) return;
+    setScenario(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, scenes: [...prev.scenes] };
+      updated.scenes[sceneIdx] = { ...updated.scenes[sceneIdx], visualPrompt: editedPromptText };
+      return updated;
+    });
+    setEditingPromptIdx(null);
+    setEditedPromptText("");
+    toast.success(us.copied);
   };
 
   // ═══ Navigate Pages ═══
@@ -597,23 +800,182 @@ export default function UltimateStudio() {
               <h2 className="text-sm font-bold text-white">{us.sourceTitle}</h2>
               <span className="text-[10px] text-white/40 bg-white/10 px-2 py-0.5 rounded-full">{us.sourceTag}</span>
             </div>
-            {!pdfDoc && (
+            {!pdfDoc && !imagePreviewUrl && !docBase64 && inputMode === "file" && (
               <Button
                 size="sm"
                 className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="w-4 h-4 me-1" /> {us.uploadPDF}
+                <Upload className="w-4 h-4 me-1" /> {us.uploadFile}
               </Button>
+            )}
+            {!pdfDoc && !imagePreviewUrl && !docBase64 && (
+              <div className="flex items-center gap-1 mt-1">
+                <button
+                  className={`text-[10px] px-2 py-0.5 rounded-full transition-all ${inputMode === "file" ? "bg-amber-500/20 text-amber-400" : "text-white/40 hover:text-white/60"}`}
+                  onClick={() => setInputMode("file")}
+                >
+                  {us.switchToFile}
+                </button>
+                <span className="text-white/20">|</span>
+                <button
+                  className={`text-[10px] px-2 py-0.5 rounded-full transition-all ${inputMode === "text" ? "bg-amber-500/20 text-amber-400" : "text-white/40 hover:text-white/60"}`}
+                  onClick={() => setInputMode("text")}
+                >
+                  {us.switchToText}
+                </button>
+              </div>
             )}
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf"
+              accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,.doc,.docx"
               className="hidden"
-              onChange={(e) => e.target.files?.[0] && loadPDF(e.target.files[0])}
+              onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
             />
           </div>
+
+          {/* Direct Text Input Mode */}
+          {inputMode === "text" && !pdfDoc && !imagePreviewUrl && !docBase64 ? (
+            <div className="flex-1 flex flex-col p-3">
+              <p className="text-xs text-white/50 mb-2">{us.directTextInput}</p>
+              <Textarea
+                value={extractedText}
+                onChange={(e) => setExtractedText(e.target.value)}
+                className="flex-1 bg-white/5 border-white/20 text-white text-sm resize-none min-h-[200px]"
+                dir="auto"
+                placeholder={us.pasteText}
+              />
+              {extractedText && (
+                <Button
+                  size="sm"
+                  className="mt-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30"
+                  onClick={() => {
+                    setActiveStep("script");
+                    toast.info(us.textReadyToast);
+                  }}
+                >
+                  <ArrowRight className="w-3 h-3 me-1" /> {us.sendToProduction}
+                </Button>
+              )}
+            </div>
+          ) : null}
+
+          {/* Image Preview */}
+          {imagePreviewUrl && loadedFileType === "image" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-black/30 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <FileImage className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs text-white/70 truncate max-w-[150px]">{fileName}</span>
+                  <span className="text-[10px] text-amber-400/70 bg-amber-500/10 px-2 py-0.5 rounded-full">{us.imageFile}</span>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70" onClick={() => fileInputRef.current?.click()}>
+                  <RefreshCw className="w-3 h-3" />
+                </Button>
+              </div>
+              <div className="flex-1 overflow-auto p-2 flex justify-center">
+                <img src={imagePreviewUrl} alt="Preview" className="rounded-lg shadow-lg max-w-full max-h-full object-contain" />
+              </div>
+              <div className="p-3 border-t border-white/10 bg-black/30">
+                <Button
+                  size="sm"
+                  className="w-full bg-gradient-to-l from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold"
+                  onClick={handleExtract}
+                  disabled={isExtracting}
+                >
+                  {isExtracting ? <Loader2 className="w-4 h-4 animate-spin me-1" /> : <Wand2 className="w-4 h-4 me-1" />}
+                  {isExtracting ? us.extracting : us.extractText}
+                </Button>
+                {extractedText && (
+                  <div className="relative mt-2">
+                    <Textarea
+                      value={extractedText}
+                      onChange={(e) => setExtractedText(e.target.value)}
+                      className="bg-white/5 border-white/20 text-white text-xs h-32 resize-none"
+                      dir="auto"
+                    />
+                    <div className="flex items-center gap-1 mt-1">
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] text-white/50" onClick={() => copyText(extractedText)}>
+                        <Copy className="w-3 h-3 me-1" /> {us.copyBtn}
+                      </Button>
+                      <div className="flex-1" />
+                      <Button
+                        size="sm"
+                        className="h-6 text-[10px] bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30"
+                        onClick={() => {
+                          setActiveStep("script");
+                          toast.info(us.textReadyToast);
+                        }}
+                      >
+                        <ArrowRight className="w-3 h-3 me-1" /> {us.sendToProduction}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          {/* DOC Preview */}
+          {docBase64 && loadedFileType === "doc" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 bg-black/30 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs text-white/70 truncate max-w-[150px]">{fileName}</span>
+                  <span className="text-[10px] text-blue-400/70 bg-blue-500/10 px-2 py-0.5 rounded-full">{us.wordFile}</span>
+                </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-white/70" onClick={() => fileInputRef.current?.click()}>
+                  <RefreshCw className="w-3 h-3" />
+                </Button>
+              </div>
+              <div className="flex-1 flex items-center justify-center p-6">
+                <div className="text-center">
+                  <FileText className="w-16 h-16 text-blue-400/30 mx-auto mb-4" />
+                  <p className="text-white/50 text-sm font-bold">{fileName}</p>
+                  <p className="text-white/30 text-xs mt-1">{us.wordFile}</p>
+                </div>
+              </div>
+              <div className="p-3 border-t border-white/10 bg-black/30">
+                <Button
+                  size="sm"
+                  className="w-full bg-gradient-to-l from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-bold"
+                  onClick={handleExtract}
+                  disabled={isExtracting}
+                >
+                  {isExtracting ? <Loader2 className="w-4 h-4 animate-spin me-1" /> : <Wand2 className="w-4 h-4 me-1" />}
+                  {isExtracting ? us.extracting : us.extractText}
+                </Button>
+                {extractedText && (
+                  <div className="relative mt-2">
+                    <Textarea
+                      value={extractedText}
+                      onChange={(e) => setExtractedText(e.target.value)}
+                      className="bg-white/5 border-white/20 text-white text-xs h-32 resize-none"
+                      dir="auto"
+                    />
+                    <div className="flex items-center gap-1 mt-1">
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] text-white/50" onClick={() => copyText(extractedText)}>
+                        <Copy className="w-3 h-3 me-1" /> {us.copyBtn}
+                      </Button>
+                      <div className="flex-1" />
+                      <Button
+                        size="sm"
+                        className="h-6 text-[10px] bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/30"
+                        onClick={() => {
+                          setActiveStep("script");
+                          toast.info(us.textReadyToast);
+                        }}
+                      >
+                        <ArrowRight className="w-3 h-3 me-1" /> {us.sendToProduction}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
 
           {/* PDF Viewer */}
           {pdfDoc ? (
@@ -671,6 +1033,23 @@ export default function UltimateStudio() {
                     {isExtracting ? us.extracting : us.extractText}
                   </Button>
                 </div>
+                {/* Page Count Selector */}
+                <div className="flex items-center gap-1 mb-2">
+                  <span className="text-[10px] text-white/40">{us.pageCountLabel}:</span>
+                  {[1, 2, 3].map((count) => (
+                    <button
+                      key={count}
+                      className={`text-[10px] px-2 py-0.5 rounded-full transition-all ${
+                        pageCountToExtract === count
+                          ? "bg-amber-500/30 text-amber-400 border border-amber-500/40"
+                          : "text-white/40 hover:text-white/60 border border-white/10"
+                      }`}
+                      onClick={() => setPageCountToExtract(count)}
+                    >
+                      {count === 1 ? us.pageCountOne : count === 2 ? us.pageCountTwo : us.pageCountThree}
+                    </button>
+                  ))}
+                </div>
 
                 {/* Extracted Text */}
                 {extractedText && (
@@ -701,15 +1080,16 @@ export default function UltimateStudio() {
                 )}
               </div>
             </div>
-          ) : (
+          ) : !imagePreviewUrl && !docBase64 && inputMode !== "text" ? (
             <div className="flex-1 flex items-center justify-center p-6">
               <div className="text-center">
                 <BookOpen className="w-16 h-16 text-white/10 mx-auto mb-4" />
                 <p className="text-white/30 text-sm">{us.emptyPDFTitle}</p>
                 <p className="text-white/20 text-xs mt-1">{us.emptyPDFDesc}</p>
+                <p className="text-white/15 text-[10px] mt-2">{us.uploadFormats}</p>
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* ═══════════════════════════════════════════════════════════ */}
@@ -821,6 +1201,39 @@ export default function UltimateStudio() {
                       {/* ── STEP 2: Edu-Vision ── */}
                       {step.key === "vision" && (
                         <div className="pt-3 space-y-2">
+                          {/* Image Style Selector */}
+                          {scenario && (
+                            <div className="bg-white/5 rounded-lg p-2 mb-2">
+                              <div className="flex items-center gap-1 mb-1.5">
+                                <Palette className="w-3 h-3 text-purple-400" />
+                                <span className="text-[10px] text-white/50 font-bold">{us.imageStyleLabel}</span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-1">
+                                {([
+                                  { key: "realistic" as ImageStyle, label: us.styleRealistic, emoji: "📷" },
+                                  { key: "cartoon" as ImageStyle, label: us.styleCartoon, emoji: "🎨" },
+                                  { key: "lineart" as ImageStyle, label: us.styleLineart, emoji: "✍️" },
+                                  { key: "educational" as ImageStyle, label: us.styleEducational, emoji: "📚" },
+                                  { key: "watercolor" as ImageStyle, label: us.styleWatercolor, emoji: "🌈" },
+                                  { key: "child_friendly" as ImageStyle, label: us.styleChildFriendly, emoji: "👶" },
+                                ]).map((s) => (
+                                  <button
+                                    key={s.key}
+                                    className={`text-[9px] px-1.5 py-1 rounded-md transition-all text-center ${
+                                      imageStyle === s.key
+                                        ? "bg-purple-500/30 text-purple-300 border border-purple-500/40 font-bold"
+                                        : "bg-white/5 text-white/40 border border-white/10 hover:text-white/60"
+                                    }`}
+                                    onClick={() => setImageStyle(s.key)}
+                                  >
+                                    <span className="block text-sm mb-0.5">{s.emoji}</span>
+                                    {s.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {scenario ? (
                             scenario.scenes.map((scene, idx) => (
                               <div key={idx} className="bg-white/5 rounded-lg p-2">
@@ -828,16 +1241,70 @@ export default function UltimateStudio() {
                                   <span className="text-xs font-bold text-white">{us.sceneLabel} {scene.sceneNumber}: {scene.title}</span>
                                   {scene.imageUrl && <Check className="w-3 h-3 text-green-400" />}
                                 </div>
-                                <p className="text-[10px] text-white/50 mb-2 line-clamp-2 font-mono" dir="ltr">{scene.visualPrompt}</p>
-                                <div className="flex items-center gap-1">
+
+                                {/* Prompt Display / Edit */}
+                                {editingPromptIdx === idx ? (
+                                  <div className="mb-2">
+                                    <Textarea
+                                      value={editedPromptText}
+                                      onChange={(e) => setEditedPromptText(e.target.value)}
+                                      className="bg-white/10 border-purple-500/30 text-white text-[10px] h-16 resize-none font-mono"
+                                      dir="ltr"
+                                    />
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <Button
+                                        size="sm"
+                                        className="h-5 text-[9px] bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
+                                        onClick={() => handleSaveEditedPrompt(idx)}
+                                      >
+                                        <Check className="w-2.5 h-2.5 me-0.5" /> {us.savePrompt}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-5 text-[9px] text-white/40"
+                                        onClick={() => { setEditingPromptIdx(null); setEditedPromptText(""); }}
+                                      >
+                                        <X className="w-2.5 h-2.5 me-0.5" /> {us.cancelEdit}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-[10px] text-white/50 mb-2 line-clamp-2 font-mono" dir="ltr">{scene.visualPrompt}</p>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-1 flex-wrap">
                                   <Button
                                     size="sm"
                                     className="h-6 text-[10px] flex-1 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 border border-purple-500/30"
-                                    onClick={() => handleGenerateImage(idx)}
+                                    onClick={() => handleGenerateImageWithStyle(idx)}
                                     disabled={generatingImageIdx === idx}
                                   >
                                     {generatingImageIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Image className="w-3 h-3 me-1" />}
                                     {scene.imageUrl ? us.regenerateImage : us.generateImage}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-[10px] text-amber-400/60 hover:text-amber-400"
+                                    onClick={() => handleEnhancePrompt(idx)}
+                                    disabled={enhancingPromptIdx === idx}
+                                    title={us.enhancePrompt}
+                                  >
+                                    {enhancingPromptIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-[10px] text-white/40 hover:text-white/60"
+                                    onClick={() => {
+                                      setEditingPromptIdx(idx);
+                                      setEditedPromptText(scene.visualPrompt);
+                                    }}
+                                    title={us.editPrompt}
+                                  >
+                                    <Pencil className="w-3 h-3" />
                                   </Button>
                                   <Button
                                     variant="ghost"
