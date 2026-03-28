@@ -679,23 +679,27 @@ export default function UltimateStudio() {
   const canUseVoiceClone = isVIP || isVideoCourseMember;
   const [showPaywall, setShowPaywall] = useState(false);
 
+  // ═══ Mobile Tab State ═══
+  type MobileTab = "source" | "pipeline" | "storyboard";
+  const [mobileTab, setMobileTab] = useState<MobileTab>("source");
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" dir={isRTL ? "rtl" : "ltr"}>
       {/* ═══ Top Bar ═══ */}
       <div className="border-b border-white/10 bg-black/30 backdrop-blur-xl sticky top-0 z-50">
-        <div className="flex items-center justify-between px-4 py-3 max-w-[1920px] mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-              <Film className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 max-w-[1920px] mx-auto">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
+              <Film className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-white">{us.studioTitle}</h1>
-                <span className="text-xs text-white/40">|</span>
-                <span className="text-sm text-amber-400 font-bold truncate max-w-[200px]">{projectTitle || us.newProject}</span>
-                {hasUnsavedChanges && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" title={us.unsavedChanges} />}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <h1 className="text-sm sm:text-lg font-bold text-white whitespace-nowrap">{us.studioTitle}</h1>
+                <span className="text-xs text-white/40 hidden sm:inline">|</span>
+                <span className="text-xs sm:text-sm text-amber-400 font-bold truncate max-w-[80px] sm:max-w-[200px]">{projectTitle || us.newProject}</span>
+                {hasUnsavedChanges && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" title={us.unsavedChanges} />}
               </div>
-              <div className="flex items-center gap-2 text-[10px] text-white/40">
+              <div className="hidden sm:flex items-center gap-2 text-[10px] text-white/40">
                 <span>{us.pipeline}</span>
                 {lastSavedAt && (
                   <>
@@ -707,47 +711,47 @@ export default function UltimateStudio() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* New Project */}
             <Button
               variant="outline"
               size="sm"
-              className="border-white/20 text-white hover:bg-white/10"
+              className="border-white/20 text-white hover:bg-white/10 h-8 px-2 sm:px-3"
               onClick={startNewProject}
             >
-              <Plus className="w-4 h-4 me-1" /> {us.btnNew}
+              <Plus className="w-4 h-4 sm:me-1" /> <span className="hidden sm:inline">{us.btnNew}</span>
             </Button>
 
             {/* Open Project */}
             <Button
               variant="outline"
               size="sm"
-              className="border-white/20 text-white hover:bg-white/10"
+              className="border-white/20 text-white hover:bg-white/10 h-8 px-2 sm:px-3"
               onClick={() => {
                 projectsQuery.refetch();
                 setShowProjectsDialog(true);
               }}
             >
-              <FolderOpen className="w-4 h-4 me-1" /> {us.btnMyProjects}
+              <FolderOpen className="w-4 h-4 sm:me-1" /> <span className="hidden sm:inline">{us.btnMyProjects}</span>
             </Button>
 
             {/* Save */}
             <Button
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-green-600 hover:bg-green-700 text-white h-8 px-2 sm:px-3"
               onClick={() => saveProject(false)}
               disabled={isSaving}
             >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin me-1" /> : <Save className="w-4 h-4 me-1" />}
-              {us.btnSave}
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin sm:me-1" /> : <Save className="w-4 h-4 sm:me-1" />}
+              <span className="hidden sm:inline">{us.btnSave}</span>
             </Button>
 
-            {/* Export */}
+            {/* Export - hidden on mobile */}
             {scenario && (
               <Button
                 variant="outline"
                 size="sm"
-                className="border-white/20 text-white hover:bg-white/10"
+                className="border-white/20 text-white hover:bg-white/10 hidden md:flex"
                 onClick={() => {
                   const content = scenario.scenes.map(s =>
                     `## المشهد ${s.sceneNumber}: ${s.title}\n\n**المحتوى:** ${s.educationalContent}\n\n**التعليق الصوتي:** ${s.spokenText}\n\n**الأمر البصري:** ${s.visualPrompt}\n\n---`
@@ -766,14 +770,14 @@ export default function UltimateStudio() {
               </Button>
             )}
 
-            {/* Export Video MP4 */}
+            {/* Export Video MP4 - hidden on mobile */}
             {scenario && (
               <Button
                 size="sm"
-                className={canExportVideo
+                className={`hidden md:flex ${canExportVideo
                   ? "bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/20 animate-pulse hover:animate-none"
                   : "bg-white/10 text-white/30 cursor-not-allowed"
-                }
+                }`}
                 onClick={handleExportVideo}
                 disabled={!canExportVideo || isExporting}
                 title={!canExportVideo ? us.exportVideoDisabledTooltip : us.exportVideoTooltip}
@@ -781,21 +785,47 @@ export default function UltimateStudio() {
                 <Clapperboard className="w-4 h-4 me-1" /> {us.btnExportVideo}
               </Button>
             )}
-            <span className="text-xs text-white/40">{us.greeting} {user?.name?.split(" ")[0]}</span>
+            <span className="text-xs text-white/40 hidden lg:inline">{us.greeting} {user?.name?.split(" ")[0]}</span>
           </div>
         </div>
       </div>
 
-      {/* ═══ Three Column Layout ═══ */}
-      <div className="flex h-[calc(100vh-57px)] max-w-[1920px] mx-auto">
+      {/* ═══ Mobile Tab Navigation ═══ */}
+      <div className="md:hidden border-b border-white/10 bg-black/20 sticky top-[41px] z-40">
+        <div className="flex">
+          {([
+            { key: "source" as MobileTab, icon: BookOpen, label: us.sourceTitle, color: "amber" },
+            { key: "pipeline" as MobileTab, icon: Sparkles, label: us.pipelineTitle, color: "blue" },
+            { key: "storyboard" as MobileTab, icon: Film, label: us.storyboardTitle, color: "green" },
+          ]).map((tab) => (
+            <button
+              key={tab.key}
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold transition-all border-b-2 ${
+                mobileTab === tab.key
+                  ? tab.color === "amber" ? "border-amber-400 text-amber-400 bg-amber-500/10"
+                  : tab.color === "blue" ? "border-blue-400 text-blue-400 bg-blue-500/10"
+                  : "border-green-400 text-green-400 bg-green-500/10"
+                  : "border-transparent text-white/40"
+              }`}
+              onClick={() => setMobileTab(tab.key)}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ Three Column Layout (Desktop) / Single Column (Mobile) ═══ */}
+      <div className="flex flex-col md:flex-row h-[calc(100vh-82px)] md:h-[calc(100vh-57px)] max-w-[1920px] mx-auto">
 
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* COLUMN 1: THE SOURCE (30%) */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="w-[30%] border-s border-white/10 flex flex-col bg-black/20">
+        <div className={`w-full md:w-[30%] border-s border-white/10 flex flex-col bg-black/20 ${mobileTab !== "source" ? "hidden md:flex" : "flex"}`}>
           {/* Header */}
-          <div className="p-3 border-b border-white/10 bg-gradient-to-l from-amber-500/10 to-transparent">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="p-2 sm:p-3 border-b border-white/10 bg-gradient-to-l from-amber-500/10 to-transparent">
+            <div className="hidden md:flex items-center gap-2 mb-2">
               <BookOpen className="w-5 h-5 text-amber-400" />
               <h2 className="text-sm font-bold text-white">{us.sourceTitle}</h2>
               <span className="text-[10px] text-white/40 bg-white/10 px-2 py-0.5 rounded-full">{us.sourceTag}</span>
@@ -1095,9 +1125,9 @@ export default function UltimateStudio() {
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* COLUMN 2: THE PIPELINE ENGINE (30%) */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="w-[30%] border-s border-white/10 flex flex-col bg-black/10">
+        <div className={`w-full md:w-[30%] border-s border-white/10 flex flex-col bg-black/10 ${mobileTab !== "pipeline" ? "hidden md:flex" : "flex"}`}>
           {/* Header */}
-          <div className="p-3 border-b border-white/10 bg-gradient-to-l from-blue-500/10 to-transparent">
+          <div className="p-2 sm:p-3 border-b border-white/10 bg-gradient-to-l from-blue-500/10 to-transparent hidden md:block">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-400" />
               <h2 className="text-sm font-bold text-white">{us.pipelineTitle}</h2>
@@ -1208,7 +1238,7 @@ export default function UltimateStudio() {
                                 <Palette className="w-3 h-3 text-purple-400" />
                                 <span className="text-[10px] text-white/50 font-bold">{us.imageStyleLabel}</span>
                               </div>
-                              <div className="grid grid-cols-3 gap-1">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
                                 {([
                                   { key: "realistic" as ImageStyle, label: us.styleRealistic, emoji: "📷" },
                                   { key: "cartoon" as ImageStyle, label: us.styleCartoon, emoji: "🎨" },
@@ -1423,29 +1453,56 @@ export default function UltimateStudio() {
         {/* ═══════════════════════════════════════════════════════════ */}
         {/* COLUMN 3: THE OUTPUT STORYBOARD (40%) */}
         {/* ═══════════════════════════════════════════════════════════ */}
-        <div className="w-[40%] flex flex-col bg-black/5">
+        <div className={`w-full md:w-[40%] flex flex-col bg-black/5 ${mobileTab !== "storyboard" ? "hidden md:flex" : "flex"}`}>
           {/* Header */}
-          <div className="p-3 border-b border-white/10 bg-gradient-to-l from-green-500/10 to-transparent flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Film className="w-5 h-5 text-green-400" />
-              <h2 className="text-sm font-bold text-white">{us.storyboardTitle}</h2>
-              <span className="text-[10px] text-white/40 bg-white/10 px-2 py-0.5 rounded-full">{us.storyboardTag}</span>
+          <div className="p-2 sm:p-3 border-b border-white/10 bg-gradient-to-l from-green-500/10 to-transparent">
+            <div className="flex items-center justify-between">
+              <div className="hidden md:flex items-center gap-2">
+                <Film className="w-5 h-5 text-green-400" />
+                <h2 className="text-sm font-bold text-white">{us.storyboardTitle}</h2>
+                <span className="text-[10px] text-white/40 bg-white/10 px-2 py-0.5 rounded-full">{us.storyboardTag}</span>
+              </div>
+              <div className="flex items-center gap-1 sm:gap-2">
+                {scenario && (
+                  <span className="text-[10px] text-white/40">{scenario.scenes.length} {us.scenarioScenes}</span>
+                )}
+                {scenario && canExportVideo && (
+                  <Button
+                    size="sm"
+                    className="h-7 text-[10px] sm:text-[11px] bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/20"
+                    onClick={handleExportVideo}
+                    disabled={isExporting}
+                  >
+                    <Clapperboard className="w-3.5 h-3.5 sm:me-1" /> <span className="hidden sm:inline">{us.exportMP4}</span>
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {scenario && (
-                <span className="text-[10px] text-white/40">{scenario.scenes.length} {us.scenarioScenes}</span>
-              )}
-              {scenario && canExportVideo && (
+            {/* Mobile-only export buttons */}
+            {scenario && (
+              <div className="flex items-center gap-1 mt-2 md:hidden">
                 <Button
+                  variant="outline"
                   size="sm"
-                  className="h-7 text-[11px] bg-gradient-to-l from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold shadow-lg shadow-red-500/20"
-                  onClick={handleExportVideo}
-                  disabled={isExporting}
+                  className="flex-1 h-7 text-[10px] border-white/20 text-white hover:bg-white/10"
+                  onClick={() => {
+                    const content = scenario.scenes.map(s =>
+                      `## \u0627\u0644\u0645\u0634\u0647\u062f ${s.sceneNumber}: ${s.title}\n\n**\u0627\u0644\u0645\u062d\u062a\u0648\u0649:** ${s.educationalContent}\n\n**\u0627\u0644\u062a\u0639\u0644\u064a\u0642 \u0627\u0644\u0635\u0648\u062a\u064a:** ${s.spokenText}\n\n---`
+                    ).join("\n\n");
+                    const blob = new Blob([`# ${scenario.title}\n\n${scenario.summary}\n\n${content}`], { type: "text/markdown" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${scenario.title || "scenario"}.md`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success(us.exportPlanSuccess);
+                  }}
                 >
-                  <Clapperboard className="w-3.5 h-3.5 me-1" /> {us.exportMP4}
+                  <Download className="w-3 h-3 me-1" /> {us.btnExportMD}
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Storyboard Content */}
@@ -1474,7 +1531,7 @@ export default function UltimateStudio() {
                       {/* Image */}
                       {scene.imageUrl ? (
                         <div className="relative rounded-lg overflow-hidden">
-                          <img src={scene.imageUrl} alt={scene.title} className="w-full h-40 object-cover" />
+                          <img src={scene.imageUrl} alt={scene.title} className="w-full h-48 sm:h-40 object-cover" />
                           <div className="absolute bottom-0 start-0 end-0 bg-gradient-to-t from-black/80 to-transparent p-2">
                             <p className="text-[10px] text-white/70 line-clamp-1" dir="auto">{scene.description}</p>
                           </div>
