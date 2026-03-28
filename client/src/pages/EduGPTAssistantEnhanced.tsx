@@ -483,8 +483,9 @@ export default function EduGPTAssistantEnhanced() {
       const saved = localStorage.getItem('assistant_teaching_language') as "arabic" | "french" | "english" | null;
       if (saved) return saved;
     } catch { /* ignore */ }
-    if (globalLanguage === "fr") return "french";
-    if (globalLanguage === "en") return "english";
+    // Don't auto-assign based on UI language - let user explicitly choose
+    // This prevents the bug where French UI auto-sets French teaching language
+    // causing Arabic messages to get French responses
     return null;
   });
   // Inline rename state

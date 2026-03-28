@@ -59,10 +59,10 @@ export async function streamChatHandler(req: Request, res: Response) {
     const levelInfo = level ? `\n\ud83c\udf93 المستوى الدراسي المحدد: **${level}**` : "";
     
     const langNote = teachingLanguage === "french"
-      ? `\n\ud83c\uddeb\ud83c\uddf7 Langue d'enseignement: **Fran\u00e7ais**. R\u00e9pondez TOUJOURS en fran\u00e7ais. Utilisez la terminologie p\u00e9dagogique officielle tunisienne en fran\u00e7ais (fiche de pr\u00e9paration, comp\u00e9tence terminale, situation d\u00e9clenchante, r\u00e9investissement, etc.).`
+      ? `\n🇫🇷 Langue d'enseignement préférée: **Français**.\n⚠️ **RÈGLE ABSOLUE DE LANGUE**: Tu DOIS répondre dans la MÊME langue que le DERNIER message de l'utilisateur. Si l'utilisateur écrit en arabe, tu réponds en arabe MÊME SI la langue d'enseignement est le français. Si l'utilisateur écrit en français, réponds en français. La langue du message de l'utilisateur a TOUJOURS la priorité absolue.`
       : teachingLanguage === "english"
-      ? `\n\ud83c\uddec\ud83c\udde7 Teaching Language: **English**. ALWAYS respond in English. Use official Tunisian pedagogical terminology in English (lesson plan, terminal competency, triggering situation, reinvestment, etc.).`
-      : `\n\ud83c\uddf9\ud83c\uddf3 لغة التدريس: **العربية**. رد دائماً بالعربية واستخدم المصطلحات التربوية الرسمية التونسية بالعربية.`;
+      ? `\n🇬🇧 Preferred teaching language: **English**.\n⚠️ **ABSOLUTE LANGUAGE RULE**: You MUST respond in the SAME language as the user's LAST message. If the user writes in Arabic, respond in Arabic EVEN IF the teaching language is English. If the user writes in English, respond in English. The user's message language ALWAYS has absolute priority.`
+      : `\n🇹🇳 لغة التدريس المفضلة: **العربية**.\n⚠️ **قاعدة مطلقة للغة**: يجب أن ترد دائماً بنفس لغة رسالة المستخدم الأخيرة. إذا كتب بالعربية رد بالعربية. إذا كتب بالفرنسية رد بالفرنسية.`;
     
     const contextNote = (subject && level)
       ? `\n\nتذكير: المدرس يعمل حالياً على مادة **${subject}** للمستوى **${level}**. يجب أن تكون جميع إجاباتك متوافقة مع هذه المادة وهذا المستوى تحديداً.`

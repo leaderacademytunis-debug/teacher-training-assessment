@@ -3112,10 +3112,10 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
         
         // Language instruction based on teachingLanguage
         const langNote = input.teachingLanguage === "french"
-          ? `\n🇫🇷 Langue d'enseignement: **Français**. Répondez TOUJOURS en français. Utilisez la terminologie pédagogique officielle tunisienne en français (fiche de préparation, compétence terminale, situation déclenchante, réinvestissement, etc.). Adaptez le contenu aux manuels scolaires tunisiens en français.`
+          ? `\n🇫🇷 Langue d'enseignement préférée: **Français**.\n⚠️ **RÈGLE ABSOLUE DE LANGUE**: Tu DOIS répondre dans la MÊME langue que le DERNIER message de l'utilisateur. Si l'utilisateur écrit en arabe, tu réponds en arabe MÊME SI la langue d'enseignement est le français. Si l'utilisateur écrit en français, réponds en français. La langue du message de l'utilisateur a TOUJOURS la priorité absolue.`
           : input.teachingLanguage === "english"
-          ? `\n🇬🇧 Teaching Language: **English**. ALWAYS respond in English. Use official Tunisian pedagogical terminology in English (lesson plan, terminal competency, triggering situation, reinvestment, etc.). Adapt content to Tunisian English textbooks and official programs.`
-          : `\n🇹🇳 لغة التدريس: **العربية**. رد دائماً بالعربية واستخدم المصطلحات التربوية الرسمية التونسية بالعربية.`;
+          ? `\n🇬🇧 Preferred teaching language: **English**.\n⚠️ **ABSOLUTE LANGUAGE RULE**: You MUST respond in the SAME language as the user's LAST message. If the user writes in Arabic, respond in Arabic EVEN IF the teaching language is English. If the user writes in English, respond in English. The user's message language ALWAYS has absolute priority.`
+          : `\n🇹🇳 لغة التدريس المفضلة: **العربية**.\n⚠️ **قاعدة مطلقة للغة**: يجب أن ترد دائماً بنفس لغة رسالة المستخدم الأخيرة. إذا كتب بالعربية رد بالعربية. إذا كتب بالفرنسية رد بالفرنسية.`;
         
         const contextNote = (input.subject && input.level)
           ? `\n\nتذكير: المدرس يعمل حالياً على مادة **${input.subject}** للمستوى **${input.level}**. يجب أن تكون جميع إجاباتك متوافقة مع هذه المادة وهذا المستوى تحديداً.`
@@ -3261,7 +3261,7 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
 # قواعد إضافية
 - إذا لم يحدد المدرس السنة الدراسية، اسأله فوراً قبل إعداد الجذاذة.
 - إذا طلب المدرس مادة أخرى غير الإيقاظ العلمي، ساعده بنفس الجودة مع احترام البرامج الرسمية التونسية.
-- رد دائماً بلغة الطلب (عربية/فرنسية/إنجليزية).
+- **قاعدة اللغة المطلقة**: رد دائماً بنفس لغة رسالة المستخدم الأخيرة. إذا كتب بالعربية رد بالعربية حتى لو كانت لغة التدريس فرنسية. لغة رسالة المستخدم لها الأولوية المطلقة.
 - كل جذاذة يجب أن تكون جاهزة للتقديم للمتفقد مباشرة.
 - عند توليد اختبار، التزم بهيكل وزارة التربية: 3-5 سندات + المعايير الخمسة + جدول التنقيط بالرموز الرسمية (م1ب، م2أ...) + المجموع 10 نقاط..
 
@@ -3290,7 +3290,7 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
 
 - **اللغة**: العربية الفصحى المبسطة مع فهم واستخدام المصطلحات التونسية الدارجة في سياق مهني (جذاذات، تفقد، ترسيم، تكوين مستمر).
 - **الشخصية**: محترف، مُلهِم، عملي جداً، وودود (Professional yet Approachable).
-- **القاعدة الذهبية**: إذا سأل المستخدم بالفرنسية، أجب بالفرنسية. إذا سأل بالعربية، أجب بالعربية. إذا سأل بالإنجليزية، أجب بالإنجليزية.
+- **القاعدة الذهبية المطلقة**: رد دائماً بنفس لغة رسالة المستخدم الأخيرة. إذا كتب بالعربية رد بالعربية حتى لو كانت لغة التدريس فرنسية. إذا كتب بالفرنسية رد بالفرنسية. إذا كتب بالإنجليزية رد بالإنجليزية. لغة رسالة المستخدم لها الأولوية المطلقة على إعداد لغة التدريس.
 
 ---
 
