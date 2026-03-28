@@ -20,17 +20,15 @@ export const ultimateStudioRouter = router({
    */
   extractPageText: protectedProcedure
     .input(z.object({
-      imageBase64: z.string().min(10, "صورة الصفحة مطلوبة"),
+      imageBase64: z.string().min(10, "Page image is required"),
       pageNumber: z.number().min(1),
       fileName: z.string().optional(),
+      language: z.enum(["ar", "fr", "en"]).default("ar"),
     }))
     .mutation(async ({ input }) => {
-      try {
-        const response = await invokeLLM({
-          messages: [
-            {
-              role: "system",
-              content: `أنت نظام OCR متقدم متخصص في استخراج النصوص من الكتب المدرسية التونسية.
+      // Dynamic system prompt based on user's UI language
+      const systemPrompts: Record<string, string> = {
+        ar: `أنت نظام OCR متقدم متخصص في استخراج النصوص من الكتب المدرسية التونسية.
 قواعد الاستخراج:
 1. استخرج النص بالضبط كما هو مكتوب في الصورة
 2. حافظ على التنسيق الأصلي (فقرات، عناوين، قوائم مرقمة)
@@ -38,14 +36,50 @@ export const ultimateStudioRouter = router({
 4. لا تضف أي تعليقات أو شروحات - فقط النص المستخرج
 5. حافظ على ترتيب الفقرات والعناوين كما تظهر في الصفحة
 6. إذا وجدت جداول، حاول إعادة تمثيلها بنص منسق
-7. إذا لم تجد نصاً واضحاً، أعد وصفاً موجزاً لمحتوى الصفحة`,
+7. إذا لم تجد نصاً واضحاً، أعد وصفاً موجزاً لمحتوى الصفحة
+Respond entirely in Arabic.`,
+        fr: `Vous êtes un système OCR avancé spécialisé dans l'extraction de texte des manuels scolaires tunisiens.
+Règles d'extraction :
+1. Extrayez le texte exactement tel qu'il est écrit dans l'image
+2. Conservez le formatage original (paragraphes, titres, listes numérotées)
+3. Si le texte est en arabe, écrivez-le en arabe. S'il est en français, écrivez-le en français
+4. N'ajoutez aucun commentaire ou explication - uniquement le texte extrait
+5. Conservez l'ordre des paragraphes et des titres tels qu'ils apparaissent sur la page
+6. Si vous trouvez des tableaux, essayez de les représenter en texte formaté
+7. Si aucun texte clair n'est trouvé, donnez une brève description du contenu de la page
+Répondez entièrement en français.`,
+        en: `You are an advanced OCR system specialized in extracting text from Tunisian school textbooks.
+Extraction rules:
+1. Extract the text exactly as written in the image
+2. Preserve original formatting (paragraphs, headings, numbered lists)
+3. If text is in Arabic, write it in Arabic. If in French, write it in French
+4. Do not add any comments or explanations - only the extracted text
+5. Preserve the order of paragraphs and headings as they appear on the page
+6. If you find tables, try to represent them as formatted text
+7. If no clear text is found, return a brief description of the page content
+Respond entirely in English.`,
+      };
+
+      const userPrompts: Record<string, string> = {
+        ar: `استخرج كل النص الموجود في الصفحة رقم ${input.pageNumber} من الكتاب المدرسي:`,
+        fr: `Extrayez tout le texte de la page numéro ${input.pageNumber} du manuel scolaire :`,
+        en: `Extract all text from page number ${input.pageNumber} of the textbook:`,
+      };
+
+      const lang = input.language || "ar";
+      try {
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: systemPrompts[lang] || systemPrompts.ar,
             },
             {
               role: "user",
               content: [
                 {
                   type: "text" as const,
-                  text: `استخرج كل النص الموجود في الصفحة رقم ${input.pageNumber} من الكتاب المدرسي:`,
+                  text: userPrompts[lang] || userPrompts.ar,
                 },
                 {
                   type: "image_url" as const,
@@ -70,9 +104,14 @@ export const ultimateStudioRouter = router({
         };
       } catch (err: any) {
         console.error("[UltimateStudio] Page extraction failed:", err?.message);
+        const errorMessages: Record<string, string> = {
+          ar: "فشل في استخراج النص من الصفحة. حاول مجدداً.",
+          fr: "Échec de l'extraction du texte de la page. Veuillez réessayer.",
+          en: "Failed to extract text from the page. Please try again.",
+        };
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "فشل في استخراج النص من الصفحة. حاول مجدداً.",
+          message: errorMessages[input.language] || errorMessages.ar,
         });
       }
     }),
@@ -82,22 +121,21 @@ export const ultimateStudioRouter = router({
    */
   quickScenario: protectedProcedure
     .input(z.object({
-      text: z.string().min(10, "النص قصير جداً"),
+      text: z.string().min(10, "Text too short"),
       numberOfScenes: z.number().min(2).max(8).default(4),
       targetAudience: z.string().default("تلاميذ المرحلة الابتدائية"),
       language: z.enum(["ar", "fr"]).default("ar"),
+      uiLanguage: z.enum(["ar", "fr", "en"]).default("ar"),
     }))
     .mutation(async ({ input }) => {
-      const langInstruction = input.language === "fr"
-        ? "Write all scene content in French."
+      // Dynamic prompts based on content language AND UI language
+      const contentLangInstruction = input.language === "fr"
+        ? "Rédige tout le contenu des scènes en français."
         : "اكتب محتوى المشاهد بالعربية.";
 
-      const response = await invokeLLM({
-        messages: [
-          {
-            role: "system",
-            content: `أنت مخرج فيديو تعليمي محترف. حلل النص المدرسي وقسمه إلى ${input.numberOfScenes} مشاهد سينمائية.
-${langInstruction}
+      const systemPrompts: Record<string, string> = {
+        ar: `أنت مخرج فيديو تعليمي محترف. حلل النص المدرسي وقسمه إلى ${input.numberOfScenes} مشاهد سينمائية.
+${contentLangInstruction}
 
 لكل مشهد أعطِ:
 - عنوان قصير
@@ -108,10 +146,49 @@ ${langInstruction}
 - المدة المقترحة بالثواني
 
 أجب بصيغة JSON فقط.`,
+        fr: `Vous êtes un réalisateur de vidéos éducatives professionnel. Analysez le texte scolaire et divisez-le en ${input.numberOfScenes} scènes cinématographiques.
+${contentLangInstruction}
+
+Pour chaque scène, fournissez :
+- Un titre court
+- Une description visuelle détaillée (couleurs, caméra, éclairage)
+- Le contenu éducatif associé
+- Le texte de narration vocale (ce qui sera dit)
+- Une commande visuelle en anglais pour générer l'image (Visual Prompt)
+- La durée suggérée en secondes
+
+Répondez uniquement en format JSON.`,
+        en: `You are a professional educational video director. Analyze the school text and divide it into ${input.numberOfScenes} cinematic scenes.
+${contentLangInstruction}
+
+For each scene, provide:
+- A short title
+- A detailed visual description (colors, camera, lighting)
+- The related educational content
+- The voice-over text (what will be said)
+- A visual prompt in English for image generation (Visual Prompt)
+- The suggested duration in seconds
+
+Respond only in JSON format.`,
+      };
+
+      const userPrompts: Record<string, string> = {
+        ar: `النص المدرسي:\n\n${input.text}\n\nالجمهور: ${input.targetAudience}`,
+        fr: `Texte scolaire :\n\n${input.text}\n\nPublic cible : ${input.targetAudience}`,
+        en: `School text:\n\n${input.text}\n\nTarget audience: ${input.targetAudience}`,
+      };
+
+      const uiLang = input.uiLanguage || "ar";
+
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: systemPrompts[uiLang] || systemPrompts.ar,
           },
           {
             role: "user",
-            content: `النص المدرسي:\n\n${input.text}\n\nالجمهور: ${input.targetAudience}`,
+            content: userPrompts[uiLang] || userPrompts.ar,
           },
         ],
         response_format: {
@@ -150,12 +227,18 @@ ${langInstruction}
       });
 
       const raw = response.choices?.[0]?.message?.content;
-      if (!raw) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في توليد السيناريو" });
+      const errorMsgs: Record<string, { gen: string; parse: string }> = {
+        ar: { gen: "فشل في توليد السيناريو", parse: "فشل في تحليل السيناريو" },
+        fr: { gen: "Échec de la génération du scénario", parse: "Échec de l'analyse du scénario" },
+        en: { gen: "Failed to generate script", parse: "Failed to parse script" },
+      };
+      const msgs = errorMsgs[uiLang] || errorMsgs.ar;
+      if (!raw) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msgs.gen });
 
       try {
         return JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw));
       } catch {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "فشل في تحليل السيناريو" });
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msgs.parse });
       }
     }),
 
