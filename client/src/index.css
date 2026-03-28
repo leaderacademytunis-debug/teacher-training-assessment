@@ -264,6 +264,68 @@
   text-align: left;
   unicode-bidi: embed;
 }
+/* ─── Assistant bubble (blue bg) overrides for readable tables/headings ─── */
+.bg-blue-600 .prose h1,
+.bg-blue-600 .prose h2,
+.bg-blue-600 .prose h3,
+.bg-blue-600 .prose h4,
+.bg-blue-600 .prose h5,
+.bg-blue-600 .prose h6 {
+  color: #ffffff;
+}
+.bg-blue-600 .prose strong {
+  color: #ffffff;
+}
+.bg-blue-600 .prose table {
+  background: rgba(255,255,255,0.12);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.bg-blue-600 .prose table th {
+  background: rgba(255,255,255,0.25);
+  color: #ffffff;
+  font-weight: 700;
+  border-color: rgba(255,255,255,0.2);
+}
+.bg-blue-600 .prose table td {
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.15);
+}
+.bg-blue-600 .prose table tr:nth-child(even) {
+  background: rgba(255,255,255,0.08);
+}
+.bg-blue-600 .prose table tr:nth-child(odd) {
+  background: rgba(255,255,255,0.04);
+}
+.bg-blue-600 .prose code {
+  background: rgba(255,255,255,0.15);
+  color: #ffffff;
+}
+.bg-blue-600 .prose a {
+  color: #bbdefb;
+}
+.bg-blue-600 .prose hr {
+  border-color: rgba(255,255,255,0.2);
+}
+.bg-blue-600 .prose li::marker {
+  color: rgba(255,255,255,0.7);
+}
+/* Responsive table scroll on mobile */
+.prose table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 640px) {
+  .prose table {
+    font-size: 0.8em;
+  }
+  .prose table th,
+  .prose table td {
+    padding: 0.4em 0.5em;
+    white-space: nowrap;
+  }
+}
 /* Latin terms inside RTL context */
 [dir="rtl"] code,
 [dir="rtl"] .font-mono {

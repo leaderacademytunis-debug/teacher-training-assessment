@@ -1541,7 +1541,7 @@ export default function EduGPTAssistantEnhanced() {
                 }`}>
                   {isUser ? '👤' : '🤖'}
                 </div>
-                <Card className={`max-w-3xl p-4 chat-bubble ${
+                <Card className={`max-w-[85vw] sm:max-w-3xl p-3 sm:p-4 chat-bubble overflow-hidden ${
                   isUser 
                     ? "bg-white border-gray-200" 
                     : "bg-blue-600 text-white border-blue-600"
@@ -1574,7 +1574,7 @@ export default function EduGPTAssistantEnhanced() {
               <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-blue-100 text-blue-600">
                 🤖
               </div>
-              <Card className="max-w-3xl p-4 bg-blue-600 text-white border-blue-600 chat-bubble" dir="auto">
+              <Card className="max-w-[85vw] sm:max-w-3xl p-3 sm:p-4 bg-blue-600 text-white border-blue-600 chat-bubble" dir="auto">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>{t.typing}</span>
