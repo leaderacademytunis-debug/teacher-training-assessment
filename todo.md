@@ -3494,3 +3494,13 @@
 - [x] تحديث الترجمات ورسائل الخطأ
 - [x] اختبار (69 اختبار ناجح)
 - [x] حفظ checkpoint
+
+## إعادة بناء الصفحة الرئيسية بالكامل
+- [x] تحليل هيكل Home.tsx و App.tsx الحالي
+- [x] إعادة بناء Navbar: 5 روابط + زر أخضر + sticky + حذف dropdown
+- [x] إعادة بناء Hero: badge + H1 + نص + زرين + pill + 4 إحصائيات
+- [x] بناء قسم البطاقات الثلاثة مع accordion (EduGPT / Studio / Inclusion)
+- [x] بناء بلوك التسجيل المجاني (#E1F5EE)
+- [x] حذف المحتوى القديم (marketplace, slider, calculator, dropdown)
+- [x] RTL عربي موحد + responsive mobile
+- [x] اختبار وحفظ checkpoint
