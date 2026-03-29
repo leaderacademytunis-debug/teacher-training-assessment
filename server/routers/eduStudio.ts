@@ -454,6 +454,84 @@ Respond in JSON format only:
     }),
 
   /**
+   * Step 5b: Auto-Tashkeel - Add Arabic diacritics via LLM for accurate TTS pronunciation
+   * This interceptor processes Arabic text through LLM to add full tashkeel (harakat)
+   * before sending to TTS engine, dramatically improving Arabic pronunciation accuracy.
+   */
+  autoTashkeel: protectedProcedure
+    .input(z.object({
+      text: z.string().min(5),
+      voicePrompt: z.string().optional().default(""),
+      language: z.enum(["ar", "fr", "en"]).optional().default("ar"),
+    }))
+    .mutation(async ({ input }) => {
+      const { text, voicePrompt, language } = input;
+
+      // Only apply tashkeel for Arabic text
+      if (language !== "ar") {
+        // For non-Arabic, just apply voice prompt styling if provided
+        if (voicePrompt.trim()) {
+          try {
+            const response = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: `You are a voice direction expert. Rewrite the following text to match the given performance directions. Keep the same meaning but adjust phrasing for better spoken delivery. Return ONLY the rewritten text, nothing else.`,
+                },
+                {
+                  role: "user",
+                  content: `Performance directions: ${voicePrompt}\n\nOriginal text:\n${text}`,
+                },
+              ],
+            });
+            const rawContent = response.choices?.[0]?.message?.content;
+            const result = typeof rawContent === "string" ? rawContent.trim() : "";
+            return { diacritizedText: result || text, original: text, language };
+          } catch {
+            return { diacritizedText: text, original: text, language };
+          }
+        }
+        return { diacritizedText: text, original: text, language };
+      }
+
+      // Arabic tashkeel processing
+      try {
+        const systemPrompt = voicePrompt.trim()
+          ? `أنت خبير لغوي متخصص في اللغة العربية الفصحى. مهمتك:
+1. أعد صياغة النص التالي بناءً على توجيهات الأداء المعطاة مع الحفاظ على المعنى الأصلي.
+2. قم بتشكيل النص العربي تشكيلاً كاملاً ودقيقاً (الفتحة، الضمة، الكسرة، الشدة، السكون، التنوين) لضمان النطق الصحيح 100% عند تحويله إلى صوت.
+3. أعد النص المُشكَّل فقط بدون أي شرح أو تعليق.
+
+توجيهات الأداء: ${voicePrompt}`
+          : `أنت خبير لغوي متخصص في اللغة العربية الفصحى. مهمتك:
+1. قم بتشكيل النص العربي التالي تشكيلاً كاملاً ودقيقاً (الفتحة، الضمة، الكسرة، الشدة، السكون، التنوين) لضمان النطق الصحيح 100% عند تحويله إلى صوت.
+2. لا تغير المعنى أو الكلمات، فقط أضف الحركات.
+3. أعد النص المُشكَّل فقط بدون أي شرح أو تعليق.`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: text },
+          ],
+        });
+
+        const rawDiacritized = response.choices?.[0]?.message?.content;
+        const diacritizedText = typeof rawDiacritized === "string" ? rawDiacritized.trim() : "";
+
+        if (!diacritizedText || diacritizedText.length < 5) {
+          console.warn("[Tashkeel] LLM returned empty or too short result, using original text");
+          return { diacritizedText: text, original: text, language };
+        }
+
+        return { diacritizedText, original: text, language };
+      } catch (error: any) {
+        console.error("[Tashkeel] LLM error:", error?.message);
+        // Fallback: return original text if tashkeel fails
+        return { diacritizedText: text, original: text, language };
+      }
+    }),
+
+  /**
    * Save a studio project to the database
    */
   saveProject: protectedProcedure

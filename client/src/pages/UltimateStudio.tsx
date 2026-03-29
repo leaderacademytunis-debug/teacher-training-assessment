@@ -15,7 +15,7 @@ import {
   Sparkles, Eye, Volume2, Check, RefreshCw, ZoomIn, ZoomOut,
   ChevronLeft, ChevronRight, Film, Save, FolderOpen, Trash2,
   PenLine, Clock, MoreVertical, Plus, Clapperboard, X, Crown, Lock,
-  FileImage, Palette, RotateCcw, Pencil,
+  FileImage, Palette, RotateCcw, Pencil, Settings, StopCircle, Languages,
 } from "lucide-react";
 import { Link } from "wouter";
 import * as pdfjsLib from "pdfjs-dist";
@@ -101,6 +101,14 @@ export default function UltimateStudio() {
   const [voiceMode, setVoiceMode] = useState<"ai" | "clone">("ai");
   const [selectedVoice, setSelectedVoice] = useState("nova");
 
+  // ═══ Batch Audio Engine State ═══
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, step: "" });
+  const batchCancelRef = useRef(false);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [voicePrompt, setVoicePrompt] = useState("");
+  const [autoTashkeelEnabled, setAutoTashkeelEnabled] = useState(true);
+
   // ═══ Column 3: Storyboard State ═══
   const [playingAudio, setPlayingAudio] = useState<number | null>(null);
   const audioRefs = useRef<Record<number, HTMLAudioElement>>({});
@@ -114,6 +122,7 @@ export default function UltimateStudio() {
   const imageStyleMutation = trpc.ultimateStudio.generateImageWithStyle.useMutation();
   const enhancePromptMutation = trpc.ultimateStudio.enhancePrompt.useMutation();
   const audioMutation = trpc.eduStudio.generateSceneAudio.useMutation();
+  const tashkeelMutation = trpc.eduStudio.autoTashkeel.useMutation();
   const cloneQuery = trpc.voiceCloning.getMyVoiceClone.useQuery();
   const cloneTTSMutation = trpc.voiceCloning.generateWithClonedVoice.useMutation();
 
@@ -585,6 +594,151 @@ export default function UltimateStudio() {
       }
     }
     setGeneratingAudioIdx(null);
+  };
+
+  // ═══ Batch Audio Generation (Sequential) ═══
+  const handleBatchGenerateAudio = async () => {
+    if (!scenario || isBatchGenerating) return;
+
+    const scenes = scenario.scenes;
+    const total = scenes.length;
+    let successCount = 0;
+    let failCount = 0;
+
+    setIsBatchGenerating(true);
+    batchCancelRef.current = false;
+    setBatchProgress({ current: 0, total, step: "" });
+
+    for (let idx = 0; idx < scenes.length; idx++) {
+      const scene = scenes[idx];
+      // Check cancellation
+      if (batchCancelRef.current) {
+        toast.info(us.batchCancelled);
+        break;
+      }
+
+      // Skip scenes that already have audio
+      if (scene.audioUrl) {
+        successCount++;
+        setBatchProgress({ current: idx + 1, total, step: us.batchStepAudio });
+        continue;
+      }
+
+      // Validate spokenText
+      if (!scene.spokenText || scene.spokenText.trim().length < 5) {
+        failCount++;
+        setBatchProgress({ current: idx + 1, total, step: us.batchStepAudio });
+        continue;
+      }
+
+      try {
+        let textForTTS = scene.spokenText;
+
+        // Step 1: Auto-Tashkeel (for Arabic only, if enabled)
+        if (autoTashkeelEnabled && language === "ar") {
+          setBatchProgress({ current: idx + 1, total, step: us.batchStepTashkeel });
+          try {
+            const tashkeelResult = await tashkeelMutation.mutateAsync({
+              text: scene.spokenText,
+              voicePrompt: voicePrompt,
+              language: language,
+            });
+            textForTTS = tashkeelResult.diacritizedText;
+
+            // Update the scene's spokenText in state with diacritized version
+            setScenario(prev => {
+              if (!prev) return prev;
+              const updated = { ...prev, scenes: [...prev.scenes] };
+              updated.scenes[idx] = { ...updated.scenes[idx], spokenText: textForTTS };
+              return updated;
+            });
+          } catch (err) {
+            console.warn(`[Batch] Tashkeel failed for scene ${idx + 1}, using original text`);
+            // Continue with original text if tashkeel fails
+          }
+        } else if (voicePrompt.trim() && language !== "ar") {
+          // For non-Arabic with voice prompt, still process through LLM
+          setBatchProgress({ current: idx + 1, total, step: us.batchStepTashkeel });
+          try {
+            const promptResult = await tashkeelMutation.mutateAsync({
+              text: scene.spokenText,
+              voicePrompt: voicePrompt,
+              language: "fr" as const,
+            });
+            textForTTS = promptResult.diacritizedText;
+          } catch {
+            // Continue with original text
+          }
+        }
+
+        // Check cancellation again before TTS
+        if (batchCancelRef.current) {
+          toast.info(us.batchCancelled);
+          break;
+        }
+
+        // Step 2: Generate TTS Audio
+        setBatchProgress({ current: idx + 1, total, step: us.batchStepAudio });
+        setGeneratingAudioIdx(idx);
+
+        let audioUrl: string;
+        if (voiceMode === "clone" && cloneQuery.data?.id) {
+          const result = await cloneTTSMutation.mutateAsync({
+            text: textForTTS,
+            voiceCloneId: cloneQuery.data.id,
+            sceneIndex: idx,
+          });
+          audioUrl = result.audioUrl;
+        } else {
+          const result = await audioMutation.mutateAsync({
+            sceneNumber: scene.sceneNumber,
+            spokenText: textForTTS,
+            voice: selectedVoice as any,
+          });
+          audioUrl = result.audioUrl;
+        }
+
+        // Live UI Update: immediately update the scene card
+        setScenario(prev => {
+          if (!prev) return prev;
+          const updated = { ...prev, scenes: [...prev.scenes] };
+          updated.scenes[idx] = { ...updated.scenes[idx], audioUrl };
+          return updated;
+        });
+
+        successCount++;
+        setGeneratingAudioIdx(null);
+
+        // Small delay between scenes to avoid rate limiting
+        if (idx < scenes.length - 1) {
+          await new Promise(r => setTimeout(r, 800));
+        }
+      } catch (err: any) {
+        failCount++;
+        setGeneratingAudioIdx(null);
+        console.error(`[Batch] Failed to generate audio for scene ${idx + 1}:`, err?.message);
+      }
+    }
+
+    setIsBatchGenerating(false);
+    setGeneratingAudioIdx(null);
+    setBatchProgress({ current: 0, total: 0, step: "" });
+
+    // Show result toast
+    if (failCount === 0 && !batchCancelRef.current) {
+      toast.success(us.batchComplete);
+    } else if (failCount > 0) {
+      toast.warning(
+        us.batchPartialFail
+          .replace("{success}", String(successCount))
+          .replace("{total}", String(total))
+          .replace("{failed}", String(failCount))
+      );
+    }
+  };
+
+  const handleCancelBatch = () => {
+    batchCancelRef.current = true;
   };
 
   // ═══ Audio Playback ═══
@@ -1467,37 +1621,149 @@ export default function UltimateStudio() {
                             </select>
                           )}
 
+                          {/* ═══ Voice Settings Button + Auto-Tashkeel Toggle ═══ */}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setShowVoiceSettings(!showVoiceSettings)}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-xs text-white/70 hover:text-white"
+                            >
+                              <Settings className="w-3.5 h-3.5" />
+                              {us.voiceSettings}
+                            </button>
+                            {language === "ar" && (
+                              <button
+                                onClick={() => setAutoTashkeelEnabled(!autoTashkeelEnabled)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-all ${
+                                  autoTashkeelEnabled
+                                    ? "bg-purple-500/20 border-purple-500/40 text-purple-400"
+                                    : "bg-white/5 border-white/10 text-white/40"
+                                }`}
+                                title={us.autoTashkeelDesc}
+                              >
+                                <Languages className="w-3.5 h-3.5" />
+                                {us.autoTashkeel}
+                              </button>
+                            )}
+                          </div>
+
+                          {/* ═══ Voice Settings Panel (Collapsible) ═══ */}
+                          {showVoiceSettings && (
+                            <div className="bg-white/5 rounded-lg p-3 border border-white/10 space-y-2">
+                              <label className="text-xs font-bold text-white/80 flex items-center gap-1.5">
+                                <Sparkles className="w-3 h-3 text-amber-400" />
+                                {us.voicePromptLabel}
+                              </label>
+                              <Textarea
+                                value={voicePrompt}
+                                onChange={(e) => setVoicePrompt(e.target.value)}
+                                placeholder={us.voicePromptPlaceholder}
+                                className="min-h-[60px] text-xs bg-white/5 border-white/20 text-white placeholder:text-white/30 resize-none"
+                                dir="auto"
+                              />
+                              <p className="text-[10px] text-white/40">{us.voicePromptHelp}</p>
+                            </div>
+                          )}
+
                           {scenario ? (
-                            scenario.scenes.map((scene, idx) => (
-                              <div key={idx} className="bg-white/5 rounded-lg p-2">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs font-bold text-white">{us.sceneLabel} {scene.sceneNumber}</span>
-                                  {scene.audioUrl && <Check className="w-3 h-3 text-green-400" />}
+                            <>
+                              {/* ═══ Master Batch Button ═══ */}
+                              <Button
+                                className={`w-full h-10 text-sm font-bold transition-all ${
+                                  isBatchGenerating
+                                    ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
+                                    : "bg-gradient-to-r from-green-500/30 to-emerald-500/30 text-green-400 hover:from-green-500/40 hover:to-emerald-500/40 border border-green-500/30"
+                                }`}
+                                onClick={isBatchGenerating ? handleCancelBatch : handleBatchGenerateAudio}
+                                disabled={!scenario.scenes.length}
+                              >
+                                {isBatchGenerating ? (
+                                  <>
+                                    <StopCircle className="w-4 h-4 me-2" />
+                                    {us.batchCancel}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Mic className="w-4 h-4 me-2" />
+                                    {us.batchGenerateAll}
+                                  </>
+                                )}
+                              </Button>
+
+                              {/* ═══ Batch Progress Bar ═══ */}
+                              {isBatchGenerating && batchProgress.total > 0 && (
+                                <div className="bg-white/5 rounded-lg p-3 border border-green-500/20 space-y-2">
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-green-400 font-bold flex items-center gap-1.5">
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      {us.batchGenerating
+                                        .replace("{current}", String(batchProgress.current))
+                                        .replace("{total}", String(batchProgress.total))}
+                                    </span>
+                                    <span className="text-white/40 text-[10px]">
+                                      {batchProgress.step}
+                                    </span>
+                                  </div>
+                                  {/* Progress bar */}
+                                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-500"
+                                      style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                                    />
+                                  </div>
+                                  {/* Scene indicators */}
+                                  <div className="flex gap-1">
+                                    {scenario.scenes.map((s, i) => (
+                                      <div
+                                        key={i}
+                                        className={`flex-1 h-1.5 rounded-full transition-all duration-300 ${
+                                          s.audioUrl
+                                            ? "bg-green-500"
+                                            : i < batchProgress.current
+                                              ? "bg-red-500/50"
+                                              : i === batchProgress.current - 1
+                                                ? "bg-green-500/50 animate-pulse"
+                                                : "bg-white/10"
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
                                 </div>
-                                <p className="text-[10px] text-white/60 mb-2 line-clamp-2" dir="auto">{scene.spokenText}</p>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="sm"
-                                    className="h-6 text-[10px] flex-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
-                                    onClick={() => handleGenerateAudio(idx)}
-                                    disabled={generatingAudioIdx === idx}
-                                  >
-                                    {generatingAudioIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Volume2 className="w-3 h-3 me-1" />}
-                                    {scene.audioUrl ? us.regenerateAudio : us.generateAudio}
-                                  </Button>
-                                  {scene.audioUrl && (
+                              )}
+
+                              {/* ═══ Individual Scene Cards ═══ */}
+                              {scenario.scenes.map((scene, idx) => (
+                                <div key={idx} className={`bg-white/5 rounded-lg p-2 transition-all ${
+                                  generatingAudioIdx === idx ? "ring-1 ring-green-500/30 bg-green-500/5" : ""
+                                }`}>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="text-xs font-bold text-white">{us.sceneLabel} {scene.sceneNumber}</span>
+                                    {scene.audioUrl && <Check className="w-3 h-3 text-green-400" />}
+                                  </div>
+                                  <p className="text-[10px] text-white/60 mb-2 line-clamp-2" dir="auto">{scene.spokenText}</p>
+                                  <div className="flex items-center gap-1">
                                     <Button
-                                      variant="ghost"
                                       size="sm"
-                                      className="h-6 w-6 p-0 text-white/40"
-                                      onClick={() => toggleAudio(idx, scene.audioUrl!)}
+                                      className="h-6 text-[10px] flex-1 bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30"
+                                      onClick={() => handleGenerateAudio(idx)}
+                                      disabled={generatingAudioIdx === idx || isBatchGenerating}
                                     >
-                                      {playingAudio === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                                      {generatingAudioIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Volume2 className="w-3 h-3 me-1" />}
+                                      {scene.audioUrl ? us.regenerateAudio : us.generateAudio}
                                     </Button>
-                                  )}
+                                    {scene.audioUrl && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 text-white/40"
+                                        onClick={() => toggleAudio(idx, scene.audioUrl!)}
+                                      >
+                                        {playingAudio === idx ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                                      </Button>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))
+                              ))}
+                            </>
                           ) : (
                             <div className="text-center py-4">
                               <Mic className="w-8 h-8 text-white/10 mx-auto mb-2" />

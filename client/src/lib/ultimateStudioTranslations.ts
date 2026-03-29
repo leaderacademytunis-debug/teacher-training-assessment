@@ -95,6 +95,24 @@ const translations = {
     audioRetrying: "إعادة المحاولة...",
     audioRetrySuccess: "نجحت إعادة المحاولة",
 
+    // ─── Batch Audio Engine ───
+    batchGenerateAll: "🎙️ توليد الصوت لجميع المشاهد",
+    batchGenerating: "جاري توليد صوت المشهد {current} من {total}...",
+    batchComplete: "✅ تم توليد الصوت لجميع المشاهد!",
+    batchPartialFail: "تم توليد {success} من {total} مشاهد. فشل {failed}.",
+    batchCancelled: "تم إلغاء التوليد الشامل",
+    batchCancel: "إلغاء",
+    voiceSettings: "إعدادات الصوت",
+    voicePromptLabel: "توجيهات الأداء",
+    voicePromptPlaceholder: "مثلاً: تحدث بحماس وبطء وكأنك تخاطب أطفالاً",
+    voicePromptHelp: "هذه التوجيهات تؤثر على أسلوب النطق والأداء الصوتي",
+    autoTashkeel: "تشكيل تلقائي",
+    autoTashkeelDesc: "إضافة الحركات العربية تلقائياً لنطق صحيح 100%",
+    tashkeelProcessing: "جاري تشكيل النص...",
+    tashkeelDone: "تم التشكيل بنجاح",
+    batchStepTashkeel: "تشكيل النص",
+    batchStepAudio: "توليد الصوت",
+
     // ─── Column 3: Storyboard ───
     storyboardTitle: "شاشة العرض النهائية",
     storyboardTag: "Storyboard",
@@ -309,6 +327,24 @@ const translations = {
     audioRetrying: "Nouvelle tentative...",
     audioRetrySuccess: "La nouvelle tentative a réussi",
 
+    // ─── Batch Audio Engine ───
+    batchGenerateAll: "🎙️ Générer l'audio pour toutes les scènes",
+    batchGenerating: "Génération de l'audio de la scène {current} sur {total}...",
+    batchComplete: "✅ Audio généré pour toutes les scènes !",
+    batchPartialFail: "{success} sur {total} scènes générées. {failed} échoué(es).",
+    batchCancelled: "Génération groupée annulée",
+    batchCancel: "Annuler",
+    voiceSettings: "Paramètres vocaux",
+    voicePromptLabel: "Directives de performance",
+    voicePromptPlaceholder: "Ex: Parlez avec enthousiasme et lentement comme si vous vous adressiez à des enfants",
+    voicePromptHelp: "Ces directives influencent le style de prononciation et la performance vocale",
+    autoTashkeel: "Vocalisation automatique",
+    autoTashkeelDesc: "Ajouter automatiquement les voyelles arabes pour une prononciation correcte à 100%",
+    tashkeelProcessing: "Vocalisation en cours...",
+    tashkeelDone: "Vocalisation réussie",
+    batchStepTashkeel: "Vocalisation du texte",
+    batchStepAudio: "Génération audio",
+
     // ─── Column 3: Storyboard ───
     storyboardTitle: "Écran de prévisualisation finale",
     storyboardTag: "Storyboard",
@@ -522,6 +558,24 @@ const translations = {
     audioTextTooShort: "Narration text is too short (less than 5 characters)",
     audioRetrying: "Retrying...",
     audioRetrySuccess: "Retry succeeded",
+
+    // ─── Batch Audio Engine ───
+    batchGenerateAll: "🎙️ Generate Audio for All Scenes",
+    batchGenerating: "Generating audio for scene {current} of {total}...",
+    batchComplete: "✅ Audio generated for all scenes!",
+    batchPartialFail: "{success} of {total} scenes generated. {failed} failed.",
+    batchCancelled: "Batch generation cancelled",
+    batchCancel: "Cancel",
+    voiceSettings: "Voice Settings",
+    voicePromptLabel: "Performance Directions",
+    voicePromptPlaceholder: "E.g.: Speak enthusiastically and slowly as if addressing children",
+    voicePromptHelp: "These directions influence pronunciation style and vocal performance",
+    autoTashkeel: "Auto Diacritics",
+    autoTashkeelDesc: "Automatically add Arabic diacritics for 100% correct pronunciation",
+    tashkeelProcessing: "Adding diacritics...",
+    tashkeelDone: "Diacritics added successfully",
+    batchStepTashkeel: "Text diacritics",
+    batchStepAudio: "Audio generation",
 
     // ─── Column 3: Storyboard ───
     storyboardTitle: "Final Preview Screen",
