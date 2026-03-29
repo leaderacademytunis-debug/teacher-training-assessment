@@ -125,6 +125,7 @@ function SimpleNavbar() {
   const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -170,15 +171,28 @@ function SimpleNavbar() {
           {/* CTA Button */}
           <div className="flex items-center gap-3">
             {user ? (
-              <Link href="/teacher-tools">
-                <Button
-                  size="sm"
-                  className="text-white font-bold px-5 rounded-xl text-sm"
-                  style={{ background: "#1D9E75" }}
-                >
-                  لوحة الأدوات
-                </Button>
-              </Link>
+              <>
+                {isAdmin && (
+                  <Link href="/admin-control">
+                    <Button
+                      size="sm"
+                      className="text-white font-bold px-5 rounded-xl text-sm"
+                      style={{ background: "#E8590C" }}
+                    >
+                      لوحة التحكم
+                    </Button>
+                  </Link>
+                )}
+                <Link href="/teacher-tools">
+                  <Button
+                    size="sm"
+                    className="text-white font-bold px-5 rounded-xl text-sm"
+                    style={{ background: "#1D9E75" }}
+                  >
+                    لوحة الأدوات
+                  </Button>
+                </Link>
+              </>
             ) : (
               <a href={getLoginUrl()}>
                 <Button
@@ -191,7 +205,7 @@ function SimpleNavbar() {
               </a>
             )}
 
-            {/* Mobile menu button */}
+              {/* Mobile menu button */}
             <button
               className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -217,6 +231,16 @@ function SimpleNavbar() {
                 {link.label}
               </Link>
             ))}
+            {user && isAdmin && (
+              <Link
+                href="/admin-control"
+                className="block px-4 py-3 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-xl mt-2"
+                style={{ fontFamily: "'Cairo', sans-serif" }}
+                onClick={() => setMobileOpen(false)}
+              >
+                لوحة التحكم
+              </Link>
+            )}
             {!user && (
               <a href={getLoginUrl()} className="block mt-2">
                 <Button className="w-full text-white font-bold rounded-xl" style={{ background: "#1D9E75" }}>
