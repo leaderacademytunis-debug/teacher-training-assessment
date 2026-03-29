@@ -24,7 +24,8 @@ import {
   BarChart3, Bell, Menu, Sliders, TrendingUp, UserCheck, UserX,
   Zap, Image, Upload, Clock, ArrowUpRight, ArrowDownRight,
   MessageSquare, ToggleLeft, Save, Trash2, Plus, Edit, AlertTriangle,
-  PenTool, ScanLine, Video, Theater, Map, Calendar, Lightbulb, EyeOff
+  PenTool, ScanLine, Video, Theater, Map, Calendar, Lightbulb, EyeOff,
+  Coins, Gift, History, ArrowUp, ArrowDown, Hash, ChevronDown
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -35,7 +36,7 @@ import useI18n from "@/i18n";
 
 
 // ===== TYPES =====
-type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages";
+type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages" | "points";
 
 const TOOL_ICONS: Record<string, React.ReactNode> = {
   FileText: <FileText className="h-4 w-4" />,
@@ -102,6 +103,7 @@ export default function AdminDashboardV2() {
     { id: "subscriptions", label: "الاشتراكات", icon: <CreditCard className="h-5 w-5" /> },
     { id: "content", label: "المحتوى والرسائل", icon: <MessageSquare className="h-5 w-5" /> },
     { id: "pages", label: "إدارة الصفحات", icon: <FileText className="h-5 w-5" /> },
+    { id: "points", label: "إدارة النقاط", icon: <Zap className="h-5 w-5" /> },
   ];
 
   return (
@@ -205,6 +207,7 @@ export default function AdminDashboardV2() {
           {activeSection === "subscriptions" && <SubscriptionSection />}
           {activeSection === "content" && <ContentManagementSection />}
           {activeSection === "pages" && <PageManagementSection />}
+          {activeSection === "points" && <PointsManagementSection />}
         </div>
       </main>
     </div>
@@ -2332,7 +2335,7 @@ function PageManagementSection() {
                   externalUrl: newPage.externalUrl || undefined,
                   customContent: newPage.customContent || undefined,
                   requiresAuth: newPage.requiresAuth,
-                  requiredTier: newPage.requiredTier,
+                  requiredTier: newPage.requiredTier as any,
                   isVisible: newPage.isVisible,
                   badgeText: newPage.badgeText || undefined,
                   badgeColor: newPage.badgeColor || undefined,
@@ -2345,6 +2348,530 @@ function PageManagementSection() {
                 <Plus className="h-4 w-4 ms-2" />
               )}
               إضافة الصفحة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+
+// ===== SECTION 7: POINTS MANAGEMENT =====
+function PointsManagementSection() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"balance" | "totalSpent" | "name" | "createdAt">("balance");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [adjustAmount, setAdjustAmount] = useState("");
+  const [adjustReason, setAdjustReason] = useState("");
+  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [isGrant, setIsGrant] = useState(true);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyUserId, setHistoryUserId] = useState<number | null>(null);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkAmount, setBulkAmount] = useState("");
+  const [bulkReason, setBulkReason] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
+
+  const usersQuery = trpc.voiceCloning.adminListUsersPoints.useQuery(
+    { search: search || undefined, page, limit: 20, sortBy, sortOrder },
+    { placeholderData: (prev: any) => prev }
+  );
+
+  const statsQuery = trpc.voiceCloning.adminGetPointsStats.useQuery();
+
+  const historyQuery = trpc.voiceCloning.adminGetUserTransactions.useQuery(
+    { userId: historyUserId!, limit: 50 },
+    { enabled: !!historyUserId }
+  );
+
+  const adjustMutation = trpc.voiceCloning.adminAdjustPoints.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم تعديل نقاط ${data.userName}: ${data.previousBalance} → ${data.newBalance}`);
+      setAdjustDialogOpen(false);
+      setAdjustAmount("");
+      setAdjustReason("");
+      usersQuery.refetch();
+      statsQuery.refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const bulkMutation = trpc.voiceCloning.adminBulkGrantPoints.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم منح النقاط لـ ${data.successCount} مستخدم${data.failCount > 0 ? ` (${data.failCount} فشل)` : ""}`);
+      setBulkDialogOpen(false);
+      setBulkAmount("");
+      setBulkReason("");
+      setSelectedUserIds(new Set());
+      usersQuery.refetch();
+      statsQuery.refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleAdjust = () => {
+    if (!selectedUser || !adjustAmount || !adjustReason) return;
+    const amount = isGrant ? Math.abs(Number(adjustAmount)) : -Math.abs(Number(adjustAmount));
+    adjustMutation.mutate({ userId: selectedUser.id, amount, reason: adjustReason });
+  };
+
+  const handleBulkGrant = () => {
+    if (selectedUserIds.size === 0 || !bulkAmount || !bulkReason) return;
+    bulkMutation.mutate({
+      userIds: Array.from(selectedUserIds),
+      amount: Math.abs(Number(bulkAmount)),
+      reason: bulkReason,
+    });
+  };
+
+  const toggleUserSelection = (userId: number) => {
+    const next = new Set(selectedUserIds);
+    if (next.has(userId)) next.delete(userId);
+    else next.add(userId);
+    setSelectedUserIds(next);
+  };
+
+  const toggleSelectAll = () => {
+    if (!usersQuery.data) return;
+    const allIds = usersQuery.data.users.map(u => u.id);
+    const allSelected = allIds.every(id => selectedUserIds.has(id));
+    if (allSelected) {
+      const next = new Set(selectedUserIds);
+      allIds.forEach(id => next.delete(id));
+      setSelectedUserIds(next);
+    } else {
+      const next = new Set(selectedUserIds);
+      allIds.forEach(id => next.add(id));
+      setSelectedUserIds(next);
+    }
+  };
+
+  const stats = statsQuery.data;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Coins className="h-7 w-7 text-amber-400" />
+            إدارة النقاط
+          </h2>
+          <p className="text-slate-400 mt-1">إدارة أرصدة النقاط ومنح مكافآت للمستخدمين</p>
+        </div>
+        <div className="flex gap-2">
+          {selectedUserIds.size > 0 && (
+            <Button
+              onClick={() => setBulkDialogOpen(true)}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Gift className="h-4 w-4 ms-2" />
+              منح نقاط لـ {selectedUserIds.size} مستخدم
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => { usersQuery.refetch(); statsQuery.refetch(); }} className="border-slate-600 text-slate-300">
+            <RefreshCw className="h-4 w-4 ms-2" />
+            تحديث
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/20">
+                  <Users className="h-5 w-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">المستخدمون مع نقاط</p>
+                  <p className="text-xl font-bold text-white">{stats.usersWithPoints}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/20">
+                  <Coins className="h-5 w-5 text-green-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">متوسط الرصيد</p>
+                  <p className="text-xl font-bold text-white">{stats.avgBalance.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/20">
+                  <TrendingUp className="h-5 w-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">إجمالي المكتسب</p>
+                  <p className="text-xl font-bold text-white">{stats.totalEarned.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-900 border-slate-700">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-red-500/20">
+                  <ArrowDownRight className="h-5 w-5 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">إجمالي المنفق</p>
+                  <p className="text-xl font-bold text-white">{stats.totalSpent.toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Search & Filters */}
+      <Card className="bg-slate-900 border-slate-700">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="بحث بالاسم أو البريد أو المعرف..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                className="bg-slate-800 border-slate-600 text-white pr-10"
+              />
+            </div>
+            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+              <SelectTrigger className="w-[160px] bg-slate-800 border-slate-600 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="balance">الرصيد</SelectItem>
+                <SelectItem value="totalSpent">المنفق</SelectItem>
+                <SelectItem value="name">الاسم</SelectItem>
+                <SelectItem value="createdAt">تاريخ التسجيل</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+              className="border-slate-600 text-slate-300"
+            >
+              {sortOrder === "desc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Users Table */}
+      <Card className="bg-slate-900 border-slate-700">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-700 bg-slate-800/50">
+                  <th className="p-3 text-right">
+                    <input
+                      type="checkbox"
+                      checked={usersQuery.data?.users.length ? usersQuery.data.users.every(u => selectedUserIds.has(u.id)) : false}
+                      onChange={toggleSelectAll}
+                      className="rounded border-slate-500"
+                    />
+                  </th>
+                  <th className="p-3 text-right text-slate-300 font-medium">المستخدم</th>
+                  <th className="p-3 text-right text-slate-300 font-medium">الدور</th>
+                  <th className="p-3 text-center text-slate-300 font-medium">الرصيد</th>
+                  <th className="p-3 text-center text-slate-300 font-medium">المكتسب</th>
+                  <th className="p-3 text-center text-slate-300 font-medium">المنفق</th>
+                  <th className="p-3 text-center text-slate-300 font-medium">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersQuery.isLoading ? (
+                  <tr><td colSpan={7} className="p-8 text-center text-slate-400">جاري التحميل...</td></tr>
+                ) : !usersQuery.data?.users.length ? (
+                  <tr><td colSpan={7} className="p-8 text-center text-slate-400">لا يوجد مستخدمون</td></tr>
+                ) : (
+                  usersQuery.data.users.map((user) => (
+                    <tr key={user.id} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
+                      <td className="p-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedUserIds.has(user.id)}
+                          onChange={() => toggleUserSelection(user.id)}
+                          className="rounded border-slate-500"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <div>
+                          <p className="text-white font-medium">{user.name}</p>
+                          <p className="text-xs text-slate-400">{user.email || `ID: ${user.id}`}</p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <Badge variant={user.role === "admin" ? "default" : "secondary"} className={
+                          user.role === "admin" ? "bg-red-500/20 text-red-300 border-red-500/30" :
+                          user.role === "trainer" ? "bg-blue-500/20 text-blue-300 border-blue-500/30" :
+                          "bg-slate-600/30 text-slate-300"
+                        }>
+                          {user.role === "admin" ? "مشرف" : user.role === "trainer" ? "مدرب" : user.role === "supervisor" ? "مراقب" : "مستخدم"}
+                        </Badge>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`font-bold text-lg ${user.balance >= 100 ? "text-green-400" : user.balance > 0 ? "text-amber-400" : "text-red-400"}`}>
+                          {user.balance >= 900000 ? "∞" : user.balance.toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center text-green-400">{user.totalEarned >= 900000 ? "∞" : user.totalEarned.toLocaleString()}</td>
+                      <td className="p-3 text-center text-red-400">{user.totalSpent.toLocaleString()}</td>
+                      <td className="p-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setSelectedUser(user); setIsGrant(true); setAdjustDialogOpen(true); }}
+                            className="text-green-400 hover:text-green-300 hover:bg-green-500/10"
+                            title="منح نقاط"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setSelectedUser(user); setIsGrant(false); setAdjustDialogOpen(true); }}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            title="خصم نقاط"
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => { setHistoryUserId(user.id); setHistoryDialogOpen(true); }}
+                            className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                            title="سجل المعاملات"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {usersQuery.data && usersQuery.data.totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t border-slate-700">
+              <p className="text-sm text-slate-400">
+                عرض {((page - 1) * 20) + 1} - {Math.min(page * 20, usersQuery.data.total)} من {usersQuery.data.total}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                  className="border-slate-600 text-slate-300"
+                >
+                  السابق
+                </Button>
+                <span className="flex items-center px-3 text-sm text-slate-300">
+                  {page} / {usersQuery.data.totalPages}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={page >= usersQuery.data.totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className="border-slate-600 text-slate-300"
+                >
+                  التالي
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Adjust Points Dialog */}
+      <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {isGrant ? <Plus className="h-5 w-5 text-green-400" /> : <ArrowDown className="h-5 w-5 text-red-400" />}
+              {isGrant ? "منح نقاط" : "خصم نقاط"} - {selectedUser?.name}
+            </DialogTitle>
+            <DialogDescription>
+              الرصيد الحالي: <span className="font-bold text-amber-400">{selectedUser?.balance >= 900000 ? "∞" : selectedUser?.balance?.toLocaleString()}</span> نقطة
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-slate-300">عدد النقاط</Label>
+              <Input
+                type="number"
+                min="1"
+                max="999999"
+                value={adjustAmount}
+                onChange={(e) => setAdjustAmount(e.target.value)}
+                placeholder="مثال: 100"
+                className="bg-slate-800 border-slate-600 text-white mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-300">السبب</Label>
+              <Textarea
+                value={adjustReason}
+                onChange={(e) => setAdjustReason(e.target.value)}
+                placeholder={isGrant ? "مثال: مكافأة إكمال الدورة التدريبية" : "مثال: إساءة استخدام الخدمة"}
+                className="bg-slate-800 border-slate-600 text-white mt-1"
+                rows={3}
+              />
+            </div>
+            {adjustAmount && (
+              <div className={`p-3 rounded-lg ${isGrant ? "bg-green-500/10 border border-green-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
+                <p className="text-sm">
+                  {isGrant ? "سيصبح الرصيد:" : "سيصبح الرصيد:"}
+                  <span className="font-bold mx-2">
+                    {selectedUser?.balance >= 900000 ? "∞" : Math.max(0, (selectedUser?.balance || 0) + (isGrant ? Math.abs(Number(adjustAmount)) : -Math.abs(Number(adjustAmount)))).toLocaleString()}
+                  </span>
+                  نقطة
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAdjustDialogOpen(false)} className="border-slate-600 text-slate-300">
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleAdjust}
+              disabled={!adjustAmount || !adjustReason || adjustMutation.isPending}
+              className={isGrant ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+            >
+              {adjustMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin ms-2" /> : null}
+              {isGrant ? "منح النقاط" : "خصم النقاط"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transaction History Dialog */}
+      <Dialog open={historyDialogOpen} onOpenChange={(open) => { setHistoryDialogOpen(open); if (!open) setHistoryUserId(null); }}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-2xl max-h-[80vh]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-blue-400" />
+              سجل المعاملات - {historyQuery.data?.userName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[60vh] space-y-2 py-2">
+            {historyQuery.isLoading ? (
+              <div className="text-center py-8 text-slate-400">جاري التحميل...</div>
+            ) : !historyQuery.data?.transactions.length ? (
+              <div className="text-center py-8 text-slate-400">لا توجد معاملات</div>
+            ) : (
+              historyQuery.data.transactions.map((tx) => (
+                <div key={tx.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                  <div className={`p-2 rounded-full ${
+                    tx.type === "earn" || tx.type === "bonus" ? "bg-green-500/20" :
+                    tx.type === "refund" ? "bg-blue-500/20" : "bg-red-500/20"
+                  }`}>
+                    {tx.type === "earn" || tx.type === "bonus" ? <ArrowUp className="h-4 w-4 text-green-400" /> :
+                     tx.type === "refund" ? <RefreshCw className="h-4 w-4 text-blue-400" /> :
+                     <ArrowDown className="h-4 w-4 text-red-400" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">{tx.description}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-slate-400">{tx.featureUsed}</span>
+                      <span className="text-xs text-slate-500">•</span>
+                      <span className="text-xs text-slate-400">
+                        {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString("ar-TN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-left">
+                    <span className={`font-bold ${tx.amount > 0 ? "text-green-400" : "text-red-400"}`}>
+                      {tx.amount > 0 ? "+" : ""}{tx.amount}
+                    </span>
+                    <p className="text-xs text-slate-400">الرصيد: {tx.balanceAfter}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Grant Dialog */}
+      <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5 text-amber-400" />
+              منح نقاط جماعية لـ {selectedUserIds.size} مستخدم
+            </DialogTitle>
+            <DialogDescription>
+              سيتم منح نفس عدد النقاط لجميع المستخدمين المحددين
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-slate-300">عدد النقاط لكل مستخدم</Label>
+              <Input
+                type="number"
+                min="1"
+                max="999999"
+                value={bulkAmount}
+                onChange={(e) => setBulkAmount(e.target.value)}
+                placeholder="مثال: 50"
+                className="bg-slate-800 border-slate-600 text-white mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-slate-300">السبب</Label>
+              <Textarea
+                value={bulkReason}
+                onChange={(e) => setBulkReason(e.target.value)}
+                placeholder="مثال: مكافأة المشاركة في الدورة التدريبية"
+                className="bg-slate-800 border-slate-600 text-white mt-1"
+                rows={3}
+              />
+            </div>
+            {bulkAmount && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                <p className="text-sm text-amber-300">
+                  سيتم منح <span className="font-bold">{Number(bulkAmount).toLocaleString()}</span> نقطة ×{" "}
+                  <span className="font-bold">{selectedUserIds.size}</span> مستخدم ={" "}
+                  <span className="font-bold">{(Number(bulkAmount) * selectedUserIds.size).toLocaleString()}</span> نقطة إجمالية
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDialogOpen(false)} className="border-slate-600 text-slate-300">
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleBulkGrant}
+              disabled={!bulkAmount || !bulkReason || bulkMutation.isPending}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {bulkMutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin ms-2" /> : <Gift className="h-4 w-4 ms-2" />}
+              منح النقاط
             </Button>
           </DialogFooter>
         </DialogContent>

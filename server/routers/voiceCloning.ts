@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { voiceClones, leaderPoints, pointsTransactions, users } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
@@ -581,8 +581,210 @@ export const voiceCloningRouter = router({
       voiceCloneTTS: VOICE_CLONE_TTS_COST,
       standardTTS: STANDARD_TTS_COST,
       imageGeneration: IMAGE_GENERATION_COST,
-      initialFreePoints: 100,
+      initialFreePoints: INITIAL_BALANCE,
       provider: isElevenLabsConfigured() ? "elevenlabs" : "builtin_simulation",
     };
+  }),
+
+  // ========== Admin Points Management ==========
+
+  // List all users with their points
+  adminListUsersPoints: adminProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      page: z.number().min(1).default(1),
+      limit: z.number().min(1).max(100).default(20),
+      sortBy: z.enum(["balance", "totalSpent", "name", "createdAt"]).default("balance"),
+      sortOrder: z.enum(["asc", "desc"]).default("desc"),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { users: [], total: 0, page: 1, totalPages: 0 };
+
+      // Get all users with their points
+      const allUsers = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        openId: users.openId,
+        createdAt: users.createdAt,
+      }).from(users);
+
+      // Get all points records
+      const allPoints = await db.select().from(leaderPoints);
+      const pointsMap = new Map(allPoints.map(p => [p.userId, p]));
+
+      // Merge users with points
+      let merged = allUsers.map(u => {
+        const pts = pointsMap.get(u.id);
+        return {
+          id: u.id,
+          name: u.name || "بدون اسم",
+          email: u.email || "",
+          role: u.role,
+          balance: pts?.balance ?? 0,
+          totalEarned: pts?.totalEarned ?? 0,
+          totalSpent: pts?.totalSpent ?? 0,
+          hasPointsRecord: !!pts,
+          createdAt: u.createdAt,
+        };
+      });
+
+      // Filter by search
+      if (input.search) {
+        const s = input.search.toLowerCase();
+        merged = merged.filter(u =>
+          u.name.toLowerCase().includes(s) ||
+          u.email.toLowerCase().includes(s) ||
+          String(u.id).includes(s)
+        );
+      }
+
+      // Sort
+      merged.sort((a, b) => {
+        let cmp = 0;
+        switch (input.sortBy) {
+          case "balance": cmp = a.balance - b.balance; break;
+          case "totalSpent": cmp = a.totalSpent - b.totalSpent; break;
+          case "name": cmp = a.name.localeCompare(b.name); break;
+          case "createdAt": cmp = (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0); break;
+        }
+        return input.sortOrder === "desc" ? -cmp : cmp;
+      });
+
+      const total = merged.length;
+      const totalPages = Math.ceil(total / input.limit);
+      const start = (input.page - 1) * input.limit;
+      const paged = merged.slice(start, start + input.limit);
+
+      return { users: paged, total, page: input.page, totalPages };
+    }),
+
+  // Grant or deduct points for a user
+  adminAdjustPoints: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      amount: z.number().min(-999999).max(999999),
+      reason: z.string().min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      // Ensure user exists
+      const [user] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "المستخدم غير موجود" });
+
+      // Ensure points record exists
+      const points = await ensurePointsRecord(input.userId);
+
+      const newBalance = Math.max(0, points.balance + input.amount);
+      const isGrant = input.amount > 0;
+
+      await db.update(leaderPoints)
+        .set({
+          balance: newBalance,
+          totalEarned: isGrant ? points.totalEarned + input.amount : points.totalEarned,
+          totalSpent: !isGrant ? points.totalSpent + Math.abs(input.amount) : points.totalSpent,
+        })
+        .where(eq(leaderPoints.userId, input.userId));
+
+      await db.insert(pointsTransactions).values({
+        userId: input.userId,
+        type: isGrant ? "bonus" : "spend",
+        amount: input.amount,
+        balanceAfter: newBalance,
+        description: `[Admin: ${ctx.user.name}] ${input.reason}`,
+        featureUsed: "admin_adjustment",
+      });
+
+      return {
+        userId: input.userId,
+        previousBalance: points.balance,
+        newBalance,
+        adjustment: input.amount,
+        userName: user.name,
+      };
+    }),
+
+  // Bulk grant points to multiple users
+  adminBulkGrantPoints: adminProcedure
+    .input(z.object({
+      userIds: z.array(z.number()).min(1).max(500),
+      amount: z.number().min(1).max(999999),
+      reason: z.string().min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const userId of input.userIds) {
+        try {
+          const points = await ensurePointsRecord(userId);
+          const newBalance = points.balance + input.amount;
+
+          await db.update(leaderPoints)
+            .set({
+              balance: newBalance,
+              totalEarned: points.totalEarned + input.amount,
+            })
+            .where(eq(leaderPoints.userId, userId));
+
+          await db.insert(pointsTransactions).values({
+            userId,
+            type: "bonus",
+            amount: input.amount,
+            balanceAfter: newBalance,
+            description: `[Bulk Admin: ${ctx.user.name}] ${input.reason}`,
+            featureUsed: "admin_bulk_grant",
+          });
+
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+
+      return { successCount, failCount, totalProcessed: input.userIds.length };
+    }),
+
+  // Get transaction history for a specific user (admin view)
+  adminGetUserTransactions: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      limit: z.number().min(1).max(200).default(50),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { transactions: [], userName: "" };
+
+      const [user] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      const transactions = await db.select()
+        .from(pointsTransactions)
+        .where(eq(pointsTransactions.userId, input.userId))
+        .orderBy(desc(pointsTransactions.createdAt))
+        .limit(input.limit);
+
+      return { transactions, userName: user?.name || "غير معروف" };
+    }),
+
+  // Get points statistics summary
+  adminGetPointsStats: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalUsers: 0, totalBalance: 0, totalEarned: 0, totalSpent: 0, usersWithPoints: 0, avgBalance: 0 };
+
+    const allPoints = await db.select().from(leaderPoints);
+    const totalUsers = allPoints.length;
+    const totalBalance = allPoints.reduce((sum, p) => sum + p.balance, 0);
+    const totalEarned = allPoints.reduce((sum, p) => sum + p.totalEarned, 0);
+    const totalSpent = allPoints.reduce((sum, p) => sum + p.totalSpent, 0);
+    const nonAdminPoints = allPoints.filter(p => p.balance < 900000);
+    const avgBalance = nonAdminPoints.length > 0 ? Math.round(nonAdminPoints.reduce((sum, p) => sum + p.balance, 0) / nonAdminPoints.length) : 0;
+
+    return { totalUsers, totalBalance, totalEarned, totalSpent, usersWithPoints: totalUsers, avgBalance };
   }),
 });
