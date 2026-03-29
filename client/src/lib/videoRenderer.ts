@@ -1,12 +1,12 @@
 /**
- * VideoRenderer - Client-side video rendering engine using FFmpeg.wasm
- * Merges storyboard images + audio into a single branded MP4 video
+ * VideoRenderer - Client-side video rendering engine using Canvas + MediaRecorder
+ * Merges storyboard images + audio into a single branded WebM/MP4 video
  * Features: Intro card, Outro card, Smart watermark, Resolution normalization
  * Enhanced: Per-scene progress, Quality selector (720p/1080p), Preview mode
- * All processing happens in the user's browser (zero server cost)
+ * 
+ * This version uses native browser APIs (Canvas + MediaRecorder) instead of FFmpeg.wasm
+ * for maximum compatibility and reliability. No 31MB download required.
  */
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
 // ─── Quality Presets ───
 export type VideoQuality = '720p' | '1080p';
@@ -14,21 +14,21 @@ export type VideoQuality = '720p' | '1080p';
 interface QualityConfig {
   width: number;
   height: number;
-  videoBitrate: string;
-  audioBitrate: string;
+  videoBitrate: number;
   label: string;
 }
 
 export const QUALITY_PRESETS: Record<VideoQuality, QualityConfig> = {
-  '720p': { width: 1280, height: 720, videoBitrate: '2000k', audioBitrate: '128k', label: 'HD 720p' },
-  '1080p': { width: 1920, height: 1080, videoBitrate: '4000k', audioBitrate: '192k', label: 'Full HD 1080p' },
+  '720p': { width: 1280, height: 720, videoBitrate: 2_500_000, label: 'HD 720p' },
+  '1080p': { width: 1920, height: 1080, videoBitrate: 5_000_000, label: 'Full HD 1080p' },
 };
 
 // ─── Constants ───
-const INTRO_DURATION = 3;
+const INTRO_DURATION = 3; // seconds
 const OUTRO_DURATION = 3;
-const BRAND_COLOR_HEX = '#F59E0B'; // amber-500
+const BRAND_COLOR_HEX = '#F59E0B';
 const WATERMARK_TEXT = 'Created via Leader Academy';
+const FPS = 30;
 
 export interface SceneData {
   sceneNumber: number;
@@ -47,7 +47,6 @@ export interface RenderProgress {
   phase: 'loading' | 'preparing' | 'rendering' | 'finalizing' | 'done' | 'error';
   percent: number;
   message: string;
-  // Enhanced per-scene tracking
   currentScene?: number;
   totalScenes?: number;
   scenePhase?: 'downloading' | 'encoding' | 'complete';
@@ -55,137 +54,90 @@ export interface RenderProgress {
 
 export type ProgressCallback = (progress: RenderProgress) => void;
 
-// Singleton FFmpeg instance
-let ffmpegInstance: FFmpeg | null = null;
-let isLoaded = false;
-
 /**
- * Check if the browser supports WebAssembly
+ * Check if the browser supports MediaRecorder with video
  */
 export function isWasmSupported(): boolean {
+  // We no longer need WASM, but keep the function for API compatibility
+  // Check for Canvas + MediaRecorder support instead
   try {
-    if (typeof WebAssembly === 'object' && typeof WebAssembly.instantiate === 'function') {
-      const module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
-      if (module instanceof WebAssembly.Module) {
-        return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-  return false;
-}
-
-/**
- * Load the FFmpeg.wasm core (downloads ~31MB on first use, cached after)
- * Uses single-threaded mode (no SharedArrayBuffer requirement)
- */
-async function loadFFmpeg(onProgress?: ProgressCallback): Promise<FFmpeg> {
-  if (ffmpegInstance && isLoaded) return ffmpegInstance;
-
-  onProgress?.({
-    phase: 'loading',
-    percent: 5,
-    message: 'جاري تحميل محرك الفيديو...',
-  });
-
-  const ffmpeg = new FFmpeg();
-
-  ffmpeg.on('log', ({ message }) => {
-    console.log('[FFmpeg]', message);
-  });
-
-  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
-  const maxRetries = 2;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-      const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-      await ffmpeg.load({ coreURL, wasmURL });
-      break;
-    } catch (loadError: any) {
-      console.error(`[FFmpeg] Load attempt ${attempt + 1} failed:`, loadError);
-      if (attempt < maxRetries) {
-        onProgress?.({
-          phase: 'loading',
-          percent: 5,
-          message: `إعادة المحاولة... (${attempt + 2}/${maxRetries + 1})`,
-        });
-        await new Promise(r => setTimeout(r, 1500));
-        continue;
-      }
-      if (loadError.message?.includes('SharedArrayBuffer') || loadError.message?.includes('cross-origin')) {
-        throw new Error('CROSS_ORIGIN_ISOLATION');
-      }
-      throw new Error(`FFMPEG_LOAD_FAILED: ${loadError.message || 'Unknown error'}`);
-    }
-  }
-
-  ffmpegInstance = ffmpeg;
-  isLoaded = true;
-
-  onProgress?.({
-    phase: 'loading',
-    percent: 15,
-    message: 'تم تحميل محرك الفيديو بنجاح',
-  });
-
-  return ffmpeg;
-}
-
-/**
- * Fetch a remote file as Uint8Array with CORS handling
- */
-async function fetchFileData(url: string): Promise<Uint8Array> {
-  try {
-    const data = await fetchFile(url);
-    return new Uint8Array(data);
-  } catch (fetchError) {
-    console.warn('[VideoRenderer] fetchFile failed, trying direct fetch:', fetchError);
-    const response = await fetch(url, { mode: 'cors' });
-    if (!response.ok) throw new Error(`Failed to fetch: ${url}`);
-    const buffer = await response.arrayBuffer();
-    return new Uint8Array(buffer);
+    const canvas = document.createElement('canvas');
+    canvas.width = 100;
+    canvas.height = 100;
+    const stream = canvas.captureStream(1);
+    if (!stream) return false;
+    const supported = typeof MediaRecorder !== 'undefined';
+    stream.getTracks().forEach(t => t.stop());
+    return supported;
+  } catch {
+    return false;
   }
 }
 
 /**
- * Get audio duration by decoding it in the browser
+ * Load an image from URL and return it as HTMLImageElement
  */
-async function getAudioDuration(audioData: Uint8Array): Promise<number> {
+function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const blob = new Blob([audioData.buffer as ArrayBuffer], { type: 'audio/mpeg' });
-    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      // Retry without crossOrigin for same-origin images
+      const img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+      img2.src = url;
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * Load audio from URL and return AudioBuffer + duration
+ */
+async function loadAudio(url: string): Promise<{ buffer: AudioBuffer; duration: number }> {
+  const response = await fetch(url, { mode: 'cors' }).catch(() => fetch(url));
+  if (!response.ok) throw new Error(`Failed to fetch audio: ${url}`);
+  const arrayBuffer = await response.arrayBuffer();
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  try {
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    return { buffer: audioBuffer, duration: audioBuffer.duration };
+  } finally {
+    audioContext.close();
+  }
+}
+
+/**
+ * Get audio duration without full decode
+ */
+async function getAudioDuration(url: string): Promise<number> {
+  return new Promise((resolve) => {
     const audio = new Audio();
+    audio.crossOrigin = 'anonymous';
     audio.addEventListener('loadedmetadata', () => {
-      const duration = audio.duration;
-      URL.revokeObjectURL(url);
-      resolve(isFinite(duration) ? duration : 5);
+      resolve(isFinite(audio.duration) ? audio.duration : 5);
     });
-    audio.addEventListener('error', () => {
-      URL.revokeObjectURL(url);
-      resolve(5);
-    });
+    audio.addEventListener('error', () => resolve(5));
     audio.src = url;
   });
 }
 
 /**
- * Generate a branded card image (intro or outro) using Canvas API
+ * Draw a branded card (intro or outro) on canvas
  */
-function generateCardImage(options: {
-  type: 'intro' | 'outro';
-  lessonTitle: string;
-  teacherName: string;
-  width: number;
-  height: number;
-}): Uint8Array {
+function drawCardOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  options: {
+    type: 'intro' | 'outro';
+    lessonTitle: string;
+    teacherName: string;
+    width: number;
+    height: number;
+  }
+) {
   const { width, height } = options;
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d')!;
 
   // Background gradient
   const gradient = ctx.createLinearGradient(0, 0, width, height);
@@ -226,13 +178,12 @@ function generateCardImage(options: {
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-
-  const scale = width / 1920; // Scale factor for different resolutions
+  const scale = width / 1920;
 
   if (options.type === 'intro') {
     ctx.fillStyle = 'rgba(245, 158, 11, 0.7)';
     ctx.font = `bold ${Math.round(28 * scale)}px Arial, sans-serif`;
-    ctx.fillText('🎬 Leader Academy Presents', centerX, height * 0.25);
+    ctx.fillText('Leader Academy Presents', centerX, height * 0.25);
 
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.3)';
     ctx.lineWidth = 2;
@@ -258,7 +209,7 @@ function generateCardImage(options: {
 
     ctx.fillStyle = BRAND_COLOR_HEX;
     ctx.font = `bold ${Math.round(36 * scale)}px Arial, sans-serif`;
-    ctx.fillText(`إعداد الأستاذ: ${options.teacherName}`, centerX, height * 0.72);
+    ctx.fillText(`${options.teacherName} :إعداد`, centerX, height * 0.72);
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.font = `${Math.round(24 * scale)}px Arial, sans-serif`;
@@ -281,13 +232,10 @@ function generateCardImage(options: {
 
     ctx.fillStyle = '#FFFFFF';
     ctx.font = `bold ${Math.round(40 * scale)}px Arial, sans-serif`;
-    const outroLines = wrapText(ctx, 'صُنع هذا الدرس السحري باستخدام الذكاء الاصطناعي', width - 200, Math.round(40 * scale));
+    const outroLines = wrapText(ctx, 'صُنع هذا الدرس باستخدام الذكاء الاصطناعي', width - 200, Math.round(40 * scale));
     outroLines.forEach((line, i) => {
       ctx.fillText(line, centerX, height * 0.57 + i * 55 * scale);
     });
-
-    ctx.font = `${Math.round(48 * scale)}px Arial, sans-serif`;
-    ctx.fillText('✨ 🤖 ✨', centerX, height * 0.72);
 
     ctx.fillStyle = BRAND_COLOR_HEX;
     ctx.font = `bold ${Math.round(36 * scale)}px Arial, sans-serif`;
@@ -295,22 +243,61 @@ function generateCardImage(options: {
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.font = `${Math.round(22 * scale)}px Arial, sans-serif`;
-    ctx.fillText('Powered by AI • Made for Tunisian Teachers', centerX, height * 0.92);
+    ctx.fillText(`© ${new Date().getFullYear()} Leader Academy - All Rights Reserved`, centerX, height * 0.92);
+  }
+}
+
+/**
+ * Draw watermark on canvas
+ */
+function drawWatermark(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.font = '18px Arial, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(WATERMARK_TEXT, width - 20, height - 15);
+  ctx.restore();
+}
+
+/**
+ * Draw scene image fitted to canvas with letterboxing
+ */
+function drawImageFitted(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  canvasWidth: number,
+  canvasHeight: number
+) {
+  // Black background
+  ctx.fillStyle = '#0F172A';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  // Calculate fit
+  const imgRatio = img.width / img.height;
+  const canvasRatio = canvasWidth / canvasHeight;
+
+  let drawWidth: number, drawHeight: number, drawX: number, drawY: number;
+
+  if (imgRatio > canvasRatio) {
+    drawWidth = canvasWidth;
+    drawHeight = canvasWidth / imgRatio;
+    drawX = 0;
+    drawY = (canvasHeight - drawHeight) / 2;
+  } else {
+    drawHeight = canvasHeight;
+    drawWidth = canvasHeight * imgRatio;
+    drawX = (canvasWidth - drawWidth) / 2;
+    drawY = 0;
   }
 
-  const dataUrl = canvas.toDataURL('image/png');
-  const binaryStr = atob(dataUrl.split(',')[1]);
-  const bytes = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) {
-    bytes[i] = binaryStr.charCodeAt(i);
-  }
-  return bytes;
+  ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
 }
 
 /**
  * Helper: wrap text to fit within maxWidth
  */
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, fontSize: number): string[] {
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, _fontSize: number): string[] {
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
@@ -335,16 +322,160 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number,
 }
 
 /**
- * Build the FFmpeg filter for watermark text overlay
+ * Sleep helper
  */
-function buildWatermarkFilter(): string {
-  const escapedText = WATERMARK_TEXT.replace(/'/g, "'\\''").replace(/:/g, '\\:');
-  return `drawtext=text='${escapedText}':fontsize=22:fontcolor=white@0.25:x=w-tw-30:y=h-th-20:font=Arial`;
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * Main render function: takes scenes + branding and produces a branded MP4 blob
- * Now supports quality selection and enhanced per-scene progress
+ * Record a sequence of canvas frames with optional audio as a video blob
+ * Uses MediaRecorder API for native browser video encoding
+ */
+async function recordCanvasSequence(
+  canvas: HTMLCanvasElement,
+  segments: Array<{
+    type: 'card' | 'scene';
+    draw: (ctx: CanvasRenderingContext2D, frame: number, totalFrames: number) => void;
+    durationSec: number;
+    audioUrl?: string;
+  }>,
+  quality: QualityConfig,
+  onProgress?: ProgressCallback,
+  totalScenes?: number
+): Promise<Blob> {
+  const ctx = canvas.getContext('2d')!;
+  const canvasStream = canvas.captureStream(FPS);
+
+  // Determine the best supported MIME type
+  const mimeTypes = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+    'video/mp4',
+  ];
+  let selectedMime = 'video/webm';
+  for (const mime of mimeTypes) {
+    if (MediaRecorder.isTypeSupported(mime)) {
+      selectedMime = mime;
+      break;
+    }
+  }
+
+  // Create AudioContext for mixing all scene audio
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const audioDestination = audioContext.createMediaStreamDestination();
+
+  // Combine canvas video stream with audio destination
+  const combinedStream = new MediaStream([
+    ...canvasStream.getVideoTracks(),
+    ...audioDestination.stream.getAudioTracks(),
+  ]);
+
+  const recorder = new MediaRecorder(combinedStream, {
+    mimeType: selectedMime,
+    videoBitsPerSecond: quality.videoBitrate,
+  });
+
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) chunks.push(e.data);
+  };
+
+  const recordingDone = new Promise<Blob>((resolve) => {
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: selectedMime.split(';')[0] });
+      resolve(blob);
+    };
+  });
+
+  recorder.start(100); // Collect data every 100ms
+
+  // Process each segment sequentially
+  let sceneCounter = 0;
+  for (let segIdx = 0; segIdx < segments.length; segIdx++) {
+    const segment = segments[segIdx];
+    const totalFrames = Math.ceil(segment.durationSec * FPS);
+    const frameDuration = 1000 / FPS;
+
+    // Start audio playback for this segment if it has audio
+    let audioSource: AudioBufferSourceNode | null = null;
+    if (segment.audioUrl) {
+      try {
+        const response = await fetch(segment.audioUrl, { mode: 'cors' }).catch(() => fetch(segment.audioUrl!));
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioSource = audioContext.createBufferSource();
+        audioSource.buffer = audioBuffer;
+        audioSource.connect(audioDestination);
+        audioSource.start(audioContext.currentTime);
+      } catch (audioErr) {
+        console.warn('[VideoRenderer] Audio load failed for segment, continuing without audio:', audioErr);
+      }
+    }
+
+    if (segment.type === 'scene') {
+      sceneCounter++;
+    }
+
+    // Render frames
+    for (let frame = 0; frame < totalFrames; frame++) {
+      const startTime = performance.now();
+
+      segment.draw(ctx, frame, totalFrames);
+
+      // Calculate timing to maintain FPS
+      const elapsed = performance.now() - startTime;
+      const waitTime = Math.max(0, frameDuration - elapsed);
+      if (waitTime > 0) {
+        await sleep(waitTime);
+      }
+
+      // Report progress periodically (every 10 frames)
+      if (frame % 10 === 0 && onProgress && segment.type === 'scene') {
+        const sceneProgress = frame / totalFrames;
+        const overallPercent = 25 + ((sceneCounter - 1 + sceneProgress) / (totalScenes || 1)) * 60;
+        onProgress({
+          phase: 'rendering',
+          percent: Math.round(Math.min(85, overallPercent)),
+          message: `المشهد ${sceneCounter}/${totalScenes}: دمج الصورة والصوت...`,
+          currentScene: sceneCounter,
+          totalScenes,
+          scenePhase: 'encoding',
+        });
+      }
+    }
+
+    // Stop audio source
+    if (audioSource) {
+      try { audioSource.stop(); } catch { /* ignore */ }
+    }
+
+    // Report scene complete
+    if (segment.type === 'scene' && onProgress) {
+      onProgress({
+        phase: 'rendering',
+        percent: Math.round(25 + (sceneCounter / (totalScenes || 1)) * 60),
+        message: `المشهد ${sceneCounter}/${totalScenes}: تم ✓`,
+        currentScene: sceneCounter,
+        totalScenes,
+        scenePhase: 'complete',
+      });
+    }
+  }
+
+  // Stop recording
+  recorder.stop();
+  audioContext.close();
+
+  return recordingDone;
+}
+
+/**
+ * Main render function: takes scenes + branding and produces a branded video blob
+ * Uses Canvas + MediaRecorder for maximum browser compatibility
  */
 export async function renderVideo(
   scenes: SceneData[],
@@ -353,7 +484,7 @@ export async function renderVideo(
   quality: VideoQuality = '1080p'
 ): Promise<Blob> {
   if (!isWasmSupported()) {
-    throw new Error('WASM_NOT_SUPPORTED');
+    throw new Error('BROWSER_NOT_SUPPORTED');
   }
 
   if (scenes.length === 0) {
@@ -361,219 +492,188 @@ export async function renderVideo(
   }
 
   const qConfig = QUALITY_PRESETS[quality];
-  const TARGET_WIDTH = qConfig.width;
-  const TARGET_HEIGHT = qConfig.height;
-
-  const ffmpeg = await loadFFmpeg(onProgress);
+  const WIDTH = qConfig.width;
+  const HEIGHT = qConfig.height;
   const hasBranding = !!branding;
   const totalScenes = scenes.length;
 
-  // Progress calculation:
-  // Loading: 0-15%, Preparing (intro/outro): 15-25%, Scenes: 25-85%, Concat+Finalize: 85-100%
-  const sceneProgressRange = 60; // 25% to 85%
-  const perSceneRange = sceneProgressRange / totalScenes;
-
   try {
-    // ═══ Phase 1: Generate Intro & Outro Cards ═══
-    if (hasBranding) {
-      onProgress?.({
-        phase: 'preparing',
-        percent: 16,
-        message: 'جاري إنشاء شاشة البداية...',
-        totalScenes,
-      });
-
-      const introImage = generateCardImage({
-        type: 'intro',
-        lessonTitle: branding!.lessonTitle,
-        teacherName: branding!.teacherName,
-        width: TARGET_WIDTH,
-        height: TARGET_HEIGHT,
-      });
-      await ffmpeg.writeFile('intro_card.png', introImage);
-
-      await ffmpeg.exec([
-        '-f', 'lavfi',
-        '-i', `anullsrc=r=44100:cl=stereo`,
-        '-t', String(INTRO_DURATION),
-        '-c:a', 'aac',
-        '-b:a', qConfig.audioBitrate,
-        '-y',
-        'intro_silence.aac',
-      ]);
-
-      await ffmpeg.exec([
-        '-loop', '1',
-        '-i', 'intro_card.png',
-        '-i', 'intro_silence.aac',
-        '-c:v', 'libx264',
-        '-tune', 'stillimage',
-        '-c:a', 'aac',
-        '-b:a', qConfig.audioBitrate,
-        '-pix_fmt', 'yuv420p',
-        '-vf', `scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=0F172A,fade=t=in:st=0:d=0.8,fade=t=out:st=${INTRO_DURATION - 0.5}:d=0.5`,
-        '-t', String(INTRO_DURATION),
-        '-shortest',
-        '-y',
-        'clip_intro.mp4',
-      ]);
-
-      onProgress?.({
-        phase: 'preparing',
-        percent: 20,
-        message: 'جاري إنشاء شاشة النهاية...',
-        totalScenes,
-      });
-
-      const outroImage = generateCardImage({
-        type: 'outro',
-        lessonTitle: branding!.lessonTitle,
-        teacherName: branding!.teacherName,
-        width: TARGET_WIDTH,
-        height: TARGET_HEIGHT,
-      });
-      await ffmpeg.writeFile('outro_card.png', outroImage);
-
-      await ffmpeg.exec([
-        '-loop', '1',
-        '-i', 'outro_card.png',
-        '-i', 'intro_silence.aac',
-        '-c:v', 'libx264',
-        '-tune', 'stillimage',
-        '-c:a', 'aac',
-        '-b:a', qConfig.audioBitrate,
-        '-pix_fmt', 'yuv420p',
-        '-vf', `scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease,pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=0F172A,fade=t=in:st=0:d=0.5,fade=t=out:st=${OUTRO_DURATION - 0.5}:d=0.5`,
-        '-t', String(OUTRO_DURATION),
-        '-shortest',
-        '-y',
-        'clip_outro.mp4',
-      ]);
-
-      onProgress?.({
-        phase: 'preparing',
-        percent: 25,
-        message: 'تم إنشاء شاشات البداية والنهاية',
-        totalScenes,
-      });
-    }
-
-    // ═══ Phase 2: Process Each Scene (Download + Encode) ═══
-    const sceneDurations: number[] = [];
-    const watermarkFilter = hasBranding ? `,${buildWatermarkFilter()}` : '';
-
-    for (let i = 0; i < scenes.length; i++) {
-      const scene = scenes[i];
-      const sceneIdx = i + 1;
-      const sceneBasePercent = 25 + (i * perSceneRange);
-
-      // Sub-step 1: Download image (33% of scene range)
-      onProgress?.({
-        phase: 'rendering',
-        percent: Math.round(sceneBasePercent),
-        message: `المشهد ${sceneIdx}/${totalScenes}: تحميل الصورة...`,
-        currentScene: sceneIdx,
-        totalScenes,
-        scenePhase: 'downloading',
-      });
-
-      const imageData = await fetchFileData(scene.imageUrl);
-      await ffmpeg.writeFile(`scene_${sceneIdx}.jpg`, imageData);
-
-      // Sub-step 2: Download audio (66% of scene range)
-      onProgress?.({
-        phase: 'rendering',
-        percent: Math.round(sceneBasePercent + perSceneRange * 0.33),
-        message: `المشهد ${sceneIdx}/${totalScenes}: تحميل الصوت...`,
-        currentScene: sceneIdx,
-        totalScenes,
-        scenePhase: 'downloading',
-      });
-
-      const audioData = await fetchFileData(scene.audioUrl);
-      await ffmpeg.writeFile(`scene_${sceneIdx}.mp3`, audioData);
-
-      const duration = scene.duration || await getAudioDuration(audioData);
-      sceneDurations.push(duration);
-
-      // Sub-step 3: Encode scene video (100% of scene range)
-      onProgress?.({
-        phase: 'rendering',
-        percent: Math.round(sceneBasePercent + perSceneRange * 0.66),
-        message: `المشهد ${sceneIdx}/${totalScenes}: دمج الصورة والصوت...`,
-        currentScene: sceneIdx,
-        totalScenes,
-        scenePhase: 'encoding',
-      });
-
-      const fadeInDuration = Math.min(0.5, duration * 0.1);
-      const fadeOutStart = Math.max(0, duration - 0.5);
-      const fadeOutDuration = Math.min(0.5, duration * 0.1);
-
-      const videoFilter = [
-        `scale=${TARGET_WIDTH}:${TARGET_HEIGHT}:force_original_aspect_ratio=decrease`,
-        `pad=${TARGET_WIDTH}:${TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2:color=0F172A`,
-        `fade=t=in:st=0:d=${fadeInDuration}`,
-        `fade=t=out:st=${fadeOutStart}:d=${fadeOutDuration}`,
-      ].join(',') + watermarkFilter;
-
-      await ffmpeg.exec([
-        '-loop', '1',
-        '-i', `scene_${sceneIdx}.jpg`,
-        '-i', `scene_${sceneIdx}.mp3`,
-        '-c:v', 'libx264',
-        '-tune', 'stillimage',
-        '-c:a', 'aac',
-        '-b:a', qConfig.audioBitrate,
-        '-pix_fmt', 'yuv420p',
-        '-vf', videoFilter,
-        '-t', String(Math.ceil(duration)),
-        '-shortest',
-        '-y',
-        `clip_${sceneIdx}.mp4`,
-      ]);
-
-      // Scene complete
-      onProgress?.({
-        phase: 'rendering',
-        percent: Math.round(sceneBasePercent + perSceneRange),
-        message: `المشهد ${sceneIdx}/${totalScenes}: تم ✓`,
-        currentScene: sceneIdx,
-        totalScenes,
-        scenePhase: 'complete',
-      });
-    }
-
-    // ═══ Phase 3: Concatenate All Clips ═══
+    // ═══ Phase 1: Create Canvas ═══
     onProgress?.({
-      phase: 'finalizing',
-      percent: 88,
-      message: 'جاري تجميع الفيديو النهائي...',
+      phase: 'loading',
+      percent: 5,
+      message: 'جاري تجهيز محرك الفيديو...',
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    const ctx = canvas.getContext('2d')!;
+
+    // ═══ Phase 2: Pre-load all assets ═══
+    onProgress?.({
+      phase: 'preparing',
+      percent: 10,
+      message: 'جاري تحميل الملفات...',
       totalScenes,
     });
 
-    let concatContent = '';
-    if (hasBranding) {
-      concatContent += "file 'clip_intro.mp4'\n";
-    }
-    for (let i = 1; i <= scenes.length; i++) {
-      concatContent += `file 'clip_${i}.mp4'\n`;
-    }
-    if (hasBranding) {
-      concatContent += "file 'clip_outro.mp4'\n";
-    }
-    await ffmpeg.writeFile('concat_list.txt', concatContent);
+    // Pre-load all images and get audio durations
+    const preloadedImages: HTMLImageElement[] = [];
+    const audioDurations: number[] = [];
 
-    await ffmpeg.exec([
-      '-f', 'concat',
-      '-safe', '0',
-      '-i', 'concat_list.txt',
-      '-c', 'copy',
-      '-y',
-      'final_output.mp4',
-    ]);
+    for (let i = 0; i < scenes.length; i++) {
+      const scene = scenes[i];
 
-    // ═══ Phase 4: Read Output & Cleanup ═══
+      onProgress?.({
+        phase: 'preparing',
+        percent: 10 + Math.round((i / scenes.length) * 15),
+        message: `تحميل المشهد ${i + 1}/${totalScenes}...`,
+        currentScene: i + 1,
+        totalScenes,
+        scenePhase: 'downloading',
+      });
+
+      // Load image
+      const img = await loadImage(scene.imageUrl);
+      preloadedImages.push(img);
+
+      // Get audio duration
+      const duration = scene.duration || await getAudioDuration(scene.audioUrl);
+      audioDurations.push(Math.max(2, duration)); // Minimum 2 seconds
+    }
+
+    onProgress?.({
+      phase: 'preparing',
+      percent: 25,
+      message: 'تم تحميل جميع الملفات. جاري بدء التسجيل...',
+      totalScenes,
+    });
+
+    // ═══ Phase 3: Build segment list ═══
+    const segments: Array<{
+      type: 'card' | 'scene';
+      draw: (ctx: CanvasRenderingContext2D, frame: number, totalFrames: number) => void;
+      durationSec: number;
+      audioUrl?: string;
+    }> = [];
+
+    // Intro card
+    if (hasBranding) {
+      segments.push({
+        type: 'card',
+        durationSec: INTRO_DURATION,
+        draw: (ctx, frame, totalFrames) => {
+          const progress = frame / totalFrames;
+          drawCardOnCanvas(ctx, {
+            type: 'intro',
+            lessonTitle: branding!.lessonTitle,
+            teacherName: branding!.teacherName,
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          // Fade in effect
+          if (progress < 0.15) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - progress / 0.15})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          }
+          // Fade out effect
+          if (progress > 0.85) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${(progress - 0.85) / 0.15})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          }
+        },
+      });
+    }
+
+    // Scene segments
+    for (let i = 0; i < scenes.length; i++) {
+      const img = preloadedImages[i];
+      const duration = audioDurations[i];
+      const scene = scenes[i];
+
+      segments.push({
+        type: 'scene',
+        durationSec: duration,
+        audioUrl: scene.audioUrl,
+        draw: (ctx, frame, totalFrames) => {
+          const progress = frame / totalFrames;
+
+          // Draw scene image
+          drawImageFitted(ctx, img, WIDTH, HEIGHT);
+
+          // Watermark
+          if (hasBranding) {
+            drawWatermark(ctx, WIDTH, HEIGHT);
+          }
+
+          // Scene number badge
+          const badgeSize = Math.round(50 * (WIDTH / 1920));
+          ctx.save();
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.85)';
+          ctx.beginPath();
+          ctx.roundRect(20, 20, badgeSize * 2, badgeSize, [8]);
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `bold ${Math.round(22 * (WIDTH / 1920))}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${i + 1}`, 20 + badgeSize, 20 + badgeSize / 2);
+          ctx.restore();
+
+          // Fade in
+          if (progress < 0.05) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - progress / 0.05})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          }
+          // Fade out
+          if (progress > 0.95) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${(progress - 0.95) / 0.05})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          }
+        },
+      });
+    }
+
+    // Outro card
+    if (hasBranding) {
+      segments.push({
+        type: 'card',
+        durationSec: OUTRO_DURATION,
+        draw: (ctx, frame, totalFrames) => {
+          const progress = frame / totalFrames;
+          drawCardOnCanvas(ctx, {
+            type: 'outro',
+            lessonTitle: branding!.lessonTitle,
+            teacherName: branding!.teacherName,
+            width: WIDTH,
+            height: HEIGHT,
+          });
+          // Fade in
+          if (progress < 0.15) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - progress / 0.15})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          }
+          // Fade out
+          if (progress > 0.85) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${(progress - 0.85) / 0.15})`;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          }
+        },
+      });
+    }
+
+    // ═══ Phase 4: Record everything ═══
+    onProgress?.({
+      phase: 'rendering',
+      percent: 25,
+      message: 'جاري تسجيل الفيديو...',
+      totalScenes,
+    });
+
+    const blob = await recordCanvasSequence(canvas, segments, qConfig, onProgress, totalScenes);
+
+    // ═══ Phase 5: Done ═══
     onProgress?.({
       phase: 'finalizing',
       percent: 95,
@@ -581,21 +681,8 @@ export async function renderVideo(
       totalScenes,
     });
 
-    const outputData = await ffmpeg.readFile('final_output.mp4');
-    const outputBuffer = outputData instanceof Uint8Array ? outputData.buffer : outputData;
-    const blob = new Blob([outputBuffer as BlobPart], { type: 'video/mp4' });
-
-    // Cleanup virtual FS
-    const filesToClean = ['concat_list.txt', 'final_output.mp4'];
-    if (hasBranding) {
-      filesToClean.push('intro_card.png', 'outro_card.png', 'intro_silence.aac', 'clip_intro.mp4', 'clip_outro.mp4');
-    }
-    for (let i = 1; i <= scenes.length; i++) {
-      filesToClean.push(`scene_${i}.jpg`, `scene_${i}.mp3`, `clip_${i}.mp4`);
-    }
-    for (const f of filesToClean) {
-      try { await ffmpeg.deleteFile(f); } catch { /* ignore */ }
-    }
+    // Small delay to ensure all data is flushed
+    await sleep(200);
 
     onProgress?.({
       phase: 'done',
@@ -620,7 +707,7 @@ export async function renderVideo(
 /**
  * Trigger automatic download of a blob as a file
  */
-export function downloadBlob(blob: Blob, filename: string = 'Leader-Lesson-Video.mp4') {
+export function downloadBlob(blob: Blob, filename: string = 'Leader-Lesson-Video.webm') {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

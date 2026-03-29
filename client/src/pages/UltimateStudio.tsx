@@ -796,7 +796,7 @@ export default function UltimateStudio() {
     setShowExportSettings(true);
   };
 
-  // ═══ Export Video (FFmpeg.wasm in browser) ═══
+  // ═══ Export Video (Canvas + MediaRecorder in browser) ═══
   const handleExportVideo = async () => {
     if (!scenario || !canExportVideo) return;
 
@@ -838,16 +838,14 @@ export default function UltimateStudio() {
     } catch (err: any) {
       console.error('[VideoExport]', err);
       const errMsg = err.message || '';
-      if (errMsg === 'WASM_NOT_SUPPORTED') {
+      if (errMsg === 'BROWSER_NOT_SUPPORTED') {
         setExportError(us.wasmNotSupported);
       } else if (errMsg === 'NO_SCENES') {
         setExportError(us.completeStep1First);
-      } else if (errMsg === 'CROSS_ORIGIN_ISOLATION') {
-        setExportError(us.ffmpegLoadFailed + ' - ' + (us.videoTryChrome || 'Please try using Chrome on desktop.'));
-      } else if (errMsg.startsWith('FFMPEG_LOAD_FAILED')) {
-        setExportError(us.ffmpegLoadFailed + ' - ' + (us.videoTryChrome || 'Please try using Chrome on desktop.'));
-      } else if (errMsg.includes('fetch') || errMsg.includes('network') || errMsg.includes('Failed to fetch')) {
-        setExportError(us.videoNetworkError || 'Network error while loading video engine. Check your internet connection.');
+      } else if (errMsg.includes('Failed to load image')) {
+        setExportError('فشل في تحميل صورة المشهد. تأكد من توليد جميع الصور أولاً.');
+      } else if (errMsg.includes('Failed to fetch audio') || errMsg.includes('fetch') || errMsg.includes('network')) {
+        setExportError(us.videoNetworkError || 'خطأ في الشبكة أثناء تحميل الملفات. تحقق من اتصالك بالإنترنت.');
       } else {
         setExportError(errMsg || us.videoGenericError);
       }
@@ -859,7 +857,7 @@ export default function UltimateStudio() {
   // Download from preview
   const handleDownloadFromPreview = () => {
     if (!videoPreviewBlob || !scenario) return;
-    const filename = `Leader-${scenario.title || 'Lesson'}-Video-${videoQuality}.mp4`;
+    const filename = `Leader-${scenario.title || 'Lesson'}-Video-${videoQuality}.webm`;
     downloadBlob(videoPreviewBlob, filename);
     toast.success(us.videoExportSuccess);
   };

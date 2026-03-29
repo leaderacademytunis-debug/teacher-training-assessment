@@ -27,18 +27,17 @@ describe("Video Quality Presets", () => {
     expect(q.height).toBe(1080);
   });
 
-  it("should have audio and video bitrate for each preset", () => {
+  it("should have video bitrate for each preset", () => {
     for (const key of ['720p', '1080p'] as VideoQuality[]) {
       const q = QUALITY_PRESETS[key];
       expect(q.videoBitrate).toBeTruthy();
-      expect(q.audioBitrate).toBeTruthy();
       expect(q.label).toBeTruthy();
     }
   });
 
   it("should have higher bitrate for 1080p than 720p", () => {
-    const bps720 = parseInt(QUALITY_PRESETS['720p'].videoBitrate);
-    const bps1080 = parseInt(QUALITY_PRESETS['1080p'].videoBitrate);
+    const bps720 = QUALITY_PRESETS['720p'].videoBitrate;
+    const bps1080 = QUALITY_PRESETS['1080p'].videoBitrate;
     expect(bps1080).toBeGreaterThan(bps720);
   });
 
