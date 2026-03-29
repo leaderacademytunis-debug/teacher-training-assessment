@@ -33,10 +33,11 @@ import {
 } from "recharts";
 import RichTextEditor from "@/components/RichTextEditor";
 import useI18n from "@/i18n";
+import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 
 
 // ===== TYPES =====
-type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages" | "points";
+type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages" | "points" | "analytics";
 
 const TOOL_ICONS: Record<string, React.ReactNode> = {
   FileText: <FileText className="h-4 w-4" />,
@@ -98,6 +99,7 @@ export default function AdminDashboardV2() {
 
   const sections: { id: Section; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "نظرة عامة", icon: <LayoutDashboard className="h-5 w-5" /> },
+    { id: "analytics", label: "لوحة التحليلات", icon: <BarChart3 className="h-5 w-5" /> },
     { id: "limits", label: "حدود الاستخدام", icon: <Sliders className="h-5 w-5" /> },
     { id: "users", label: "إدارة المستخدمين", icon: <Users className="h-5 w-5" /> },
     { id: "subscriptions", label: "الاشتراكات", icon: <CreditCard className="h-5 w-5" /> },
@@ -202,6 +204,7 @@ export default function AdminDashboardV2() {
         {/* Content */}
         <div className="p-6">
           {activeSection === "overview" && <OverviewSection />}
+          {activeSection === "analytics" && <AnalyticsSection />}
           {activeSection === "limits" && <UsageLimitsSection />}
           {activeSection === "users" && <UserManagementSection />}
           {activeSection === "subscriptions" && <SubscriptionSection />}
@@ -402,7 +405,12 @@ function OverviewSection() {
   );
 }
 
-// ===== SECTION 2: USAGE LIMITS =====
+// ===== SECTION 2: ANALYTICS DASHBOARD =====
+function AnalyticsSection() {
+  return <AnalyticsDashboard />;
+}
+
+// ===== SECTION 3: USAGE LIMITS =====
 function UsageLimitsSection() {
   const toolConfigs = trpc.adminControl.getToolConfigs.useQuery();
   const seedMutation = trpc.adminControl.seedToolConfigs.useMutation({
