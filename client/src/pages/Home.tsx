@@ -183,7 +183,7 @@ function SimpleNavbar() {
               <a href={getLoginUrl()}>
                 <Button
                   size="sm"
-                  className="text-white font-bold px-5 rounded-xl text-sm hidden sm:inline-flex"
+                  className="text-white font-bold px-5 rounded-xl text-sm"
                   style={{ background: "#1D9E75" }}
                 >
                   ابدأ بـ 100 نقطة مجانية
@@ -257,14 +257,14 @@ function ProductCard({ product }: { product: Product }) {
 
         {/* Title */}
         <h3
-          className="text-2xl sm:text-3xl font-extrabold mb-3"
+          className="text-xl sm:text-2xl font-extrabold mb-2"
           style={{ color: product.color, fontFamily: "'Cairo', sans-serif" }}
         >
           {product.title}
         </h3>
 
         {/* Description */}
-        <p className="text-gray-600 text-base leading-relaxed mb-5" style={{ fontFamily: "'Cairo', sans-serif" }}>
+        <p className="text-gray-600 text-sm leading-relaxed mb-4" style={{ fontFamily: "'Cairo', sans-serif" }}>
           {product.description}
         </p>
 
@@ -282,13 +282,9 @@ function ProductCard({ product }: { product: Product }) {
       </div>
 
       {/* Accordion Content */}
-      <div
-        className={`overflow-hidden transition-all duration-400 ease-in-out ${
-          open ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
+      {open && (
         <div className="px-6 sm:px-8 pb-6 sm:pb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-2.5">
             {product.tools.map((tool, i) => {
               const Icon = tool.icon;
               return (
@@ -327,7 +323,7 @@ function ProductCard({ product }: { product: Product }) {
             </Link>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -454,7 +450,7 @@ export default function Home() {
 
       {/* ===== 3 PRODUCT CARDS SECTION ===== */}
       <section id="products" className="py-16 sm:py-20 lg:py-24" style={{ background: "#FAFAFA" }}>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-14">
             <h2
@@ -469,7 +465,7 @@ export default function Home() {
           </div>
 
           {/* Product Cards */}
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {PRODUCTS.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
