@@ -1,0 +1,37 @@
+{
+  "query": "SELECT u.id, u.name, u.role, u.openId, lp.balance, lp.total_earned, lp.total_spent FROM users u LEFT JOIN leader_points lp ON u.id = lp.user_id WHERE u.role = 'admin' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT u.id, u.name, u.role, u.openId, lp.balance, lp.total_earned, lp.total_spent FROM users u LEFT JOIN leader_points lp ON u.id = lp.user_id WHERE u.role = 'admin' LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Ali Saadallah",
+      "role": "admin",
+      "openId": "fBMf5LUnkonfwxp7ThKPtB",
+      "balance": "0",
+      "total_earned": "100",
+      "total_spent": "100"
+    },
+    {
+      "id": "2400105",
+      "name": "ALI SAADALLAH",
+      "role": "admin",
+      "openId": "5bhnGQB9xGnujGmNfdp2oy",
+      "balance": "NULL",
+      "total_earned": "NULL",
+      "total_spent": "NULL"
+    },
+    {
+      "id": "2880001",
+      "name": "Leader Academy",
+      "role": "admin",
+      "openId": "QXaynMVhCgKcU6CDstMdWy",
+      "balance": "NULL",
+      "total_earned": "NULL",
+      "total_spent": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\trole\topenId\tbalance\ttotal_earned\ttotal_spent\n1\tAli Saadallah\tadmin\tfBMf5LUnkonfwxp7ThKPtB\t0\t100\t100\n2400105\tALI SAADALLAH\tadmin\t5bhnGQB9xGnujGmNfdp2oy\tNULL\tNULL\tNULL\n2880001\tLeader Academy\tadmin\tQXaynMVhCgKcU6CDstMdWy\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1124
+}

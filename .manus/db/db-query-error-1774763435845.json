@@ -1,0 +1,8 @@
+{
+  "query": "SELECT u.id, u.name, u.role, u.openId, lp.balance, lp.totalEarned, lp.totalSpent FROM users u LEFT JOIN leader_points lp ON u.id = lp.user_id WHERE u.role = 'admin' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user AjDsC9LvEN3h2eS.4d2621146f30 --database 7KYbbDR94nK6ykUvdjLGsp --execute SELECT u.id, u.name, u.role, u.openId, lp.balance, lp.totalEarned, lp.totalSpent FROM users u LEFT JOIN leader_points lp ON u.id = lp.user_id WHERE u.role = 'admin' LIMIT 5;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'lp.totalearned' in 'field list'"
+  ]
+}

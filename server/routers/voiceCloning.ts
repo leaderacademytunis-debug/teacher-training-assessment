@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { voiceClones, leaderPoints, pointsTransactions } from "../../drizzle/schema";
+import { voiceClones, leaderPoints, pointsTransactions, users } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { storagePut } from "../storage";
 import { ENV } from "../_core/env";
@@ -169,19 +169,66 @@ async function forgeTTS(text: string, voice: string = "alloy"): Promise<Buffer> 
 
 // ============ POINTS HELPERS ============
 
+/**
+ * Check if a user is an admin or the platform owner.
+ * Admins and owners get unlimited points.
+ */
+async function isAdminOrOwner(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) return false;
+  // Check if admin role
+  if (user.role === "admin") return true;
+  // Check if platform owner by openId
+  if (ENV.ownerOpenId && user.openId === ENV.ownerOpenId) return true;
+  return false;
+}
+
+const INITIAL_BALANCE = 500; // Generous initial balance for new users
+const ADMIN_BALANCE = 999999; // Virtually unlimited for admins
+
 async function ensurePointsRecord(userId: number) {
   const db = await getDb();
+  const isAdmin = await isAdminOrOwner(userId);
   const existing = await db!.select().from(leaderPoints).where(eq(leaderPoints.userId, userId)).limit(1);
+  
   if (existing.length === 0) {
-    await db!.insert(leaderPoints).values({ userId, balance: 100, totalEarned: 100, totalSpent: 0 });
-    return { balance: 100, totalEarned: 100, totalSpent: 0 };
+    const initBalance = isAdmin ? ADMIN_BALANCE : INITIAL_BALANCE;
+    await db!.insert(leaderPoints).values({ userId, balance: initBalance, totalEarned: initBalance, totalSpent: 0 });
+    return { balance: initBalance, totalEarned: initBalance, totalSpent: 0 };
   }
+  
+  // If admin/owner has low balance, auto-refill to unlimited
+  if (isAdmin && existing[0].balance < 10000) {
+    await db!.update(leaderPoints)
+      .set({ balance: ADMIN_BALANCE, totalEarned: existing[0].totalEarned + (ADMIN_BALANCE - existing[0].balance) })
+      .where(eq(leaderPoints.userId, userId));
+    return { ...existing[0], balance: ADMIN_BALANCE, totalEarned: existing[0].totalEarned + (ADMIN_BALANCE - existing[0].balance) };
+  }
+  
   return existing[0];
 }
 
 async function deductPoints(userId: number, amount: number, description: string, featureUsed: string, referenceId?: string) {
   const db = await getDb();
   const points = await ensurePointsRecord(userId);
+  
+  // Admin/owner bypass: never block, auto-refill if needed
+  const isAdmin = await isAdminOrOwner(userId);
+  if (isAdmin) {
+    // Don't actually deduct for admins, just log the transaction
+    await db!.insert(pointsTransactions).values({
+      userId,
+      type: "spend",
+      amount: -amount,
+      balanceAfter: points.balance,
+      description: `[Admin] ${description}`,
+      featureUsed,
+      referenceId,
+    });
+    return points.balance; // Return same balance, no deduction
+  }
 
   if (points.balance < amount) {
     throw new TRPCError({
