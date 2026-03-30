@@ -57,8 +57,8 @@ const PRODUCTS: Product[] = [
     color: "#1D9E75",
     colorLight: "#E6F7F0",
     colorBorder: "#B8E8D5",
-    btnText: "اكتشف الأدوات الستة",
-    btnHref: "/teacher-tools",
+    btnText: "اكتشف الأدوات السبعة",
+    btnHref: "/inclusion",
     toolCount: 6,
   },
   {
