@@ -2814,3 +2814,119 @@ export const pointsTransactions = mysqlTable("points_transactions", {
 export type PointsTransactionRow = typeof pointsTransactions.$inferSelect;
 export type InsertPointsTransaction = typeof pointsTransactions.$inferInsert;
 
+/**
+ * Digital Competency Points - tracks teacher competency level based on tool usage
+ */
+export const competencyPoints = mysqlTable("competency_points", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  
+  // Current competency level
+  totalPoints: int("total_points").default(0).notNull(), // Total accumulated points
+  level: mysqlEnum("level", ["beginner", "advanced", "expert", "master"]).default("beginner").notNull(), // 0-50, 51-150, 151-300, 300+
+  
+  // Monthly stats for the current month
+  monthYear: varchar("month_year", { length: 7 }).notNull(), // '2026-03'
+  monthlyPoints: int("monthly_points").default(0).notNull(), // Points earned this month
+  monthlyUsageCount: int("monthly_usage_count").default(0).notNull(), // Total tool usages this month
+  
+  // Tool-specific monthly usage
+  toolUsage: json("tool_usage").$type<{
+    edugpt_sheet: number;
+    test_builder: number;
+    smart_correction: number;
+    visual_studio: number;
+    ultimate_studio: number;
+    marketplace_publish: number;
+    course_completion: number;
+  }>(),
+  
+  // Badges earned
+  badges: json("badges").$type<Array<{
+    name: string;
+    earnedAt: string;
+  }>>(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CompetencyPoints = typeof competencyPoints.$inferSelect;
+export type InsertCompetencyPoints = typeof competencyPoints.$inferInsert;
+
+/**
+ * Competency transactions - audit log for all competency point operations
+ */
+export const competencyTransactions = mysqlTable("competency_transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  
+  // Transaction details
+  toolType: varchar("tool_type", { length: 100 }).notNull(), // edugpt_sheet, test_builder, etc.
+  pointsEarned: int("points_earned").notNull(),
+  previousTotal: int("previous_total").notNull(),
+  newTotal: int("new_total").notNull(),
+  
+  // Reference to the action that triggered this
+  referenceId: varchar("reference_id", { length: 255 }), // e.g., sheet ID, test ID
+  referenceType: varchar("reference_type", { length: 100 }), // 'pedagogical_sheet', 'exam', etc.
+  
+  // Level change tracking
+  previousLevel: varchar("previous_level", { length: 50 }),
+  newLevel: varchar("new_level", { length: 50 }),
+  levelChanged: boolean("level_changed").default(false),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CompetencyTransaction = typeof competencyTransactions.$inferSelect;
+export type InsertCompetencyTransaction = typeof competencyTransactions.$inferInsert;
+
+/**
+ * Weekly challenges - motivational tasks for teachers
+ */
+export const weeklyChallenges = mysqlTable("weekly_challenges", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Challenge metadata
+  titleAr: varchar("title_ar", { length: 255 }).notNull(),
+  descriptionAr: text("description_ar").notNull(),
+  
+  // Challenge details
+  toolType: varchar("tool_type", { length: 100 }).notNull(), // edugpt_sheet, test_builder, etc.
+  targetCount: int("target_count").notNull(), // e.g., 5 sheets
+  bonusPoints: int("bonus_points").notNull(), // e.g., 50 points
+  
+  // Week info
+  weekStart: timestamp("week_start").notNull(),
+  weekEnd: timestamp("week_end").notNull(),
+  
+  // Status
+  isActive: boolean("is_active").default(true).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type WeeklyChallenge = typeof weeklyChallenges.$inferSelect;
+export type InsertWeeklyChallenge = typeof weeklyChallenges.$inferInsert;
+
+/**
+ * User challenge progress - tracks user progress on weekly challenges
+ */
+export const userChallengeProgress = mysqlTable("user_challenge_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  challengeId: int("challenge_id").notNull(),
+  
+  // Progress tracking
+  currentCount: int("current_count").default(0).notNull(),
+  targetCount: int("target_count").notNull(),
+  completed: boolean("completed").default(false).notNull(),
+  completedAt: timestamp("completed_at"),
+  
+  // Bonus points awarded
+  bonusPointsAwarded: int("bonus_points_awarded").default(0).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type UserChallengeProgress = typeof userChallengeProgress.$inferSelect;
+export type InsertUserChallengeProgress = typeof userChallengeProgress.$inferInsert;
+

@@ -568,6 +568,20 @@
       "when": 1774680954446,
       "tag": "0080_new_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "5",
+      "when": 1774887390293,
+      "tag": "0081_big_captain_flint",
+      "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "5",
+      "when": 1774887418732,
+      "tag": "0082_cool_dark_phoenix",
+      "breakpoints": true
     }
   ]
 }

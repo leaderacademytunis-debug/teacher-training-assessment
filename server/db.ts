@@ -2732,3 +2732,137 @@ export async function getAllReviewsAdmin() {
   .leftJoin(courses, eq(courseReviews.courseId, courses.id))
   .orderBy(desc(courseReviews.createdAt));
 }
+
+
+// ============================================
+// COMPETENCY POINTS TRACKING
+// ============================================
+
+/**
+ * Track competency points for a user when they complete an action
+ * This function is called from various places in the app when:
+ * - User saves a pedagogical sheet (EDUGPT)
+ * - User exports a test (Test Builder)
+ * - User corrects a paper (Smart Correction)
+ * - User generates an image (Visual Studio)
+ * - User exports a video (Ultimate Studio)
+ * - User publishes content (Marketplace)
+ * - User completes a course
+ */
+export async function trackCompetencyPoints(
+  userId: number,
+  toolType: "edugpt_sheet" | "test_builder" | "smart_correction" | "visual_studio" | "ultimate_studio" | "marketplace_publish" | "course_completion",
+  referenceId?: string,
+  referenceType?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // Skip for admin users
+  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, userId));
+  if (user?.role === "admin") return;
+
+  const POINT_VALUES = {
+    edugpt_sheet: 3,
+    test_builder: 5,
+    smart_correction: 5,
+    visual_studio: 2,
+    ultimate_studio: 10,
+    marketplace_publish: 8,
+    course_completion: 20,
+  };
+
+  const COMPETENCY_LEVELS = {
+    beginner: { min: 0, max: 50 },
+    advanced: { min: 51, max: 150 },
+    expert: { min: 151, max: 300 },
+    master: { min: 301, max: Infinity },
+  };
+
+  function getCompetencyLevel(points: number): string {
+    if (points <= 50) return "beginner";
+    if (points <= 150) return "advanced";
+    if (points <= 300) return "expert";
+    return "master";
+  }
+
+  try {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const pointsToAdd = POINT_VALUES[toolType] || 0;
+
+    // Get or create competency record
+    const [record] = await db
+      .select()
+      .from(competencyPoints)
+      .where(
+        and(
+          eq(competencyPoints.userId, userId),
+          eq(competencyPoints.monthYear, currentMonth as any)
+        )
+      );
+
+    const previousTotal = record?.totalPoints || 0;
+    const previousLevel = record?.level || "beginner";
+    const newTotal = previousTotal + pointsToAdd;
+    const newLevel = getCompetencyLevel(newTotal);
+    const levelChanged = previousLevel !== newLevel;
+
+    // Update tool usage
+    const toolUsage = (record?.toolUsage || {}) as Record<string, number>;
+    toolUsage[toolType] = (toolUsage[toolType] || 0) + 1;
+
+    // Check if level changed and add badge
+    let newBadges = (record?.badges || []) as Array<{ name: string; earnedAt: string }>;
+    if (levelChanged) {
+      newBadges.push({
+        name: newLevel,
+        earnedAt: new Date().toISOString(),
+      });
+    }
+
+    if (record) {
+      // Update existing record
+      await db
+        .update(competencyPoints)
+        .set({
+          totalPoints: newTotal,
+          level: newLevel as any,
+          monthlyPoints: (record.monthlyPoints || 0) + pointsToAdd,
+          monthlyUsageCount: (record.monthlyUsageCount || 0) + 1,
+          toolUsage: toolUsage as any,
+          badges: newBadges as any,
+          updatedAt: new Date(),
+        })
+        .where(eq(competencyPoints.id, record.id));
+    } else {
+      // Create new record
+      await db.insert(competencyPoints).values({
+        userId,
+        totalPoints: pointsToAdd,
+        level: "beginner" as any,
+        monthYear: currentMonth,
+        monthlyPoints: pointsToAdd,
+        monthlyUsageCount: 1,
+        toolUsage: { [toolType]: 1 } as any,
+        badges: [] as any,
+      });
+    }
+
+    // Record transaction
+    await db.insert(competencyTransactions).values({
+      userId,
+      toolType: toolType as any,
+      pointsEarned: pointsToAdd,
+      previousTotal,
+      newTotal,
+      referenceId,
+      referenceType,
+      previousLevel: previousLevel as any,
+      newLevel: newLevel as any,
+      levelChanged,
+    });
+  } catch (error) {
+    console.error("[Competency Points] Error tracking points:", error);
+    // Don't throw - this is a non-critical operation
+  }
+}

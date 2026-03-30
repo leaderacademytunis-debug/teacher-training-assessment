@@ -1,9 +1,11 @@
-import { useParams } from "wouter";
 import { useState, useEffect } from "react";
+import { useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Copy, Share2, Award, BookOpen, BarChart3, Mail } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { MessageCircle, Copy, Share2, Award, BookOpen, BarChart3, Mail, Zap, Trophy } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 interface TeacherProfile {
   id: string;
@@ -30,6 +32,54 @@ interface TeacherProfile {
     description?: string;
   }>;
   isPublic: boolean;
+}
+
+function CompetencySection({ userId }: { userId: number }) {
+  const { data: competency, isLoading } = trpc.competencyPoints.getPublicCompetencyInfo.useQuery({ userId });
+
+  if (isLoading || !competency) return null;
+
+  const COMPETENCY_LEVELS = {
+    beginner: { label: "مبتدئ رقمي", color: "#CD7F32", icon: "🥉" },
+    advanced: { label: "متطور رقمي", color: "#C0C0C0", icon: "🥈" },
+    expert: { label: "خبير رقمي", color: "#FFD700", icon: "🥇" },
+    master: { label: "ماهر رقمي", color: "#E5E4E2", icon: "💎" },
+  };
+
+  const levelInfo = COMPETENCY_LEVELS[competency.level as keyof typeof COMPETENCY_LEVELS] || COMPETENCY_LEVELS.beginner;
+
+  return (
+    <Card className="mb-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <div className="flex items-start gap-6">
+        <div className="text-5xl">{levelInfo.icon}</div>
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+            <Zap className="w-6 h-6 text-yellow-500" />
+            الكفاءة الرقمية
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p className="text-sm text-gray-600">المستوى</p>
+              <p className="text-lg font-bold" style={{ color: levelInfo.color }}>{levelInfo.label}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">إجمالي النقاط</p>
+              <p className="text-lg font-bold text-blue-600">{competency.totalPoints}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">الاستخدام هذا الشهر</p>
+              <p className="text-lg font-bold text-green-600">{competency.monthlyUsageCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">الترتيب</p>
+              <p className="text-lg font-bold text-purple-600">أفضل 15%</p>
+            </div>
+          </div>
+          <p className="text-gray-700 font-medium">استخدم الذكاء الاصطناعي {competency.monthlyUsageCount} مرة هذا الشهر</p>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export default function PublicTeacherProfile() {
@@ -148,7 +198,7 @@ export default function PublicTeacherProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4" dir="rtl">
       <div className="max-w-4xl mx-auto">
         {/* Header Card */}
         <Card className="mb-8 overflow-hidden">
@@ -216,6 +266,9 @@ export default function PublicTeacherProfile() {
             <p className="text-sm text-gray-600">نقاط الاستخدام</p>
           </Card>
         </div>
+
+        {/* Digital Competency Section */}
+        <CompetencySection userId={parseInt(profile.id)} />
 
         {/* Certificates */}
         <div className="mb-8">
