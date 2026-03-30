@@ -3119,6 +3119,7 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
         })),
         subject: z.string().optional(),
         level: z.string().optional(),
+        currentTopic: z.string().optional(),
         teachingLanguage: z.enum(["arabic", "french", "english"]).optional(),
       }))
       .mutation(async ({ input }) => {
@@ -3135,10 +3136,11 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
           ? `\n🇬🇧 Preferred teaching language: **English**.\n⚠️ **ABSOLUTE LANGUAGE RULE**: You MUST respond in the SAME language as the user's LAST message. If the user writes in Arabic, respond in Arabic EVEN IF the teaching language is English. If the user writes in English, respond in English. The user's message language ALWAYS has absolute priority.`
           : `\n🇹🇳 لغة التدريس المفضلة: **العربية**.\n⚠️ **قاعدة مطلقة للغة**: يجب أن ترد دائماً بنفس لغة رسالة المستخدم الأخيرة. إذا كتب بالعربية رد بالعربية. إذا كتب بالفرنسية رد بالفرنسية.`;
         
+        const topicNote = input.currentTopic ? `\n📖 الموضوع: ${input.currentTopic}` : "";
         const contextNote = (input.subject && input.level)
-          ? `\n\nتذكير: المدرس يعمل حالياً على مادة **${input.subject}** للمستوى **${input.level}**. يجب أن تكون جميع إجاباتك متوافقة مع هذه المادة وهذا المستوى تحديداً.`
+          ? `\n\nتذكير: المدرس يعمل حالياً على مادة **${input.subject}** للمستوى **${input.level}**${topicNote}. يجب أن تكون جميع إجاباتك متوافقة مع هذه المادة وهذا المستوى تحديداً.`
           : `\n\nتنبيه مهم: إذا لم يحدد المدرس المادة والمستوى الدراسي بعد، يجب أن تطلبهما بشكل مهذب قبل تقديم أي محتوى بيداغوجي. لا تقدم أي مذكرة أو تمرين أو توزيع قبل معرفة المادة والمستوى.`;
-        const systemPrompt = `# ❗❗ قاعدة مطلقة: ممنوع عرض أي كود أو JSON في ردودك نهائياً. المستخدمون معلمون وليسوا مبرمجين. قدّم كل شيء كنص عربي منظم بجداول وعناوين فقط.
+        const systemPrompt = `[CRITICAL RULE]: أنت خبير بيداغوجي تونسي صارم متخصص في المقاربة بالكفايات والبرامج الرسمية 2026. قواعد مطلقة: ابدأ بالجواب مباشرة بدون مقدمات — استخدم الجداول والنقاط دائماً — كل إجابة تحتوي على هدف قابل للقياس + خطوات عملية + وضعية استكشافية مرتبطة بالحياة اليومية التونسية.
 
 # الهوية والسياق — Leader Assistant
 أنت **Leader Assistant**، المساعد الذكي والممثل الرسمي لـ **Leader Academy** في تونس. لست مجرد أداة للإجابة على الأسئلة، بل أنت **مستشار تعليمي رقمي** متكامل. تعمل تحت إشراف خبير الذكاء الاصطناعي التربوي، وهدفك هو **تسهيل حياة المعلمين التونسيين** والترويج لخدمات الأكاديمية.
@@ -3431,7 +3433,8 @@ ${input.schoolYear ? `- السنة الدراسية: ${input.schoolYear}` : ''}
             { role: "system", content: systemPrompt },
             ...llmMessages,
           ],
-          max_tokens: 4096,
+          temperature: 0.3,
+          max_tokens: 2000,
         });
 
         const content = response.choices[0].message.content;

@@ -64,6 +64,15 @@ const UI = {
     quickExamPrompt: "أنشئ اختباراً رسمياً بالسندات والتعليمات ومعايير التملك (مع1-مع4) وجدول التنقيط",
     quickDrama: "سيناريو دراما",
     quickDramaPrompt: "أنشئ سيناريو مسرحي تعليمي (دراما تربوية) لمدة 10 دقائق مع توزيع الأدوار",
+    // Quick suggestion buttons
+    quickGoal: "صغ لي هدفاً مميزاً",
+    quickGoalPrompt: "للمادة {subject} المستوى {level} الدرس {topic}: صغ لي هدفاً مميزاً قابلاً للقياس",
+    quickProblem: "اقترح وضعية مشكل استكشافية",
+    quickProblemPrompt: "للمادة {subject} المستوى {level} الدرس {topic}: اقترح وضعية مشكل استكشافية مرتبطة بالحياة اليومية التونسية",
+    quickQuestions: "أعطني 3 أسئلة تقييمية",
+    quickQuestionsPrompt: "للمادة {subject} المستوى {level} الدرس {topic}: أعطني 3 أسئلة تقييمية مناسبة",
+    quickActivity: "اقترح نشاطاً استكشافياً",
+    quickActivityPrompt: "للمادة {subject} المستوى {level} الدرس {topic}: اقترح نشاطاً استكشافياً عملياً",
     // Export
     exportBtn: "تصدير",
     exportPdfFull: "PDF (محادثة كاملة)",
