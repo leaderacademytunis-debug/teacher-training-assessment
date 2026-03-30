@@ -6,6 +6,7 @@
 import { protectedProcedure, router, staffProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
+import { trackCompetencyPoints } from "../db";
 import {
   courses,
   enrollments,
@@ -291,6 +292,17 @@ export const coursesManagementRouter = router({
     .mutation(async ({ input, ctx }) => {
       const database = (await getDb())!;
 
+      // Get enrollment details to find the user
+      const enrollment = await database
+        .select()
+        .from(enrollments)
+        .where(eq(enrollments.id, input.enrollmentId))
+        .limit(1);
+
+      if (!enrollment.length) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "التسجيل غير موجود" });
+      }
+
       await database
         .update(enrollments)
         .set({
@@ -299,6 +311,13 @@ export const coursesManagementRouter = router({
           approvedAt: new Date(),
         })
         .where(eq(enrollments.id, input.enrollmentId));
+
+      // Track competency points for course completion: +20 points
+      try {
+        await trackCompetencyPoints(enrollment[0].userId, "course_completion");
+      } catch (pointsError) {
+        console.error("Error tracking competency points:", pointsError);
+      }
 
       return { success: true };
     }),

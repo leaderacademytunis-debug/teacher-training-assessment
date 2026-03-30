@@ -6,6 +6,7 @@ import { generateImage } from "../_core/imageGeneration";
 import { ENV } from "../_core/env";
 import { storagePut } from "../storage";
 import { getDb } from "../db";
+import { trackCompetencyPoints } from "../db";
 import { studioProjects } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -332,13 +333,20 @@ Respond in JSON format only:
       sceneNumber: z.number(),
       visualPrompt: z.string().min(5),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { sceneNumber, visualPrompt } = input;
 
       try {
         const result = await generateImage({
           prompt: visualPrompt,
         });
+
+        // Track competency points for Visual Studio image generation
+        try {
+          await trackCompetencyPoints(ctx.user.id, "visual_studio");
+        } catch (pointsError) {
+          console.error("Error tracking competency points:", pointsError);
+        }
 
         return {
           sceneNumber,
@@ -591,6 +599,15 @@ Respond in JSON format only:
         return { id: input.id, message: "تم تحديث المشروع بنجاح" };
       } else {
         // Create new project
+        // Track competency points for Ultimate Studio video export
+        // This is called when saving a new project (creating/exporting video)
+        try {
+          await trackCompetencyPoints(userId, "ultimate_studio");
+        } catch (pointsError) {
+          console.error("Error tracking competency points:", pointsError);
+          // Don't fail the main operation if points tracking fails
+        }
+
         const result = await db.insert(studioProjects).values({
           userId,
           title: input.title,

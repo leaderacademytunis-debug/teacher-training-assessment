@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { adaptedContent, servicePermissions } from "../../drizzle/schema";
 import { eq, and, desc, count } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
+import { trackCompetencyPoints } from "../db";
 
 // ===== CONTENT ADAPTER ROUTER =====
 export const contentAdapterRouter = router({
@@ -210,6 +211,14 @@ ${input.originalContent}
             status: "completed",
           })
           .where(eq(adaptedContent.id, Number(recordId)));
+
+        // Track competency points for content adaptation (EDUGPT)
+        try {
+          await trackCompetencyPoints(ctx.user.id, "edugpt_lesson");
+        } catch (pointsError) {
+          console.error("Error tracking competency points:", pointsError);
+          // Don't fail the main operation if points tracking fails
+        }
 
         // Return the full record
         const [updated] = await database.select().from(adaptedContent)
