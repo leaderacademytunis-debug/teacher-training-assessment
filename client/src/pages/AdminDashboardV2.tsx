@@ -35,10 +35,11 @@ import RichTextEditor from "@/components/RichTextEditor";
 import useI18n from "@/i18n";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import CoursesManagement from "@/components/admin/CoursesManagement";
+import BulkUserUpload from "@/components/admin/BulkUserUpload";
 
 
 // ===== TYPES =====
-type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages" | "points" | "analytics" | "courses";
+type Section = "overview" | "limits" | "users" | "subscriptions" | "content" | "pages" | "points" | "analytics" | "courses" | "bulk-upload";
 
 const TOOL_ICONS: Record<string, React.ReactNode> = {
   FileText: <FileText className="h-4 w-4" />,
@@ -102,6 +103,7 @@ export default function AdminDashboardV2() {
     { id: "overview", label: "نظرة عامة", icon: <LayoutDashboard className="h-5 w-5" /> },
     { id: "analytics", label: "لوحة التحليلات", icon: <BarChart3 className="h-5 w-5" /> },
     { id: "courses", label: "إدارة التكوينات", icon: <BookOpen className="h-5 w-5" /> },
+    { id: "bulk-upload", label: "رفع حسابات بالجملة", icon: <Upload className="h-5 w-5" /> },
     { id: "limits", label: "حدود الاستخدام", icon: <Sliders className="h-5 w-5" /> },
     { id: "users", label: "إدارة المستخدمين", icon: <Users className="h-5 w-5" /> },
     { id: "subscriptions", label: "الاشتراكات", icon: <CreditCard className="h-5 w-5" /> },
@@ -208,6 +210,7 @@ export default function AdminDashboardV2() {
           {activeSection === "overview" && <OverviewSection />}
           {activeSection === "analytics" && <AnalyticsSection />}
           {activeSection === "courses" && <CoursesManagement />}
+          {activeSection === "bulk-upload" && <BulkUserUpload />}
           {activeSection === "limits" && <UsageLimitsSection />}
           {activeSection === "users" && <UserManagementSection />}
           {activeSection === "subscriptions" && <SubscriptionSection />}
