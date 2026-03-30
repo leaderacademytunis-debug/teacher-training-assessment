@@ -98,6 +98,7 @@ const AIToolsHub = lazy(() => import("@/pages/AIToolsHub"));
 const UltimateStudio = lazy(() => import("@/pages/UltimateStudio"));
 const CourseToolkit = lazy(() => import("@/pages/CourseToolkit"));
 const Inclusion = lazy(() => import("@/pages/Inclusion"));
+const PublicTeacherProfile = lazy(() => import("@/pages/PublicTeacherProfile"));
 
 function PageLoader() {
   return (
@@ -196,6 +197,7 @@ function Router() {
         <Route path="/ultimate-studio" component={UltimateStudio} />
         <Route path="/course-toolkit" component={CourseToolkit} />
         <Route path="/inclusion" component={Inclusion} />
+        <Route path="/teacher/:username" component={PublicTeacherProfile} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>
