@@ -1535,6 +1535,17 @@ export default function EduGPTAssistantEnhanced() {
             </h1>
             {/* Action buttons - always visible but compact */}
             <div className="flex items-center gap-1 shrink-0">
+              {/* Open EDUGPT Button */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1 font-medium h-8 px-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 hover:from-blue-600 hover:to-purple-600"
+                onClick={() => window.open('https://chatgpt.com/g/g-6992396d1e7481919c778aeaa4efae98-edugpt', '_blank')}
+                title="فتح EDUGPT المخصص"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="text-xs hidden sm:inline">EDUGPT</span>
+              </Button>
               {/* Language Selector */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
