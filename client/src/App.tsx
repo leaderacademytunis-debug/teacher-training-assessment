@@ -8,6 +8,7 @@ import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import RoleGuard from "./components/RoleGuard";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
+import { FloatingAssistant } from "./components/FloatingAssistant";
 
 // Eagerly loaded pages (critical path - home & auth)
 import Home from "./pages/Home";
@@ -231,6 +232,7 @@ function App() {
           <RoleGuard />
           <Router />
           <PWAInstallPrompt />
+          <FloatingAssistant hiddenRoutes={["/assistant", "/exam-builder", "/curriculum-map"]} />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
