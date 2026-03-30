@@ -100,6 +100,7 @@ const CourseToolkit = lazy(() => import("@/pages/CourseToolkit"));
 const Inclusion = lazy(() => import("@/pages/Inclusion"));
 const PublicTeacherProfile = lazy(() => import("@/pages/PublicTeacherProfile"));
 const CompetencyAnalytics = lazy(() => import("@/pages/CompetencyAnalytics"));
+const CareerShowcase = lazy(() => import("@/pages/CareerShowcase"));
 
 function PageLoader() {
   return (
@@ -166,6 +167,7 @@ function Router() {
         <Route path="/career-messages" component={CareerMessages} />
         <Route path="/teacher-analytics" component={TeacherAnalytics} />
         <Route path="/competency-analytics" component={CompetencyAnalytics} />
+        <Route path="/showcase" component={CareerShowcase} />
         <Route path="/jobs" component={JobBoard} />
         <Route path="/my-applications" component={MyApplications} />
         <Route path="/admin/batches" component={AdminBatchManager} />

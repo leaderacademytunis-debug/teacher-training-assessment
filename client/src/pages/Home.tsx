@@ -17,6 +17,7 @@ import { Link, useLocation } from "wouter";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ChatAssistant } from "@/components/ChatAssistant";
+import { CareerPathwaySection } from "@/components/CareerPathwaySection";
 import { useLanguage, type AppLanguage } from "@/contexts/LanguageContext";
 
 // ===== PRODUCT DEFINITIONS =====
@@ -497,8 +498,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== PROGRAMS SECTION ===== */}
-      <section id="programs" className="py-16 sm:py-20 lg:py-24 bg-white">
+      {/* ===== CAREER PATHWAY SECTION ===== */}
+      <CareerPathwaySection />
+
+      {/* ===== PROGRAMS SECTION ===== */}      <section id="programs" className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center mb-14">

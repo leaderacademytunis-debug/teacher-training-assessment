@@ -38,6 +38,7 @@ const CENTER_NAV: { href: string; labelAr: string; labelFr: string; labelEn: str
   { href: "/", labelAr: "الرئيسية", labelFr: "Accueil", labelEn: "Home" },
   { href: "/teacher-tools", labelAr: "أدوات الذكاء الاصطناعي", labelFr: "Outils IA", labelEn: "AI Tools", hasDropdown: true },
   { href: "/template-library", labelAr: "بنك الدروس", labelFr: "Banque de cours", labelEn: "Lesson Bank" },
+  { href: "/showcase", labelAr: "المسار المهني", labelFr: "Parcours professionnel", labelEn: "Career Path" },
   { href: "/about", labelAr: "من نحن", labelFr: "À propos", labelEn: "About Us" },
 ];
 
