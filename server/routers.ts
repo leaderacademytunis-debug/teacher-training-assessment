@@ -14,6 +14,10 @@ import { textbookArchiveRouter } from "./routers/textbookArchive";
 import { eduStudioRouter } from "./routers/eduStudio";
 import { voiceCloningRouter } from "./routers/voiceCloning";
 import { ultimateStudioRouter } from "./routers/ultimateStudio";
+import { analyticsRouter } from "./routers/analytics";
+import { coursesManagementRouter } from "./routers/coursesManagement";
+import { bulkUserImportRouter } from "./routers/bulkUserImport";
+import { emailIntegrationRouter } from "./routers/emailIntegration";
 import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -32,6 +36,10 @@ const adminProcedure = staffProcedure;
 export const appRouter = router({
   system: systemRouter,
   adminControl: adminControlRouter,
+  analytics: analyticsRouter,
+  coursesManagement: coursesManagementRouter,
+  bulkUserImport: bulkUserImportRouter,
+  emailIntegration: emailIntegrationRouter,
   pedagogicalCompanion: pedagogicalCompanionRouter,
   contentAdapter: contentAdapterRouter,
   therapeuticExercisesGen: therapeuticExercisesRouter,
