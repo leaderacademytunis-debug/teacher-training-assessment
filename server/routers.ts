@@ -20,6 +20,7 @@ import { bulkUserImportRouter } from "./routers/bulkUserImport";
 import { emailIntegrationRouter } from "./routers/emailIntegration";
 import { competencyPointsRouter } from "./routers/competencyPoints";
 import { weeklyChallengesManagerRouter } from "./routers/weeklyChallengesManager";
+import { monthlyReportEmailRouter } from "./routers/monthlyReportEmail";
 import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -44,6 +45,7 @@ export const appRouter = router({
   emailIntegration: emailIntegrationRouter,
   competencyPoints: competencyPointsRouter,
   weeklyChallenges: weeklyChallengesManagerRouter,
+  monthlyReports: monthlyReportEmailRouter,
   pedagogicalCompanion: pedagogicalCompanionRouter,
   contentAdapter: contentAdapterRouter,
   therapeuticExercisesGen: therapeuticExercisesRouter,

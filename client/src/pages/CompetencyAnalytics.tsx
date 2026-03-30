@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, TrendingUp, Award, Target, Zap } from "lucide-react";
+import { WeeklyChallenges } from "@/components/WeeklyChallenges";
 
 const COMPETENCY_LEVELS = {
   beginner: { label: "مبتدئ", color: "#3b82f6", range: "0-50" },
@@ -105,6 +106,9 @@ export function CompetencyAnalytics() {
           <h1 className="text-4xl font-bold text-slate-900 mb-2">تحليلات الكفاءة الرقمية</h1>
           <p className="text-slate-600">تابع تطورك في استخدام أدوات الذكاء الاصطناعي</p>
         </div>
+
+        {/* Weekly Challenges Section */}
+        <WeeklyChallenges />
 
         {/* Main Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
