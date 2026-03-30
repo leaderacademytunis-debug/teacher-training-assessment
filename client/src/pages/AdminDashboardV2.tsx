@@ -36,6 +36,7 @@ import useI18n from "@/i18n";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import CoursesManagement from "@/components/admin/CoursesManagement";
 import BulkUserUpload from "@/components/admin/BulkUserUpload";
+import { AdminCompetencyStats } from "@/components/AdminCompetencyStats";
 
 
 // ===== TYPES =====
@@ -216,7 +217,13 @@ export default function AdminDashboardV2() {
           {activeSection === "subscriptions" && <SubscriptionSection />}
           {activeSection === "content" && <ContentManagementSection />}
           {activeSection === "pages" && <PageManagementSection />}
-          {activeSection === "points" && <PointsManagementSection />}
+          {activeSection === "points" && (
+            <div className="space-y-8">
+              <AdminCompetencyStats />
+              <Separator className="my-8" />
+              <PointsManagementSection />
+            </div>
+          )}
         </div>
       </main>
     </div>
