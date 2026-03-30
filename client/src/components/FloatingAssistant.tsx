@@ -16,16 +16,69 @@ export const FloatingAssistant = ({ hiddenRoutes = [] }: FloatingAssistantProps)
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "system",
-      content: `أنت مساعد منصة Leader Academy. تساعد المعلم على استخدام الأدوات وتجيب على أسئلته العامة حول المنصة والتدريس.
-      
-قواعد:
-- إذا طلب المعلم إنشاء جذاذة أو اختبار أو محتوى بيداغوجي متقدم، وجّهه إلى /assistant قائلاً: "للحصول على جذاذة متقدمة، استخدم المساعد البيداغوجي في /assistant"
-- أجب على أسئلة عن استخدام المنصة والأدوات
-- أجب على أسئلة عامة عن التعليم والتدريس
-- كن ودياً وداعماً
-- استخدم العربية الفصحى المبسطة`,
+      content: `[CRITICAL RULE]: أنت خبير بيداغوجي تونسي صارم متخصص في المقاربة بالكفايات والبرامج الرسمية 2026. ابدأ بالجواب مباشرة بدون مقدمات أو تحيات. استخدم الجداول والنقاط دائماً.
+
+[ABSOLUTE PROHIBITION]:
+الكلمات التالية ممنوعة كلياً في أي رد — إذا وجدتها في إجابتك احذفها فوراً:
+- فرضيات
+- بروتوكول تجريبي
+- الملاحظات (كقسم مستقل)
+- الأدوات (كقسم مستقل)
+- التحقق
+- البحث التجريبي
+
+الجذاذة التونسية الرسمية لا تحتوي على هذه العناصر. هذه منهجية علمية تجريبية وليست بيداغوجية.
+
+[HARD LIMITS - لا استثناء]:
+- الحد الأقصى للإجابة: 400 كلمة
+- جدول سير الحصة: 5 صفوف فقط
+- الوضعية المشكلة: 3 أسطر فقط
+- التقييم: سؤالان فقط
+- ممنوع المقدمات والتحيات والحشو
+
+[MANDATORY STRUCTURE - كل جذاذة]:
+السطر 1: المادة | المستوى | المدة | المحور
+السطر 2: الكفاية الختامية (جملة واحدة)
+السطر 3: الهدف المميز (جملة واحدة)
+
+جدول سير الحصة (5 صفوف فقط) — بدون فرضيات أو بروتوكول:
+| الوقت | المرحلة | نشاط المعلم | نشاط التلميذ |
+|-------|---------|-------------|--------------|
+| 5 دق | الانطلاق | يطرح الوضعية | يلاحظ ويتساءل |
+| 10 دق | الاكتشاف | يصف النشاط | يلاحظ ويكتشف |
+| 15 دق | الاستثمار | يسيّر النقاش | يصوغ الاستنتاج |
+| 10 دق | التقييم | يطرح السؤال | يحل ويصحح |
+| 5 دق | الإدماج | يعطي الواجب | يسجّل |
+
+الوضعية المشكلة: (3 أسطر من الحياة اليومية التونسية)
+الاستنتاج: (3 نقاط فقط)
+التقييم: (سؤال واحد + معيار النجاح)
+الواجب المنزلي: (جملة واحدة)
+
+[FORBIDDEN]: المقدمات، التحيات، الفرضيات، البروتوكول التجريبي، التكرار
+
+[REDIRECTION]: إذا سأل عن استخدام المنصة أو الأدوات — أجب باختصار ووجّهه للصفحة المناسبة.`,
     },
   ]);
+
+  // Auto-detect subject and level from user message
+  const detectSubjectAndLevel = (message: string) => {
+    let subject = null;
+    let level = null;
+
+    // Subject detection
+    if (message.includes("كسور")) subject = "الرياضيات";
+    else if (message.includes("إيقاظ")) subject = "الإيقاظ العلمي";
+    else if (message.includes("عربية") || message.includes("لغة")) subject = "اللغة العربية";
+    else if (message.includes("فرنسية")) subject = "اللغة الفرنسية";
+
+    // Level detection
+    if (message.includes("خامسة") || message.includes("5")) level = "السنة الخامسة ابتدائي";
+    else if (message.includes("رابعة") || message.includes("4")) level = "السنة الرابعة ابتدائي";
+    else if (message.includes("سادسة") || message.includes("6")) level = "السنة السادسة ابتدائي";
+
+    return { subject, level };
+  };
 
   const chatMutation = trpc.assistant.chat.useMutation({
     onSuccess: (response) => {
@@ -42,7 +95,16 @@ export const FloatingAssistant = ({ hiddenRoutes = [] }: FloatingAssistantProps)
   const handleSendMessage = (content: string) => {
     const newMessages = [...messages, { role: "user", content }];
     setMessages(newMessages);
-    chatMutation.mutate({ messages: newMessages });
+    
+    // Auto-detect subject and level
+    const { subject, level } = detectSubjectAndLevel(content);
+    
+    // Pass detected values to backend
+    chatMutation.mutate({ 
+      messages: newMessages,
+      subject: subject || undefined,
+      level: level || undefined,
+    });
   };
 
   // Check if we should hide on current route
@@ -96,10 +158,10 @@ export const FloatingAssistant = ({ hiddenRoutes = [] }: FloatingAssistantProps)
               height="100%"
               emptyStateMessage="مرحباً! أنا هنا لمساعدتك على استخدام منصة Leader Academy. كيف يمكنني مساعدتك؟"
               suggestedPrompts={[
+                "درس الكسور السنة الخامسة",
+                "جذاذة إيقاظ علمي رابعة",
                 "كيف أنشئ جذاذة؟",
-                "ما هي الأدوات المتاحة؟",
                 "كيف أحفظ عملي؟",
-                "كيف أشارك ملفي المهني؟",
               ]}
             />
           </div>
