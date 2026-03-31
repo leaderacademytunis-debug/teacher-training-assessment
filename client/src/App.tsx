@@ -102,6 +102,7 @@ const Inclusion = lazy(() => import("@/pages/Inclusion"));
 const PublicTeacherProfile = lazy(() => import("@/pages/PublicTeacherProfile"));
 const CompetencyAnalytics = lazy(() => import("@/pages/CompetencyAnalytics"));
 const CareerShowcase = lazy(() => import("@/pages/CareerShowcase"));
+const TalentRadarPage = lazy(() => import("@/pages/TalentRadarPage"));
 
 function PageLoader() {
   return (
@@ -203,6 +204,7 @@ function Router() {
         <Route path="/course-toolkit" component={CourseToolkit} />
         <Route path="/inclusion" component={Inclusion} />
         <Route path="/teacher/:username" component={PublicTeacherProfile} />
+        <Route path="/talent-radar" component={TalentRadarPage} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>

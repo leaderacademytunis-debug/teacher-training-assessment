@@ -7,7 +7,7 @@ import {
   ChevronDown, Star, Menu, X,
   Bot, Search, FileEdit, Palette, BarChart3, LayoutDashboard,
   BadgeCheck, ShieldCheck, type LucideIcon, DollarSign, Info,
-  Megaphone, Settings, ScanLine, FileCheck, Store, Briefcase, FileText, Theater, Building2, Film, Shield, PanelLeft, HeartHandshake,
+  Megaphone, Settings, ScanLine, FileCheck, Store, Briefcase, FileText, Theater, Building2, Film, Shield, PanelLeft, HeartHandshake, Radar,
 } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import SubscriptionBadge from "@/components/SubscriptionBadge";
@@ -63,6 +63,7 @@ const CAREER_LINKS = [
   { href: "/jobs", icon: Briefcase, labelAr: "فرص العمل", labelFr: "Offres d'emploi", labelEn: "Job Board", descAr: "تصفح عروض العمل في المدارس الشريكة", descFr: "Parcourir les offres des écoles partenaires", descEn: "Browse partner school listings" },
   { href: "/my-applications", icon: FileText, labelAr: "طلباتي", labelFr: "Mes candidatures", labelEn: "My Applications", descAr: "تتبع حالة طلبات التوظيف", descFr: "Suivre l'état de vos candidatures", descEn: "Track application status" },
   { href: "/my-assignments", icon: BookOpen, labelAr: "واجباتي", labelFr: "Mes devoirs", labelEn: "My Assignments", descAr: "تسليم الواجبات وعرض التقييمات", descFr: "Soumettre devoirs et voir évaluations", descEn: "Submit work and view grades" },
+  { href: "/talent-radar", icon: Radar, labelAr: "🎯 رادار الكفاءات", labelFr: "🎯 Radar des talents", labelEn: "🎯 Talent Radar", descAr: "اكتشف المعلمين المعتمدين والمتخصصين", descFr: "Découvrir les enseignants certifiés et spécialisés", descEn: "Discover certified and specialized teachers" },
   { href: "/showcase", icon: Users, labelAr: "دليل الكفاءات", labelFr: "Répertoire des talents", labelEn: "Talent Directory", descAr: "اكتشف المعلمين المعتمدين", descFr: "Découvrir les enseignants certifiés", descEn: "Discover certified teachers" },
   { href: "/my-portfolio", icon: Star, labelAr: "ملفي المهني", labelFr: "Mon portfolio", labelEn: "My Portfolio", descAr: "إدارة ملفك المهني العام", descFr: "Gérer votre profil professionnel", descEn: "Manage your public portfolio" },
 ];
