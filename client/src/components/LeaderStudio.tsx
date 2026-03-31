@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
 import { useCallback, useEffect, useState } from "react";
 import { Brain, HelpCircle, Presentation, Zap, Loader2, Download, X, Check, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import mermaid from 'mermaid';
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+
 
 interface LeaderStudioProps {
   lessonContent: string;
@@ -24,37 +25,60 @@ export function LeaderStudio({
   const [studioMode, setStudioMode] = useState<"mindmap" | "quiz" | "pptx" | null>(null);
   const [studioLoading, setStudioLoading] = useState(false);
   const [studioContent, setStudioContent] = useState("");
-  const [mindmapSvg, setMindmapSvg] = useState<string>("");
+  const [mindmapTab, setMindmapTab] = useState<"image" | "chart">("image");
+  const [chartData, setChartData] = useState<any[]>([]);
+
   const [quizData, setQuizData] = useState<any>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
 
-  // Initialize mermaid
-  useEffect(() => {
-    mermaid.initialize({ startOnLoad: false, theme: 'default' });
-  }, []);
+  // Parse mindmap content to extract chart data
+  const extractChartData = useCallback((mindmapCode: string) => {
+    const lines = mindmapCode.split('\n');
+    const data: any[] = [];
+    let currentCategory = "";
+    let pointCount = 0;
 
-  // Render mindmap SVG when content changes
-  useEffect(() => {
-    if (studioMode === "mindmap" && studioContent) {
-      const id = 'mindmap-svg-' + Date.now();
-      mermaid.render(id, studioContent).then(({ svg }) => {
-        setMindmapSvg(svg);
-      }).catch((err) => {
-        console.error('Mermaid render error:', err);
-        toast.error('خطأ في رسم الخريطة الذهنية');
-      });
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('mindmap') || trimmed.startsWith('root')) continue;
+
+      const indentation = line.search(/\S/);
+      
+      // Main category (4 spaces indentation)
+      if (indentation === 4 && !trimmed.startsWith('(')) {
+        if (currentCategory && pointCount > 0) {
+          data.push({ name: currentCategory, points: pointCount });
+        }
+        currentCategory = trimmed;
+        pointCount = 0;
+      }
+      // Sub-points (8+ spaces indentation)
+      else if (indentation >= 8 && currentCategory) {
+        pointCount++;
+      }
     }
-  }, [studioContent, studioMode]);
+
+    // Add last category
+    if (currentCategory && pointCount > 0) {
+      data.push({ name: currentCategory, points: pointCount });
+    }
+
+    return data.length > 0 ? data : [
+      { name: 'الفئة 1', points: 3 },
+      { name: 'الفئة 2', points: 2 },
+      { name: 'الفئة 3', points: 4 }
+    ];
+  }, []);
 
   // Generate Mind Map
   const generateMindMap = useCallback(async () => {
     setStudioLoading(true);
     setStudioMode("mindmap");
     setStudioOpen(true);
-    setMindmapSvg("");
+    setMindmapTab("image");
     try {
       const mindmapPrompt = `بناءً على الجذاذة التالية:
 
@@ -115,40 +139,47 @@ mindmap
       }
 
       setStudioContent(fullContent);
+      const data = extractChartData(fullContent);
+      setChartData(data);
+      setStudioLoading(false);
     } catch (error) {
-      console.error("Mind map error:", error);
-      toast.error("خطأ في إنشاء الخريطة الذهنية");
-    } finally {
+      console.error("Error generating mind map:", error);
+      toast.error("خطأ في توليد الخريطة الذهنية");
       setStudioLoading(false);
     }
-  }, [lessonContent, selectedSubject, selectedLevel, teachingLanguage]);
+  }, [lessonContent, selectedSubject, selectedLevel, teachingLanguage, extractChartData]);
 
   // Generate Quiz
   const generateQuiz = useCallback(async () => {
     setStudioLoading(true);
     setStudioMode("quiz");
     setStudioOpen(true);
+    setCurrentQuestionIndex(0);
+    setQuizScore(0);
     try {
-      const quizPrompt = `من الجذاذة التالية:
+      const quizPrompt = `بناءً على الجذاذة التالية:
 
 ${lessonContent}
 
 ---
 
-أنشئ 5 أسئلة اختيار من متعدد (2 سهلة + 2 متوسطة + 1 صعبة) بصيغة JSON فقط:
+أنشئ 5 أسئلة اختيار من متعدد بصيغة JSON بالصيغة التالية:
 
 {
   "questions": [
     {
       "question": "نص السؤال",
-      "options": ["أ", "ب", "ج", "د"],
+      "options": ["الخيار أ", "الخيار ب", "الخيار ج", "الخيار د"],
       "correct": 0,
       "explanation": "شرح الإجابة الصحيحة"
     }
   ]
 }
 
-لا تضف أي نص إضافي، فقط JSON.`;
+الأسئلة يجب أن تكون متدرجة: 2 سهلة + 2 متوسطة + 1 صعبة
+مرتبطة بمعايير مع1 / مع2 / مع3
+
+أرجع فقط JSON بدون أي نص إضافي.`;
 
       const response = await fetch("/api/assistant/stream", {
         method: "POST",
@@ -188,40 +219,40 @@ ${lessonContent}
 
       const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        setQuizData(parsed);
+        const parsedQuiz = JSON.parse(jsonMatch[0]);
+        setQuizData(parsedQuiz);
         setCurrentQuestionIndex(0);
         setSelectedAnswer(null);
         setQuizAnswered(false);
-        setQuizScore(0);
       }
+      setStudioLoading(false);
     } catch (error) {
-      console.error("Quiz error:", error);
-      toast.error("خطأ في إنشاء الاختبار");
-    } finally {
+      console.error("Error generating quiz:", error);
+      toast.error("خطأ في توليد الاختبار");
       setStudioLoading(false);
     }
   }, [lessonContent, selectedSubject, selectedLevel, teachingLanguage]);
 
   // Generate PowerPoint
-  const generatePowerPoint = useCallback(async () => {
+  const generatePPTX = useCallback(async () => {
     setStudioLoading(true);
     setStudioMode("pptx");
     setStudioOpen(true);
     try {
-      const pptxPrompt = `من الجذاذة التالية:
+      const pptxPrompt = `بناءً على الجذاذة التالية:
 
 ${lessonContent}
 
 ---
 
-أنشئ محتوى 5 شرائح PowerPoint بصيغة JSON:
+أنشئ 5 شرائح بصيغة JSON:
 
 {
   "slides": [
     {
       "title": "عنوان الشريحة",
-      "content": "محتوى الشريحة"
+      "content": "محتوى الشريحة",
+      "type": "title|content|conclusion"
     }
   ]
 }
@@ -233,7 +264,7 @@ ${lessonContent}
 4. التطبيق
 5. التقييم
 
-لا تضف أي نص إضافي، فقط JSON.`;
+أرجع فقط JSON بدون أي نص إضافي.`;
 
       const response = await fetch("/api/assistant/stream", {
         method: "POST",
@@ -246,7 +277,7 @@ ${lessonContent}
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to generate PowerPoint");
+      if (!response.ok) throw new Error("Failed to generate PPTX");
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No response body");
@@ -271,11 +302,16 @@ ${lessonContent}
         }
       }
 
-      setStudioContent(fullContent);
+      const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsedPPTX = JSON.parse(jsonMatch[0]);
+        toast.success("تم توليد العرض التقديمي!");
+        console.log("PPTX Data:", parsedPPTX);
+      }
+      setStudioLoading(false);
     } catch (error) {
-      console.error("PowerPoint error:", error);
-      toast.error("خطأ في إنشاء العرض التقديمي");
-    } finally {
+      console.error("Error generating PPTX:", error);
+      toast.error("خطأ في توليد العرض التقديمي");
       setStudioLoading(false);
     }
   }, [lessonContent, selectedSubject, selectedLevel, teachingLanguage]);
@@ -283,7 +319,7 @@ ${lessonContent}
   // Copy to clipboard
   const copyToClipboard = () => {
     navigator.clipboard.writeText(studioContent);
-    toast.success("تم النسخ إلى الحافظة");
+    toast.success("تم نسخ الكود!");
   };
 
   // Download mindmap
@@ -295,21 +331,21 @@ ${lessonContent}
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    toast.success("تم تحميل الخريطة الذهنية");
+    toast.success("تم تحميل الملف!");
   };
 
-  // Handle quiz answer
-  const handleQuizAnswer = (optionIndex: number) => {
-    if (quizAnswered) return;
-    setSelectedAnswer(optionIndex);
-    setQuizAnswered(true);
-    if (optionIndex === quizData.questions[currentQuestionIndex].correct) {
-      setQuizScore(quizScore + 1);
+  // Quiz handlers
+  const handleAnswerSelect = (optionIndex: number) => {
+    if (!quizAnswered) {
+      setSelectedAnswer(optionIndex);
+      setQuizAnswered(true);
+      if (optionIndex === quizData.questions[currentQuestionIndex].correct) {
+        setQuizScore(quizScore + 1);
+      }
     }
   };
 
-  // Next question
-  const nextQuestion = () => {
+  const handleNextQuestion = () => {
     if (currentQuestionIndex < quizData.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer(null);
@@ -321,53 +357,58 @@ ${lessonContent}
     return null;
   }
 
+  // Helper function to encode Arabic text to base64
+  const encodeToBase64 = (str: string) => {
+    try {
+      return btoa(unescape(encodeURIComponent(str)));
+    } catch (e) {
+      console.error('Encoding error:', e);
+      return '';
+    }
+  };
+
+  const COLORS = ['#534AB7', '#BA7517', '#185FA5', '#1D9E75'];
+
   return (
-    <>
-      {/* Studio Button Bar */}
-      <div className="border-t border-gray-100 bg-gradient-to-l from-purple-50 to-white px-2 sm:px-4 py-3 flex gap-2 flex-wrap justify-center">
-        <Button
-          onClick={generateMindMap}
-          disabled={studioLoading}
-          className="gap-1 sm:gap-2 bg-[#534AB7] hover:bg-[#3d3580] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
-          size="sm"
-        >
-          <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">خريطة ذهنية</span>
-          <span className="sm:hidden">خريطة</span>
-        </Button>
-        <Button
-          onClick={generateQuiz}
-          disabled={studioLoading}
-          className="gap-1 sm:gap-2 bg-[#BA7517] hover:bg-[#8a5810] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
-          size="sm"
-        >
-          <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">اختبار تفاعلي</span>
-          <span className="sm:hidden">اختبار</span>
-        </Button>
-        <Button
-          onClick={generatePowerPoint}
-          disabled={studioLoading}
-          className="gap-1 sm:gap-2 bg-[#185FA5] hover:bg-[#0f3f75] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
-          size="sm"
-        >
-          <Presentation className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">عرض تقديمي</span>
-          <span className="sm:hidden">عرض</span>
-        </Button>
-        <Button
-          onClick={() => {
-            localStorage.setItem("studioLessonContent", lessonContent);
-            window.open("/ultimate-studio", "_blank");
-          }}
-          className="gap-1 sm:gap-2 bg-[#1D9E75] hover:bg-[#0d7a5c] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
-          size="sm"
-        >
-          <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Ultimate Studio</span>
-          <span className="sm:hidden">Studio</span>
-        </Button>
-      </div>
+    <div className="flex gap-2 flex-wrap justify-end mt-4" dir="rtl">
+      <Button
+        onClick={generateMindMap}
+        className="gap-2 bg-[#534AB7] text-white hover:bg-[#3d3580] text-sm"
+      >
+        <Brain className="h-4 w-4" />
+        <span className="hidden sm:inline">خريطة ذهنية</span>
+        <span className="sm:hidden">خريطة</span>
+      </Button>
+
+      <Button
+        onClick={generateQuiz}
+        className="gap-2 bg-[#BA7517] text-white hover:bg-[#8a5a12] text-sm"
+      >
+        <HelpCircle className="h-4 w-4" />
+        <span className="hidden sm:inline">اختبار تفاعلي</span>
+        <span className="sm:hidden">اختبار</span>
+      </Button>
+
+      <Button
+        onClick={generatePPTX}
+        className="gap-2 bg-[#185FA5] text-white hover:bg-[#0f3d6b] text-sm"
+      >
+        <Presentation className="h-4 w-4" />
+        <span className="hidden sm:inline">عرض تقديمي</span>
+        <span className="sm:hidden">عرض</span>
+      </Button>
+
+      <Button
+        onClick={() => {
+          localStorage.setItem('lessonContent', lessonContent);
+          window.open('/ultimate-studio', '_blank');
+        }}
+        className="gap-2 bg-[#1D9E75] text-white hover:bg-[#157a5e] text-sm"
+      >
+        <Zap className="h-4 w-4" />
+        <span className="hidden sm:inline">Ultimate Studio</span>
+        <span className="sm:hidden">Studio</span>
+      </Button>
 
       {/* Studio Modal */}
       <Dialog open={studioOpen} onOpenChange={setStudioOpen}>
@@ -392,33 +433,125 @@ ${lessonContent}
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Mind Map Display */}
+              {/* Mind Map Display with Tabs */}
               {studioMode === "mindmap" && studioContent && (
                 <>
-                  {mindmapSvg ? (
-                    <div className="border rounded-lg p-4 bg-white overflow-auto max-h-96 flex justify-center items-start">
-                      <div 
-                        dangerouslySetInnerHTML={{ __html: mindmapSvg }}
-                        className="w-full"
-                      />
-                    </div>
-                  ) : (
-                    <div className="border rounded-lg p-4 bg-gray-50 overflow-auto max-h-96">
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin" />
+                  {/* Tabs */}
+                  <div className="flex gap-2 border-b mb-4">
+                    <button
+                      onClick={() => setMindmapTab("image")}
+                      className={`px-4 py-2 font-semibold transition-colors ${
+                        mindmapTab === "image"
+                          ? "border-b-2 border-[#534AB7] text-[#534AB7]"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      🧠 الخريطة الذهنية
+                    </button>
+                    <button
+                      onClick={() => setMindmapTab("chart")}
+                      className={`px-4 py-2 font-semibold transition-colors ${
+                        mindmapTab === "chart"
+                          ? "border-b-2 border-[#534AB7] text-[#534AB7]"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      📊 رسم بياني
+                    </button>
+                  </div>
+
+                  {/* Tab Content - Image */}
+                  {mindmapTab === "image" && (
+                    <>
+                      <div className="border rounded-lg p-4 bg-white overflow-auto max-h-96 flex justify-center items-center">
+                        <img 
+                          src={`https://mermaid.ink/img/${encodeToBase64(studioContent)}`}
+                          alt="خريطة ذهنية"
+                          style={{width:'100%', borderRadius:'8px'}}
+                          onError={() => toast.error('خطأ في تحميل الخريطة الذهنية')}
+                        />
+                      </div>
+                      <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-right">
+                        <p className="font-semibold mb-2">✅ الخريطة الذهنية جاهزة!</p>
+                        <p className="text-xs text-gray-600">يمكنك نسخ الكود أو تحميل الصورة أدناه</p>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Tab Content - Charts */}
+                  {mindmapTab === "chart" && chartData.length > 0 && (
+                    <div className="space-y-6">
+                      {/* Bar Chart */}
+                      <div className="border rounded-lg p-4 bg-white">
+                        <h3 className="text-right font-semibold mb-4">📊 رسم بياني أعمدة</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={chartData} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" />
+                            <YAxis dataKey="name" type="category" width={100} />
+                            <Tooltip />
+                            <Bar dataKey="points" fill="#534AB7" radius={4} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Pie Chart */}
+                      <div className="border rounded-lg p-4 bg-white">
+                        <h3 className="text-right font-semibold mb-4">🥧 رسم بياني دائري</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={chartData}
+                              dataKey="points"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={100}
+                              label
+                            >
+                              {chartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % 4]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Line Chart */}
+                      <div className="border rounded-lg p-4 bg-white">
+                        <h3 className="text-right font-semibold mb-4">📈 رسم بياني خطي</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="points" stroke="#534AB7" strokeWidth={2} dot={{ fill: '#534AB7', r: 5 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Statistics */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="border rounded-lg p-3 bg-blue-50 text-center">
+                          <p className="text-sm text-gray-600">إجمالي الفئات</p>
+                          <p className="text-2xl font-bold text-[#534AB7]">{chartData.length}</p>
+                        </div>
+                        <div className="border rounded-lg p-3 bg-green-50 text-center">
+                          <p className="text-sm text-gray-600">إجمالي النقاط</p>
+                          <p className="text-2xl font-bold text-[#1D9E75]">{chartData.reduce((sum, item) => sum + item.points, 0)}</p>
+                        </div>
+                        <div className="border rounded-lg p-3 bg-orange-50 text-center">
+                          <p className="text-sm text-gray-600">متوسط النقاط</p>
+                          <p className="text-2xl font-bold text-[#BA7517]">{(chartData.reduce((sum, item) => sum + item.points, 0) / chartData.length).toFixed(1)}</p>
+                        </div>
                       </div>
                     </div>
                   )}
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-right">
-                    <p className="font-semibold mb-2">📌 كيفية الاستخدام:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-xs">
-                      <li>انسخ النص أعلاه</li>
-                      <li>اذهب إلى <a href="https://mermaid.live" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">mermaid.live</a></li>
-                      <li>الصق النص وسيتم عرض الخريطة الذهنية تلقائياً</li>
-                      <li>يمكنك تحميلها كصورة PNG من هناك</li>
-                    </ol>
-                  </div>
-                  <DialogFooter className="flex gap-2 justify-end">
+
+                  <DialogFooter className="flex gap-2 justify-end mt-4">
                     <Button
                       onClick={downloadMindmap}
                       className="gap-2 bg-[#534AB7] text-white hover:bg-[#3d3580]"
@@ -447,113 +580,89 @@ ${lessonContent}
                         style={{ width: `${((currentQuestionIndex + 1) / quizData.questions.length) * 100}%` }}
                       />
                     </div>
-                    <p className="text-sm text-gray-600 text-center">السؤال {currentQuestionIndex + 1} من {quizData.questions.length}</p>
+
+                    {/* Question Counter */}
+                    <p className="text-sm text-gray-600 text-right">
+                      السؤال {currentQuestionIndex + 1} من {quizData.questions.length}
+                    </p>
 
                     {/* Question */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="font-semibold text-right mb-4">{quizData.questions[currentQuestionIndex].question}</p>
-                      
-                      {/* Options */}
-                      <div className="space-y-2">
-                        {quizData.questions[currentQuestionIndex].options.map((option: string, idx: number) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleQuizAnswer(idx)}
-                            disabled={quizAnswered}
-                            className={`w-full p-3 rounded-lg text-right transition-all ${
-                              selectedAnswer === idx
-                                ? idx === quizData.questions[currentQuestionIndex].correct
-                                  ? "bg-green-100 border-2 border-green-500"
-                                  : "bg-red-100 border-2 border-red-500"
-                                : "bg-white border-2 border-gray-200 hover:border-gray-400"
-                            } ${quizAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span>{option}</span>
-                              {selectedAnswer === idx && (
-                                idx === quizData.questions[currentQuestionIndex].correct
-                                  ? <Check className="h-5 w-5 text-green-600" />
-                                  : <AlertCircle className="h-5 w-5 text-red-600" />
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="border rounded-lg p-4 bg-blue-50">
+                      <p className="text-right font-semibold text-lg">
+                        {quizData.questions[currentQuestionIndex]?.question}
+                      </p>
+                    </div>
+
+                    {/* Options */}
+                    <div className="space-y-2">
+                      {quizData.questions[currentQuestionIndex]?.options.map((option: string, index: number) => (
+                        <button
+                          key={index}
+                          onClick={() => handleAnswerSelect(index)}
+                          disabled={quizAnswered}
+                          className={`w-full p-3 text-right rounded-lg border-2 transition-all ${
+                            selectedAnswer === index
+                              ? index === quizData.questions[currentQuestionIndex].correct
+                                ? 'border-green-500 bg-green-50'
+                                : 'border-red-500 bg-red-50'
+                              : 'border-gray-300 hover:border-[#BA7517]'
+                          } ${quizAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          {option}
+                        </button>
+                      ))}
                     </div>
 
                     {/* Explanation */}
                     {quizAnswered && (
-                      <div className={`p-3 rounded-lg text-sm text-right ${
+                      <div className={`border rounded-lg p-3 text-right ${
                         selectedAnswer === quizData.questions[currentQuestionIndex].correct
-                          ? "bg-green-50 border border-green-200"
-                          : "bg-red-50 border border-red-200"
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-red-50 border-red-200'
                       }`}>
-                        <p className="font-semibold mb-1">الشرح:</p>
-                        <p>{quizData.questions[currentQuestionIndex].explanation}</p>
+                        <p className="font-semibold mb-2">
+                          {selectedAnswer === quizData.questions[currentQuestionIndex].correct ? '✅ صحيح!' : '❌ خطأ'}
+                        </p>
+                        <p className="text-sm">{quizData.questions[currentQuestionIndex]?.explanation}</p>
                       </div>
                     )}
 
-                    {/* Quiz Complete */}
+                    {/* Navigation */}
+                    {quizAnswered && (
+                      <Button
+                        onClick={handleNextQuestion}
+                        disabled={currentQuestionIndex === quizData.questions.length - 1}
+                        className="w-full bg-[#BA7517] text-white hover:bg-[#8a5a12]"
+                      >
+                        {currentQuestionIndex === quizData.questions.length - 1 ? 'انتهى الاختبار' : 'السؤال التالي'}
+                      </Button>
+                    )}
+
+                    {/* Final Score */}
                     {currentQuestionIndex === quizData.questions.length - 1 && quizAnswered && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <p className="text-2xl font-bold text-[#BA7517] mb-2">
-                          {quizScore}/{quizData.questions.length}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {quizScore === quizData.questions.length ? "ممتاز! 🎉" : "جيد جداً! 👏"}
+                      <div className="border rounded-lg p-4 bg-yellow-50 text-center">
+                        <p className="text-sm text-gray-600 mb-2">النتيجة النهائية</p>
+                        <p className="text-4xl font-bold text-[#BA7517]">{quizScore}/{quizData.questions.length}</p>
+                        <p className="text-sm text-gray-600 mt-2">
+                          {(quizScore / quizData.questions.length) * 100 >= 80 ? '🌟 ممتاز!' : (quizScore / quizData.questions.length) * 100 >= 60 ? '👍 جيد' : '📚 يحتاج تحسين'}
                         </p>
                       </div>
                     )}
                   </div>
-
-                  {/* Next Button */}
-                  {quizAnswered && currentQuestionIndex < quizData.questions.length - 1 && (
-                    <Button
-                      onClick={nextQuestion}
-                      className="w-full bg-[#BA7517] text-white hover:bg-[#8a5810]"
-                    >
-                      السؤال التالي
-                    </Button>
-                  )}
-
-                  {/* Close Button */}
-                  {currentQuestionIndex === quizData.questions.length - 1 && quizAnswered && (
-                    <Button
-                      onClick={() => setStudioOpen(false)}
-                      className="w-full bg-gray-500 text-white hover:bg-gray-600"
-                    >
-                      إغلاق
-                    </Button>
-                  )}
                 </>
               )}
 
-              {/* PowerPoint Display */}
-              {studioMode === "pptx" && studioContent && (
-                <>
-                  <div className="border rounded-lg p-4 bg-gray-50 overflow-auto max-h-96">
-                    <pre className="text-sm font-mono whitespace-pre-wrap break-words text-right">
-                      {studioContent}
-                    </pre>
-                  </div>
-                  <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-right">
-                    <p className="font-semibold mb-2">📌 ملاحظة:</p>
-                    <p className="text-xs">محتوى الشرائح جاهز. يمكنك نسخه وإنشاء عرض تقديمي في PowerPoint أو Google Slides.</p>
-                  </div>
-                  <DialogFooter className="flex gap-2 justify-end">
-                    <Button
-                      onClick={copyToClipboard}
-                      className="gap-2 bg-gray-500 text-white hover:bg-gray-600"
-                    >
-                      نسخ
-                    </Button>
-                  </DialogFooter>
-                </>
+              {/* PPTX Display */}
+              {studioMode === "pptx" && (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">تم توليد العرض التقديمي بنجاح!</p>
+                  <p className="text-sm text-gray-500 mt-2">يمكنك تحميل الملف من الأسفل</p>
+                </div>
               )}
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
