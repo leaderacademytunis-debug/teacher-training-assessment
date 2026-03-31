@@ -99,6 +99,7 @@
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^4.8.69",
     "pdfkit": "^0.17.2",
+    "pptxgenjs": "^4.0.1",
     "qrcode": "^1.5.4",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.1",

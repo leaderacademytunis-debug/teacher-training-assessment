@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles, BookOpen, ClipboardCheck, Copy, RefreshCw, Printer, Calendar, GripVertical, Upload, Lightbulb } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { LeaderStudio } from "@/components/LeaderStudio";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1220,6 +1221,17 @@ export default function EduGPTAssistantEnhanced() {
   const [summaryCardContent, setSummaryCardContent] = useState("");
   const [summaryCardLoading, setSummaryCardLoading] = useState(false);
 
+  // Leader Studio state
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioMode, setStudioMode] = useState<'mindmap' | 'quiz' | 'pptx' | null>(null);
+  const [studioLoading, setStudioLoading] = useState(false);
+  const [studioContent, setStudioContent] = useState("");
+  const [mindmapSvg, setMindmapSvg] = useState("");
+  const [quizData, setQuizData] = useState<any>(null);
+  const [currentQuizQuestion, setCurrentQuizQuestion] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+
   const exportCleanAsPDF = () => {
     if (!hasAssistantMessage) return;
     setExportModalFormat("pdf");
@@ -1853,10 +1865,11 @@ export default function EduGPTAssistantEnhanced() {
             const isUser = message.role === "user";
             const isRTL = msgDir === 'rtl';
             return (
-              <div
-                key={index}
-                className={`flex items-end gap-2 ${isUser ? (isRTL ? 'justify-start flex-row' : 'justify-start flex-row-reverse') : (isRTL ? 'justify-end flex-row-reverse' : 'justify-end flex-row')}`}
-              >
+              <>
+                <div
+                  key={index}
+                  className={`flex items-end gap-2 ${isUser ? (isRTL ? 'justify-start flex-row' : 'justify-start flex-row-reverse') : (isRTL ? 'justify-end flex-row-reverse' : 'justify-end flex-row')}`}
+                >
                 {/* Avatar */}
                 <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                   isUser ? 'bg-gray-200 text-gray-600' : 'bg-blue-100 text-blue-600'
@@ -1935,8 +1948,24 @@ export default function EduGPTAssistantEnhanced() {
                   </div>
                 </Card>
               </div>
+              </>
             );
           })}
+
+          {/* Leader Studio - Show after streaming completes */}
+          {messages.length > 0 && 
+           messages[messages.length - 1]?.role === "assistant" && 
+           !isLoading &&
+           (messages[messages.length - 1]?.content?.length || 0) > 0 && (
+            <div className="mt-4">
+              <LeaderStudio
+                lessonContent={messages[messages.length - 1]?.content || ""}
+                selectedSubject={selectedSubject}
+                selectedLevel={selectedLevel}
+                teachingLanguage={teachingLanguage}
+              />
+            </div>
+          )}
 
           {/* Summary Card Modal */}
           <Dialog open={summaryCardOpen} onOpenChange={setSummaryCardOpen}>
