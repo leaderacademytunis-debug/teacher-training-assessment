@@ -1006,7 +1006,7 @@ export default function EduGPTAssistantEnhanced() {
     setSummaryCardLoading(true);
     setSummaryCardOpen(true);
     try {
-      const summaryPrompt = `بناءً على الجذاذة التالية:\n\n${content}\n\n---\n\nأنشئ بطاقة تلخيص للتلميذ بهذا الهيكل الصارم:\n\n[اسم الدرس] | [المادة] | [المستوى]\n\nأتعلم: [المفهوم الأساسي - جملة واحدة فقط]\n\nأتذكر:\n• نقطة 1 (لا تتجاوز 5 كلمات)\n• نقطة 2 (لا تتجاوز 5 كلمات)\n• نقطة 3 (لا تتجاوز 5 كلمات)\n\nمثال: [مثال واحد محلول في سطرين فقط]\n\nأتحقق: [سؤال واحد + جواب في سطر واحد]\n\n[قيود صارمة]:\n- الحد الأقصى: 150 كلمة إجمالاً\n- ممنوع استخدام أي رموز ┌─├─└│ — استخدم نصاً عادياً فقط\n- التنسيق سيتولاه CSS — أنت فقط اكتب المحتوى\n- لا تطلب أي معلومات إضافية — كل المعطيات في الجذاذة أعلاه`;
+      const summaryPrompt = `بناءً على الجذاذة التالية:\n\n${content}\n\n---\n\nأنشئ بطاقة تلخيص للتلميذ بهذا الهيكل الصارم:\n\n[اسم الدرس] | [المادة] | [المستوى]\n\nأتعلم: [المفهوم الأساسي - جملة واحدة فقط]\n\nأتذكر:\n• نقطة 1 (لا تتجاوز 6 كلمات)\n• نقطة 2 (لا تتجاوز 6 كلمات)\n• نقطة 3 (لا تتجاوز 6 كلمات)\n\nمثال: [مثال واحد + حل واحد في سطرين فقط]\n\nأتحقق: [سؤال قصير + الجواب في سطر واحد]\n\n[قيود صارمة مطلقة]:\n- الحد الأقصى: 80 كلمة إجمالاً (ليس 150)\n- أتذكر: 3 نقاط فقط — كل نقطة لا تتجاوز 6 كلمات\n- مثال: مثال واحد + حل واحد في سطرين فقط\n- أتحقق: سؤال + جواب في سطر واحد\n- ممنوع استخدام أي رموز ┌─├─└│ — نص عادي فقط\n- لا تطلب أي معلومات إضافية`;
 
       const response = await fetch("/api/assistant/stream", {
         method: "POST",
@@ -1940,7 +1940,7 @@ export default function EduGPTAssistantEnhanced() {
 
           {/* Summary Card Modal */}
           <Dialog open={summaryCardOpen} onOpenChange={setSummaryCardOpen}>
-            <DialogContent className="w-[420px] h-[520px] overflow-hidden flex flex-col" dir="rtl">
+            <DialogContent className="w-[420px] h-[90vh] overflow-hidden flex flex-col" dir="rtl">
               <DialogHeader>
                 <DialogTitle>بطاقة تلخيص التلميذ</DialogTitle>
               </DialogHeader>
@@ -1961,6 +1961,10 @@ export default function EduGPTAssistantEnhanced() {
                       margin: "0 auto",
                     }}
                   >
+                    {/* Green header with lesson info */}
+                    <div style={{background:"#1D9E75",color:"white",padding:"10px 14px",fontWeight:"bold",fontSize:"13px",textAlign:"center"}}>
+                      {selectedLevel && selectedSubject ? `${selectedLevel} | ${selectedSubject}` : "بطاقة تلخيص"}
+                    </div>
                     {/* Render the summary card with HTML parsing */}
                     <div
                       dangerouslySetInnerHTML={{
