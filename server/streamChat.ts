@@ -124,7 +124,7 @@ export async function streamChatHandler(req: Request, res: Response) {
         { role: "system", content: systemPrompt },
         ...llmMessages,
       ],
-      max_tokens: 2000,
+      max_tokens: 2500,
       stream: true,
       thinking: { budget_tokens: 128 },
     };
