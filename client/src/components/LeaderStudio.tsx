@@ -33,6 +33,17 @@ export function LeaderStudio({
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
+  const [showFallback, setShowFallback] = useState(true) // Use HTML fallback by default;
+
+  // Encode text to base64 (supports Arabic)
+  const encodeToBase64 = (text: string): string => {
+    try {
+      return btoa(unescape(encodeURIComponent(text)));
+    } catch (e) {
+      console.error('Encoding error:', e);
+      return '';
+    }
+  };
 
   // Parse mindmap content to extract chart data
   const extractChartData = useCallback((mindmapCode: string) => {
@@ -357,15 +368,7 @@ ${lessonContent}
     return null;
   }
 
-  // Helper function to encode Arabic text to base64
-  const encodeToBase64 = (str: string) => {
-    try {
-      return btoa(unescape(encodeURIComponent(str)));
-    } catch (e) {
-      console.error('Encoding error:', e);
-      return '';
-    }
-  };
+
 
   const COLORS = ['#534AB7', '#BA7517', '#185FA5', '#1D9E75'];
 
@@ -464,12 +467,41 @@ ${lessonContent}
                   {mindmapTab === "image" && (
                     <>
                       <div className="border rounded-lg p-4 bg-white overflow-auto max-h-96 flex justify-center items-center">
-                        <img 
-                          src={`https://mermaid.ink/img/${encodeToBase64(studioContent)}`}
-                          alt="خريطة ذهنية"
-                          style={{width:'100%', borderRadius:'8px'}}
-                          onError={() => toast.error('خطأ في تحميل الخريطة الذهنية')}
-                        />
+                        {!showFallback ? (
+                          <img 
+                            src={`https://kroki.io/mermaid/svg?code=${encodeToBase64(studioContent)}`}
+                            alt="خريطة ذهنية"
+                            style={{width:'100%', borderRadius:'8px'}}
+                            onError={() => {
+                              console.error('kroki.io failed, using fallback');
+                              setShowFallback(true);
+                            }}
+                            onLoad={() => console.log('kroki.io loaded successfully')}
+                          />
+                        ) : (
+                          <div style={{padding:'16px', background:'#f8f9fa', borderRadius:'8px', direction:'rtl', width:'100%'}}>
+                            <p className="text-center font-semibold mb-4 text-gray-700">عرض بديل للخريطة الذهنية</p>
+                            {studioContent.split('\n').filter((l: string) => l.trim() && !l.includes('mindmap') && !l.includes('root')).map((line: string, i: number) => {
+                              const indent = line.search(/\S/);
+                              const text = line.trim();
+                              return (
+                                <div key={i} style={{
+                                  marginRight: `${Math.max(0, indent - 2) * 12}px`,
+                                  marginBottom: '8px',
+                                  padding: '8px 12px',
+                                  background: indent <= 4 ? '#1D9E75' : indent <= 8 ? '#E1F5EE' : '#fff',
+                                  color: indent <= 4 ? '#fff' : '#333',
+                                  borderRadius: '6px',
+                                  border: '1px solid #E1F5EE',
+                                  fontSize: '13px',
+                                  fontWeight: indent <= 4 ? '600' : '400'
+                                }}>
+                                  {text}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                       <div className="bg-green-50 border border-green-200 rounded p-3 text-sm text-right">
                         <p className="font-semibold mb-2">✅ الخريطة الذهنية جاهزة!</p>
