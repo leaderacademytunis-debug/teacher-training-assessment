@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles, BookOpen, ClipboardCheck, Copy, RefreshCw, Printer, Calendar, GripVertical, Upload } from "lucide-react";
+import { Send, Loader2, Paperclip, X, FileText, Image as ImageIcon, File, Menu, Search, Trash2, Download, Plus, MessageSquare, ArrowRight, Globe, Pencil, Check, Pin, PinOff, Sparkles, BookOpen, ClipboardCheck, Copy, RefreshCw, Printer, Calendar, GripVertical, Upload, Lightbulb } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { ExportMetadataModal, type ExportMetadata } from "@/components/ExportMetadataModal";
 import PrintPreview from "@/components/PrintPreview";
 import { LockedFeature, usePermissions } from "@/components/LockedFeature";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 // ===== TRANSLATIONS =====
 const UI = {
@@ -1001,6 +1002,60 @@ export default function EduGPTAssistantEnhanced() {
     } catch { /* handled by mutation */ }
   }, [conversationTitle, selectedSubject, selectedLevel, teachingLanguage, t]);
 
+  const generateSummaryCard = useCallback(async (content: string) => {
+    setSummaryCardLoading(true);
+    setSummaryCardOpen(true);
+    try {
+      const summaryPrompt = `من الجذاذة السابقة، أنشئ بطاقة تلخيص للتلميذ بهذا الهيكل الصارم:\n\n┌─────────────────────────────┐\n│  [اسم الدرس] — [المادة] — [المستوى]  │\n├─────────────────────────────┤\n│ 📌 أتعلم:                          │\n│ [المفهوم الأساسي في جملة واحدة]      │\n├─────────────────────────────┤\n│ 📝 أتذكر:                          │\n│ • نقطة 1                           │\n│ • نقطة 2                           │\n│ • نقطة 3                           │\n├─────────────────────────────┤\n│ 🔢 مثال:                           │\n│ [مثال واحد محلول بالخطوات]          │\n├─────────────────────────────┤\n│ ✅ أتحقق من نفسي:                   │\n│ سؤال واحد للتلميذ + الجواب          │\n└─────────────────────────────┘\n\nالقيود: لا تتجاوز A5 — مناسبة للطباعة — خط واضح وكبير`;
+
+      const response = await fetch("/api/assistant/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "user", content: summaryPrompt },
+          ],
+          subject: selectedSubject,
+          level: selectedLevel,
+          teachingLanguage: teachingLanguage,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate summary card");
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.content) fullContent += data.content;
+            } catch {}
+          }
+        }
+      }
+
+      setSummaryCardContent(fullContent);
+    } catch (error) {
+      console.error("Summary card error:", error);
+      toast.error("خطأ في إنشاء بطاقة التلخيص");
+      setSummaryCardOpen(false);
+    } finally {
+      setSummaryCardLoading(false);
+    }
+  }, [selectedSubject, selectedLevel, teachingLanguage]);
+
   // Regenerate last assistant response
   const regenerateLastResponse = useCallback(() => {
     if (isLoading) return;
@@ -1161,6 +1216,9 @@ export default function EduGPTAssistantEnhanced() {
   });
 
   const hasAssistantMessage = messages.some((m) => m.role === "assistant");
+  const [summaryCardOpen, setSummaryCardOpen] = useState(false);
+  const [summaryCardContent, setSummaryCardContent] = useState("");
+  const [summaryCardLoading, setSummaryCardLoading] = useState(false);
 
   const exportCleanAsPDF = () => {
     if (!hasAssistantMessage) return;
@@ -1853,14 +1911,24 @@ export default function EduGPTAssistantEnhanced() {
                           W
                         </button>
                         {index === messages.length - 1 && (
-                          <button
-                            onClick={regenerateLastResponse}
-                            className="p-1 rounded hover:bg-white/20 transition-colors text-blue-100 hover:text-white"
-                            title={t.regenerateBtn}
-                            disabled={isLoading}
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => generateSummaryCard(message.content)}
+                              className="p-1 rounded hover:bg-white/20 transition-colors text-blue-100 hover:text-white"
+                              title="بطاقة تلخيص التلميذ"
+                              disabled={isLoading}
+                            >
+                              <Lightbulb className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={regenerateLastResponse}
+                              className="p-1 rounded hover:bg-white/20 transition-colors text-blue-100 hover:text-white"
+                              title={t.regenerateBtn}
+                              disabled={isLoading}
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                            </button>
+                          </>
                         )}
                       </div>
                     )}
@@ -1869,6 +1937,45 @@ export default function EduGPTAssistantEnhanced() {
               </div>
             );
           })}
+
+          {/* Summary Card Modal */}
+          <Dialog open={summaryCardOpen} onOpenChange={setSummaryCardOpen}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
+              <DialogHeader>
+                <DialogTitle>بطاقة تلخيص التلميذ</DialogTitle>
+              </DialogHeader>
+              {summaryCardLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border-r-4 border-[#534AB7] bg-purple-50 p-4 rounded" dir="auto">
+                    <Streamdown>{summaryCardContent}</Streamdown>
+                  </div>
+                  <DialogFooter className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(summaryCardContent);
+                        toast.success("تم نسخ البطاقة");
+                      }}
+                      className="px-4 py-2 bg-[#534AB7] text-white rounded hover:bg-[#3f3684] transition-colors flex items-center gap-2"
+                    >
+                      <Copy className="h-4 w-4" />
+                      نسخ
+                    </button>
+                    <button
+                      onClick={() => window.print()}
+                      className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors flex items-center gap-2"
+                    >
+                      <Printer className="h-4 w-4" />
+                      طباعة
+                    </button>
+                  </DialogFooter>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {isLoading && !streamingContent && (
             <div className="flex items-end gap-2 justify-end flex-row-reverse">
