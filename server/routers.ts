@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminControlRouter } from "./routers/adminControl";
+import { profileBuilderRouter } from "./routers/profileBuilder";
 import { pedagogicalCompanionRouter } from "./routers/pedagogicalCompanion";
 import { contentAdapterRouter } from "./routers/contentAdapter";
 import { therapeuticExercisesRouter } from "./routers/therapeuticExercises";
@@ -41,6 +42,7 @@ const adminProcedure = staffProcedure;
 export const appRouter = router({
   system: systemRouter,
   adminControl: adminControlRouter,
+  profileBuilder: profileBuilderRouter,
   analytics: analyticsRouter,
   coursesManagement: coursesManagementRouter,
   bulkUserImport: bulkUserImportRouter,

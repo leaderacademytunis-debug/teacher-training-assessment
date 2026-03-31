@@ -934,6 +934,13 @@ export const teacherPortfolios = mysqlTable("teacher_portfolios", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("userId").notNull(),
 
+  // Profile Builder - Basic Information
+  avatarUrl: text("avatarUrl"), // URL to avatar image in S3
+  subject: varchar("subject", { length: 100 }), // e.g., "رياضيات", "لغة عربية", "إيقاظ علمي"
+  teachingLevel: mysqlEnum("teachingLevel", ["primary", "middle", "secondary"]), // ابتدائي، إعدادي، ثانوي
+  isAvailableForJobs: boolean("isAvailableForJobs").default(true).notNull(), // 🟢 متاح لعروض الشغل
+  profileCompletedAt: timestamp("profileCompletedAt"), // When onboarding was completed
+
   // Public sharing
   isPublic: boolean("isPublic").default(false).notNull(),
   publicToken: varchar("publicToken", { length: 64 }).unique(), // Unique share link token
@@ -955,6 +962,8 @@ export const teacherPortfolios = mysqlTable("teacher_portfolios", {
   totalEvaluations: int("totalEvaluations").default(0).notNull(),
   totalDigitizedDocs: int("totalDigitizedDocs").default(0).notNull(),
   totalConversations: int("totalConversations").default(0).notNull(),
+  lessonsCreated: int("lessonsCreated").default(0).notNull(), // For TalentRadar display
+  videosCreated: int("videosCreated").default(0).notNull(), // For TalentRadar display
 
   // Subject breakdown for radar chart (JSON map: subject -> count)
   subjectBreakdown: json("subjectBreakdown").$type<Record<string, number>>(),
