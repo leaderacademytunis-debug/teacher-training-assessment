@@ -1950,8 +1950,30 @@ export default function EduGPTAssistantEnhanced() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="border-r-4 border-[#534AB7] bg-purple-50 p-4 rounded" dir="auto">
-                    <Streamdown>{summaryCardContent}</Streamdown>
+                  <div
+                    style={{
+                      border: "2px solid #1D9E75",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      fontFamily: "Arial, sans-serif",
+                      direction: "rtl",
+                      maxWidth: "400px",
+                      margin: "0 auto",
+                    }}
+                  >
+                    {/* Render the summary card with HTML parsing */}
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: summaryCardContent
+                          .replace(/أتعلم:/g, '<div style="padding:10px 14px;border-bottom:1px solid #E1F5EE;background:#F8FFFC"><span style="color:#1D9E75;font-weight:bold">أتعلم: </span>')
+                          .replace(/أتذكر:/g, '</div><div style="padding:10px 14px;border-bottom:1px solid #E1F5EE;"><div style="color:#1D9E75;font-weight:bold;margin-bottom:6px">أتذكر:</div>')
+                          .replace(/مثال:/g, '</div><div style="padding:10px 14px;border-bottom:1px solid #E1F5EE;background:#F8FFFC"><span style="color:#1D9E75;font-weight:bold">مثال: </span>')
+                          .replace(/أتحقق:/g, '</div><div style="padding:10px 14px;"><span style="color:#1D9E75;font-weight:bold">أتحقق: </span>')
+                          .replace(/\n/g, '<br/>')
+                          .replace(/• /g, '<div style="margin:4px 0">• </div>') +
+                          '</div><div style="background:#1D9E75;color:white;padding:6px 14px;font-size:11px;text-align:center">Leader Academy</div>',
+                      }}
+                    />
                   </div>
                   <DialogFooter className="flex gap-2 justify-end">
                     <button
@@ -1959,7 +1981,7 @@ export default function EduGPTAssistantEnhanced() {
                         navigator.clipboard.writeText(summaryCardContent);
                         toast.success("تم نسخ البطاقة");
                       }}
-                      className="px-4 py-2 bg-[#534AB7] text-white rounded hover:bg-[#3f3684] transition-colors flex items-center gap-2"
+                      className="px-4 py-2 bg-[#1D9E75] text-white rounded hover:bg-[#0d7a5c] transition-colors flex items-center gap-2"
                     >
                       <Copy className="h-4 w-4" />
                       نسخ
