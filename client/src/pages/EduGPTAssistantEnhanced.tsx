@@ -1006,7 +1006,7 @@ export default function EduGPTAssistantEnhanced() {
     setSummaryCardLoading(true);
     setSummaryCardOpen(true);
     try {
-      const summaryPrompt = `بناءً على الجذاذة التالية:\n\n${content}\n\n---\n\nأنشئ بطاقة تلخيص للتلميذ بهذا الهيكل الصارم:\n\n┌─────────────────────────┐\n│ [اسم الدرس] | [المادة] | [المستوى] │\n├─────────────────────────┤\n│ أتعلم: [المفهوم الأساسي - جملة واحدة] │\n├─────────────────────────┤\n│ أتذكر:                        │\n│ • نقطة 1                      │\n│ • نقطة 2                      │\n│ • نقطة 3                      │\n├─────────────────────────┤\n│ مثال: [مثال واحد محلول]       │\n├─────────────────────────┤\n│ أتحقق: [سؤال + جواب]          │\n└─────────────────────────┘\n\nلا تطلب أي معلومات إضافية — كل المعطيات في الجذاذة أعلاه.`;
+      const summaryPrompt = `بناءً على الجذاذة التالية:\n\n${content}\n\n---\n\nأنشئ بطاقة تلخيص للتلميذ بهذا الهيكل الصارم:\n\n[اسم الدرس] | [المادة] | [المستوى]\n\nأتعلم: [المفهوم الأساسي - جملة واحدة فقط]\n\nأتذكر:\n• نقطة 1 (لا تتجاوز 5 كلمات)\n• نقطة 2 (لا تتجاوز 5 كلمات)\n• نقطة 3 (لا تتجاوز 5 كلمات)\n\nمثال: [مثال واحد محلول في سطرين فقط]\n\nأتحقق: [سؤال واحد + جواب في سطر واحد]\n\n[قيود صارمة]:\n- الحد الأقصى: 150 كلمة إجمالاً\n- ممنوع استخدام أي رموز ┌─├─└│ — استخدم نصاً عادياً فقط\n- التنسيق سيتولاه CSS — أنت فقط اكتب المحتوى\n- لا تطلب أي معلومات إضافية — كل المعطيات في الجذاذة أعلاه`;
 
       const response = await fetch("/api/assistant/stream", {
         method: "POST",
@@ -1940,7 +1940,7 @@ export default function EduGPTAssistantEnhanced() {
 
           {/* Summary Card Modal */}
           <Dialog open={summaryCardOpen} onOpenChange={setSummaryCardOpen}>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
+            <DialogContent className="w-[420px] h-[520px] overflow-hidden flex flex-col" dir="rtl">
               <DialogHeader>
                 <DialogTitle>بطاقة تلخيص التلميذ</DialogTitle>
               </DialogHeader>
