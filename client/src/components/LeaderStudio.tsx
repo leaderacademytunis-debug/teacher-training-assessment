@@ -1,8 +1,11 @@
-import { useState, useCallback } from "react";
-import { Brain, HelpCircle, Presentation, Zap, Loader2, Download, Printer, X, Check, AlertCircle } from "lucide-react";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { Brain, HelpCircle, Presentation, Zap, Loader2, Download, X, Check, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import mermaid from 'mermaid';
 
 interface LeaderStudioProps {
   lessonContent: string;
@@ -17,24 +20,41 @@ export function LeaderStudio({
   selectedLevel,
   teachingLanguage,
 }: LeaderStudioProps) {
-  // Debug: Log when component renders
-  console.log('LeaderStudio component rendered with content length:', lessonContent?.length || 0);
-  console.log('LeaderStudio props:', { selectedSubject, selectedLevel, teachingLanguage });
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioMode, setStudioMode] = useState<"mindmap" | "quiz" | "pptx" | null>(null);
   const [studioLoading, setStudioLoading] = useState(false);
   const [studioContent, setStudioContent] = useState("");
+  const [mindmapSvg, setMindmapSvg] = useState<string>("");
   const [quizData, setQuizData] = useState<any>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [quizAnswered, setQuizAnswered] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
 
+  // Initialize mermaid
+  useEffect(() => {
+    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+  }, []);
+
+  // Render mindmap SVG when content changes
+  useEffect(() => {
+    if (studioMode === "mindmap" && studioContent) {
+      const id = 'mindmap-svg-' + Date.now();
+      mermaid.render(id, studioContent).then(({ svg }) => {
+        setMindmapSvg(svg);
+      }).catch((err) => {
+        console.error('Mermaid render error:', err);
+        toast.error('خطأ في رسم الخريطة الذهنية');
+      });
+    }
+  }, [studioContent, studioMode]);
+
   // Generate Mind Map
   const generateMindMap = useCallback(async () => {
     setStudioLoading(true);
     setStudioMode("mindmap");
     setStudioOpen(true);
+    setMindmapSvg("");
     try {
       const mindmapPrompt = `بناءً على الجذاذة التالية:
 
@@ -98,65 +118,37 @@ mindmap
     } catch (error) {
       console.error("Mind map error:", error);
       toast.error("خطأ في إنشاء الخريطة الذهنية");
-      setStudioOpen(false);
     } finally {
       setStudioLoading(false);
     }
   }, [lessonContent, selectedSubject, selectedLevel, teachingLanguage]);
-
-  // Download mindmap as text
-  const downloadMindmap = () => {
-    const element = document.createElement("a");
-    const file = new Blob([studioContent], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = "mindmap.mmd";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-    toast.success("تم تحميل الخريطة الذهنية");
-  };
-
-  // Copy to clipboard
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(studioContent);
-    toast.success("تم نسخ الخريطة الذهنية");
-  };
 
   // Generate Quiz
   const generateQuiz = useCallback(async () => {
     setStudioLoading(true);
     setStudioMode("quiz");
     setStudioOpen(true);
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
-    setQuizAnswered(false);
-    setQuizScore(0);
     try {
-      const quizPrompt = `بناءً على الجذاذة التالية:
+      const quizPrompt = `من الجذاذة التالية:
 
 ${lessonContent}
 
 ---
 
-أنشئ 5 أسئلة اختيار من متعدد بصيغة JSON صحيحة:
+أنشئ 5 أسئلة اختيار من متعدد (2 سهلة + 2 متوسطة + 1 صعبة) بصيغة JSON فقط:
+
 {
   "questions": [
     {
       "question": "نص السؤال",
       "options": ["أ", "ب", "ج", "د"],
       "correct": 0,
-      "explanation": "شرح الإجابة الصحيحة",
-      "criteria": "مع1"
+      "explanation": "شرح الإجابة الصحيحة"
     }
   ]
 }
 
-الأسئلة يجب أن تكون:
-- 2 سهلة (مع1)
-- 2 متوسطة (مع2)
-- 1 صعبة (مع3)
-
-أرجع JSON فقط بدون أي نص إضافي.`;
+لا تضف أي نص إضافي، فقط JSON.`;
 
       const response = await fetch("/api/assistant/stream", {
         method: "POST",
@@ -194,41 +186,22 @@ ${lessonContent}
         }
       }
 
-      // Parse JSON
       const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         setQuizData(parsed);
-      } else {
-        throw new Error("Invalid JSON response");
+        setCurrentQuestionIndex(0);
+        setSelectedAnswer(null);
+        setQuizAnswered(false);
+        setQuizScore(0);
       }
     } catch (error) {
       console.error("Quiz error:", error);
-      toast.error("خطأ في إنشاء الاختبار التفاعلي");
-      setStudioOpen(false);
+      toast.error("خطأ في إنشاء الاختبار");
     } finally {
       setStudioLoading(false);
     }
   }, [lessonContent, selectedSubject, selectedLevel, teachingLanguage]);
-
-  // Handle Quiz Answer
-  const handleQuizAnswer = (optionIndex: number) => {
-    if (quizAnswered) return;
-    setSelectedAnswer(optionIndex);
-    setQuizAnswered(true);
-    if (optionIndex === quizData.questions[currentQuestionIndex].correct) {
-      setQuizScore(quizScore + 1);
-    }
-  };
-
-  // Next Question
-  const nextQuestion = () => {
-    if (currentQuestionIndex < quizData.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSelectedAnswer(null);
-      setQuizAnswered(false);
-    }
-  };
 
   // Generate PowerPoint
   const generatePowerPoint = useCallback(async () => {
@@ -236,19 +209,19 @@ ${lessonContent}
     setStudioMode("pptx");
     setStudioOpen(true);
     try {
-      const pptxPrompt = `بناءً على الجذاذة التالية:
+      const pptxPrompt = `من الجذاذة التالية:
 
 ${lessonContent}
 
 ---
 
-أنشئ محتوى لـ 5 شرائح PowerPoint بصيغة JSON:
+أنشئ محتوى 5 شرائح PowerPoint بصيغة JSON:
+
 {
   "slides": [
     {
       "title": "عنوان الشريحة",
-      "content": "محتوى الشريحة",
-      "type": "title|content|conclusion"
+      "content": "محتوى الشريحة"
     }
   ]
 }
@@ -260,7 +233,7 @@ ${lessonContent}
 4. التطبيق
 5. التقييم
 
-أرجع JSON فقط بدون أي نص إضافي.`;
+لا تضف أي نص إضافي، فقط JSON.`;
 
       const response = await fetch("/api/assistant/stream", {
         method: "POST",
@@ -298,26 +271,53 @@ ${lessonContent}
         }
       }
 
-      // Parse JSON
-      const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        setStudioContent(JSON.stringify(parsed, null, 2));
-        toast.success("تم إنشاء محتوى العرض التقديمي");
-      } else {
-        throw new Error("Invalid JSON response");
-      }
+      setStudioContent(fullContent);
     } catch (error) {
       console.error("PowerPoint error:", error);
       toast.error("خطأ في إنشاء العرض التقديمي");
-      setStudioOpen(false);
     } finally {
       setStudioLoading(false);
     }
   }, [lessonContent, selectedSubject, selectedLevel, teachingLanguage]);
 
-  // Show if we have lesson content
-  if (!lessonContent) {
+  // Copy to clipboard
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(studioContent);
+    toast.success("تم النسخ إلى الحافظة");
+  };
+
+  // Download mindmap
+  const downloadMindmap = () => {
+    const element = document.createElement("a");
+    element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(studioContent));
+    element.setAttribute("download", "mindmap.mmd");
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success("تم تحميل الخريطة الذهنية");
+  };
+
+  // Handle quiz answer
+  const handleQuizAnswer = (optionIndex: number) => {
+    if (quizAnswered) return;
+    setSelectedAnswer(optionIndex);
+    setQuizAnswered(true);
+    if (optionIndex === quizData.questions[currentQuestionIndex].correct) {
+      setQuizScore(quizScore + 1);
+    }
+  };
+
+  // Next question
+  const nextQuestion = () => {
+    if (currentQuestionIndex < quizData.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setSelectedAnswer(null);
+      setQuizAnswered(false);
+    }
+  };
+
+  if (!lessonContent || lessonContent.length === 0) {
     return null;
   }
 
@@ -328,48 +328,56 @@ ${lessonContent}
         <Button
           onClick={generateMindMap}
           disabled={studioLoading}
-          className="gap-2 bg-[#534AB7] hover:bg-[#3d3580] text-white rounded-full px-4 h-10"
+          className="gap-1 sm:gap-2 bg-[#534AB7] hover:bg-[#3d3580] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
           size="sm"
         >
-          <Brain className="h-4 w-4" />
-          خريطة ذهنية
+          <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">خريطة ذهنية</span>
+          <span className="sm:hidden">خريطة</span>
         </Button>
         <Button
           onClick={generateQuiz}
           disabled={studioLoading}
-          className="gap-2 bg-[#BA7517] hover:bg-[#8a5810] text-white rounded-full px-4 h-10"
+          className="gap-1 sm:gap-2 bg-[#BA7517] hover:bg-[#8a5810] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
           size="sm"
         >
-          <HelpCircle className="h-4 w-4" />
-          اختبار تفاعلي
+          <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">اختبار تفاعلي</span>
+          <span className="sm:hidden">اختبار</span>
         </Button>
         <Button
           onClick={generatePowerPoint}
           disabled={studioLoading}
-          className="gap-2 bg-[#185FA5] hover:bg-[#0f3f75] text-white rounded-full px-4 h-10"
+          className="gap-1 sm:gap-2 bg-[#185FA5] hover:bg-[#0f3f75] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
           size="sm"
         >
-          <Presentation className="h-4 w-4" />
-          عرض تقديمي
+          <Presentation className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">عرض تقديمي</span>
+          <span className="sm:hidden">عرض</span>
         </Button>
         <Button
           onClick={() => {
             localStorage.setItem("studioLessonContent", lessonContent);
             window.open("/ultimate-studio", "_blank");
           }}
-          className="gap-2 bg-[#1D9E75] hover:bg-[#0d7a5c] text-white rounded-full px-4 h-10"
+          className="gap-1 sm:gap-2 bg-[#1D9E75] hover:bg-[#0d7a5c] text-white rounded-full px-2 sm:px-4 h-8 sm:h-10 text-xs sm:text-sm"
           size="sm"
         >
-          <Zap className="h-4 w-4" />
-          Ultimate Studio
+          <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Ultimate Studio</span>
+          <span className="sm:hidden">Studio</span>
         </Button>
       </div>
 
       {/* Studio Modal */}
       <Dialog open={studioOpen} onOpenChange={setStudioOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto" dir="rtl">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle>خريطة ذهنية</DialogTitle>
+            <DialogTitle>
+              {studioMode === "mindmap" && "خريطة ذهنية"}
+              {studioMode === "quiz" && "اختبار تفاعلي"}
+              {studioMode === "pptx" && "عرض تقديمي"}
+            </DialogTitle>
             <button
               onClick={() => setStudioOpen(false)}
               className="absolute right-4 top-4 p-1 hover:bg-gray-100 rounded"
@@ -387,11 +395,20 @@ ${lessonContent}
               {/* Mind Map Display */}
               {studioMode === "mindmap" && studioContent && (
                 <>
-                  <div className="border rounded-lg p-4 bg-gray-50 overflow-auto max-h-96">
-                    <pre className="text-sm font-mono whitespace-pre-wrap break-words text-right">
-                      {studioContent}
-                    </pre>
-                  </div>
+                  {mindmapSvg ? (
+                    <div className="border rounded-lg p-4 bg-white overflow-auto max-h-96 flex justify-center items-start">
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: mindmapSvg }}
+                        className="w-full"
+                      />
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg p-4 bg-gray-50 overflow-auto max-h-96">
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    </div>
+                  )}
                   <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-right">
                     <p className="font-semibold mb-2">📌 كيفية الاستخدام:</p>
                     <ol className="list-decimal list-inside space-y-1 text-xs">
@@ -430,91 +447,88 @@ ${lessonContent}
                         style={{ width: `${((currentQuestionIndex + 1) / quizData.questions.length) * 100}%` }}
                       />
                     </div>
-                    <p className="text-sm text-gray-600 text-center">
-                      السؤال {currentQuestionIndex + 1} من {quizData.questions.length}
-                    </p>
+                    <p className="text-sm text-gray-600 text-center">السؤال {currentQuestionIndex + 1} من {quizData.questions.length}</p>
 
                     {/* Question */}
-                    <div className="bg-[#BA7517] text-white p-4 rounded-lg text-right">
-                      <p className="text-lg font-semibold">{quizData.questions[currentQuestionIndex].question}</p>
-                    </div>
-
-                    {/* Options */}
-                    <div className="space-y-2">
-                      {quizData.questions[currentQuestionIndex].options.map((option: string, idx: number) => (
-                        <button
-                          key={idx}
-                          onClick={() => handleQuizAnswer(idx)}
-                          disabled={quizAnswered}
-                          className={`w-full p-3 rounded-lg text-right font-semibold transition-all ${
-                            selectedAnswer === idx
-                              ? idx === quizData.questions[currentQuestionIndex].correct
-                                ? "bg-green-500 text-white"
-                                : "bg-red-500 text-white"
-                              : quizAnswered && idx === quizData.questions[currentQuestionIndex].correct
-                              ? "bg-green-500 text-white"
-                              : "bg-gray-100 hover:bg-gray-200 text-gray-800"
-                          } ${quizAnswered ? "cursor-default" : "cursor-pointer"}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span>{option}</span>
-                            {selectedAnswer === idx && (
-                              selectedAnswer === quizData.questions[currentQuestionIndex].correct ? (
-                                <Check className="h-5 w-5" />
-                              ) : (
-                                <AlertCircle className="h-5 w-5" />
-                              )
-                            )}
-                          </div>
-                        </button>
-                      ))}
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="font-semibold text-right mb-4">{quizData.questions[currentQuestionIndex].question}</p>
+                      
+                      {/* Options */}
+                      <div className="space-y-2">
+                        {quizData.questions[currentQuestionIndex].options.map((option: string, idx: number) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleQuizAnswer(idx)}
+                            disabled={quizAnswered}
+                            className={`w-full p-3 rounded-lg text-right transition-all ${
+                              selectedAnswer === idx
+                                ? idx === quizData.questions[currentQuestionIndex].correct
+                                  ? "bg-green-100 border-2 border-green-500"
+                                  : "bg-red-100 border-2 border-red-500"
+                                : "bg-white border-2 border-gray-200 hover:border-gray-400"
+                            } ${quizAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>{option}</span>
+                              {selectedAnswer === idx && (
+                                idx === quizData.questions[currentQuestionIndex].correct
+                                  ? <Check className="h-5 w-5 text-green-600" />
+                                  : <AlertCircle className="h-5 w-5 text-red-600" />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Explanation */}
                     {quizAnswered && (
-                      <div className={`p-3 rounded-lg text-right ${
+                      <div className={`p-3 rounded-lg text-sm text-right ${
                         selectedAnswer === quizData.questions[currentQuestionIndex].correct
                           ? "bg-green-50 border border-green-200"
                           : "bg-red-50 border border-red-200"
                       }`}>
-                        <p className="font-semibold mb-1">
-                          {selectedAnswer === quizData.questions[currentQuestionIndex].correct ? "✓ صحيح!" : "✗ خطأ"}
-                        </p>
-                        <p className="text-sm">{quizData.questions[currentQuestionIndex].explanation}</p>
+                        <p className="font-semibold mb-1">الشرح:</p>
+                        <p>{quizData.questions[currentQuestionIndex].explanation}</p>
                       </div>
                     )}
 
-                    {/* Next Button or Results */}
-                    {quizAnswered && (
-                      <div>
-                        {currentQuestionIndex < quizData.questions.length - 1 ? (
-                          <Button
-                            onClick={nextQuestion}
-                            className="w-full bg-[#BA7517] hover:bg-[#8a5810] text-white"
-                          >
-                            السؤال التالي
-                          </Button>
-                        ) : (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                            <p className="text-2xl font-bold text-[#BA7517] mb-2">
-                              {quizScore} / {quizData.questions.length}
-                            </p>
-                            <p className="text-gray-700">
-                              {quizScore === quizData.questions.length
-                                ? "🌟 ممتاز! أجبت على جميع الأسئلة بشكل صحيح"
-                                : quizScore >= quizData.questions.length * 0.6
-                                ? "👍 جيد! لديك أداء جيدة"
-                                : "📚 حاول مرة أخرى لتحسين نتيجتك"}
-                            </p>
-                          </div>
-                        )}
+                    {/* Quiz Complete */}
+                    {currentQuestionIndex === quizData.questions.length - 1 && quizAnswered && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                        <p className="text-2xl font-bold text-[#BA7517] mb-2">
+                          {quizScore}/{quizData.questions.length}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {quizScore === quizData.questions.length ? "ممتاز! 🎉" : "جيد جداً! 👏"}
+                        </p>
                       </div>
                     )}
                   </div>
+
+                  {/* Next Button */}
+                  {quizAnswered && currentQuestionIndex < quizData.questions.length - 1 && (
+                    <Button
+                      onClick={nextQuestion}
+                      className="w-full bg-[#BA7517] text-white hover:bg-[#8a5810]"
+                    >
+                      السؤال التالي
+                    </Button>
+                  )}
+
+                  {/* Close Button */}
+                  {currentQuestionIndex === quizData.questions.length - 1 && quizAnswered && (
+                    <Button
+                      onClick={() => setStudioOpen(false)}
+                      className="w-full bg-gray-500 text-white hover:bg-gray-600"
+                    >
+                      إغلاق
+                    </Button>
+                  )}
                 </>
               )}
 
-              {/* PowerPoint Preview */}
+              {/* PowerPoint Display */}
               {studioMode === "pptx" && studioContent && (
                 <>
                   <div className="border rounded-lg p-4 bg-gray-50 overflow-auto max-h-96">
@@ -522,23 +536,16 @@ ${lessonContent}
                       {studioContent}
                     </pre>
                   </div>
-                  <p className="text-sm text-gray-600 text-right">تم إنشاء محتوى العرض التقديمي بنجاح</p>
+                  <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-right">
+                    <p className="font-semibold mb-2">📌 ملاحظة:</p>
+                    <p className="text-xs">محتوى الشرائح جاهز. يمكنك نسخه وإنشاء عرض تقديمي في PowerPoint أو Google Slides.</p>
+                  </div>
                   <DialogFooter className="flex gap-2 justify-end">
                     <Button
-                      onClick={() => {
-                        const element = document.createElement("a");
-                        const file = new Blob([studioContent], { type: "application/json" });
-                        element.href = URL.createObjectURL(file);
-                        element.download = "presentation.json";
-                        document.body.appendChild(element);
-                        element.click();
-                        document.body.removeChild(element);
-                        toast.success("تم تحميل محتوى العرض التقديمي");
-                      }}
-                      className="gap-2 bg-[#185FA5] text-white hover:bg-[#0f3f75]"
+                      onClick={copyToClipboard}
+                      className="gap-2 bg-gray-500 text-white hover:bg-gray-600"
                     >
-                      <Download className="h-4 w-4" />
-                      تحميل المحتوى
+                      نسخ
                     </Button>
                   </DialogFooter>
                 </>
