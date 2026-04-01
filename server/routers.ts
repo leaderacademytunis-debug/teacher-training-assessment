@@ -54,7 +54,7 @@ export const appRouter = router({
   competencyPoints: competencyPointsRouter,
   weeklyChallenges: weeklyChallengesManagerRouter,
   monthlyReports: monthlyReportEmailRouter,
-  admin: adminCompetencyStatsRouter,
+  adminCompetencyStats: adminCompetencyStatsRouter,
   career: careerPathwayRouter,
   pedagogicalCompanion: pedagogicalCompanionRouter,
   contentAdapter: contentAdapterRouter,

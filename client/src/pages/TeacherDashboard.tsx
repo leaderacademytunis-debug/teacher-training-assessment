@@ -46,6 +46,9 @@ import {
 } from "lucide-react";
 import UnifiedNavbar from "@/components/UnifiedNavbar";
 import useI18n from "@/i18n";
+import EmptyStateCard from "@/components/EmptyStateCard";
+import CreditCounter from "@/components/CreditCounter";
+import TooltipWrapper from "@/components/TooltipWrapper";
 
 
 // ===== TIER SYSTEM =====
@@ -256,6 +259,23 @@ export default function TeacherDashboard() {
               </div>
             ) : (
               <>
+                {/* Credit Counter */}
+                <div className="mb-6">
+                  <CreditCounter />
+                </div>
+
+                {/* Empty State Check */}
+                {stats && stats.totalLessonPlans === 0 && stats.totalExams === 0 && stats.totalImages === 0 && (
+                  <div className="mb-8">
+                    <EmptyStateCard
+                      title="⚠️ ملفك المهني فارغ!"
+                      description="المدارس لن تتواصل معك. استخدم رصيدك المجاني الآن واضغط هنا لتوليد أول جذاذة لك بالذكاء الاصطناعي"
+                      actionLabel="ابدأ الآن - وليد أول جذاذة"
+                      actionPath="/assistant"
+                    />
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                   <StatCard
                     icon={FileText}
