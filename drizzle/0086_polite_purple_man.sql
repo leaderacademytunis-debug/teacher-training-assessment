@@ -1,0 +1,22 @@
+CREATE TABLE `contact_requests` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`teacherId` int NOT NULL,
+	`schoolId` int,
+	`teacherName` varchar(255) NOT NULL,
+	`teacherEmail` varchar(320) NOT NULL,
+	`teacherPhone` varchar(20) NOT NULL,
+	`subject` varchar(255) NOT NULL,
+	`message` text NOT NULL,
+	`subscriptionRequired` boolean NOT NULL DEFAULT true,
+	`subscriptionType` enum('free','pro','expert') NOT NULL DEFAULT 'pro',
+	`status` enum('pending','contacted','accepted','rejected','expired') NOT NULL DEFAULT 'pending',
+	`schoolResponse` text,
+	`respondedAt` timestamp,
+	`respondedBy` int,
+	`ipAddress` varchar(45),
+	`userAgent` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`expiresAt` timestamp,
+	CONSTRAINT `contact_requests_id` PRIMARY KEY(`id`)
+);

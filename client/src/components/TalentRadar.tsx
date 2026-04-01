@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Lock, Award, BookOpen, Video, Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { ContactRequestModal } from './ContactRequestModal';
 
 interface TeacherProfile {
   id: number;
@@ -40,6 +41,8 @@ export function TalentRadar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
+  const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   // Fetch real teacher profiles from database
   const { data: teacherProfiles = [], isLoading } = trpc.profileBuilder.getAllTeacherProfiles.useQuery();
@@ -254,7 +257,13 @@ export function TalentRadar() {
                     <p className="text-sm font-semibold text-slate-700">
                       {teacher.userEmail}
                     </p>
-                    <button className="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg">
+                    <button 
+                      onClick={() => {
+                        setSelectedTeacher(teacher);
+                        setIsContactModalOpen(true);
+                      }}
+                      className="w-full bg-green-500 text-white font-bold py-2 px-4 rounded-lg pointer-events-auto"
+                    >
                       بيانات الاتصال والانتداب
                     </button>
                   </div>
@@ -264,6 +273,20 @@ export function TalentRadar() {
           </div>
         )}
       </div>
+
+      {/* Contact Request Modal */}
+      {selectedTeacher && (
+        <ContactRequestModal
+          isOpen={isContactModalOpen}
+          onClose={() => {
+            setIsContactModalOpen(false);
+            setSelectedTeacher(null);
+          }}
+          teacherId={selectedTeacher.userId}
+          teacherName={selectedTeacher.userName || 'معلم'}
+          teacherEmail={selectedTeacher.userEmail || ''}
+        />
+      )}
     </div>
   );
 }

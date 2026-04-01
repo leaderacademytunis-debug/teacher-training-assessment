@@ -3013,3 +3013,45 @@ export const analytics = mysqlTable("analytics", {
 });
 export type Analytic = typeof analytics.$inferSelect;
 export type InsertAnalytic = typeof analytics.$inferInsert;
+
+
+/**
+ * Contact Requests table - stores teacher contact requests for school recruitment
+ */
+export const contactRequests = mysqlTable("contact_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  teacherId: int("teacherId").notNull(),
+  schoolId: int("schoolId"), // null if not linked to specific school yet
+  
+  // Contact information
+  teacherName: varchar("teacherName", { length: 255 }).notNull(),
+  teacherEmail: varchar("teacherEmail", { length: 320 }).notNull(),
+  teacherPhone: varchar("teacherPhone", { length: 20 }).notNull(),
+  
+  // Request details
+  subject: varchar("subject", { length: 255 }).notNull(), // e.g., "طلب توظيف", "استفسار عن فرصة عمل"
+  message: text("message").notNull(), // Teacher's message or inquiry
+  
+  // Subscription status
+  subscriptionRequired: boolean("subscriptionRequired").default(true).notNull(),
+  subscriptionType: mysqlEnum("subscriptionType", ["free", "pro", "expert"]).default("pro").notNull(),
+  
+  // Status tracking
+  status: mysqlEnum("status", ["pending", "contacted", "accepted", "rejected", "expired"]).default("pending").notNull(),
+  
+  // School response
+  schoolResponse: text("schoolResponse"), // School's reply to the contact request
+  respondedAt: timestamp("respondedAt"),
+  respondedBy: int("respondedBy"), // Admin/School ID who responded
+  
+  // Metadata
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  expiresAt: timestamp("expiresAt"), // When the contact request expires
+});
+
+export type ContactRequest = typeof contactRequests.$inferSelect;
+export type InsertContactRequest = typeof contactRequests.$inferInsert;
