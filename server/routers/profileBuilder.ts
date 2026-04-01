@@ -161,7 +161,7 @@ export const profileBuilderRouter = router({
   /**
    * Get all teacher profiles for TalentRadar (public data only)
    */
-  getAllTeacherProfiles: publicProcedure.query(async ({ ctx }) => {
+  getAllTeacherProfiles: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 

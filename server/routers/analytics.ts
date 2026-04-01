@@ -7,7 +7,7 @@
  * 4. Course analytics (enrollments, completion rates, certificates)
  */
 
-import { protectedProcedure, router, staffProcedure } from "../_core/trpc";
+import { protectedProcedure, router, staffProcedure, publicProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import {
@@ -51,6 +51,80 @@ function getLast6Months(): string[] {
 }
 
 export const analyticsRouter = router({
+  /**
+   * Track page view (public - no auth required)
+   */
+  trackPageView: publicProcedure
+    .input(
+      z.object({
+        pageUrl: z.string(),
+        pageTitle: z.string().optional(),
+        eventType: z.string().default("page_view"),
+        referrer: z.string().optional(),
+        userAgent: z.string().optional(),
+        ipAddress: z.string().optional(),
+        sessionId: z.string().optional(),
+        metadata: z.record(z.any()).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        await db.insert(analytics).values({
+          userId: ctx.user?.id,
+          pageUrl: input.pageUrl,
+          pageTitle: input.pageTitle,
+          eventType: input.eventType,
+          referrer: input.referrer,
+          userAgent: input.userAgent,
+          ipAddress: input.ipAddress,
+          sessionId: input.sessionId,
+          metadata: input.metadata ? JSON.stringify(input.metadata) : null,
+        });
+
+        return { success: true };
+      } catch (error) {
+        console.error("Analytics tracking error:", error);
+        return { success: false };
+      }
+    }),
+
+  /**
+   * Track demo access (unauthenticated talent radar views)
+   */
+  trackDemoAccess: publicProcedure
+    .input(
+      z.object({
+        pageUrl: z.string(),
+        sessionId: z.string(),
+        userAgent: z.string().optional(),
+        ipAddress: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        await db.insert(analytics).values({
+          pageUrl: input.pageUrl,
+          pageTitle: "Demo - Talent Radar",
+          eventType: "demo_access",
+          userAgent: input.userAgent,
+          ipAddress: input.ipAddress,
+          sessionId: input.sessionId,
+          metadata: JSON.stringify({ demoAccess: true }),
+        });
+
+        return { success: true };
+      } catch (error) {
+        console.error("Demo access tracking error:", error);
+        return { success: false };
+      }
+    }),
+
   // ============================================
   // REVENUE ANALYTICS
   // ============================================

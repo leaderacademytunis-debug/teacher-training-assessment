@@ -2992,3 +2992,24 @@ export const userSubscriptions = mysqlTable("user_subscriptions", {
 
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
+
+
+/**
+ * Analytics table - tracks page visits and user interactions
+ */
+export const analytics = mysqlTable("analytics", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"), // null for unauthenticated visits
+  pageUrl: varchar("pageUrl", { length: 255 }).notNull(),
+  pageTitle: varchar("pageTitle", { length: 255 }),
+  eventType: varchar("eventType", { length: 50 }).notNull(), // "page_view", "demo_access", "login_attempt", etc
+  referrer: text("referrer"),
+  userAgent: text("userAgent"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  sessionId: varchar("sessionId", { length: 100 }),
+  duration: int("duration"), // Time spent on page in seconds
+  metadata: text("metadata"), // JSON for additional data
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Analytic = typeof analytics.$inferSelect;
+export type InsertAnalytic = typeof analytics.$inferInsert;
