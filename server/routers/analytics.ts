@@ -19,6 +19,7 @@ import {
   enrollments,
   certificates,
   toolUsageTracking,
+  analytics,
 } from "../../drizzle/schema";
 import { eq, desc, asc, and, sql, count, like, or, gte, lte, between, sum } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -124,6 +125,127 @@ export const analyticsRouter = router({
         return { success: false };
       }
     }),
+
+  /**
+   * Get demo access statistics (admin only)
+   */
+  getDemoAccessStats: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user?.role !== "admin" && ctx.user?.role !== "super_admin") {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    // Total demo visits
+    const totalDemoVisits = await db
+      .select({ count: count() })
+      .from(analytics)
+      .where(eq(analytics.eventType, "demo_access"));
+
+    // Demo visits today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const demoVisitsToday = await db
+      .select({ count: count() })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.eventType, "demo_access"),
+          gte(analytics.createdAt, today)
+        )
+      );
+
+    // Average daily demo visits (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const last30DaysVisits = await db
+      .select({ count: count() })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.eventType, "demo_access"),
+          gte(analytics.createdAt, thirtyDaysAgo)
+        )
+      );
+
+    const avgDaily = Math.round((last30DaysVisits[0]?.count || 0) / 30);
+
+    // Demo visits by day (last 30 days)
+    const demoTrend = await db
+      .select({
+        date: sql<string>`DATE(${analytics.createdAt})`,
+        count: count().as("count"),
+      })
+      .from(analytics)
+      .where(
+        and(
+          eq(analytics.eventType, "demo_access"),
+          gte(analytics.createdAt, thirtyDaysAgo)
+        )
+      )
+      .groupBy(sql`DATE(${analytics.createdAt})`)
+      .orderBy(asc(sql`DATE(${analytics.createdAt})`));
+
+    return {
+      totalDemoVisits: totalDemoVisits[0]?.count || 0,
+      demoVisitsToday: demoVisitsToday[0]?.count || 0,
+      avgDailyVisits: avgDaily,
+      trend: demoTrend.map((d) => ({
+        date: d.date,
+        visits: d.count,
+      })),
+    };
+  }),
+
+  /**
+   * Get total registered users count (for demo banner)
+   */
+  getTotalUsersCount: publicProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    const result = await db.select({ count: count() }).from(users);
+    return result[0]?.count || 0;
+  }),
+
+  /**
+   * Check for demo access milestone alerts (admin only)
+   */
+  checkMilestoneAlerts: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user?.role !== "admin" && ctx.user?.role !== "super_admin") {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+
+    const totalDemoVisits = await db
+      .select({ count: count() })
+      .from(analytics)
+      .where(eq(analytics.eventType, "demo_access"));
+
+    const demoCount = totalDemoVisits[0]?.count || 0;
+    const milestones = [100, 500, 1000, 5000, 10000];
+    const alerts = [];
+
+    for (const milestone of milestones) {
+      if (demoCount >= milestone) {
+        alerts.push({
+          milestone,
+          reached: true,
+          message: `تم تجاوز ${milestone} زيارة تجريبية!`,
+          actionRequired: milestone === 1000,
+        });
+      }
+    }
+
+    return {
+      totalDemoVisits: demoCount,
+      alerts,
+      launchReady: demoCount >= 1000,
+    };
+  }),
 
   // ============================================
   // REVENUE ANALYTICS
