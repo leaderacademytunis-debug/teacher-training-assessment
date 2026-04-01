@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Users, BookOpen, Video, AlertCircle } from 'lucide-react';
-import { UnifiedNavbar } from '@/components/UnifiedNavbar';
+import UnifiedNavbar from '@/components/UnifiedNavbar';
 
 export default function AdminDashboardPage() {
   const user = useAuth();
