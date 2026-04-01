@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getDb } from "../db";
 import { teacherPortfolios, users } from "../../drizzle/schema";
@@ -161,7 +161,7 @@ export const profileBuilderRouter = router({
   /**
    * Get all teacher profiles for TalentRadar (public data only)
    */
-  getAllTeacherProfiles: protectedProcedure.query(async ({ ctx }) => {
+  getAllTeacherProfiles: publicProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
 
