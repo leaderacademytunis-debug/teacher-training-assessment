@@ -24,6 +24,7 @@ import { weeklyChallengesManagerRouter } from "./routers/weeklyChallengesManager
 import { monthlyReportEmailRouter } from "./routers/monthlyReportEmail";
 import { adminCompetencyStatsRouter } from "./routers/adminCompetencyStats";
 import { careerPathwayRouter } from "./routers/careerPathway";
+import { adminRouter } from "./routers/admin";
 import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -41,6 +42,7 @@ const adminProcedure = staffProcedure;
 
 export const appRouter = router({
   system: systemRouter,
+  admin: adminRouter,
   adminControl: adminControlRouter,
   profileBuilder: profileBuilderRouter,
   analytics: analyticsRouter,

@@ -105,6 +105,7 @@ const CompetencyAnalytics = lazy(() => import("@/pages/CompetencyAnalytics"));
 const CareerShowcase = lazy(() => import("@/pages/CareerShowcase"));
 const TalentRadarPage = lazy(() => import("@/pages/TalentRadarPage"));
 const ProfileBuilderPage = lazy(() => import("@/pages/ProfileBuilderPage"));
+const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
 
 function PageLoader() {
   return (
@@ -208,6 +209,7 @@ function Router() {
         <Route path="/teacher/:username" component={PublicTeacherProfile} />
         <Route path="/talent-radar" component={TalentRadarPage} />
         <Route path="/profile-builder" component={ProfileBuilderPage} />
+        <Route path="/admin/dashboard" component={AdminDashboardPage} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>

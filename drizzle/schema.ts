@@ -2939,3 +2939,56 @@ export const userChallengeProgress = mysqlTable("user_challenge_progress", {
 export type UserChallengeProgress = typeof userChallengeProgress.$inferSelect;
 export type InsertUserChallengeProgress = typeof userChallengeProgress.$inferInsert;
 
+
+/**
+ * Audit Logs table - tracks all admin operations
+ */
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  adminId: int("adminId").notNull(),
+  action: varchar("action", { length: 100 }).notNull(), // e.g., "UPDATE_CREDITS", "BAN_USER", "UPDATE_SUBSCRIPTION"
+  targetUserId: int("targetUserId"),
+  targetType: varchar("targetType", { length: 50 }), // e.g., "user", "subscription"
+  changes: text("changes"), // JSON object with before/after values
+  description: text("description"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
+  userAgent: text("userAgent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
+ * User Credits table - tracks credit balance for each user
+ */
+export const userCredits = mysqlTable("user_credits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  totalCredits: int("totalCredits").default(0).notNull(),
+  usedCredits: int("usedCredits").default(0).notNull(),
+  remainingCredits: int("remainingCredits").default(0).notNull(),
+  lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"), // Admin who last updated
+});
+
+export type UserCredit = typeof userCredits.$inferSelect;
+export type InsertUserCredit = typeof userCredits.$inferInsert;
+
+/**
+ * User Subscriptions table - tracks subscription plans
+ */
+export const userSubscriptions = mysqlTable("user_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  plan: mysqlEnum("plan", ["free", "basic", "pro", "vip"]).default("free").notNull(),
+  status: mysqlEnum("status", ["active", "inactive", "suspended", "expired"]).default("active").notNull(),
+  startDate: timestamp("startDate").defaultNow().notNull(),
+  endDate: timestamp("endDate"),
+  autoRenew: boolean("autoRenew").default(true).notNull(),
+  lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"), // Admin who last updated
+});
+
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = typeof userSubscriptions.$inferInsert;
