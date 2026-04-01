@@ -1,6 +1,6 @@
 import { AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 
 interface EmptyStateCardProps {
   title?: string;
@@ -17,13 +17,13 @@ export default function EmptyStateCard({
   actionPath = '/assistant',
   onAction,
 }: EmptyStateCardProps) {
-  const [, navigate] = useNavigate();
+  const [, setLocation] = useLocation();
 
   const handleAction = () => {
     if (onAction) {
       onAction();
     } else if (actionPath) {
-      navigate(actionPath);
+      setLocation(actionPath);
     }
   };
 
