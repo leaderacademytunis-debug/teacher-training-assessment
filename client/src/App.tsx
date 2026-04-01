@@ -98,6 +98,8 @@ const MyDigitalVoice = lazy(() => import("@/pages/MyDigitalVoice"));
 const MyPoints = lazy(() => import("@/pages/MyPoints"));
 const AIToolsHub = lazy(() => import("@/pages/AIToolsHub"));
 const UltimateStudio = lazy(() => import("@/pages/UltimateStudio"));
+const InviteFriendsPage = lazy(() => import("@/pages/InviteFriendsPage"));
+const ReferralDashboardPage = lazy(() => import("@/pages/ReferralDashboardPage"));
 const CourseToolkit = lazy(() => import("@/pages/CourseToolkit"));
 const Inclusion = lazy(() => import("@/pages/Inclusion"));
 const PublicTeacherProfile = lazy(() => import("@/pages/PublicTeacherProfile"));
@@ -214,6 +216,8 @@ function Router() {
         <Route path="/admin/dashboard" component={AdminDashboardPage} />
         <Route path="/admin/analytics" component={AdminAnalyticsPage} />
         <Route path="/admin/contact-requests" component={AdminContactRequestsPage} />
+        <Route path="/invite-friends" component={InviteFriendsPage} />
+        <Route path="/referral-dashboard" component={ReferralDashboardPage} />
         {/* Redirects for broken/legacy links */}
         <Route path="/certificates"><Redirect to="/my-certificates" /></Route>
         <Route path="/career"><Redirect to="/jobs" /></Route>

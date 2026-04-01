@@ -3549,3 +3549,17 @@
 - [ ] اختبار زر PowerPoint الفعلي من المنصة
 - [ ] اختبار زر Quiz التفاعلي من المنصة
 - [ ] اختبار زر Ultimate Studio من المنصة
+
+
+## نظام الإحالات والمكافآت (Referral System)
+- [x] إنشاء جداول قاعدة البيانات (referrals, referral_rewards)
+- [x] كتابة إجراءات tRPC للإحالات (createReferralInvite, validateReferralCode, completeReferral, getReferralStats, getMyReferrals, getMyReferralRewards)
+- [x] إنشاء صفحة دعوة الأصدقاء (InviteFriendsPage) مع واجهة عربية RTL
+- [x] إنشاء لوحة تحكم الإحالات (ReferralDashboardPage) لعرض الإحصائيات والمكافآت
+- [x] إضافة المسارات إلى App.tsx (/invite-friends, /referral-dashboard)
+- [x] إصلاح أخطاء TypeScript والبناء
+- [x] كتابة اختبارات vitest (7 اختبارات ناجحة)
+- [ ] إضافة روابط الملاحة في الشريط الجانبي/القائمة العلوية
+- [ ] اختبار التدفق الكامل (إنشاء دعوة، التحقق، إكمال الإحالة، منح المكافآت)
+- [ ] إضافة إشعارات البريد الإلكتروني للإحالات الناجحة
+- [ ] حفظ checkpoint

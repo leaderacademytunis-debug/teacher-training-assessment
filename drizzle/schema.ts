@@ -3055,3 +3055,53 @@ export const contactRequests = mysqlTable("contact_requests", {
 
 export type ContactRequest = typeof contactRequests.$inferSelect;
 export type InsertContactRequest = typeof contactRequests.$inferInsert;
+
+
+/**
+ * Referrals table - stores teacher referral relationships
+ */
+export const referrals = mysqlTable("referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  referrerId: int("referrerId").notNull(), // Teacher who sent the invitation
+  referredId: int("referredId"), // Teacher who was referred (null until they sign up)
+  referredEmail: varchar("referredEmail", { length: 320 }).notNull(), // Email of invited person
+  referralCode: varchar("referralCode", { length: 50 }).notNull().unique(), // Unique code for tracking
+  referralLink: text("referralLink").notNull(), // Full referral URL
+  
+  // Status tracking
+  status: mysqlEnum("status", ["pending", "accepted", "completed", "expired"]).default("pending").notNull(),
+  
+  // Reward information
+  referrerRewardCredits: int("referrerRewardCredits").default(10).notNull(), // Credits given to referrer
+  referredRewardCredits: int("referredRewardCredits").default(5).notNull(), // Credits given to referred person
+  rewardClaimed: boolean("rewardClaimed").default(false).notNull(),
+  rewardClaimedAt: timestamp("rewardClaimedAt"),
+  
+  // Metadata
+  invitationMessage: text("invitationMessage"), // Optional message from referrer
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt"), // Referral link expiration (30 days)
+  completedAt: timestamp("completedAt"), // When referred person completed signup
+});
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;
+
+/**
+ * Referral Rewards table - tracks reward transactions
+ */
+export const referralRewards = mysqlTable("referral_rewards", {
+  id: int("id").autoincrement().primaryKey(),
+  referralId: int("referralId").notNull(),
+  userId: int("userId").notNull(), // User receiving the reward
+  rewardType: mysqlEnum("rewardType", ["referrer_bonus", "referred_bonus"]).notNull(),
+  creditsAwarded: int("creditsAwarded").notNull(),
+  reason: varchar("reason", { length: 255 }).notNull(), // e.g., "Referral completed by John Doe"
+  
+  // Status
+  status: mysqlEnum("status", ["pending", "awarded", "cancelled"]).default("pending").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  awardedAt: timestamp("awardedAt"),
+});
+export type ReferralReward = typeof referralRewards.$inferSelect;
+export type InsertReferralReward = typeof referralRewards.$inferInsert;
