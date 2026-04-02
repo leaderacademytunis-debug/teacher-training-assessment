@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: teacher-training-assessment
+    env: node
+    plan: standard
+    buildCommand: pnpm install --prod=false && pnpm db:push && NODE_OPTIONS="--max-old-space-size=4096" pnpm build
+    startCommand: NODE_ENV=production node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=4096
