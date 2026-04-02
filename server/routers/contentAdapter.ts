@@ -204,7 +204,7 @@ ${input.originalContent}
         await database.update(adaptedContent)
           .set({
             adaptedTitle: parsed.adaptedTitle,
-            adaptedContentText: parsed.adaptedContent,
+            adaptedContent: parsed.adaptedContent,
             simplifiedInstructions: parsed.simplifiedInstructions,
             visualSupports: parsed.visualSupports,
             adaptationNotes: parsed.adaptationNotes,

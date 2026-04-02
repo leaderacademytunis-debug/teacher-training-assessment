@@ -2362,7 +2362,7 @@ export const adaptedContent = mysqlTable("adapted_content", {
   
   // Adapted output
   adaptedTitle: varchar("adapted_title", { length: 500 }),
-  adaptedContentText: text("adapted_content_text"),
+  adaptedContent: text("adapted_content"),
   simplifiedInstructions: json("simplified_instructions").$type<string[]>(),
   visualSupports: json("visual_supports").$type<string[]>(),
   adaptationNotes: json("adaptation_notes").$type<{

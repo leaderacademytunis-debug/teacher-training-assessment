@@ -168,6 +168,13 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     // manualChunks removed - causes white screen in production due to conflict with manus-runtime script injection
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress TypeScript warnings during build
+        if (warning.code === 'THIS_IS_UNDEFINED') return;
+        warn(warning);
+      },
+    },
   },
   server: {
     host: true,
