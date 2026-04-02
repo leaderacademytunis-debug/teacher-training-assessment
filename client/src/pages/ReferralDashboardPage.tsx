@@ -214,6 +214,24 @@ export default function ReferralDashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* FAQ Link Section */}
+        <Card className="mt-8 bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-slate-900 mb-3">هل تريد معرفة المزيد؟</h3>
+              <p className="text-slate-700 mb-6 max-w-2xl mx-auto">
+                اقرأ قسم الأسئلة الشائعة الشامل لفهم كل جوانب نظام الإحالات والمكافآت بالتفصيل.
+              </p>
+              <a
+                href="/referral-faq"
+                className="inline-block px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors"
+              >
+                اقرأ الأسئلة الشائعة
+              </a>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

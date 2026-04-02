@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 
 interface FAQItem {
   id: string;
@@ -169,7 +169,7 @@ const faqData: FAQItem[] = [
 export function ReferralFAQPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
 
   const categories = [
     { id: 'all', label: 'جميع الأسئلة' },
@@ -255,13 +255,13 @@ export function ReferralFAQPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
-              onClick={() => navigate('/invite-friends')}
+              onClick={() => window.location.href = '/invite-friends'}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               ابدأ بدعوة الأصدقاء
             </Button>
             <Button
-              onClick={() => navigate('/referral-dashboard')}
+              onClick={() => window.location.href = '/referral-dashboard'}
               variant="outline"
               className="border-emerald-600 text-emerald-600 hover:bg-emerald-50"
             >
