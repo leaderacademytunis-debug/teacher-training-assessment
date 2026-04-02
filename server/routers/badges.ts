@@ -2,7 +2,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
 import { getDb } from "../db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export const badgesRouter = router({
   /**
@@ -75,8 +75,10 @@ export const badgesRouter = router({
         .update(userBadges)
         .set({ notificationSent: true })
         .where(
-          eq(userBadges.userId, ctx.user.id) &&
+          and(
+            eq(userBadges.userId, ctx.user.id),
             eq(userBadges.badgeId, input.badgeId)
+          )
         );
 
       return { success: true };
@@ -96,8 +98,10 @@ export const badgesRouter = router({
         .update(userBadges)
         .set({ isDisplayed: input.isDisplayed })
         .where(
-          eq(userBadges.userId, ctx.user.id) &&
+          and(
+            eq(userBadges.userId, ctx.user.id),
             eq(userBadges.badgeId, input.badgeId)
+          )
         );
 
       return { success: true };

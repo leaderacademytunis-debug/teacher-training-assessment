@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,10 +16,10 @@ export default function ReferralDashboardPage() {
 
   const statsQuery = trpc.referrals.getReferralStats.useQuery();
   const referralsQuery = trpc.referrals.getMyReferrals.useQuery();
-  const rewardsQuery = trpc.referrals.getMyReferralRewards.useQuery();
+  const rewardsQuery = trpc.referrals.getMyReferralRewards.useQuery({});
   const badgesQuery = trpc.badges.getUserBadges.useQuery();
   const badgeStatsQuery = trpc.badges.getBadgeStats.useQuery();
-  const checkBadgesMutation = trpc.badges.checkAndAwardBadges.useMutation();
+  const checkBadgesMutation = trpc.badges.checkAndAwardBadges.useMutation({});
 
   // Get the first referral link for social sharing
   const firstReferralLink = useMemo(() => {
@@ -28,14 +27,14 @@ export default function ReferralDashboardPage() {
       return referralsQuery.data[0].referralLink;
     }
     return '';
+  }, [referralsQuery.data]);
 
   // Check for new badges when referrals change
   useEffect(() => {
     if (referralsQuery.data && referralsQuery.data.length > 0) {
       checkBadgesMutation.mutate();
     }
-  }, [referralsQuery.data?.length]);
-  }, [referralsQuery.data]);
+  }, [referralsQuery.data?.length, checkBadgesMutation]);
 
   const handleCopyLink = (link: string, id: number) => {
     navigator.clipboard.writeText(link);

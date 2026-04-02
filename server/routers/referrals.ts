@@ -1,6 +1,6 @@
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { referrals, referralRewards, users, userCredits } from "../../drizzle/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and, isNull, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
 import { getDb } from "../db";
@@ -215,14 +215,14 @@ export const referralsRouter = router({
       await db
         .update(userCredits)
         .set({
-          remainingCredits: (col: any) => col + referral.referrerRewardCredits,
+          remainingCredits: sql`${userCredits.remainingCredits} + ${referral.referrerRewardCredits}`,
         })
         .where(eq(userCredits.userId, referral.referrerId));
 
       await db
         .update(userCredits)
         .set({
-          remainingCredits: (col: any) => col + referral.referredRewardCredits,
+          remainingCredits: sql`${userCredits.remainingCredits} + ${referral.referredRewardCredits}`,
         })
         .where(eq(userCredits.userId, newUserId));
 
