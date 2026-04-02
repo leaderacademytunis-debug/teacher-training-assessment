@@ -29,7 +29,10 @@ import {
   handwritingWorksheets, HandwritingWorksheet, InsertHandwritingWorksheet,
   monthlyProgressReports, MonthlyProgressReport, InsertMonthlyProgressReport,
   courseReviews, CourseReview, InsertCourseReview,
-  studioProjects, StudioProjectRow, InsertStudioProject
+  studioProjects, StudioProjectRow, InsertStudioProject,
+  badgeDefinitions, BadgeDefinition, InsertBadgeDefinition,
+  userBadges, UserBadge, InsertUserBadge,
+  badgeAchievements, BadgeAchievement, InsertBadgeAchievement
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2864,5 +2867,272 @@ export async function trackCompetencyPoints(
   } catch (error) {
     console.error("[Competency Points] Error tracking points:", error);
     // Don't throw - this is a non-critical operation
+  }
+}
+
+
+/**
+ * Badge system functions
+ */
+
+export async function initializeBadges(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    // Check if badges already exist
+    const existingBadges = await db.select().from(badgeDefinitions).limit(1);
+    if (existingBadges.length > 0) return;
+
+    // Create default badges
+    const badges: InsertBadgeDefinition[] = [
+      {
+        nameAr: "محيل برونزي",
+        nameEn: "Bronze Referrer",
+        descriptionAr: "أحلت 3 معلمين بنجاح",
+        descriptionEn: "Successfully referred 3 teachers",
+        tier: "bronze",
+        referralThreshold: 3,
+        icon: "medal",
+        color: "#CD7F32",
+        isActive: true,
+      },
+      {
+        nameAr: "محيل فضي",
+        nameEn: "Silver Referrer",
+        descriptionAr: "أحلت 10 معلمين بنجاح",
+        descriptionEn: "Successfully referred 10 teachers",
+        tier: "silver",
+        referralThreshold: 10,
+        icon: "star",
+        color: "#C0C0C0",
+        isActive: true,
+      },
+      {
+        nameAr: "محيل ذهبي",
+        nameEn: "Gold Referrer",
+        descriptionAr: "أحلت 25 معلماً بنجاح",
+        descriptionEn: "Successfully referred 25 teachers",
+        tier: "gold",
+        referralThreshold: 25,
+        icon: "crown",
+        color: "#FFD700",
+        isActive: true,
+      },
+      {
+        nameAr: "محيل بلاتيني",
+        nameEn: "Platinum Referrer",
+        descriptionAr: "أحلت 50 معلماً بنجاح",
+        descriptionEn: "Successfully referred 50 teachers",
+        tier: "platinum",
+        referralThreshold: 50,
+        icon: "gem",
+        color: "#E5E4E2",
+        isActive: true,
+      },
+    ];
+
+    await db.insert(badgeDefinitions).values(badges);
+    console.log("[Badges] Default badges initialized");
+  } catch (error) {
+    console.error("[Badges] Error initializing badges:", error);
+  }
+}
+
+export async function checkAndAwardBadges(userId: number): Promise<UserBadge[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    // Get user's completed referrals count
+    const referralStats = await db
+      .select({
+        completedCount: count(),
+      })
+      .from(referrals)
+      .where(
+        and(
+          eq(referrals.referrerId, userId),
+          eq(referrals.status, "completed")
+        )
+      );
+
+    const completedReferrals = referralStats[0]?.completedCount || 0;
+
+    // Get all available badges
+    const allBadges = await db
+      .select()
+      .from(badgeDefinitions)
+      .where(eq(badgeDefinitions.isActive, true));
+
+    // Get user's already earned badges
+    const earnedBadges = await db
+      .select()
+      .from(userBadges)
+      .where(eq(userBadges.userId, userId));
+
+    const earnedBadgeIds = new Set(earnedBadges.map((b) => b.badgeId));
+
+    // Award new badges
+    const newBadges: InsertUserBadge[] = [];
+
+    for (const badge of allBadges) {
+      if (
+        !earnedBadgeIds.has(badge.id) &&
+        completedReferrals >= badge.referralThreshold
+      ) {
+        newBadges.push({
+          userId,
+          badgeId: badge.id,
+          earnedAt: new Date(),
+          isDisplayed: true,
+          notificationSent: false,
+        });
+
+        // Record achievement
+        await db.insert(badgeAchievements).values({
+          userId,
+          badgeId: badge.id,
+          referralCount: completedReferrals,
+          completedReferrals,
+          achievedAt: new Date(),
+        });
+      }
+    }
+
+    if (newBadges.length > 0) {
+      await db.insert(userBadges).values(newBadges);
+    }
+
+    return newBadges as UserBadge[];
+  } catch (error) {
+    console.error("[Badges] Error checking and awarding badges:", error);
+    return [];
+  }
+}
+
+export async function getUserBadges(userId: number): Promise<(UserBadge & { badge: BadgeDefinition })[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const badges = await db
+      .select({
+        id: userBadges.id,
+        userId: userBadges.userId,
+        badgeId: userBadges.badgeId,
+        earnedAt: userBadges.earnedAt,
+        isDisplayed: userBadges.isDisplayed,
+        notificationSent: userBadges.notificationSent,
+        createdAt: userBadges.createdAt,
+        badge: {
+          id: badgeDefinitions.id,
+          nameAr: badgeDefinitions.nameAr,
+          nameEn: badgeDefinitions.nameEn,
+          descriptionAr: badgeDefinitions.descriptionAr,
+          descriptionEn: badgeDefinitions.descriptionEn,
+          tier: badgeDefinitions.tier,
+          referralThreshold: badgeDefinitions.referralThreshold,
+          icon: badgeDefinitions.icon,
+          color: badgeDefinitions.color,
+          isActive: badgeDefinitions.isActive,
+          createdAt: badgeDefinitions.createdAt,
+          updatedAt: badgeDefinitions.updatedAt,
+        },
+      })
+      .from(userBadges)
+      .innerJoin(badgeDefinitions, eq(userBadges.badgeId, badgeDefinitions.id))
+      .where(and(eq(userBadges.userId, userId), eq(userBadges.isDisplayed, true)))
+      .orderBy(desc(userBadges.earnedAt));
+
+    return badges as any;
+  } catch (error) {
+    console.error("[Badges] Error getting user badges:", error);
+    return [];
+  }
+}
+
+export async function getBadgeStats(userId: number): Promise<{
+  totalBadges: number;
+  completedReferrals: number;
+  nextBadgeThreshold: number;
+  nextBadgeName: string;
+  progressPercent: number;
+}> {
+  const db = await getDb();
+  if (!db) {
+    return {
+      totalBadges: 0,
+      completedReferrals: 0,
+      nextBadgeThreshold: 3,
+      nextBadgeName: "محيل برونزي",
+      progressPercent: 0,
+    };
+  }
+
+  try {
+    // Get completed referrals
+    const referralStats = await db
+      .select({
+        completedCount: count(),
+      })
+      .from(referrals)
+      .where(
+        and(
+          eq(referrals.referrerId, userId),
+          eq(referrals.status, "completed")
+        )
+      );
+
+    const completedReferrals = referralStats[0]?.completedCount || 0;
+
+    // Get earned badges count
+    const badgeCount = await db
+      .select({
+        count: count(),
+      })
+      .from(userBadges)
+      .where(eq(userBadges.userId, userId));
+
+    const totalBadges = badgeCount[0]?.count || 0;
+
+    // Get next badge
+    const nextBadges = await db
+      .select()
+      .from(badgeDefinitions)
+      .where(eq(badgeDefinitions.isActive, true))
+      .orderBy(badgeDefinitions.referralThreshold);
+
+    let nextBadgeThreshold = 3;
+    let nextBadgeName = "محيل برونزي";
+    let progressPercent = 0;
+
+    for (const badge of nextBadges) {
+      if (completedReferrals < badge.referralThreshold) {
+        nextBadgeThreshold = badge.referralThreshold;
+        nextBadgeName = badge.nameAr;
+        progressPercent = Math.round(
+          (completedReferrals / badge.referralThreshold) * 100
+        );
+        break;
+      }
+    }
+
+    return {
+      totalBadges,
+      completedReferrals,
+      nextBadgeThreshold,
+      nextBadgeName,
+      progressPercent: Math.min(progressPercent, 100),
+    };
+  } catch (error) {
+    console.error("[Badges] Error getting badge stats:", error);
+    return {
+      totalBadges: 0,
+      completedReferrals: 0,
+      nextBadgeThreshold: 3,
+      nextBadgeName: "محيل برونزي",
+      progressPercent: 0,
+    };
   }
 }

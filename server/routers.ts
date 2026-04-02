@@ -27,6 +27,7 @@ import { careerPathwayRouter } from "./routers/careerPathway";
 import { adminRouter } from "./routers/admin";
 import { contactRequestsRouter } from "./routers/contactRequests";
 import { referralsRouter } from "./routers/referrals";
+import { badgesRouter } from "./routers/badges";
 import { publicProcedure, protectedProcedure, router, staffProcedure, teacherProcedure, schoolProcedure, teacherOrSchoolProcedure } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
@@ -48,6 +49,7 @@ export const appRouter = router({
   adminControl: adminControlRouter,
   profileBuilder: profileBuilderRouter,
   analytics: analyticsRouter,
+  badges: badgesRouter,
   contactRequests: contactRequestsRouter,
   referrals: referralsRouter,
   coursesManagement: coursesManagementRouter,

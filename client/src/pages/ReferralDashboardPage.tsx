@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Users, Gift, Calendar, Copy, CheckCircle2, Clock, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import UnifiedNavbar from '@/components/UnifiedNavbar';
 import { SocialShareButtons } from '@/components/SocialShareButtons';
+import { BadgeDisplay } from '@/components/BadgeDisplay';
+import { BadgeProgress } from '@/components/BadgeProgress';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -16,6 +18,9 @@ export default function ReferralDashboardPage() {
   const statsQuery = trpc.referrals.getReferralStats.useQuery();
   const referralsQuery = trpc.referrals.getMyReferrals.useQuery();
   const rewardsQuery = trpc.referrals.getMyReferralRewards.useQuery();
+  const badgesQuery = trpc.badges.getUserBadges.useQuery();
+  const badgeStatsQuery = trpc.badges.getBadgeStats.useQuery();
+  const checkBadgesMutation = trpc.badges.checkAndAwardBadges.useMutation();
 
   // Get the first referral link for social sharing
   const firstReferralLink = useMemo(() => {
@@ -23,6 +28,13 @@ export default function ReferralDashboardPage() {
       return referralsQuery.data[0].referralLink;
     }
     return '';
+
+  // Check for new badges when referrals change
+  useEffect(() => {
+    if (referralsQuery.data && referralsQuery.data.length > 0) {
+      checkBadgesMutation.mutate();
+    }
+  }, [referralsQuery.data?.length]);
   }, [referralsQuery.data]);
 
   const handleCopyLink = (link: string, id: number) => {
@@ -224,6 +236,30 @@ export default function ReferralDashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Badge Progress Section */}
+        {badgeStatsQuery.data && (
+          <Card className="mt-8">
+            <CardContent className="pt-6">
+              <BadgeProgress
+                totalBadges={badgeStatsQuery.data.totalBadges}
+                completedReferrals={badgeStatsQuery.data.completedReferrals}
+                nextBadgeThreshold={badgeStatsQuery.data.nextBadgeThreshold}
+                nextBadgeName={badgeStatsQuery.data.nextBadgeName}
+                progressPercent={badgeStatsQuery.data.progressPercent}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Badges Display Section */}
+        {badgesQuery.data && (
+          <Card className="mt-8">
+            <CardContent className="pt-6">
+              <BadgeDisplay badges={badgesQuery.data as any} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Social Share Section */}
         {firstReferralLink && (

@@ -3105,3 +3105,80 @@ export const referralRewards = mysqlTable("referral_rewards", {
 });
 export type ReferralReward = typeof referralRewards.$inferSelect;
 export type InsertReferralReward = typeof referralRewards.$inferInsert;
+
+
+/**
+ * Badge definitions table - stores badge types and their requirements
+ */
+export const badgeDefinitions = mysqlTable("badge_definitions", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Badge metadata
+  nameAr: varchar("nameAr", { length: 100 }).notNull(), // e.g., "محيل برونزي"
+  nameEn: varchar("nameEn", { length: 100 }).notNull(), // e.g., "Bronze Referrer"
+  descriptionAr: text("descriptionAr").notNull(),
+  descriptionEn: text("descriptionEn").notNull(),
+  
+  // Badge tier and requirements
+  tier: mysqlEnum("tier", ["bronze", "silver", "gold", "platinum"]).notNull(),
+  referralThreshold: int("referralThreshold").notNull(), // Number of successful referrals needed
+  
+  // Visual properties
+  icon: varchar("icon", { length: 50 }).notNull(), // Icon name for display
+  color: varchar("color", { length: 7 }).notNull(), // Hex color code
+  
+  // Status
+  isActive: boolean("isActive").default(true).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BadgeDefinition = typeof badgeDefinitions.$inferSelect;
+export type InsertBadgeDefinition = typeof badgeDefinitions.$inferInsert;
+
+/**
+ * User badges table - tracks which badges users have earned
+ */
+export const userBadges = mysqlTable("user_badges", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Relations
+  userId: int("userId").notNull(),
+  badgeId: int("badgeId").notNull(),
+  
+  // Achievement tracking
+  earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+  isDisplayed: boolean("isDisplayed").default(true).notNull(), // User can hide badges
+  
+  // Notification
+  notificationSent: boolean("notificationSent").default(false).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type UserBadge = typeof userBadges.$inferSelect;
+export type InsertUserBadge = typeof userBadges.$inferInsert;
+
+/**
+ * Badge achievements log - tracks achievement milestones
+ */
+export const badgeAchievements = mysqlTable("badge_achievements", {
+  id: int("id").autoincrement().primaryKey(),
+  
+  // Relations
+  userId: int("userId").notNull(),
+  badgeId: int("badgeId").notNull(),
+  
+  // Achievement details
+  referralCount: int("referralCount").notNull(), // Number of referrals at time of achievement
+  completedReferrals: int("completedReferrals").notNull(), // Number of completed referrals
+  
+  // Timestamps
+  achievedAt: timestamp("achievedAt").defaultNow().notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BadgeAchievement = typeof badgeAchievements.$inferSelect;
+export type InsertBadgeAchievement = typeof badgeAchievements.$inferInsert;
