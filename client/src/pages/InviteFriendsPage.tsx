@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Copy, Mail, Users, Gift, CheckCircle2, Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import UnifiedNavbar from '@/components/UnifiedNavbar';
+import { SocialShareButtons } from '@/components/SocialShareButtons';
 import { toast } from 'sonner';
 
 export default function InviteFriendsPage() {
@@ -220,6 +221,14 @@ export default function InviteFriendsPage() {
                     <p className="text-sm text-blue-900">
                       💡 <strong>نصيحة:</strong> شارك هذا الرابط عبر البريد الإلكتروني أو وسائل التواصل الاجتماعي
                     </p>
+                  </div>
+
+                  {/* Social Share Buttons */}
+                  <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-blue-50 rounded-lg border border-emerald-200">
+                    <h4 className="text-sm font-semibold text-slate-900 mb-3 text-center">
+                      شارك على وسائل التواصل الاجتماعي 📱
+                    </h4>
+                    <SocialShareButtons referralLink={generatedLink} />
                   </div>
                 </>
               ) : (

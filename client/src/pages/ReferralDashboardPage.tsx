@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Users, Gift, Calendar, Copy, CheckCircle2, Clock, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import UnifiedNavbar from '@/components/UnifiedNavbar';
+import { SocialShareButtons } from '@/components/SocialShareButtons';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -14,6 +16,14 @@ export default function ReferralDashboardPage() {
   const statsQuery = trpc.referrals.getReferralStats.useQuery();
   const referralsQuery = trpc.referrals.getMyReferrals.useQuery();
   const rewardsQuery = trpc.referrals.getMyReferralRewards.useQuery();
+
+  // Get the first referral link for social sharing
+  const firstReferralLink = useMemo(() => {
+    if (referralsQuery.data && referralsQuery.data.length > 0) {
+      return referralsQuery.data[0].referralLink;
+    }
+    return '';
+  }, [referralsQuery.data]);
 
   const handleCopyLink = (link: string, id: number) => {
     navigator.clipboard.writeText(link);
@@ -214,6 +224,19 @@ export default function ReferralDashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Social Share Section */}
+        {firstReferralLink && (
+          <Card className="mt-8 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+            <CardHeader>
+              <CardTitle>شارك على وسائل التواصل الاجتماعي</CardTitle>
+              <CardDescription>الباعة الأسهل لنشر رابط الإحالة مع رسالة مخصصة</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SocialShareButtons referralLink={firstReferralLink} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* FAQ Link Section */}
         <Card className="mt-8 bg-gradient-to-r from-emerald-50 to-blue-50 border-emerald-200">
