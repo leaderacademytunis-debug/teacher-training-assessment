@@ -101,6 +101,10 @@ jspm_packages/
 tmp/
 temp/
 
+# But include patches directory (needed for pnpm)
+!patches/
+!patches/**
+
 # Database
 *.db
 *.sqlite
