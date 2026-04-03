@@ -3,6 +3,7 @@ import { z } from "zod";
 import * as db from "../db";
 import { getDb } from "../db";
 import { eq, and } from "drizzle-orm";
+import { badgeDefinitions } from "../../drizzle/schema";
 
 export const badgesRouter = router({
   /**
@@ -52,7 +53,6 @@ export const badgesRouter = router({
     const dbInstance = await getDb();
     if (!dbInstance) return [];
 
-    const { badgeDefinitions } = await import("../drizzle/schema");
     const badges = await dbInstance
       .select()
       .from(badgeDefinitions)
