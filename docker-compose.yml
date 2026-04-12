@@ -1,0 +1,190 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  gateway:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    depends_on:
+      - courses
+      - learning-support
+      - teacher-tools
+      - showcase
+      - talent-radar
+      - jobs
+      - realtime
+      - marketplace
+      - gamification
+      - analytics
+    networks:
+      - leader-academy
+
+  # Courses Service
+  courses:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/courses-service.js
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Learning Support Service
+  learning-support:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/learning-support-service.js
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Teacher Tools Service
+  teacher-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/teacher-tools-service.js
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Showcase Service
+  showcase:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/showcase-service.js
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Talent Radar Service
+  talent-radar:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/talent-radar-service.js
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Jobs Service
+  jobs:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/jobs-service.js
+    ports:
+      - "3006:3006"
+    environment:
+      - PORT=3006
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Realtime Service
+  realtime:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/realtime-service.js
+    ports:
+      - "3007:3007"
+    environment:
+      - PORT=3007
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Marketplace Service
+  marketplace:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/marketplace-service.js
+    ports:
+      - "3009:3009"
+    environment:
+      - PORT=3009
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Gamification Service
+  gamification:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/gamification-service.js
+    ports:
+      - "3010:3010"
+    environment:
+      - PORT=3010
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+  # Analytics Service
+  analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_FILE: services/analytics-service.js
+    ports:
+      - "3011:3011"
+    environment:
+      - PORT=3011
+    volumes:
+      - ./leader_academy.db:/app/leader_academy.db
+    networks:
+      - leader-academy
+
+networks:
+  leader-academy:
+    driver: bridge
