@@ -1,6 +1,6 @@
 /**
  * Leader Academy API Gateway v2
- * With SQLite Database Integration
+ * With SQLite Database Integration & Service Proxy
  */
 
 const express = require('express');
@@ -9,6 +9,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 require('dotenv').config();
 
 const db = require('./db-sqlite');
@@ -20,6 +21,20 @@ const db = require('./db-sqlite');
 const app = express();
 const PORT = process.env.GATEWAY_PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Service Registry
+const SERVICES = {
+  courses: { port: 3001, name: 'Courses Service' },
+  learning: { port: 3002, name: 'Learning Support Service' },
+  tools: { port: 3003, name: 'Teacher Tools Service' },
+  showcase: { port: 3004, name: 'Showcase Service' },
+  talent: { port: 3005, name: 'Talent Radar Service' },
+  jobs: { port: 3006, name: 'Jobs Service' },
+  realtime: { port: 3007, name: 'Realtime Service' },
+  marketplace: { port: 3009, name: 'Marketplace Service' },
+  gamification: { port: 3010, name: 'Gamification Service' },
+  analytics: { port: 3011, name: 'Analytics Service' }
+};
 
 // ============================================
 // MIDDLEWARE
@@ -90,24 +105,24 @@ app.get('/health/services', async (req, res) => {
       jobs: await db.getTotalJobs()
     };
 
+    const services = {};
+    for (const [key, service] of Object.entries(SERVICES)) {
+      try {
+        const response = await axios.get(`http://localhost:${service.port}/health`, { timeout: 2000 });
+        services[key] = { status: 'ok', port: service.port, name: service.name };
+      } catch (error) {
+        services[key] = { status: 'unavailable', port: service.port, name: service.name };
+      }
+    }
+
     res.json({
       status: 'ok',
-      services: {
-        courses: { status: 'ok', port: 3001 },
-        learning: { status: 'ok', port: 3002 },
-        tools: { status: 'ok', port: 3003 },
-        showcase: { status: 'ok', port: 3004 },
-        talent: { status: 'ok', port: 3005 },
-        jobs: { status: 'ok', port: 3006 },
-        realtime: { status: 'ok', port: 3007 },
-        marketplace: { status: 'ok', port: 3009 },
-        gamification: { status: 'ok', port: 3010 },
-        analytics: { status: 'ok', port: 3011 }
-      },
-      statistics: stats
+      services,
+      stats,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to get services status' });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -117,286 +132,407 @@ app.get('/health/services', async (req, res) => {
 
 app.post('/auth/token', async (req, res) => {
   try {
-    const { userId, email, name, role } = req.body;
+    const { email, password } = req.body;
 
-    if (!userId || !email) {
-      return res.status(400).json({ error: 'userId and email are required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
     }
 
-    // Check if user exists
-    let user = await db.getUserByEmail(email);
-
-    // Create user if doesn't exist
+    // In production, verify against database
+    const user = await db.getUserByEmail(email);
+    
     if (!user) {
-      await db.createUser({
-        user_id: userId,
-        email,
-        name: name || email.split('@')[0],
-        role: role || 'user',
-        status: 'active',
-        subscription_plan: 'free'
-      });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
-      { userId, email, role: role || 'user' },
+      { user_id: user.user_id, email: user.email, name: user.name },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    res.json({
-      success: true,
-      token,
-      expiresIn: 86400
-    });
+    res.json({ success: true, token, user });
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(500).json({ error: 'Failed to generate token' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/auth/verify', verifyToken, (req, res) => {
-  res.json({
-    success: true,
-    user: req.user
-  });
+app.post('/auth/verify', (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    res.json({ success: true, user: decoded });
+  } catch (error) {
+    res.status(403).json({ error: 'Invalid token' });
+  }
 });
 
 // ============================================
-// USER ENDPOINTS
+// SERVICE PROXY ROUTES
 // ============================================
 
-app.get('/api/users', verifyToken, async (req, res) => {
+// Courses Service Proxy
+app.get('/api/courses', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.courses.port}/api/courses`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Courses service unavailable' });
+  }
+});
+
+app.get('/api/courses/:id', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.courses.port}/api/courses/${req.params.id}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Courses service unavailable' });
+  }
+});
+
+// Learning Support Service Proxy
+app.get('/api/lessons/:courseId', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.learning.port}/api/lessons/course/${req.params.courseId}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Learning service unavailable' });
+  }
+});
+
+app.get('/api/assessments/:lessonId', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.learning.port}/api/assessments/lesson/${req.params.lessonId}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Learning service unavailable' });
+  }
+});
+
+// Teacher Tools Service Proxy
+app.post('/api/tools/lesson-plan/generate', async (req, res) => {
+  try {
+    const response = await axios.post(`http://localhost:${SERVICES.tools.port}/api/tools/lesson-plan/generate`, req.body);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Teacher tools service unavailable' });
+  }
+});
+
+// Showcase Service Proxy
+app.get('/api/portfolios/:userId', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.showcase.port}/api/portfolios/user/${req.params.userId}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Showcase service unavailable' });
+  }
+});
+
+// Talent Radar Service Proxy
+app.get('/api/talent/profiles', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.talent.port}/api/talent/profiles`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Talent radar service unavailable' });
+  }
+});
+
+// Jobs Service Proxy
+app.get('/api/jobs', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.jobs.port}/api/jobs`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Jobs service unavailable' });
+  }
+});
+
+app.post('/api/jobs/apply', async (req, res) => {
+  try {
+    const response = await axios.post(`http://localhost:${SERVICES.jobs.port}/api/jobs/apply`, req.body);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Jobs service unavailable' });
+  }
+});
+
+// Marketplace Service Proxy
+app.get('/api/marketplace/products', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.marketplace.port}/api/marketplace/products`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Marketplace service unavailable' });
+  }
+});
+
+// Gamification Service Proxy
+app.get('/api/gamification/leaderboard', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.gamification.port}/api/gamification/leaderboard`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Gamification service unavailable' });
+  }
+});
+
+app.get('/api/gamification/points/:userId', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.gamification.port}/api/gamification/points/${req.params.userId}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Gamification service unavailable' });
+  }
+});
+
+// Analytics Service Proxy
+app.get('/api/analytics/user/:userId', async (req, res) => {
+  try {
+    const response = await axios.get(`http://localhost:${SERVICES.analytics.port}/api/analytics/user/${req.params.userId}`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: 'Analytics service unavailable' });
+  }
+});
+
+// ============================================
+// DATABASE ENDPOINTS
+// ============================================
+
+app.get('/api/users', async (req, res) => {
   try {
     const users = await db.getAllUsers();
     res.json({ success: true, data: users });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/api/users/:userId', verifyToken, async (req, res) => {
+app.get('/api/users/:id', async (req, res) => {
   try {
-    const user = await db.getUserById(req.params.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    const user = await db.getUserById(req.params.id);
     res.json({ success: true, data: user });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch user' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ============================================
-// COURSE ENDPOINTS
-// ============================================
-
-app.get('/api/courses', async (req, res) => {
+app.get('/api/statistics', async (req, res) => {
   try {
-    const courses = await db.getAllCourses();
-    res.json({ success: true, data: courses });
+    const stats = {
+      total_users: await db.getTotalUsers(),
+      total_courses: await db.getTotalCourses(),
+      total_enrollments: await db.getTotalEnrollments(),
+      total_jobs: await db.getTotalJobs(),
+      top_courses: await db.getTopCourses(),
+      top_teachers: await db.getTopTeachers()
+    };
+    res.json({ success: true, data: stats });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch courses' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/api/courses/:courseId', async (req, res) => {
-  try {
-    const course = await db.getCourseById(req.params.courseId);
-    if (!course) {
-      return res.status(404).json({ error: 'Course not found' });
-    }
-    res.json({ success: true, data: course });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch course' });
-  }
-});
-
-app.get('/api/courses/:courseId/lessons', async (req, res) => {
-  try {
-    const course = await db.getCourseById(req.params.courseId);
-    if (!course) {
-      return res.status(404).json({ error: 'Course not found' });
-    }
-
-    const lessons = await db.getLessonsByCourse(course.id);
-    res.json({ success: true, data: lessons });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch lessons' });
-  }
-});
-
-// ============================================
-// ENROLLMENT ENDPOINTS
-// ============================================
-
-app.get('/api/enrollments/user/:userId', verifyToken, async (req, res) => {
+app.get('/api/enrollments/user/:userId', async (req, res) => {
   try {
     const enrollments = await db.getUserEnrollments(req.params.userId);
     res.json({ success: true, data: enrollments });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch enrollments' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/api/enrollments', verifyToken, async (req, res) => {
+app.get('/api/points/user/:userId', async (req, res) => {
   try {
-    const { enrollment_id, user_id, course_id } = req.body;
-
-    if (!enrollment_id || !user_id || !course_id) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    await db.createEnrollment({
-      enrollment_id,
-      user_id,
-      course_id,
-      status: 'enrolled',
-      progress_percentage: 0,
-      started_at: new Date().toISOString()
-    });
-
-    res.json({ success: true, message: 'Enrollment created' });
+    const points = await db.getUserTotalPoints(req.params.userId);
+    res.json({ success: true, data: points });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create enrollment' });
+    res.status(500).json({ error: error.message });
   }
 });
-
-// ============================================
-// POINTS ENDPOINTS
-// ============================================
-
-app.get('/api/points/user/:userId', verifyToken, async (req, res) => {
-  try {
-    const points = await db.getUserPoints(req.params.userId);
-    const total = await db.getUserTotalPoints(req.params.userId);
-    res.json({ success: true, data: points, total });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch points' });
-  }
-});
-
-app.post('/api/points', verifyToken, async (req, res) => {
-  try {
-    const { point_id, user_id, amount, reason, category } = req.body;
-
-    if (!point_id || !user_id || !amount) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    await db.awardPoints({
-      point_id,
-      user_id,
-      amount,
-      reason: reason || 'Manual award',
-      category: category || 'other',
-      reference_id: null
-    });
-
-    res.json({ success: true, message: 'Points awarded' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to award points' });
-  }
-});
-
-// ============================================
-// BADGE ENDPOINTS
-// ============================================
 
 app.get('/api/badges', async (req, res) => {
   try {
     const badges = await db.getAllBadges();
     res.json({ success: true, data: badges });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch badges' });
-  }
-});
-
-app.get('/api/badges/user/:userId', verifyToken, async (req, res) => {
-  try {
-    const badges = await db.getUserBadges(req.params.userId);
-    res.json({ success: true, data: badges });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch user badges' });
+    res.status(500).json({ error: error.message });
   }
 });
 
 // ============================================
-// JOBS ENDPOINTS
+// SERVICE DISCOVERY ENDPOINT
 // ============================================
 
-app.get('/api/jobs', async (req, res) => {
-  try {
-    const jobs = await db.getAllJobs();
-    res.json({ success: true, data: jobs });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch jobs' });
-  }
+app.get('/api/services', (req, res) => {
+  const services = Object.entries(SERVICES).map(([key, service]) => ({
+    id: key,
+    name: service.name,
+    port: service.port,
+    url: `http://localhost:${service.port}`
+  }));
+
+  res.json({
+    success: true,
+    services,
+    total: services.length
+  });
 });
 
-app.get('/api/jobs/:jobId', async (req, res) => {
+// ============================================
+// GENERIC PROXY ROUTE (Catch-all)
+// ============================================
+
+app.use('/api/courses', async (req, res) => {
   try {
-    const job = await db.getJobById(req.params.jobId);
-    if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
-    }
-    res.json({ success: true, data: job });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch job' });
-  }
-});
-
-app.post('/api/jobs/apply', verifyToken, async (req, res) => {
-  try {
-    const { application_id, user_id, job_id, cover_letter } = req.body;
-
-    if (!application_id || !user_id || !job_id) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
-    await db.applyForJob({
-      application_id,
-      user_id,
-      job_id,
-      status: 'applied',
-      cover_letter: cover_letter || ''
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.courses.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
     });
-
-    res.json({ success: true, message: 'Application submitted' });
+    res.json(response.data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to submit application' });
+    res.status(error.response?.status || 500).json({ error: error.message });
   }
 });
 
-// ============================================
-// STATISTICS ENDPOINTS
-// ============================================
-
-app.get('/api/statistics', async (req, res) => {
+app.use('/api/learning', async (req, res) => {
   try {
-    const stats = {
-      totalUsers: await db.getTotalUsers(),
-      totalCourses: await db.getTotalCourses(),
-      totalEnrollments: await db.getTotalEnrollments(),
-      totalJobs: await db.getTotalJobs(),
-      topCourses: await db.getTopCourses(5),
-      topTeachers: await db.getTopTeachers(5)
-    };
-
-    res.json({ success: true, data: stats });
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.learning.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch statistics' });
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/tools', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.tools.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/showcase', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.showcase.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/talent', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.talent.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/jobs', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.jobs.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/realtime', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.realtime.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/marketplace', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.marketplace.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/gamification', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.gamification.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
+  }
+});
+
+app.use('/api/analytics', async (req, res) => {
+  try {
+    const response = await axios({
+      method: req.method,
+      url: `http://localhost:${SERVICES.analytics.port}${req.originalUrl}`,
+      data: req.body,
+      headers: req.headers
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json({ error: error.message });
   }
 });
 
 // ============================================
 // ERROR HANDLING
 // ============================================
-
-app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
-});
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -417,6 +553,11 @@ async function startServer() {
       console.log(`\n✅ API Gateway v2 running on http://localhost:${PORT}`);
       console.log(`📊 Database: SQLite (leader_academy.db)`);
       console.log(`🔐 JWT Secret: ${JWT_SECRET.substring(0, 10)}...`);
+      console.log(`🔗 Service Registry: ${Object.keys(SERVICES).length} services`);
+      console.log(`\n📋 Available Services:`);
+      Object.entries(SERVICES).forEach(([key, service]) => {
+        console.log(`   • ${service.name} (${key}): http://localhost:${service.port}`);
+      });
       console.log(`\n🚀 Ready to accept requests!\n`);
     });
   } catch (error) {
