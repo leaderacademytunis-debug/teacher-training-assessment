@@ -1,0 +1,46 @@
+{
+  "name": "leader-academy-gateway",
+  "version": "1.0.0",
+  "description": "API Gateway for Leader Academy - Central routing hub for all microservices",
+  "main": "gateway.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node gateway.js",
+    "dev": "nodemon gateway.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "keywords": [
+    "api-gateway",
+    "microservices",
+    "express",
+    "leader-academy",
+    "education"
+  ],
+  "author": "Leader Academy Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.6.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم الموحدة - Leader Academy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --bg-white: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--gray-50);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .header-text h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .header-text p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .language-selector, .auth-button {
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .language-selector:hover, .auth-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .auth-button {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-card-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .stat-card-change {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .tab-button {
+            padding: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .card-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .card-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-inactive {
+            background: rgba(107, 114, 128, 0.1);
+            color: var(--text-secondary);
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 14px;
+            border-top: 1px solid var(--gray-200);
+            margin-top: 4rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="header-left">
+                <div class="header-logo">🎓</div>
+                <div class="header-text">
+                    <h1>Leader Academy</h1>
+                    <p>لوحة التحكم الموحدة</p>
+                </div>
+            </div>
+            <div class="header-controls">
+                <select class="language-selector" id="languageSelector">
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                </select>
+                <button class="auth-button" id="authButton">تسجيل الدخول</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Error Message -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <span class="stat-card-title" id="stat1-title">المستخدمين</span>
+                    <div class="stat-card-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--primary);">👥</div>
+                </div>
+                <div class="stat-card-value" id="stat1-value">0</div>
+                <div class="stat-card-change">إجمالي المستخدمين النشطين</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <span class="stat-card-title" id="stat2-title">الدورات</span>
+                    <div class="stat-card-icon" style="background: rgba(168, 85, 247, 0.1); color: var(--secondary);">📚</div>
+                </div>
+                <div class="stat-card-value" id="stat2-value">0</div>
+                <div class="stat-card-change">دورات متاحة</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <span class="stat-card-title" id="stat3-title">التسجيلات</span>
+                    <div class="stat-card-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">✓</div>
+                </div>
+                <div class="stat-card-value" id="stat3-value">0</div>
+                <div class="stat-card-change">تسجيلات نشطة</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <span class="stat-card-title" id="stat4-title">الوظائف</span>
+                    <div class="stat-card-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">💼</div>
+                </div>
+                <div class="stat-card-value" id="stat4-value">0</div>
+                <div class="stat-card-change">وظائف مفتوحة</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="courses" id="tab-courses">الدورات</button>
+            <button class="tab-button" data-tab="services" id="tab-services">الخدمات</button>
+            <button class="tab-button" data-tab="teachers" id="tab-teachers">أفضل المعلمين</button>
+            <button class="tab-button" data-tab="quick-access" id="tab-quick-access">الوصول السريع</button>
+        </div>
+
+        <!-- Courses Tab -->
+        <div class="tab-content active" id="courses">
+            <div id="coursesLoading" class="loading">
+                <div class="spinner"></div>
+                <p>جاري تحميل الدورات...</p>
+            </div>
+            <div class="cards-grid" id="coursesList" style="display: none;"></div>
+        </div>
+
+        <!-- Services Tab -->
+        <div class="tab-content" id="services">
+            <div id="servicesLoading" class="loading">
+                <div class="spinner"></div>
+                <p>جاري تحميل الخدمات...</p>
+            </div>
+            <div class="cards-grid" id="servicesList" style="display: none;"></div>
+        </div>
+
+        <!-- Teachers Tab -->
+        <div class="tab-content" id="teachers">
+            <div id="teachersLoading" class="loading">
+                <div class="spinner"></div>
+                <p>جاري تحميل المعلمين...</p>
+            </div>
+            <div class="cards-grid" id="teachersList" style="display: none;"></div>
+        </div>
+
+        <!-- Quick Access Tab -->
+        <div class="tab-content" id="quick-access">
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-title">📖 إنشاء دورة جديدة</div>
+                    <div class="card-description">ابدأ بإنشاء دورة تدريبية جديدة</div>
+                    <button style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">إنشاء</button>
+                </div>
+                <div class="card">
+                    <div class="card-title">📝 إضافة درس</div>
+                    <div class="card-description">أضف درس جديد إلى الدورات</div>
+                    <button style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">إضافة</button>
+                </div>
+                <div class="card">
+                    <div class="card-title">💼 نشر وظيفة</div>
+                    <div class="card-description">نشر فرصة عمل جديدة</div>
+                    <button style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">نشر</button>
+                </div>
+                <div class="card">
+                    <div class="card-title">📊 عرض التقارير</div>
+                    <div class="card-description">اعرض تقارير الأداء والإحصائيات</div>
+                    <button style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">عرض</button>
+                </div>
+                <div class="card">
+                    <div class="card-title">👥 إدارة المستخدمين</div>
+                    <div class="card-description">أدر حسابات المستخدمين والأدوار</div>
+                    <button style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">إدارة</button>
+                </div>
+                <div class="card">
+                    <div class="card-title">⚙️ الإعدادات</div>
+                    <div class="card-description">قم بتخصيص إعدادات النظام</div>
+                    <button style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer;">تخصيص</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 Leader Academy. جميع الحقوق محفوظة | مدعوم بـ SQLite Database و Express.js API Gateway</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:3000';
+        const GATEWAY_URL = 'https://3000-inyb4q97c2cjov5mq5xjx-2ac21d7b.us2.manus.computer';
+
+        // Language translations
+        const translations = {
+            ar: {
+                'stat1-title': 'المستخدمين',
+                'stat2-title': 'الدورات',
+                'stat3-title': 'التسجيلات',
+                'stat4-title': 'الوظائف',
+                'courses-title': 'الدورات المتاحة',
+                'services-title': 'الخدمات',
+                'teachers-title': 'أفضل المعلمين',
+                'loading': 'جاري التحميل...',
+                'error': 'حدث خطأ في التحميل'
+            },
+            en: {
+                'stat1-title': 'Users',
+                'stat2-title': 'Courses',
+                'stat3-title': 'Enrollments',
+                'stat4-title': 'Jobs',
+                'courses-title': 'Available Courses',
+                'services-title': 'Services',
+                'teachers-title': 'Top Teachers',
+                'loading': 'Loading...',
+                'error': 'Error loading data'
+            },
+            fr: {
+                'stat1-title': 'Utilisateurs',
+                'stat2-title': 'Cours',
+                'stat3-title': 'Inscriptions',
+                'stat4-title': 'Emplois',
+                'courses-title': 'Cours Disponibles',
+                'services-title': 'Services',
+                'teachers-title': 'Meilleurs Enseignants',
+                'loading': 'Chargement...',
+                'error': 'Erreur de chargement'
+            }
+        };
+
+        let currentLanguage = 'ar';
+        let authToken = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            loadStatistics();
+            loadCourses();
+            checkAuth();
+        });
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Language selector
+            document.getElementById('languageSelector').addEventListener('change', (e) => {
+                currentLanguage = e.target.value;
+                updateLanguage();
+            });
+
+            // Tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    switchTab(button.dataset.tab);
+                });
+            });
+
+            // Auth button
+            document.getElementById('authButton').addEventListener('click', () => {
+                showAuthDialog();
+            });
+        }
+
+        // Switch Tab
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Remove active class from buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            // Load tab data
+            if (tabName === 'services') {
+                loadServices();
+            } else if (tabName === 'teachers') {
+                loadTeachers();
+            }
+        }
+
+        // Load Statistics
+        async function loadStatistics() {
+            try {
+                const response = await fetch(`${GATEWAY_URL}/api/statistics`);
+                const data = await response.json();
+
+                document.getElementById('stat1-value').textContent = data.data.totalUsers;
+                document.getElementById('stat2-value').textContent = data.data.totalCourses;
+                document.getElementById('stat3-value').textContent = data.data.totalEnrollments;
+                document.getElementById('stat4-value').textContent = data.data.totalJobs;
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                showError('فشل تحميل الإحصائيات');
+            }
+        }
+
+        // Load Courses
+        async function loadCourses() {
+            try {
+                const response = await fetch(`${GATEWAY_URL}/api/courses`);
+                const data = await response.json();
+
+                const coursesList = document.getElementById('coursesList');
+                const coursesLoading = document.getElementById('coursesLoading');
+
+                if (data.data && data.data.length > 0) {
+                    coursesList.innerHTML = data.data.map(course => `
+                        <div class="card">
+                            <div class="card-title">${course.title_ar}</div>
+                            <div class="card-description">${course.description_ar?.substring(0, 100)}...</div>
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                                <span class="card-status status-active">${course.level}</span>
+                                <span class="card-status status-active">${course.duration_hours} ساعة</span>
+                            </div>
+                            <div style="margin-top: 1rem; font-size: 12px; color: var(--text-secondary);">
+                                👥 ${course.total_students} طالب | ⭐ ${course.average_rating}
+                            </div>
+                        </div>
+                    `).join('');
+                    coursesList.style.display = 'grid';
+                } else {
+                    coursesList.innerHTML = '<p>لا توجد دورات متاحة</p>';
+                    coursesList.style.display = 'block';
+                }
+
+                coursesLoading.style.display = 'none';
+            } catch (error) {
+                console.error('Error loading courses:', error);
+                showError('فشل تحميل الدورات');
+            }
+        }
+
+        // Load Services
+        async function loadServices() {
+            try {
+                const response = await fetch(`${GATEWAY_URL}/health/services`);
+                const data = await response.json();
+
+                const servicesList = document.getElementById('servicesList');
+                const servicesLoading = document.getElementById('servicesLoading');
+
+                const services = Object.entries(data.services).map(([name, info]) => `
+                    <div class="card">
+                        <div class="card-title">🔧 ${name}</div>
+                        <div class="card-description">Port: ${info.port}</div>
+                        <span class="card-status status-active">${info.status}</span>
+                    </div>
+                `).join('');
+
+                servicesList.innerHTML = services;
+                servicesList.style.display = 'grid';
+                servicesLoading.style.display = 'none';
+            } catch (error) {
+                console.error('Error loading services:', error);
+                showError('فشل تحميل الخدمات');
+            }
+        }
+
+        // Load Teachers
+        async function loadTeachers() {
+            try {
+                const response = await fetch(`${GATEWAY_URL}/api/statistics`);
+                const data = await response.json();
+
+                const teachersList = document.getElementById('teachersList');
+                const teachersLoading = document.getElementById('teachersLoading');
+
+                if (data.data.topTeachers && data.data.topTeachers.length > 0) {
+                    teachersList.innerHTML = data.data.topTeachers.map(teacher => `
+                        <div class="card">
+                            <div class="card-title">👨‍🏫 ${teacher.name}</div>
+                            <div class="card-description">${teacher.school_name}</div>
+                            <div style="margin-top: 1rem;">
+                                <p style="font-size: 12px; color: var(--text-secondary);">
+                                    📚 ${teacher.course_count} دورات
+                                </p>
+                                <p style="font-size: 12px; color: var(--text-secondary);">
+                                    ⭐ ${teacher.total_points} نقطة
+                                </p>
+                            </div>
+                        </div>
+                    `).join('');
+                    teachersList.style.display = 'grid';
+                } else {
+                    teachersList.innerHTML = '<p>لا يوجد معلمين</p>';
+                    teachersList.style.display = 'block';
+                }
+
+                teachersLoading.style.display = 'none';
+            } catch (error) {
+                console.error('Error loading teachers:', error);
+                showError('فشل تحميل المعلمين');
+            }
+        }
+
+        // Authentication
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                authToken = token;
+                document.getElementById('authButton').textContent = 'تسجيل الخروج';
+                document.getElementById('authButton').onclick = logout;
+            }
+        }
+
+        function showAuthDialog() {
+            const email = prompt('أدخل بريدك الإلكتروني:');
+            if (email) {
+                login(email);
+            }
+        }
+
+        async function login(email) {
+            try {
+                const response = await fetch(`${GATEWAY_URL}/auth/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: 'user-' + Date.now(),
+                        email: email,
+                        name: email.split('@')[0],
+                        role: 'user'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    localStorage.setItem('authToken', authToken);
+                    document.getElementById('authButton').textContent = 'تسجيل الخروج';
+                    alert('تم تسجيل الدخول بنجاح!');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('فشل تسجيل الدخول');
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            document.getElementById('authButton').textContent = 'تسجيل الدخول';
+            alert('تم تسجيل الخروج');
+        }
+
+        // Update Language
+        function updateLanguage() {
+            document.documentElement.lang = currentLanguage;
+            document.documentElement.dir = currentLanguage === 'ar' ? 'rtl' : 'ltr';
+        }
+
+        // Show Error
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

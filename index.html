@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم الموحدة - Leader Academy</title>
+    <link href="https://cdn.jsdelivr.net/npm/lucide@latest" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --bg-white: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--gray-50);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .header-text h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .header-text p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .language-selector {
+            padding: 8px 12px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border-top: 4px solid var(--primary);
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .stat-card.blue { border-top-color: #3b82f6; }
+        .stat-card.yellow { border-top-color: #f59e0b; }
+        .stat-card.purple { border-top-color: #a855f7; }
+        .stat-card.green { border-top-color: #10b981; }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .stat-icon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.7;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .stat-button {
+            width: 100%;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-button:hover {
+            background: var(--gray-50);
+            border-radius: 4px;
+        }
+
+        /* Tabs */
+        .tabs {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .tab-header {
+            display: flex;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: white;
+        }
+
+        .tab-button:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        .tab-content {
+            padding: 2rem;
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .service-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        .service-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .service-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--warning);
+        }
+
+        .status-indicator.online {
+            background: var(--success);
+        }
+
+        .status-indicator.offline {
+            background: var(--danger);
+        }
+
+        .service-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+            background: var(--warning);
+        }
+
+        .status-badge.online {
+            background: var(--success);
+        }
+
+        .status-badge.offline {
+            background: var(--danger);
+        }
+
+        /* Pathways Grid */
+        .pathways-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .pathway-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .pathway-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        .pathway-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .pathway-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .pathway-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .pathway-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .pathway-items {
+            list-style: none;
+        }
+
+        .pathway-items li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .check-icon {
+            width: 16px;
+            height: 16px;
+            color: var(--success);
+        }
+
+        /* Quick Access Grid */
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .quick-access-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .quick-access-button:hover {
+            border-color: var(--primary);
+            background: var(--gray-50);
+        }
+
+        .quick-access-icon {
+            width: 32px;
+            height: 32px;
+            color: var(--primary);
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #dbeafe;
+            border: 1px solid #93c5fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 2rem;
+            color: #1e40af;
+            font-size: 14px;
+        }
+
+        .info-box strong {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tab-header {
+                flex-wrap: wrap;
+            }
+
+            .tab-button {
+                flex: 1 1 auto;
+                min-width: 100px;
+                padding: 0.75rem;
+                font-size: 13px;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-access-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+        }
+
+        /* Loading Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="header-left">
+                <div class="header-logo">📚</div>
+                <div class="header-text">
+                    <h1 id="title">لوحة التحكم الموحدة</h1>
+                    <p id="subtitle">مرحباً بك في منصة Leader Academy</p>
+                </div>
+            </div>
+            <select class="language-selector" id="languageSelector" onchange="changeLanguage(this.value)">
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card blue">
+                <div class="stat-header">
+                    <span class="stat-title" id="stat-courses">الدورات</span>
+                    <span class="stat-icon">📖</span>
+                </div>
+                <div class="stat-value" id="stat-courses-value">3</div>
+                <div class="stat-subtitle" id="stat-courses-subtitle">مكتمل</div>
+                <button class="stat-button" id="stat-courses-btn">عرض الدورات →</button>
+            </div>
+
+            <div class="stat-card yellow">
+                <div class="stat-header">
+                    <span class="stat-title" id="stat-points">النقاط</span>
+                    <span class="stat-icon">⚡</span>
+                </div>
+                <div class="stat-value" id="stat-points-value">450</div>
+                <div class="stat-subtitle" id="stat-points-subtitle">الكفاءة الرقمية</div>
+                <button class="stat-button" id="stat-points-btn">عرض النقاط →</button>
+            </div>
+
+            <div class="stat-card purple">
+                <div class="stat-header">
+                    <span class="stat-title" id="stat-achievements">الإنجازات</span>
+                    <span class="stat-icon">🏆</span>
+                </div>
+                <div class="stat-value" id="stat-achievements-value">8</div>
+                <div class="stat-subtitle" id="stat-achievements-subtitle">شارات مكتسبة</div>
+                <button class="stat-button" id="stat-achievements-btn">عرض الشارات →</button>
+            </div>
+
+            <div class="stat-card green">
+                <div class="stat-header">
+                    <span class="stat-title" id="stat-jobs">الوظائف</span>
+                    <span class="stat-icon">💼</span>
+                </div>
+                <div class="stat-value" id="stat-jobs-value">12</div>
+                <div class="stat-subtitle" id="stat-jobs-subtitle">مناصب نشطة</div>
+                <button class="stat-button" id="stat-jobs-btn">عرض الوظائف →</button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab-header">
+                <button class="tab-button active" onclick="switchTab('services')" id="tab-services-btn">حالة الخدمات</button>
+                <button class="tab-button" onclick="switchTab('pathways')" id="tab-pathways-btn">مسارات التعلم</button>
+                <button class="tab-button" onclick="switchTab('quick')" id="tab-quick-btn">الوصول السريع</button>
+            </div>
+
+            <!-- Services Tab -->
+            <div id="services" class="tab-content active">
+                <div class="services-grid" id="servicesGrid">
+                    <!-- Services will be populated here -->
+                </div>
+            </div>
+
+            <!-- Pathways Tab -->
+            <div id="pathways" class="tab-content">
+                <div class="pathways-grid" id="pathwaysGrid">
+                    <!-- Pathways will be populated here -->
+                </div>
+            </div>
+
+            <!-- Quick Access Tab -->
+            <div id="quick" class="tab-content">
+                <div class="quick-access-grid" id="quickAccessGrid">
+                    <!-- Quick access buttons will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Box -->
+        <div class="info-box">
+            <strong id="info-title">🚀 مرحباً بك في Leader Academy!</strong>
+            <span id="info-text">لوحة التحكم الموحدة هذه تربط جميع الخدمات الـ 11. استكشف المسارات أعلاه لبدء رحلة التعلم الخاصة بك.</span>
+        </div>
+    </div>
+
+    <script>
+        // Translations
+        const translations = {
+            ar: {
+                title: 'لوحة التحكم الموحدة',
+                subtitle: 'مرحباً بك في منصة Leader Academy',
+                'stat-courses': 'الدورات',
+                'stat-courses-subtitle': 'مكتمل',
+                'stat-courses-btn': 'عرض الدورات →',
+                'stat-points': 'النقاط',
+                'stat-points-subtitle': 'الكفاءة الرقمية',
+                'stat-points-btn': 'عرض النقاط →',
+                'stat-achievements': 'الإنجازات',
+                'stat-achievements-subtitle': 'شارات مكتسبة',
+                'stat-achievements-btn': 'عرض الشارات →',
+                'stat-jobs': 'الوظائف',
+                'stat-jobs-subtitle': 'مناصب نشطة',
+                'stat-jobs-btn': 'عرض الوظائف →',
+                'tab-services-btn': 'حالة الخدمات',
+                'tab-pathways-btn': 'مسارات التعلم',
+                'tab-quick-btn': 'الوصول السريع',
+                'info-title': '🚀 مرحباً بك في Leader Academy!',
+                'info-text': 'لوحة التحكم الموحدة هذه تربط جميع الخدمات الـ 11. استكشف المسارات أعلاه لبدء رحلة التعلم الخاصة بك.',
+                services: [
+                    { name: 'API Gateway', desc: 'مركز التوجيه المركزي', port: 3000 },
+                    { name: 'Courses', desc: 'إدارة التدريب', port: 3001 },
+                    { name: 'Learning Support', desc: 'أدوات بيداغوجية', port: 3002 },
+                    { name: 'Teacher Tools', desc: 'أدوات الذكاء الاصطناعي', port: 3003 },
+                    { name: 'Showcase', desc: 'عرض المحافظ', port: 3004 },
+                    { name: 'Talent Radar', desc: 'اكتشاف المواهب', port: 3005 },
+                    { name: 'Jobs', desc: 'فرص العمل', port: 3006 },
+                ]
+            },
+            en: {
+                title: 'Unified Dashboard',
+                subtitle: 'Welcome to Leader Academy',
+                'stat-courses': 'Courses',
+                'stat-courses-subtitle': 'Completed',
+                'stat-courses-btn': 'View Courses →',
+                'stat-points': 'Points',
+                'stat-points-subtitle': 'Digital Competency',
+                'stat-points-btn': 'View Points →',
+                'stat-achievements': 'Achievements',
+                'stat-achievements-subtitle': 'Badges Earned',
+                'stat-achievements-btn': 'View Badges →',
+                'stat-jobs': 'Jobs',
+                'stat-jobs-subtitle': 'Active Positions',
+                'stat-jobs-btn': 'View Jobs →',
+                'tab-services-btn': 'Services Status',
+                'tab-pathways-btn': 'Learning Pathways',
+                'tab-quick-btn': 'Quick Access',
+                'info-title': '🚀 Welcome to Leader Academy!',
+                'info-text': 'This unified dashboard connects all 11 services. Explore the pathways above to start your learning journey.',
+                services: [
+                    { name: 'API Gateway', desc: 'Central routing hub', port: 3000 },
+                    { name: 'Courses', desc: 'Training management', port: 3001 },
+                    { name: 'Learning Support', desc: 'Pedagogical tools', port: 3002 },
+                    { name: 'Teacher Tools', desc: 'AI utilities', port: 3003 },
+                    { name: 'Showcase', desc: 'Portfolio display', port: 3004 },
+                    { name: 'Talent Radar', desc: 'Talent discovery', port: 3005 },
+                    { name: 'Jobs', desc: 'Career opportunities', port: 3006 },
+                ]
+            },
+            fr: {
+                title: 'Tableau de Bord Unifié',
+                subtitle: 'Bienvenue sur Leader Academy',
+                'stat-courses': 'Cours',
+                'stat-courses-subtitle': 'Complété',
+                'stat-courses-btn': 'Voir les Cours →',
+                'stat-points': 'Points',
+                'stat-points-subtitle': 'Compétence Numérique',
+                'stat-points-btn': 'Voir les Points →',
+                'stat-achievements': 'Réalisations',
+                'stat-achievements-subtitle': 'Badges Gagnés',
+                'stat-achievements-btn': 'Voir les Badges →',
+                'stat-jobs': 'Emplois',
+                'stat-jobs-subtitle': 'Postes Actifs',
+                'stat-jobs-btn': 'Voir les Emplois →',
+                'tab-services-btn': 'État des Services',
+                'tab-pathways-btn': 'Parcours d\'Apprentissage',
+                'tab-quick-btn': 'Accès Rapide',
+                'info-title': '🚀 Bienvenue sur Leader Academy!',
+                'info-text': 'Ce tableau de bord unifié connecte les 11 services. Explorez les parcours ci-dessus pour commencer votre parcours d\'apprentissage.',
+                services: [
+                    { name: 'API Gateway', desc: 'Hub de routage central', port: 3000 },
+                    { name: 'Courses', desc: 'Gestion de la formation', port: 3001 },
+                    { name: 'Learning Support', desc: 'Outils pédagogiques', port: 3002 },
+                    { name: 'Teacher Tools', desc: 'Outils IA', port: 3003 },
+                    { name: 'Showcase', desc: 'Affichage du portefeuille', port: 3004 },
+                    { name: 'Talent Radar', desc: 'Découverte des talents', port: 3005 },
+                    { name: 'Jobs', desc: 'Opportunités de carrière', port: 3006 },
+                ]
+            }
+        };
+
+        let currentLanguage = 'ar';
+
+        // Change language
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            
+            const t = translations[lang];
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('subtitle').textContent = t.subtitle;
+            document.getElementById('stat-courses').textContent = t['stat-courses'];
+            document.getElementById('stat-courses-subtitle').textContent = t['stat-courses-subtitle'];
+            document.getElementById('stat-courses-btn').textContent = t['stat-courses-btn'];
+            document.getElementById('stat-points').textContent = t['stat-points'];
+            document.getElementById('stat-points-subtitle').textContent = t['stat-points-subtitle'];
+            document.getElementById('stat-points-btn').textContent = t['stat-points-btn'];
+            document.getElementById('stat-achievements').textContent = t['stat-achievements'];
+            document.getElementById('stat-achievements-subtitle').textContent = t['stat-achievements-subtitle'];
+            document.getElementById('stat-achievements-btn').textContent = t['stat-achievements-btn'];
+            document.getElementById('stat-jobs').textContent = t['stat-jobs'];
+            document.getElementById('stat-jobs-subtitle').textContent = t['stat-jobs-subtitle'];
+            document.getElementById('stat-jobs-btn').textContent = t['stat-jobs-btn'];
+            document.getElementById('tab-services-btn').textContent = t['tab-services-btn'];
+            document.getElementById('tab-pathways-btn').textContent = t['tab-pathways-btn'];
+            document.getElementById('tab-quick-btn').textContent = t['tab-quick-btn'];
+            document.getElementById('info-title').textContent = t['info-title'];
+            document.getElementById('info-text').textContent = t['info-text'];
+            
+            renderServices();
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Render services
+        function renderServices() {
+            const t = translations[currentLanguage];
+            const servicesGrid = document.getElementById('servicesGrid');
+            servicesGrid.innerHTML = '';
+
+            t.services.forEach(service => {
+                const card = document.createElement('div');
+                card.className = 'service-card';
+                card.innerHTML = `
+                    <div class="service-header">
+                        <div class="service-info">
+                            <h3>${service.name}</h3>
+                            <p>${service.desc}</p>
+                        </div>
+                        <div class="status-indicator online"></div>
+                    </div>
+                    <div class="service-footer">
+                        <span>Port: ${service.port}</span>
+                        <span class="status-badge online">ONLINE</span>
+                    </div>
+                `;
+                servicesGrid.appendChild(card);
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            renderServices();
+            // Set language selector to current language
+            document.getElementById('languageSelector').value = currentLanguage;
+        });
+    </script>
+</body>
+</html>
